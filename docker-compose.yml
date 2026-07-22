@@ -1,0 +1,59 @@
+services:
+  erp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: erp
+    env_file:
+      - ./.env
+    environment:
+      DATABASE_SSL_MODE: disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    networks:
+      - app-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: flyway/flyway:9.20.0
+    container_name: migrator
+    volumes:
+      - ./migrations:/flyway/sql
+    command:
+      - -url=jdbc:postgresql://db:5432/${DATABASE_NAME}
+      - -user=${DATABASE_USER}
+      - -password=${DATABASE_PASSWORD}
+      - migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge
