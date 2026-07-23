@@ -100,6 +100,52 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
 	return err
 }
 
+const getDetailedTask = `-- name: GetDetailedTask :one
+SELECT 
+    t.id,
+    t.process_id,
+    t.title,
+    t.start_date,
+    t.end_date,
+    COALESCE(
+        (SELECT json_agg(
+            json_build_object(
+                'id', a.id,
+                'task_id', a.task_id,
+                'resource_id', a.resource_id,
+                'quantity', a.quantity
+            )
+            ORDER BY a.id
+        ) FROM assignments a WHERE a.task_id = t.id),
+        '[]'::json
+    )::jsonb AS assignments
+FROM tasks t
+WHERE t.id = $1
+`
+
+type GetDetailedTaskRow struct {
+	ID          int64       `json:"id"`
+	ProcessID   int64       `json:"process_id"`
+	Title       string      `json:"title"`
+	StartDate   pgtype.Date `json:"start_date"`
+	EndDate     pgtype.Date `json:"end_date"`
+	Assignments []byte      `json:"assignments"`
+}
+
+func (q *Queries) GetDetailedTask(ctx context.Context, id int64) (GetDetailedTaskRow, error) {
+	row := q.db.QueryRow(ctx, getDetailedTask, id)
+	var i GetDetailedTaskRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProcessID,
+		&i.Title,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Assignments,
+	)
+	return i, err
+}
+
 const getTask = `-- name: GetTask :one
 SELECT id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM tasks

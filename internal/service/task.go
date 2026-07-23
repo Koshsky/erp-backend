@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/Koshsky/erp/api/internal/domain"
@@ -14,6 +15,7 @@ type TaskRepository interface {
 	GetTask(ctx context.Context, id int64) (*domain.Task, error)
 	UpdateTask(ctx context.Context, task domain.Task) (*domain.Task, error)
 	DeleteTask(ctx context.Context, id int64) error
+	GetDetailedTask(ctx context.Context, task_id int64) (*domain.DetailedTask, error)
 }
 
 type TaskService struct {
@@ -30,6 +32,15 @@ func NewTaskService(logger *slog.Logger, repository TaskRepository, validator *V
 		mapper:     mapper.NewTaskMapper(),
 		validator:  validator,
 	}
+}
+
+func (s *TaskService) GetDetailedTask(ctx context.Context, id int64) (*dto.TaskDetailResponse, error) {
+	detailedTask, err := s.repository.GetDetailedTask(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("get detailed task: %w", err)
+	}
+
+	return s.mapper.ToDetailedDTO(detailedTask), nil
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest) (*dto.TaskResponse, error) {

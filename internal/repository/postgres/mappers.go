@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/Koshsky/erp/api/internal/domain"
@@ -91,4 +93,25 @@ func fromDate(value pgtype.Date) time.Time {
 	}
 
 	return value.Time
+}
+
+func mapDetailedTask(row sqlc.GetDetailedTaskRow) (domain.DetailedTask, error) {
+	var assignments []domain.Assignment
+
+	if len(row.Assignments) > 0 && string(row.Assignments) != "[]" {
+		if err := json.Unmarshal(row.Assignments, &assignments); err != nil {
+			return domain.DetailedTask{}, fmt.Errorf("parse assignments: %w", err)
+		}
+	}
+
+	return domain.DetailedTask{
+		Task: domain.Task{
+			ID:        row.ID,
+			ProcessID: row.ProcessID,
+			Title:     row.Title,
+			StartDate: fromDate(row.StartDate),
+			EndDate:   fromDate(row.EndDate),
+		},
+		Assignments: assignments,
+	}, nil
 }

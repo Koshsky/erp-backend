@@ -15,6 +15,7 @@ type TaskService interface {
 	CreateTask(ctx context.Context, task dto.CreateTaskRequest) (*dto.TaskResponse, error)
 	DeleteTask(ctx context.Context, id int64) error
 	UpdateTask(ctx context.Context, id int64, task dto.UpdateTaskRequest) (*dto.TaskResponse, error)
+	GetDetailedTask(ctx context.Context, id int64) (*dto.TaskDetailResponse, error)
 }
 
 type TaskHandler struct {
@@ -27,6 +28,25 @@ func NewTaskHandler(logger *slog.Logger, service TaskService) *TaskHandler {
 		logger:  logger,
 		service: service,
 	}
+}
+
+func (h *TaskHandler) GetDetailedTask(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response{Error: "invalid task id"})
+		return
+	}
+	task, err := h.service.GetDetailedTask(c.Request.Context(), id)
+	if err != nil {
+		if isNotFoundError(err) {
+			c.JSON(http.StatusNotFound, response{Error: "task not found"})
+			return
+		}
+		h.logger.Error("failed to get detailed task", "id", id, "error", err)
+		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, task)
 }
 
 func (h *TaskHandler) GetTask(c *gin.Context) {

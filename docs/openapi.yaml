@@ -461,6 +461,27 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /tasks/{id}/detailed:
+    get:
+      summary: Get detailed task by ID with assignments
+      tags:
+        - Tasks
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Detailed task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   # Assignments
   /assignments:
     post:
@@ -1004,6 +1025,17 @@ components:
           type: string
           format: date
           example: "2026-02-15"
+
+    TaskDetailResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/TaskResponse'
+        - type: object
+          properties:
+            assignments:
+              type: array
+              items:
+                $ref: '#/components/schemas/AssignmentResponse'
 
     # Milestone schemas
     MilestoneResponse:

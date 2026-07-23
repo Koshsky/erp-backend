@@ -9,3 +9,8 @@ type Task struct {
 	StartDate time.Time `db:"start_date" json:"start_date"`
 	EndDate   time.Time `db:"end_date" json:"end_date"`
 }
+
+type DetailedTask struct {
+	Task
+	Assignments []Assignment `json:"assignments"`
+}
