@@ -50,6 +50,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 			tasks := v1.Group("/tasks")
 			{
 				tasks.GET("/:id", h.GetTask)
+				tasks.GET("/:id/detailed", h.GetDetailedTask)
 				tasks.POST("", h.CreateTask)
 				tasks.DELETE("/:id", h.DeleteTask)
 				tasks.PATCH("/:id", h.UpdateTask)

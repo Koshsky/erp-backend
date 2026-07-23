@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/Koshsky/erp/api/internal/domain"
@@ -15,6 +16,20 @@ type TaskRepository struct {
 
 func NewTaskRepository(logger *slog.Logger, db *sqlc.Queries) *TaskRepository {
 	return &TaskRepository{logger: logger, db: db}
+}
+
+func (r *TaskRepository) GetDetailedTask(ctx context.Context, taskID int64) (*domain.DetailedTask, error) {
+	row, err := r.db.GetDetailedTask(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("get detailed task: %w", err)
+	}
+
+	detailedTask, err := mapDetailedTask(row)
+	if err != nil {
+		return nil, fmt.Errorf("map detailed task: %w", err)
+	}
+
+	return &detailedTask, nil
 }
 
 func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {

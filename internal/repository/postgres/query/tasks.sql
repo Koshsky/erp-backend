@@ -42,3 +42,25 @@ UPDATE tasks
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE id = @task_id
 	AND deleted_at IS NULL;
+
+-- name: GetDetailedTask :one
+SELECT 
+    t.id,
+    t.process_id,
+    t.title,
+    t.start_date,
+    t.end_date,
+    COALESCE(
+        (SELECT json_agg(
+            json_build_object(
+                'id', a.id,
+                'task_id', a.task_id,
+                'resource_id', a.resource_id,
+                'quantity', a.quantity
+            )
+            ORDER BY a.id
+        ) FROM assignments a WHERE a.task_id = t.id),
+        '[]'::json
+    )::jsonb AS assignments
+FROM tasks t
+WHERE t.id = $1;

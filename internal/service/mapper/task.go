@@ -12,6 +12,29 @@ func NewTaskMapper() *TaskMapper {
 	return &TaskMapper{}
 }
 
+func (m *TaskMapper) ToDetailedDTO(task *domain.DetailedTask) *dto.TaskDetailResponse {
+	assignments := make([]dto.AssignmentResponse, len(task.Assignments))
+	for i, a := range task.Assignments {
+		assignments[i] = dto.AssignmentResponse{
+			ID:         a.ID,
+			TaskID:     a.TaskID,
+			ResourceID: a.ResourceID,
+			Quantity:   a.Quantity,
+		}
+	}
+
+	return &dto.TaskDetailResponse{
+		TaskResponse: dto.TaskResponse{
+			ID:        task.ID,
+			ProcessID: task.ProcessID,
+			Title:     task.Title,
+			StartDate: task.StartDate,
+			EndDate:   task.EndDate,
+		},
+		Assignments: assignments,
+	}
+}
+
 func (m *TaskMapper) ToDTO(task *domain.Task) *dto.TaskResponse {
 	if task == nil {
 		return nil
