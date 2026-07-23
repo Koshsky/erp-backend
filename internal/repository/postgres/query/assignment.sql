@@ -1,3 +1,9 @@
+-- name: GetAssignment :one
+SELECT *
+FROM assignments
+WHERE id = @assignment_id
+	AND deleted_at IS NULL;
+
 -- name: CanUserManageAssignment :one
 SELECT EXISTS (
     SELECT 1 FROM assignments a
@@ -16,13 +22,6 @@ SELECT EXISTS (
 	  AND t.deleted_at is NULL
       AND p.owner_id = @user_id::bigint
 ) AS can_create;
-
--- name: GetAssignment :one
-SELECT *
-FROM assignments
-WHERE id = @assignment_id
-	AND deleted_at IS NULL;
-
 -- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES (@task_id, @resource_id, @quantity)

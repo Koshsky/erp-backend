@@ -59,30 +59,3 @@ func (m *ResourceMapper) ApplyUpdateToDomain(resource *domain.Resource, req dto.
 		resource.Quantity = *req.Quantity
 	}
 }
-
-// Специализированный маппер для ResourceUsage
-func (m *ResourceMapper) ToUsageDTO(usage *domain.ResourceUsage) *dto.ResourceUsageResponse {
-	if usage == nil {
-		return nil
-	}
-	return &dto.ResourceUsageResponse{
-		ID:            usage.ID,
-		Title:         usage.Title,
-		Code:          usage.Code,
-		UsedQuantity:  usage.UsedQuantity,
-		Available:     usage.Available,
-		TotalQuantity: usage.TotalQuantity,
-	}
-}
-
-func (m *ResourceMapper) ToUsageDTOs(usages []domain.ResourceUsage) []dto.ResourceUsageResponse {
-	if usages == nil {
-		return []dto.ResourceUsageResponse{}
-	}
-
-	responses := make([]dto.ResourceUsageResponse, len(usages))
-	for i, usage := range usages {
-		responses[i] = *m.ToUsageDTO(&usage)
-	}
-	return responses
-}

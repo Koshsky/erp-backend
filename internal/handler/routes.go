@@ -24,7 +24,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 				projects.POST("", h.CreateProject)
 				projects.DELETE("/:id", h.DeleteProject)
 				projects.PATCH("/:id", h.UpdateProject)
-
+				projects.GET("/:id/detailed", h.GetDetailedProject)
 			}
 
 			// Processes routes

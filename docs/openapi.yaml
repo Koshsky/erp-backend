@@ -147,6 +147,27 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /projects/{id}/detailed:
+    get:
+      summary: Get detailed project by ID with processes, tasks, milestones and assignments
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Detailed project found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   # Processes
   /processes:
     get:
@@ -920,6 +941,17 @@ components:
         priority:
           type: integer
           example: 2
+
+    ProjectDetailResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ProjectResponse'
+        - type: object
+          properties:
+            processes:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProcessDetailResponse'
 
     # Process schemas
     ProcessResponse:

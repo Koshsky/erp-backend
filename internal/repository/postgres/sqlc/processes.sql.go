@@ -225,12 +225,47 @@ func (q *Queries) GetProcess(ctx context.Context, id int64) (Process, error) {
 	return i, err
 }
 
+const listMilestonesByProcessIDs = `-- name: ListMilestonesByProcessIDs :many
+SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at FROM milestones 
+WHERE process_id = ANY($1::bigint[]) AND deleted_at IS NULL 
+ORDER BY id
+`
+
+func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []int64) ([]Milestone, error) {
+	rows, err := q.db.Query(ctx, listMilestonesByProcessIDs, processIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Milestone{}
+	for rows.Next() {
+		var i Milestone
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProcessID,
+			&i.Title,
+			&i.Content,
+			&i.Date,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProcesses = `-- name: ListProcesses :many
 SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM processes p
 WHERE p.deleted_at IS NULL
   AND (
-    ($1::text = 'ДП') OR
+    ($1::text != 'ДП') OR
     (p.owner_id = $2::bigint) OR
     (p.project_id IN (
         SELECT id FROM projects pr 
@@ -268,6 +303,83 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTasksWithAssignmentsByProcessIDs = `-- name: ListTasksWithAssignmentsByProcessIDs :many
+SELECT 
+    t.id AS task_id,
+    t.process_id,
+    t.title AS task_title,
+    t.start_date AS task_start_date,
+    t.end_date AS task_end_date,
+    t.created_at AS task_created_at,
+    t.updated_at AS task_updated_at,
+    t.deleted_at AS task_deleted_at,
+    a.id AS assignment_id,
+    a.task_id AS assignment_task_id,
+    a.resource_id,
+    a.quantity AS assignment_quantity,
+    a.created_at AS assignment_created_at,
+    a.updated_at AS assignment_updated_at,
+    a.deleted_at AS assignment_deleted_at
+FROM tasks t
+LEFT JOIN assignments a ON a.task_id = t.id AND a.deleted_at IS NULL
+WHERE t.process_id = ANY($1::bigint[]) AND t.deleted_at IS NULL
+ORDER BY t.id, a.id
+`
+
+type ListTasksWithAssignmentsByProcessIDsRow struct {
+	TaskID              int64              `json:"task_id"`
+	ProcessID           int64              `json:"process_id"`
+	TaskTitle           string             `json:"task_title"`
+	TaskStartDate       pgtype.Date        `json:"task_start_date"`
+	TaskEndDate         pgtype.Date        `json:"task_end_date"`
+	TaskCreatedAt       pgtype.Timestamptz `json:"task_created_at"`
+	TaskUpdatedAt       pgtype.Timestamptz `json:"task_updated_at"`
+	TaskDeletedAt       pgtype.Timestamptz `json:"task_deleted_at"`
+	AssignmentID        pgtype.Int8        `json:"assignment_id"`
+	AssignmentTaskID    pgtype.Int8        `json:"assignment_task_id"`
+	ResourceID          pgtype.Int8        `json:"resource_id"`
+	AssignmentQuantity  pgtype.Int4        `json:"assignment_quantity"`
+	AssignmentCreatedAt pgtype.Timestamptz `json:"assignment_created_at"`
+	AssignmentUpdatedAt pgtype.Timestamptz `json:"assignment_updated_at"`
+	AssignmentDeletedAt pgtype.Timestamptz `json:"assignment_deleted_at"`
+}
+
+func (q *Queries) ListTasksWithAssignmentsByProcessIDs(ctx context.Context, processIds []int64) ([]ListTasksWithAssignmentsByProcessIDsRow, error) {
+	rows, err := q.db.Query(ctx, listTasksWithAssignmentsByProcessIDs, processIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTasksWithAssignmentsByProcessIDsRow{}
+	for rows.Next() {
+		var i ListTasksWithAssignmentsByProcessIDsRow
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ProcessID,
+			&i.TaskTitle,
+			&i.TaskStartDate,
+			&i.TaskEndDate,
+			&i.TaskCreatedAt,
+			&i.TaskUpdatedAt,
+			&i.TaskDeletedAt,
+			&i.AssignmentID,
+			&i.AssignmentTaskID,
+			&i.ResourceID,
+			&i.AssignmentQuantity,
+			&i.AssignmentCreatedAt,
+			&i.AssignmentUpdatedAt,
+			&i.AssignmentDeletedAt,
 		); err != nil {
 			return nil, err
 		}

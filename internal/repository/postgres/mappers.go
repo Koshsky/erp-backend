@@ -198,11 +198,11 @@ func mapDetailedProcess(row sqlc.GetDetailedProcessRow) (domain.DetailedProcess,
 
 		if len(jsonData) > 0 && string(jsonData) != "[]" {
 			var rawMilestones []struct {
-				ID            int64       `json:"id"`
-				ProcessID     int64       `json:"process_id"`
-				Content       string      `json:"content"`
-				Title         string      `json:"title"`
-				MilestoneDate pgtype.Date `json:"milestone_date"`
+				ID        int64       `json:"id"`
+				ProcessID int64       `json:"process_id"`
+				Content   string      `json:"content"`
+				Title     string      `json:"title"`
+				Date      pgtype.Date `json:"date"`
 			}
 
 			if err := json.Unmarshal(jsonData, &rawMilestones); err != nil {
@@ -216,7 +216,7 @@ func mapDetailedProcess(row sqlc.GetDetailedProcessRow) (domain.DetailedProcess,
 					Content:   m.Content,
 					ProcessID: m.ProcessID,
 					Title:     m.Title,
-					Date:      fromDate(m.MilestoneDate),
+					Date:      fromDate(m.Date),
 				}
 			}
 		}
@@ -234,4 +234,100 @@ func mapDetailedProcess(row sqlc.GetDetailedProcessRow) (domain.DetailedProcess,
 		Tasks:      tasks,
 		Milestones: milestones,
 	}, nil
+}
+
+func mapDetailedProject(
+	project *domain.Project,
+	processRows []sqlc.Process,
+	taskRows []sqlc.ListTasksWithAssignmentsByProcessIDsRow,
+	milestoneRows []sqlc.Milestone,
+) *domain.DetailedProject {
+	processIDs := make([]int64, 0, len(processRows))
+	processMap := make(map[int64]domain.Process, len(processRows))
+	for _, row := range processRows {
+		processIDs = append(processIDs, row.ID)
+		processMap[row.ID] = mapProcess(row)
+	}
+
+	if len(processIDs) == 0 {
+		return &domain.DetailedProject{
+			Project:   *project,
+			Processes: []domain.DetailedProcess{},
+		}
+	}
+
+	tasksMap := mapDetailedProjectTasks(taskRows)
+
+	milestonesMap := make(map[int64][]domain.Milestone, len(milestoneRows))
+	for _, row := range milestoneRows {
+		milestonesMap[row.ProcessID] = append(milestonesMap[row.ProcessID], mapMilestone(row))
+	}
+
+	processes := make([]domain.DetailedProcess, 0, len(processIDs))
+	for _, pid := range processIDs {
+		p := processMap[pid]
+		processes = append(processes, domain.DetailedProcess{
+			Process:    p,
+			Tasks:      tasksMap[pid],
+			Milestones: milestonesMap[pid],
+		})
+	}
+
+	return &domain.DetailedProject{
+		Project:   *project,
+		Processes: processes,
+	}
+}
+
+func mapDetailedProjectTasks(rows []sqlc.ListTasksWithAssignmentsByProcessIDsRow) map[int64][]domain.DetailedTask {
+	tasksMap := make(map[int64][]domain.DetailedTask)
+
+	for _, row := range rows {
+		processID := row.ProcessID
+
+		var found bool
+		for i, task := range tasksMap[processID] {
+			if task.ID == row.TaskID {
+				if row.AssignmentID.Valid {
+					tasksMap[processID][i].Assignments = append(
+						tasksMap[processID][i].Assignments,
+						domain.Assignment{
+							ID:         row.AssignmentID.Int64,
+							TaskID:     row.AssignmentTaskID.Int64,
+							ResourceID: row.ResourceID.Int64,
+							Quantity:   int(row.AssignmentQuantity.Int32),
+						},
+					)
+				}
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			newTask := domain.DetailedTask{
+				Task: domain.Task{
+					ID:        row.TaskID,
+					ProcessID: row.ProcessID,
+					Title:     row.TaskTitle,
+					StartDate: fromDate(row.TaskStartDate),
+					EndDate:   fromDate(row.TaskEndDate),
+				},
+				Assignments: []domain.Assignment{},
+			}
+
+			if row.AssignmentID.Valid {
+				newTask.Assignments = append(newTask.Assignments, domain.Assignment{
+					ID:         row.AssignmentID.Int64,
+					TaskID:     row.AssignmentTaskID.Int64,
+					ResourceID: row.ResourceID.Int64,
+					Quantity:   int(row.AssignmentQuantity.Int32),
+				})
+			}
+
+			tasksMap[processID] = append(tasksMap[processID], newTask)
+		}
+	}
+
+	return tasksMap
 }
