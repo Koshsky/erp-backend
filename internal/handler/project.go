@@ -16,6 +16,7 @@ type ProjectService interface {
 	CreateProject(ctx context.Context, project dto.CreateProjectRequest) (*dto.ProjectResponse, error)
 	DeleteProject(ctx context.Context, id int64) error
 	UpdateProject(ctx context.Context, id int64, project dto.UpdateProjectRequest) (*dto.ProjectResponse, error)
+	GetDetailedProject(ctx context.Context, id int64) (*dto.ProjectDetailResponse, error)
 }
 
 type ProjectHandler struct {
@@ -28,6 +29,27 @@ func NewProjectHandler(logger *slog.Logger, service ProjectService) *ProjectHand
 		logger:  logger,
 		service: service,
 	}
+}
+
+func (h *ProjectHandler) GetDetailedProject(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid project id",
+		})
+		return
+	}
+
+	project, err := h.service.GetDetailedProject(withAuthContext(c), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, project)
 }
 
 func (h *ProjectHandler) ListProjects(c *gin.Context) {

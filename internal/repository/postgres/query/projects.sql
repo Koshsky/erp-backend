@@ -8,6 +8,12 @@ WHERE deleted_at IS NULL
   )
 ORDER BY priority ASC, start_date ASC, id ASC;
 
+-- name: GetProject :one
+SELECT *
+FROM projects
+WHERE deleted_at IS NULL
+  AND id = @project_id::bigint;
+
 -- name: CanUserManageProject :one
 SELECT EXISTS (
     SELECT 1 FROM projects p
@@ -28,12 +34,6 @@ SELECT EXISTS (
       AND role = 'ДП'
       AND deleted_at IS NULL
 ) AS can_create;
-
--- name: GetProject :one
-SELECT *
-FROM projects
-WHERE deleted_at IS NULL
-  AND id = @project_id::bigint;
 
 -- name: CreateProject :one
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)

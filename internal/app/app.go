@@ -50,6 +50,7 @@ func (a *App) Start() error {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()
 	})
+	router.Use(handler.AuthMiddleware())
 
 	// Register routes
 	a.handler.RegisterRoutes(router)

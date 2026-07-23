@@ -10,3 +10,8 @@ type Project struct {
 	EndDate   time.Time `db:"end_date" json:"end_date"`
 	Priority  int       `db:"priority" json:"priority"`
 }
+
+type DetailedProject struct {
+	Project
+	Processes []DetailedProcess `json:"processes"`
+}

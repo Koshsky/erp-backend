@@ -1,3 +1,9 @@
+-- name: GetMilestone :one
+SELECT *
+FROM milestones
+WHERE id = @milestone_id
+	AND deleted_at IS NULL;
+	
 -- name: CanUserManageMilestone :one
 SELECT EXISTS(
 	SELECT 1 FROM milestones m
@@ -15,12 +21,6 @@ SELECT EXISTS(
 		AND p.owner_id = @user_id::bigint
 ) AS can_create;
 
--- name: GetMilestone :one
-SELECT *
-FROM milestones
-WHERE id = @milestone_id
-	AND deleted_at IS NULL;
-	
 -- name: CreateMilestone :one
 INSERT INTO milestones (process_id, title, content, date)
 VALUES (@process_id, @title, @content, @date)

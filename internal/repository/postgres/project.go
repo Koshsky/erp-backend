@@ -80,3 +80,46 @@ func (r *ProjectRepository) ListProjects(ctx context.Context) ([]domain.Project,
 
 	return projects, nil
 }
+
+func (r *ProjectRepository) GetDetailedProject(ctx context.Context, id int64) (*domain.DetailedProject, error) {
+	project, err := r.GetProject(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
+		Role:   ctx.Value("role").(string),
+		UserID: ctx.Value("user_id").(int64),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	processIDs := make([]int64, 0)
+	processRows := make([]sqlc.Process, 0)
+	for _, row := range rows {
+		if row.ProjectID == id {
+			processIDs = append(processIDs, row.ID)
+			processRows = append(processRows, row)
+		}
+	}
+
+	if len(processIDs) == 0 {
+		return &domain.DetailedProject{
+			Project:   *project,
+			Processes: []domain.DetailedProcess{},
+		}, nil
+	}
+
+	taskRows, err := r.db.ListTasksWithAssignmentsByProcessIDs(ctx, processIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	milestoneRows, err := r.db.ListMilestonesByProcessIDs(ctx, processIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapDetailedProject(project, processRows, taskRows, milestoneRows), nil
+}

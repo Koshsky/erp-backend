@@ -15,6 +15,7 @@ type ProjectRepository interface {
 	UpdateProject(ctx context.Context, project domain.Project) (*domain.Project, error)
 	DeleteProject(ctx context.Context, id int64) error
 	ListProjects(ctx context.Context) ([]domain.Project, error)
+	GetDetailedProject(ctx context.Context, id int64) (*domain.DetailedProject, error)
 }
 
 type ProjectService struct {
@@ -31,6 +32,14 @@ func NewProjectService(logger *slog.Logger, repository ProjectRepository, valida
 		mapper:     mapper.NewProjectMapper(),
 		validator:  validator,
 	}
+}
+
+func (s *ProjectService) GetDetailedProject(ctx context.Context, id int64) (*dto.ProjectDetailResponse, error) {
+	project, err := s.repository.GetDetailedProject(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.ToDetailedDTO(project), nil
 }
 
 func (s *ProjectService) CreateProject(ctx context.Context, req dto.CreateProjectRequest) (*dto.ProjectResponse, error) {

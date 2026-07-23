@@ -41,7 +41,7 @@ func (h *ProcessHandler) GetDetailedProcess(c *gin.Context) {
 		return
 	}
 
-	process, err := h.service.GetDetailedProcess(c.Request.Context(), id)
+	process, err := h.service.GetDetailedProcess(withAuthContext(c), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": err.Error(),
@@ -59,7 +59,7 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 		return
 	}
 
-	processes, err := h.service.ListProcesses(c.Request.Context(), projectID)
+	processes, err := h.service.ListProcesses(withAuthContext(c), projectID)
 	if err != nil {
 		h.logger.Error("failed to list processes", "projectID", projectID, "error", err)
 		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
@@ -75,7 +75,7 @@ func (h *ProcessHandler) GetProcess(c *gin.Context) {
 		return
 	}
 
-	process, err := h.service.GetProcess(c.Request.Context(), id)
+	process, err := h.service.GetProcess(withAuthContext(c), id)
 	if err != nil {
 		if isNotFoundError(err) {
 			c.JSON(http.StatusNotFound, response{Error: "process not found"})
@@ -95,7 +95,7 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 		return
 	}
 
-	created, err := h.service.CreateProcess(c.Request.Context(), process)
+	created, err := h.service.CreateProcess(withAuthContext(c), process)
 	if err != nil {
 		if isValidationError(err) {
 			c.JSON(http.StatusBadRequest, response{Error: err.Error()})
@@ -115,7 +115,7 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteProcess(c.Request.Context(), id); err != nil {
+	if err := h.service.DeleteProcess(withAuthContext(c), id); err != nil {
 		h.logger.Error("failed to delete process", "id", id, "error", err)
 		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
 		return
@@ -136,7 +136,7 @@ func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 		return
 	}
 
-	process, err := h.service.UpdateProcess(c.Request.Context(), id, body)
+	process, err := h.service.UpdateProcess(withAuthContext(c), id, body)
 	if err != nil {
 		if isNotFoundError(err) {
 			c.JSON(http.StatusNotFound, response{Error: "process not found"})
