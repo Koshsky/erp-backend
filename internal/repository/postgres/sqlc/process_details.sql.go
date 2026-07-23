@@ -26,7 +26,7 @@ SELECT
 FROM tasks t
 LEFT JOIN assignments a ON a.task_id = t.id AND a.deleted_at IS NULL
 LEFT JOIN resources r ON r.id = a.resource_id AND r.deleted_at IS NULL
-WHERE t.process_id = $1
+WHERE t.process_id = $1::bigint
     AND t.deleted_at IS NULL
 ORDER BY t.start_date ASC, t.end_date ASC, t.id ASC, a.id ASC
 `
@@ -87,7 +87,7 @@ SELECT
     pr.end_date AS project_end_date
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE p.id = $1
+WHERE p.id = $1::bigint
     AND p.deleted_at IS NULL
     AND pr.deleted_at IS NULL
 `
@@ -103,8 +103,8 @@ type GetProcessWithProjectRow struct {
 	ProjectEndDate   pgtype.Date `json:"project_end_date"`
 }
 
-func (q *Queries) GetProcessWithProject(ctx context.Context, id int64) (GetProcessWithProjectRow, error) {
-	row := q.db.QueryRow(ctx, getProcessWithProject, id)
+func (q *Queries) GetProcessWithProject(ctx context.Context, processID int64) (GetProcessWithProjectRow, error) {
+	row := q.db.QueryRow(ctx, getProcessWithProject, processID)
 	var i GetProcessWithProjectRow
 	err := row.Scan(
 		&i.ProcessID,

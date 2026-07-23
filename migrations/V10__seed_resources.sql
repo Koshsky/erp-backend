@@ -10,11 +10,11 @@ INSERT INTO resources (title, code, quantity) VALUES
 ('Руководитель группы', 'РГ', 4),
 ('Руководитель службы инсталляции', 'РСИ', 1);
 
-INSERT INTO projects (code, start_date, end_date, priority)
+INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES
-    ('KO-1001', DATE '2026-07-15', DATE '2026-08-30', 1),
-    ('KO-1002', DATE '2026-08-01', DATE '2026-09-20', 2),
-    ('KO-1003', DATE '2026-09-05', DATE '2026-10-25', 3);
+    ('KO-1001', DATE '2026-07-15', DATE '2026-08-30', 1, 1),
+    ('KO-1002', DATE '2026-08-01', DATE '2026-09-20', 2, 1),
+    ('KO-1003', DATE '2026-09-05', DATE '2026-10-25', 3, 1);
 
 INSERT INTO assignments (task_id, resource_id, quantity)
 SELECT t.id, r.id, x.qty

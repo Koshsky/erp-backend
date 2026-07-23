@@ -13,6 +13,7 @@ CREATE TABLE users (
 
 CREATE TABLE projects (
 	id BIGSERIAL PRIMARY KEY,
+	owner_id BIGINT REFERENCES users(id) NOT NULL,
 	code TEXT NOT NULL,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
@@ -26,6 +27,7 @@ CREATE TABLE projects (
 CREATE TABLE processes (
 	id BIGSERIAL PRIMARY KEY,
 	project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+	owner_id BIGINT REFERENCES users(id) NOT NULL,
 	title TEXT NOT NULL,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,

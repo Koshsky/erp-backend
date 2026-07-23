@@ -32,6 +32,7 @@ type Milestone struct {
 type Process struct {
 	ID        int64              `json:"id"`
 	ProjectID int64              `json:"project_id"`
+	OwnerID   int64              `json:"owner_id"`
 	Title     string             `json:"title"`
 	StartDate pgtype.Date        `json:"start_date"`
 	EndDate   pgtype.Date        `json:"end_date"`
@@ -42,6 +43,7 @@ type Process struct {
 
 type Project struct {
 	ID        int64              `json:"id"`
+	OwnerID   int64              `json:"owner_id"`
 	Code      string             `json:"code"`
 	StartDate pgtype.Date        `json:"start_date"`
 	EndDate   pgtype.Date        `json:"end_date"`

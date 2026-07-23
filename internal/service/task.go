@@ -14,7 +14,6 @@ type TaskRepository interface {
 	GetTask(ctx context.Context, id int64) (*domain.Task, error)
 	UpdateTask(ctx context.Context, task domain.Task) (*domain.Task, error)
 	DeleteTask(ctx context.Context, id int64) error
-	ListTasksByProcessID(ctx context.Context, processID int64) ([]domain.Task, error)
 }
 
 type TaskService struct {
@@ -78,12 +77,4 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 
 func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 	return s.repository.DeleteTask(ctx, id)
-}
-
-func (s *TaskService) ListTasksByProcessID(ctx context.Context, processID int64) ([]dto.TaskResponse, error) {
-	tasks, err := s.repository.ListTasksByProcessID(ctx, processID)
-	if err != nil {
-		return nil, err
-	}
-	return s.mapper.ToDTOs(tasks), nil
 }

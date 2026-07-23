@@ -11,7 +11,6 @@ import (
 )
 
 type MilestoneService interface {
-	ListMilestonesByProcessID(ctx context.Context, processID int64) ([]dto.MilestoneResponse, error)
 	GetMilestone(ctx context.Context, id int64) (*dto.MilestoneResponse, error)
 	CreateMilestone(ctx context.Context, milestone dto.CreateMilestoneRequest) (*dto.MilestoneResponse, error)
 	DeleteMilestone(ctx context.Context, id int64) error
@@ -28,22 +27,6 @@ func NewMilestoneHandler(logger *slog.Logger, service MilestoneService) *Milesto
 		logger:  logger,
 		service: service,
 	}
-}
-
-func (h *MilestoneHandler) ListMilestonesByProcess(c *gin.Context) {
-	processID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid process id"})
-		return
-	}
-
-	milestones, err := h.service.ListMilestonesByProcessID(c.Request.Context(), processID)
-	if err != nil {
-		h.logger.Error("failed to list milestones", "processID", processID, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, response{Data: milestones})
 }
 
 func (h *MilestoneHandler) GetMilestone(c *gin.Context) {

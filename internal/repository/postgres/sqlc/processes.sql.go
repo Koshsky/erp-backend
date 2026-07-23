@@ -11,10 +11,59 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const canUserCreateProcess = `-- name: CanUserCreateProcess :one
+SELECT EXISTS(
+	SELECT 1 FROM projects
+	WHERE id = $1::bigint
+		AND deleted_at IS NULL
+		AND owner_id = $2::bigint
+) AS can_create
+`
+
+type CanUserCreateProcessParams struct {
+	ProjectID int64 `json:"project_id"`
+	UserID    int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserCreateProcess(ctx context.Context, arg CanUserCreateProcessParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserCreateProcess, arg.ProjectID, arg.UserID)
+	var can_create bool
+	err := row.Scan(&can_create)
+	return can_create, err
+}
+
+const canUserManageProcess = `-- name: CanUserManageProcess :one
+SELECT EXISTS (
+    SELECT 1 FROM processes p
+    JOIN projects pr ON pr.id = p.project_id
+    WHERE p.id = $1::bigint
+      AND p.deleted_at IS NULL
+      AND pr.owner_id = $2::bigint
+) AS can_manage
+`
+
+type CanUserManageProcessParams struct {
+	ProcessID int64 `json:"process_id"`
+	UserID    int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserManageProcess(ctx context.Context, arg CanUserManageProcessParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserManageProcess, arg.ProcessID, arg.UserID)
+	var can_manage bool
+	err := row.Scan(&can_manage)
+	return can_manage, err
+}
+
 const createProcess = `-- name: CreateProcess :one
-INSERT INTO processes (project_id, title, start_date, end_date)
-VALUES ($1, $2, $3, $4)
-RETURNING id, project_id, title, start_date, end_date
+INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
+VALUES (
+	$1::bigint,
+	$2::text,
+	$3::date,
+	$4::date,
+	$5::bigint
+)
+RETURNING id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type CreateProcessParams struct {
@@ -22,30 +71,28 @@ type CreateProcessParams struct {
 	Title     string      `json:"title"`
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
+	OwnerID   int64       `json:"owner_id"`
 }
 
-type CreateProcessRow struct {
-	ID        int64       `json:"id"`
-	ProjectID int64       `json:"project_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (CreateProcessRow, error) {
+func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (Process, error) {
 	row := q.db.QueryRow(ctx, createProcess,
 		arg.ProjectID,
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
+		arg.OwnerID,
 	)
-	var i CreateProcessRow
+	var i Process
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
+		&i.OwnerID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -53,74 +100,82 @@ func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (C
 const deleteProcess = `-- name: DeleteProcess :exec
 UPDATE processes
 SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1
-	AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+	AND id = $1::bigint
 `
 
-func (q *Queries) DeleteProcess(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteProcess, id)
+func (q *Queries) DeleteProcess(ctx context.Context, processID int64) error {
+	_, err := q.db.Exec(ctx, deleteProcess, processID)
 	return err
 }
 
 const getProcess = `-- name: GetProcess :one
-SELECT id, project_id, title, start_date, end_date
+SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM processes
-WHERE id = $1
+WHERE id = $1::bigint
 	AND deleted_at IS NULL
 `
 
-type GetProcessRow struct {
-	ID        int64       `json:"id"`
-	ProjectID int64       `json:"project_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) GetProcess(ctx context.Context, id int64) (GetProcessRow, error) {
+func (q *Queries) GetProcess(ctx context.Context, id int64) (Process, error) {
 	row := q.db.QueryRow(ctx, getProcess, id)
-	var i GetProcessRow
+	var i Process
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
+		&i.OwnerID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
-const listProcessesByProjectID = `-- name: ListProcessesByProjectID :many
-SELECT id, project_id, title, start_date, end_date
-FROM processes
-WHERE project_id = $1
-	AND deleted_at IS NULL
-ORDER BY start_date ASC, end_date ASC, id ASC
+const listProcesses = `-- name: ListProcesses :many
+SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
+FROM processes p
+WHERE p.deleted_at IS NULL
+  AND (
+    ($1::text = 'ДП') OR
+    (p.owner_id = $2::bigint) OR
+    (p.project_id IN (
+        SELECT id FROM projects pr 
+        WHERE pr.owner_id = $2::bigint
+    ))
+  )
+ORDER BY 
+    (SELECT priority FROM projects pr WHERE pr.id = p.project_id) ASC,
+    p.start_date ASC, 
+    p.end_date ASC, 
+    p.id ASC
 `
 
-type ListProcessesByProjectIDRow struct {
-	ID        int64       `json:"id"`
-	ProjectID int64       `json:"project_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
+type ListProcessesParams struct {
+	Role   string `json:"role"`
+	UserID int64  `json:"user_id"`
 }
 
-func (q *Queries) ListProcessesByProjectID(ctx context.Context, projectID int64) ([]ListProcessesByProjectIDRow, error) {
-	rows, err := q.db.Query(ctx, listProcessesByProjectID, projectID)
+func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([]Process, error) {
+	rows, err := q.db.Query(ctx, listProcesses, arg.Role, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListProcessesByProjectIDRow{}
+	items := []Process{}
 	for rows.Next() {
-		var i ListProcessesByProjectIDRow
+		var i Process
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
+			&i.OwnerID,
 			&i.Title,
 			&i.StartDate,
 			&i.EndDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -138,41 +193,40 @@ SET
 	title = $1,
 	start_date = $2,
 	end_date = $3,
+	owner_id = COALESCE($4, owner_id),
 	updated_at = NOW()
-WHERE id = $4
-	AND deleted_at IS NULL
-RETURNING id, project_id, title, start_date, end_date
+WHERE deleted_at IS NULL
+	AND id = $5::bigint
+RETURNING id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type UpdateProcessParams struct {
 	Title     string      `json:"title"`
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
-	ID        int64       `json:"id"`
+	OwnerID   int64       `json:"owner_id"`
+	ProcessID int64       `json:"process_id"`
 }
 
-type UpdateProcessRow struct {
-	ID        int64       `json:"id"`
-	ProjectID int64       `json:"project_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (UpdateProcessRow, error) {
+func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (Process, error) {
 	row := q.db.QueryRow(ctx, updateProcess,
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
-		arg.ID,
+		arg.OwnerID,
+		arg.ProcessID,
 	)
-	var i UpdateProcessRow
+	var i Process
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
+		&i.OwnerID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

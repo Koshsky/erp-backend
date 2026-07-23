@@ -11,7 +11,6 @@ import (
 )
 
 type AssignmentService interface {
-	ListAssignmentsByTaskID(ctx context.Context, taskID int64) ([]dto.AssignmentResponse, error)
 	GetAssignment(ctx context.Context, id int64) (*dto.AssignmentResponse, error)
 	CreateAssignment(ctx context.Context, assignment dto.CreateAssignmentRequest) (*dto.AssignmentResponse, error)
 	DeleteAssignment(ctx context.Context, id int64) error
@@ -28,22 +27,6 @@ func NewAssignmentHandler(logger *slog.Logger, service AssignmentService) *Assig
 		logger:  logger,
 		service: service,
 	}
-}
-
-func (h *AssignmentHandler) ListAssignmentsByTask(c *gin.Context) {
-	taskID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid task id"})
-		return
-	}
-
-	assignments, err := h.service.ListAssignmentsByTaskID(c.Request.Context(), taskID)
-	if err != nil {
-		h.logger.Error("failed to list assignments", "taskID", taskID, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, response{Data: assignments})
 }
 
 func (h *AssignmentHandler) GetAssignment(c *gin.Context) {

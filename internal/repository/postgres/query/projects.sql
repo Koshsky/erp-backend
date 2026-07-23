@@ -1,35 +1,66 @@
--- name: CreateProject :one
-INSERT INTO projects (code, start_date, end_date, priority)
-VALUES ($1, $2, $3, $4)
-RETURNING id, code, start_date, end_date, priority;
+-- name: ListProjects :many
+SELECT *
+FROM projects
+WHERE deleted_at IS NULL
+  AND (
+    @role::text = 'ДП' OR
+    owner_id = @user_id::bigint
+  )
+ORDER BY priority ASC, start_date ASC, id ASC;
+
+-- name: CanUserManageProject :one
+SELECT EXISTS (
+    SELECT 1 FROM projects p
+    WHERE p.id = @project_id::bigint
+      AND p.deleted_at IS NULL
+      AND EXISTS (
+          SELECT 1 FROM users u
+          WHERE u.id = @user_id::bigint
+            AND u.role = 'ДП'
+            AND u.deleted_at IS NULL
+      )
+) AS can_manage;
+
+-- name: CanUserCreateProject :one
+SELECT EXISTS (
+    SELECT 1 FROM users 
+    WHERE id = @user_id::bigint 
+      AND role = 'ДП'
+      AND deleted_at IS NULL
+) AS can_create;
 
 -- name: GetProject :one
-SELECT id, code, start_date, end_date, priority
+SELECT *
 FROM projects
-WHERE id = $1
-	AND deleted_at IS NULL;
+WHERE deleted_at IS NULL
+  AND id = @project_id::bigint;
+
+-- name: CreateProject :one
+INSERT INTO projects (code, start_date, end_date, priority, owner_id)
+VALUES (
+  @code::text,
+  @start_date::date,
+  @end_date::date,
+  @priority,
+  @owner_id::bigint
+)
+RETURNING *;
 
 -- name: UpdateProject :one
 UPDATE projects
 SET
-	code = $1,
-	priority = $2,
-	start_date = $3,
-	end_date = $4,
+	code = @code,
+	priority = @priority,
+	start_date = @start_date,
+	end_date = @end_date,
+  owner_id = @owner_id,
 	updated_at = NOW()
-WHERE id = $5
-	AND deleted_at IS NULL
-RETURNING id, code, start_date, end_date, priority;
+WHERE deleted_at IS NULL
+	AND id = @project_id::bigint
+RETURNING *;
 
 -- name: DeleteProject :exec
 UPDATE projects
 SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1
-	AND deleted_at IS NULL;
-
-
--- name: ListProjects :many
-SELECT id, code, start_date, end_date, priority
-FROM projects
 WHERE deleted_at IS NULL
-ORDER BY priority ASC, start_date ASC, id ASC;
+	AND id = @project_id::bigint;

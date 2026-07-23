@@ -1,5 +1,7 @@
-
 -- Auto-create processes and template tasks when a project is created
+INSERT INTO users (username, name, password_hash, role) VALUES
+('none', 'NULL', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPXnHxNztoEW6VD4Ndi25lIi', 'ВП');  -- пользователь NULL
+
 CREATE OR REPLACE FUNCTION fn_create_project_templates()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -7,12 +9,12 @@ AS $$
 DECLARE
     installation_process_id BIGINT;
 BEGIN
-    INSERT INTO processes (project_id, title, start_date, end_date)
-    VALUES (NEW.id, 'Инсталляция', NEW.start_date, NEW.end_date)
+    INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
+    VALUES (NEW.id, 'Инсталляция', NEW.start_date, NEW.end_date, 1)
     RETURNING id INTO installation_process_id;
 
-    INSERT INTO processes (project_id, title, start_date, end_date)
-    VALUES (NEW.id, 'Производство', NEW.start_date, NEW.end_date);
+    INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
+    VALUES (NEW.id, 'Производство', NEW.start_date, NEW.end_date, 1);
 
     INSERT INTO tasks (process_id, title, start_date, end_date)
     VALUES

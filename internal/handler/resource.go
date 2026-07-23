@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/Koshsky/erp/api/internal/dto"
 	"github.com/gin-gonic/gin"
@@ -17,7 +16,6 @@ type ResourceService interface {
 	CreateResource(ctx context.Context, resource dto.CreateResourceRequest) (*dto.ResourceResponse, error)
 	DeleteResource(ctx context.Context, id int64) error
 	UpdateResource(ctx context.Context, id int64, resource dto.UpdateResourceRequest) (*dto.ResourceResponse, error)
-	GetResourceUsage(ctx context.Context, date time.Time) ([]dto.ResourceUsageResponse, error)
 }
 
 type ResourceHandler struct {
@@ -39,7 +37,7 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: resources})
+	c.JSON(http.StatusOK, resources)
 }
 
 func (h *ResourceHandler) GetResource(c *gin.Context) {
@@ -125,26 +123,4 @@ func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, response{Data: updated})
-}
-
-func (h *ResourceHandler) GetResourceUsage(c *gin.Context) {
-	dateRaw := c.Query("date")
-	if dateRaw == "" {
-		c.JSON(http.StatusBadRequest, response{Error: "query parameter 'date' is required (YYYY-MM-DD)"})
-		return
-	}
-
-	targetDate, err := time.Parse("2006-01-02", dateRaw)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid date format, expected YYYY-MM-DD"})
-		return
-	}
-
-	usage, err := h.service.GetResourceUsage(c.Request.Context(), targetDate)
-	if err != nil {
-		h.logger.Error("failed to get resource usage", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, response{Data: usage})
 }

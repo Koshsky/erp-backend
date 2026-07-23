@@ -7,14 +7,12 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createResource = `-- name: CreateResource :one
 INSERT INTO resources (title, code, quantity)
 VALUES ($1, $2, $3)
-RETURNING id, title, code, quantity
+RETURNING id, title, code, quantity, created_at, updated_at, deleted_at
 `
 
 type CreateResourceParams struct {
@@ -23,21 +21,17 @@ type CreateResourceParams struct {
 	Quantity int32  `json:"quantity"`
 }
 
-type CreateResourceRow struct {
-	ID       int64  `json:"id"`
-	Title    string `json:"title"`
-	Code     string `json:"code"`
-	Quantity int32  `json:"quantity"`
-}
-
-func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (CreateResourceRow, error) {
+func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (Resource, error) {
 	row := q.db.QueryRow(ctx, createResource, arg.Title, arg.Code, arg.Quantity)
-	var i CreateResourceRow
+	var i Resource
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
 		&i.Code,
 		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -49,121 +43,56 @@ WHERE id = $1
     AND deleted_at IS NULL
 `
 
-func (q *Queries) DeleteResource(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteResource, id)
+func (q *Queries) DeleteResource(ctx context.Context, resourceID int64) error {
+	_, err := q.db.Exec(ctx, deleteResource, resourceID)
 	return err
 }
 
 const getResource = `-- name: GetResource :one
-SELECT id, title, code, quantity
+SELECT id, title, code, quantity, created_at, updated_at, deleted_at
 FROM resources
-WHERE id = $1
-    AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+	AND id = $1::bigint
 `
 
-type GetResourceRow struct {
-	ID       int64  `json:"id"`
-	Title    string `json:"title"`
-	Code     string `json:"code"`
-	Quantity int32  `json:"quantity"`
-}
-
-func (q *Queries) GetResource(ctx context.Context, id int64) (GetResourceRow, error) {
-	row := q.db.QueryRow(ctx, getResource, id)
-	var i GetResourceRow
+func (q *Queries) GetResource(ctx context.Context, resourceID int64) (Resource, error) {
+	row := q.db.QueryRow(ctx, getResource, resourceID)
+	var i Resource
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
 		&i.Code,
 		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
-const getResourceUsage = `-- name: GetResourceUsage :many
-SELECT
-    r.id,
-    r.title,
-    r.code,
-    r.quantity AS total_quantity,
-    COALESCE(SUM(a.quantity), 0)::BIGINT AS used_quantity,
-    (r.quantity - COALESCE(SUM(a.quantity), 0))::BIGINT AS available_quantity
-FROM resources r
-LEFT JOIN assignments a ON a.resource_id = r.id
-    AND a.deleted_at IS NULL
-LEFT JOIN tasks t ON a.task_id = t.id
-    AND t.start_date <= $1::date
-    AND t.end_date > $1::date
-    AND t.deleted_at IS NULL
-WHERE r.deleted_at IS NULL
-GROUP BY r.id, r.title, r.quantity
-ORDER BY r.title ASC
-`
-
-type GetResourceUsageRow struct {
-	ID                int64  `json:"id"`
-	Title             string `json:"title"`
-	Code              string `json:"code"`
-	TotalQuantity     int32  `json:"total_quantity"`
-	UsedQuantity      int64  `json:"used_quantity"`
-	AvailableQuantity int64  `json:"available_quantity"`
-}
-
-func (q *Queries) GetResourceUsage(ctx context.Context, targetDate pgtype.Date) ([]GetResourceUsageRow, error) {
-	rows, err := q.db.Query(ctx, getResourceUsage, targetDate)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []GetResourceUsageRow{}
-	for rows.Next() {
-		var i GetResourceUsageRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Title,
-			&i.Code,
-			&i.TotalQuantity,
-			&i.UsedQuantity,
-			&i.AvailableQuantity,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listResources = `-- name: ListResources :many
-SELECT id, title, code, quantity
+SELECT id, title, code, quantity, created_at, updated_at, deleted_at
 FROM resources
 WHERE deleted_at IS NULL
-ORDER BY title ASC, id ASC
 `
 
-type ListResourcesRow struct {
-	ID       int64  `json:"id"`
-	Title    string `json:"title"`
-	Code     string `json:"code"`
-	Quantity int32  `json:"quantity"`
-}
-
-func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error) {
+func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
 	rows, err := q.db.Query(ctx, listResources)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListResourcesRow{}
+	items := []Resource{}
 	for rows.Next() {
-		var i ListResourcesRow
+		var i Resource
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
 			&i.Code,
 			&i.Quantity,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -184,36 +113,32 @@ SET
 	updated_at = NOW()
 WHERE id = $4
     AND deleted_at IS NULL
-RETURNING id, title, code, quantity
+RETURNING id, title, code, quantity, created_at, updated_at, deleted_at
 `
 
 type UpdateResourceParams struct {
-	Title    string `json:"title"`
-	Code     string `json:"code"`
-	Quantity int32  `json:"quantity"`
-	ID       int64  `json:"id"`
+	Title      string `json:"title"`
+	Code       string `json:"code"`
+	Quantity   int32  `json:"quantity"`
+	ResourceID int64  `json:"resource_id"`
 }
 
-type UpdateResourceRow struct {
-	ID       int64  `json:"id"`
-	Title    string `json:"title"`
-	Code     string `json:"code"`
-	Quantity int32  `json:"quantity"`
-}
-
-func (q *Queries) UpdateResource(ctx context.Context, arg UpdateResourceParams) (UpdateResourceRow, error) {
+func (q *Queries) UpdateResource(ctx context.Context, arg UpdateResourceParams) (Resource, error) {
 	row := q.db.QueryRow(ctx, updateResource,
 		arg.Title,
 		arg.Code,
 		arg.Quantity,
-		arg.ID,
+		arg.ResourceID,
 	)
-	var i UpdateResourceRow
+	var i Resource
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
 		&i.Code,
 		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/Koshsky/erp/api/internal/domain"
 	"github.com/Koshsky/erp/api/internal/dto"
@@ -15,7 +14,6 @@ type ResourceRepository interface {
 	GetResource(ctx context.Context, id int64) (*domain.Resource, error)
 	UpdateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error)
 	DeleteResource(ctx context.Context, id int64) error
-	GetResourceUsage(ctx context.Context, targetDate time.Time) ([]domain.ResourceUsage, error)
 	ListResources(ctx context.Context) ([]domain.Resource, error)
 }
 
@@ -33,6 +31,14 @@ func NewResourceService(logger *slog.Logger, repository ResourceRepository, vali
 		mapper:     mapper.NewResourceMapper(),
 		validator:  validator,
 	}
+}
+
+func (s *ResourceService) ListResources(ctx context.Context) ([]dto.ResourceResponse, error) {
+	resources, err := s.repository.ListResources(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.ToDTOs(resources), nil
 }
 
 func (s *ResourceService) CreateResource(ctx context.Context, resource dto.CreateResourceRequest) (*dto.ResourceResponse, error) {
@@ -78,20 +84,4 @@ func (s *ResourceService) UpdateResource(ctx context.Context, id int64, req dto.
 
 func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {
 	return s.repository.DeleteResource(ctx, id)
-}
-
-func (s *ResourceService) GetResourceUsage(ctx context.Context, targetDate time.Time) ([]dto.ResourceUsageResponse, error) {
-	domainUsages, err := s.repository.GetResourceUsage(ctx, targetDate)
-	if err != nil {
-		return nil, err
-	}
-	return s.mapper.ToUsageDTOs(domainUsages), nil
-}
-
-func (s *ResourceService) ListResources(ctx context.Context) ([]dto.ResourceResponse, error) {
-	domainResources, err := s.repository.ListResources(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return s.mapper.ToDTOs(domainResources), nil
 }

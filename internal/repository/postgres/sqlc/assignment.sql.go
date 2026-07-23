@@ -9,10 +9,55 @@ import (
 	"context"
 )
 
+const canUserCreateAssignment = `-- name: CanUserCreateAssignment :one
+SELECT EXISTS (
+    SELECT 1 FROM tasks t
+	JOIN processes p ON p.id = t.process_id
+    WHERE t.id = $1::bigint
+	  AND t.deleted_at is NULL
+      AND p.owner_id = $2::bigint
+) AS can_create
+`
+
+type CanUserCreateAssignmentParams struct {
+	TaskID int64 `json:"task_id"`
+	UserID int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserCreateAssignment(ctx context.Context, arg CanUserCreateAssignmentParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserCreateAssignment, arg.TaskID, arg.UserID)
+	var can_create bool
+	err := row.Scan(&can_create)
+	return can_create, err
+}
+
+const canUserManageAssignment = `-- name: CanUserManageAssignment :one
+SELECT EXISTS (
+    SELECT 1 FROM assignments a
+	JOIN tasks t ON t.id = a.task_id
+	JOIN processes p ON p.id = t.process_id
+    WHERE a.id = $1::bigint
+	  AND a.deleted_at is NULL
+      AND p.owner_id = $2::bigint
+) AS can_manage
+`
+
+type CanUserManageAssignmentParams struct {
+	AssignmentID int64 `json:"assignment_id"`
+	UserID       int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserManageAssignment(ctx context.Context, arg CanUserManageAssignmentParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserManageAssignment, arg.AssignmentID, arg.UserID)
+	var can_manage bool
+	err := row.Scan(&can_manage)
+	return can_manage, err
+}
+
 const createAssignment = `-- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES ($1, $2, $3)
-RETURNING id, task_id, resource_id, quantity
+RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 `
 
 type CreateAssignmentParams struct {
@@ -21,21 +66,17 @@ type CreateAssignmentParams struct {
 	Quantity   int32 `json:"quantity"`
 }
 
-type CreateAssignmentRow struct {
-	ID         int64 `json:"id"`
-	TaskID     int64 `json:"task_id"`
-	ResourceID int64 `json:"resource_id"`
-	Quantity   int32 `json:"quantity"`
-}
-
-func (q *Queries) CreateAssignment(ctx context.Context, arg CreateAssignmentParams) (CreateAssignmentRow, error) {
+func (q *Queries) CreateAssignment(ctx context.Context, arg CreateAssignmentParams) (Assignment, error) {
 	row := q.db.QueryRow(ctx, createAssignment, arg.TaskID, arg.ResourceID, arg.Quantity)
-	var i CreateAssignmentRow
+	var i Assignment
 	err := row.Scan(
 		&i.ID,
 		&i.TaskID,
 		&i.ResourceID,
 		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -47,75 +88,31 @@ WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-func (q *Queries) DeleteAssignment(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteAssignment, id)
+func (q *Queries) DeleteAssignment(ctx context.Context, assignmentID int64) error {
+	_, err := q.db.Exec(ctx, deleteAssignment, assignmentID)
 	return err
 }
 
 const getAssignment = `-- name: GetAssignment :one
-SELECT id, task_id, resource_id, quantity
+SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 FROM assignments
 WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-type GetAssignmentRow struct {
-	ID         int64 `json:"id"`
-	TaskID     int64 `json:"task_id"`
-	ResourceID int64 `json:"resource_id"`
-	Quantity   int32 `json:"quantity"`
-}
-
-func (q *Queries) GetAssignment(ctx context.Context, id int64) (GetAssignmentRow, error) {
-	row := q.db.QueryRow(ctx, getAssignment, id)
-	var i GetAssignmentRow
+func (q *Queries) GetAssignment(ctx context.Context, assignmentID int64) (Assignment, error) {
+	row := q.db.QueryRow(ctx, getAssignment, assignmentID)
+	var i Assignment
 	err := row.Scan(
 		&i.ID,
 		&i.TaskID,
 		&i.ResourceID,
 		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
-}
-
-const listAssignmentsByTaskID = `-- name: ListAssignmentsByTaskID :many
-SELECT id, task_id, resource_id, quantity
-FROM assignments
-WHERE task_id = $1
-	AND deleted_at IS NULL
-ORDER BY id ASC
-`
-
-type ListAssignmentsByTaskIDRow struct {
-	ID         int64 `json:"id"`
-	TaskID     int64 `json:"task_id"`
-	ResourceID int64 `json:"resource_id"`
-	Quantity   int32 `json:"quantity"`
-}
-
-func (q *Queries) ListAssignmentsByTaskID(ctx context.Context, taskID int64) ([]ListAssignmentsByTaskIDRow, error) {
-	rows, err := q.db.Query(ctx, listAssignmentsByTaskID, taskID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListAssignmentsByTaskIDRow{}
-	for rows.Next() {
-		var i ListAssignmentsByTaskIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.TaskID,
-			&i.ResourceID,
-			&i.Quantity,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const updateAssignment = `-- name: UpdateAssignment :one
@@ -125,29 +122,25 @@ SET
 	updated_at = NOW()
 WHERE id = $2
 	AND deleted_at IS NULL
-RETURNING id, task_id, resource_id, quantity
+RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 `
 
 type UpdateAssignmentParams struct {
-	Quantity int32 `json:"quantity"`
-	ID       int64 `json:"id"`
+	Quantity     int32 `json:"quantity"`
+	AssignmentID int64 `json:"assignment_id"`
 }
 
-type UpdateAssignmentRow struct {
-	ID         int64 `json:"id"`
-	TaskID     int64 `json:"task_id"`
-	ResourceID int64 `json:"resource_id"`
-	Quantity   int32 `json:"quantity"`
-}
-
-func (q *Queries) UpdateAssignment(ctx context.Context, arg UpdateAssignmentParams) (UpdateAssignmentRow, error) {
-	row := q.db.QueryRow(ctx, updateAssignment, arg.Quantity, arg.ID)
-	var i UpdateAssignmentRow
+func (q *Queries) UpdateAssignment(ctx context.Context, arg UpdateAssignmentParams) (Assignment, error) {
+	row := q.db.QueryRow(ctx, updateAssignment, arg.Quantity, arg.AssignmentID)
+	var i Assignment
 	err := row.Scan(
 		&i.ID,
 		&i.TaskID,
 		&i.ResourceID,
 		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

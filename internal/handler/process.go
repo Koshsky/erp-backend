@@ -11,12 +11,11 @@ import (
 )
 
 type ProcessService interface {
-	ListProcessesByProjectID(ctx context.Context, projectID int64) ([]dto.ProcessResponse, error)
+	ListProcesses(ctx context.Context, projectID int64) ([]dto.ProcessResponse, error)
 	GetProcess(ctx context.Context, id int64) (*dto.ProcessResponse, error)
 	CreateProcess(ctx context.Context, process dto.CreateProcessRequest) (*dto.ProcessResponse, error)
 	DeleteProcess(ctx context.Context, id int64) error
 	UpdateProcess(ctx context.Context, id int64, process dto.UpdateProcessRequest) (*dto.ProcessResponse, error)
-	GetProcessTimeline(ctx context.Context, id int64) (*dto.TimelineResponse, error)
 }
 
 type ProcessHandler struct {
@@ -31,14 +30,14 @@ func NewProcessHandler(logger *slog.Logger, service ProcessService) *ProcessHand
 	}
 }
 
-func (h *ProcessHandler) ListProcessesByProject(c *gin.Context) {
+func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	projectID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response{Error: "invalid project id"})
 		return
 	}
 
-	processes, err := h.service.ListProcessesByProjectID(c.Request.Context(), projectID)
+	processes, err := h.service.ListProcesses(c.Request.Context(), projectID)
 	if err != nil {
 		h.logger.Error("failed to list processes", "projectID", projectID, "error", err)
 		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
@@ -130,24 +129,4 @@ func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, response{Data: process})
-}
-
-func (h *ProcessHandler) GetProcessTimeline(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid process id"})
-		return
-	}
-
-	timeline, err := h.service.GetProcessTimeline(c.Request.Context(), id)
-	if err != nil {
-		if isNotFoundError(err) {
-			c.JSON(http.StatusNotFound, response{Error: "process not found"})
-			return
-		}
-		h.logger.Error("failed to get process timeline", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, timeline)
 }

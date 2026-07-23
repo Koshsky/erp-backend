@@ -11,10 +11,53 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const canUserCreateTask = `-- name: CanUserCreateTask :one
+SELECT EXISTS (
+    SELECT 1 FROM processes p
+    WHERE p.id = $1::bigint
+	  AND p.deleted_at is NULL
+      AND p.owner_id = $2::bigint
+) AS can_create
+`
+
+type CanUserCreateTaskParams struct {
+	ProcessID int64 `json:"process_id"`
+	UserID    int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserCreateTask(ctx context.Context, arg CanUserCreateTaskParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserCreateTask, arg.ProcessID, arg.UserID)
+	var can_create bool
+	err := row.Scan(&can_create)
+	return can_create, err
+}
+
+const canUserManageTask = `-- name: CanUserManageTask :one
+SELECT EXISTS (
+    SELECT 1 FROM tasks t
+    JOIN processes p ON t.process_id = p.id
+    WHERE t.id = $1::bigint
+	  AND t.deleted_at is NULL
+      AND p.owner_id = $2::bigint
+) AS can_manage
+`
+
+type CanUserManageTaskParams struct {
+	TaskID int64 `json:"task_id"`
+	UserID int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserManageTask(ctx context.Context, arg CanUserManageTaskParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserManageTask, arg.TaskID, arg.UserID)
+	var can_manage bool
+	err := row.Scan(&can_manage)
+	return can_manage, err
+}
+
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (process_id, title, start_date, end_date)
 VALUES ($1, $2, $3, $4)
-RETURNING id, process_id, title, start_date, end_date
+RETURNING id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type CreateTaskParams struct {
@@ -24,28 +67,23 @@ type CreateTaskParams struct {
 	EndDate   pgtype.Date `json:"end_date"`
 }
 
-type CreateTaskRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (CreateTaskRow, error) {
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, createTask,
 		arg.ProcessID,
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
 	)
-	var i CreateTaskRow
+	var i Task
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -57,79 +95,32 @@ WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-func (q *Queries) DeleteTask(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteTask, id)
+func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
+	_, err := q.db.Exec(ctx, deleteTask, taskID)
 	return err
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, process_id, title, start_date, end_date
+SELECT id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM tasks
-WHERE id = $1
-	AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+	AND id = $1::bigint
 `
 
-type GetTaskRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) GetTask(ctx context.Context, id int64) (GetTaskRow, error) {
-	row := q.db.QueryRow(ctx, getTask, id)
-	var i GetTaskRow
+func (q *Queries) GetTask(ctx context.Context, resourceID int64) (Task, error) {
+	row := q.db.QueryRow(ctx, getTask, resourceID)
+	var i Task
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
-}
-
-const listTasksByProcessID = `-- name: ListTasksByProcessID :many
-SELECT id, process_id, title, start_date, end_date
-FROM tasks
-WHERE process_id = $1
-	AND deleted_at IS NULL
-ORDER BY start_date ASC, end_date ASC, id ASC
-`
-
-type ListTasksByProcessIDRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) ListTasksByProcessID(ctx context.Context, processID int64) ([]ListTasksByProcessIDRow, error) {
-	rows, err := q.db.Query(ctx, listTasksByProcessID, processID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListTasksByProcessIDRow{}
-	for rows.Next() {
-		var i ListTasksByProcessIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ProcessID,
-			&i.Title,
-			&i.StartDate,
-			&i.EndDate,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const updateTask = `-- name: UpdateTask :one
@@ -141,38 +132,33 @@ SET
 	updated_at = NOW()
 WHERE id = $4
 	AND deleted_at IS NULL
-RETURNING id, process_id, title, start_date, end_date
+RETURNING id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type UpdateTaskParams struct {
 	Title     string      `json:"title"`
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
-	ID        int64       `json:"id"`
+	TaskID    int64       `json:"task_id"`
 }
 
-type UpdateTaskRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (UpdateTaskRow, error) {
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, updateTask,
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
-		arg.ID,
+		arg.TaskID,
 	)
-	var i UpdateTaskRow
+	var i Task
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

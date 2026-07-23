@@ -11,10 +11,53 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const canUserCreateMilestone = `-- name: CanUserCreateMilestone :one
+SELECT EXISTS(
+	SELECT 1 FROM processes p
+	WHERE p.id = $1::bigint
+		AND p.deleted_at IS NULL
+		AND p.owner_id = $2::bigint
+) AS can_create
+`
+
+type CanUserCreateMilestoneParams struct {
+	ProcessID int64 `json:"process_id"`
+	UserID    int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserCreateMilestone(ctx context.Context, arg CanUserCreateMilestoneParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserCreateMilestone, arg.ProcessID, arg.UserID)
+	var can_create bool
+	err := row.Scan(&can_create)
+	return can_create, err
+}
+
+const canUserManageMilestone = `-- name: CanUserManageMilestone :one
+SELECT EXISTS(
+	SELECT 1 FROM milestones m
+	JOIN processes p ON p.id = m.process_id
+	WHERE m.id = $1::bigint
+		AND m.deleted_at IS NULL
+		AND p.owner_id = $2::bigint
+) AS can_manage
+`
+
+type CanUserManageMilestoneParams struct {
+	MilestoneID int64 `json:"milestone_id"`
+	UserID      int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserManageMilestone(ctx context.Context, arg CanUserManageMilestoneParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserManageMilestone, arg.MilestoneID, arg.UserID)
+	var can_manage bool
+	err := row.Scan(&can_manage)
+	return can_manage, err
+}
+
 const createMilestone = `-- name: CreateMilestone :one
 INSERT INTO milestones (process_id, title, content, date)
 VALUES ($1, $2, $3, $4)
-RETURNING id, process_id, title, content, date
+RETURNING id, process_id, title, content, date, created_at, updated_at, deleted_at
 `
 
 type CreateMilestoneParams struct {
@@ -24,28 +67,23 @@ type CreateMilestoneParams struct {
 	Date      pgtype.Date `json:"date"`
 }
 
-type CreateMilestoneRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	Date      pgtype.Date `json:"date"`
-}
-
-func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams) (CreateMilestoneRow, error) {
+func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams) (Milestone, error) {
 	row := q.db.QueryRow(ctx, createMilestone,
 		arg.ProcessID,
 		arg.Title,
 		arg.Content,
 		arg.Date,
 	)
-	var i CreateMilestoneRow
+	var i Milestone
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
 		&i.Title,
 		&i.Content,
 		&i.Date,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -57,79 +95,32 @@ WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-func (q *Queries) DeleteMilestone(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteMilestone, id)
+func (q *Queries) DeleteMilestone(ctx context.Context, milestoneID int64) error {
+	_, err := q.db.Exec(ctx, deleteMilestone, milestoneID)
 	return err
 }
 
 const getMilestone = `-- name: GetMilestone :one
-SELECT id, process_id, title, content, date
+SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at
 FROM milestones
 WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-type GetMilestoneRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	Date      pgtype.Date `json:"date"`
-}
-
-func (q *Queries) GetMilestone(ctx context.Context, id int64) (GetMilestoneRow, error) {
-	row := q.db.QueryRow(ctx, getMilestone, id)
-	var i GetMilestoneRow
+func (q *Queries) GetMilestone(ctx context.Context, milestoneID int64) (Milestone, error) {
+	row := q.db.QueryRow(ctx, getMilestone, milestoneID)
+	var i Milestone
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
 		&i.Title,
 		&i.Content,
 		&i.Date,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
-}
-
-const listMilestonesByProcessID = `-- name: ListMilestonesByProcessID :many
-SELECT id, process_id, title, content, date
-FROM milestones
-WHERE process_id = $1
-	AND deleted_at IS NULL
-ORDER BY date ASC, id ASC
-`
-
-type ListMilestonesByProcessIDRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	Date      pgtype.Date `json:"date"`
-}
-
-func (q *Queries) ListMilestonesByProcessID(ctx context.Context, processID int64) ([]ListMilestonesByProcessIDRow, error) {
-	rows, err := q.db.Query(ctx, listMilestonesByProcessID, processID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListMilestonesByProcessIDRow{}
-	for rows.Next() {
-		var i ListMilestonesByProcessIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ProcessID,
-			&i.Title,
-			&i.Content,
-			&i.Date,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const updateMilestone = `-- name: UpdateMilestone :one
@@ -141,38 +132,33 @@ SET
 	updated_at = NOW()
 WHERE id = $4
 	AND deleted_at IS NULL
-RETURNING id, process_id, title, content, date
+RETURNING id, process_id, title, content, date, created_at, updated_at, deleted_at
 `
 
 type UpdateMilestoneParams struct {
-	Title   string      `json:"title"`
-	Content string      `json:"content"`
-	Date    pgtype.Date `json:"date"`
-	ID      int64       `json:"id"`
+	Title       string      `json:"title"`
+	Content     string      `json:"content"`
+	Date        pgtype.Date `json:"date"`
+	MilestoneID int64       `json:"milestone_id"`
 }
 
-type UpdateMilestoneRow struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	Date      pgtype.Date `json:"date"`
-}
-
-func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams) (UpdateMilestoneRow, error) {
+func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams) (Milestone, error) {
 	row := q.db.QueryRow(ctx, updateMilestone,
 		arg.Title,
 		arg.Content,
 		arg.Date,
-		arg.ID,
+		arg.MilestoneID,
 	)
-	var i UpdateMilestoneRow
+	var i Milestone
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
 		&i.Title,
 		&i.Content,
 		&i.Date,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

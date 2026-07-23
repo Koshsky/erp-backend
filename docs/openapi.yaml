@@ -147,19 +147,12 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /projects/{id}/processes:
+  # Processes
+  /processes:
     get:
-      summary: Get all processes for a project
+      summary: Get all processes
       tags:
         - Processes
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Project ID
       responses:
         '200':
           description: List of processes
@@ -174,13 +167,8 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/ProcessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-
-  # Processes
-  /processes:
     post:
       summary: Create new process
       tags:
@@ -274,98 +262,6 @@ paths:
           description: Process deleted
         '400':
           $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /processes/{id}/milestones:
-    get:
-      summary: Get all milestones for a process
-      tags:
-        - Milestones
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Process ID
-      responses:
-        '200':
-          description: List of milestones
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/MilestoneResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /processes/{id}/tasks:
-    get:
-      summary: Get all tasks for a process
-      tags:
-        - Tasks
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Process ID
-      responses:
-        '200':
-          description: List of tasks
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/TaskResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  # Timeline
-  /timeline/processes/{id}:
-    get:
-      summary: Get process timeline with tasks and resources
-      tags:
-        - Timeline
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Process ID
-      responses:
-        '200':
-          description: Process timeline data
-          content:
-            application/json:
-            schema:
-              $ref: '#/components/schemas/TimelineResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -560,38 +456,6 @@ paths:
       responses:
         '204':
           description: Task deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /tasks/{id}/assignments:
-    get:
-      summary: Get all assignments for a task
-      tags:
-        - Assignments
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Task ID
-      responses:
-        '200':
-          description: List of assignments
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/AssignmentResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -813,39 +677,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /resources/usage:
-    get:
-      summary: Get resource usage for a specific date
-      tags:
-        - Resources
-      parameters:
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-            example: "2026-07-17"
-          description: Date in YYYY-MM-DD format
-      responses:
-        '200':
-          description: Resource usage data
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ResourceUsageResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
   # Users
   /users:
     get:
@@ -905,36 +736,6 @@ paths:
       responses:
         '200':
           description: User found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/UserResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      summary: Update user
-      tags:
-        - Users
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUserRequest'
-      responses:
-        '200':
-          description: User updated
           content:
             application/json:
               schema:
@@ -1312,32 +1113,6 @@ components:
           type: integer
           example: 3
 
-    ResourceUsageResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "Developer"
-        code:
-          type: string
-          example: "RES-001"
-        used_quantity:
-          type: integer
-          format: int64
-          example: 2
-        available:
-          type: integer
-          format: int64
-          example: 3
-        total_quantity:
-          type: integer
-          format: int64
-          example: 5
-
     # Assignment schemas
     AssignmentResponse:
       type: object
@@ -1426,120 +1201,6 @@ components:
           format: password
           example: "securepassword123"
 
-    UpdateUserRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          example: "Jane Doe"
-        username:
-          type: string
-          example: "janedoe"
-        role:
-          type: string
-          example: "manager"
-          enum: ["admin", "manager", "user"]
-        password:
-          type: string
-          format: password
-          example: "newpassword123"
-
-    # Timeline schemas
-    TimelineResponse:
-      type: object
-      required:
-        - processes
-        - resources
-      properties:
-        processes:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimelineProcessItem'
-        resources:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimelineResource'
-
-    TimelineProcessItem:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "Инсталляция"
-        start_date:
-          type: string
-          format: date
-          example: "2024-07-15"
-        end_date:
-          type: string
-          format: date
-          example: "2024-08-22"
-        project_code:
-          type: string
-          example: "KO-1001"
-        tasks:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimelineTaskWithResources'
-
-    TimelineTaskWithResources:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "Осмотр объекта"
-        start_date:
-          type: string
-          format: date
-          example: "2024-07-15"
-        end_date:
-          type: string
-          format: date
-          example: "2024-07-19"
-        resources:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimelineTaskResource'
-
-    TimelineTaskResource:
-      type: object
-      properties:
-        resource_id:
-          type: integer
-          format: int64
-          example: 1
-        quantity:
-          type: integer
-          example: 2
-        code:
-          type: string
-          example: "И"
-
-    TimelineResource:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        code:
-          type: string
-          example: "И"
-        title:
-          type: string
-          example: "Инженер"
-        quantity:
-          type: integer
-          example: 7
-
 tags:
   - name: System
     description: System endpoints
@@ -1557,5 +1218,3 @@ tags:
     description: Resource management
   - name: Users
     description: User management
-  - name: Timeline
-    description: Process timeline endpoints

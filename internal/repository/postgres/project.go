@@ -20,6 +20,7 @@ func NewProjectRepository(logger *slog.Logger, db *sqlc.Queries) *ProjectReposit
 func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Project) (*domain.Project, error) {
 	created, err := r.db.CreateProject(ctx, sqlc.CreateProjectParams{
 		Code:      project.Code,
+		OwnerID:   project.OwnerID,
 		StartDate: toDate(project.StartDate),
 		EndDate:   toDate(project.EndDate),
 		Priority:  int32(project.Priority),
@@ -44,7 +45,8 @@ func (r *ProjectRepository) GetProject(ctx context.Context, id int64) (*domain.P
 
 func (r *ProjectRepository) UpdateProject(ctx context.Context, project domain.Project) (*domain.Project, error) {
 	updated, err := r.db.UpdateProject(ctx, sqlc.UpdateProjectParams{
-		ID:        project.ID,
+		ProjectID: project.ID,
+		OwnerID:   project.OwnerID,
 		Code:      project.Code,
 		Priority:  int32(project.Priority),
 		StartDate: toDate(project.StartDate),
@@ -63,7 +65,10 @@ func (r *ProjectRepository) DeleteProject(ctx context.Context, id int64) error {
 }
 
 func (r *ProjectRepository) ListProjects(ctx context.Context) ([]domain.Project, error) {
-	rows, err := r.db.ListProjects(ctx)
+	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
+		Role:   ctx.Value("role").(string),
+		UserID: ctx.Value("user_id").(int64),
+	})
 	if err != nil {
 		return nil, err
 	}

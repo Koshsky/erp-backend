@@ -43,8 +43,8 @@ func (r *AssignmentRepository) GetAssignment(ctx context.Context, id int64) (*do
 
 func (r *AssignmentRepository) UpdateAssignment(ctx context.Context, assignment domain.Assignment) (*domain.Assignment, error) {
 	row, err := r.db.UpdateAssignment(ctx, sqlc.UpdateAssignmentParams{
-		ID:       assignment.ID,
-		Quantity: int32(assignment.Quantity),
+		AssignmentID: assignment.ID,
+		Quantity:     int32(assignment.Quantity),
 	})
 	if err != nil {
 		return nil, err
@@ -56,18 +56,4 @@ func (r *AssignmentRepository) UpdateAssignment(ctx context.Context, assignment 
 
 func (r *AssignmentRepository) DeleteAssignment(ctx context.Context, id int64) error {
 	return r.db.DeleteAssignment(ctx, id)
-}
-
-func (r *AssignmentRepository) ListAssignmentsByTaskID(ctx context.Context, taskID int64) ([]domain.Assignment, error) {
-	rows, err := r.db.ListAssignmentsByTaskID(ctx, taskID)
-	if err != nil {
-		return nil, err
-	}
-
-	assignments := make([]domain.Assignment, 0, len(rows))
-	for _, row := range rows {
-		assignments = append(assignments, mapAssignment(row))
-	}
-
-	return assignments, nil
 }

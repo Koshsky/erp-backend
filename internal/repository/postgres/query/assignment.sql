@@ -1,33 +1,44 @@
--- name: CreateAssignment :one
-INSERT INTO assignments (task_id, resource_id, quantity)
-VALUES ($1, $2, $3)
-RETURNING id, task_id, resource_id, quantity;
+-- name: CanUserManageAssignment :one
+SELECT EXISTS (
+    SELECT 1 FROM assignments a
+	JOIN tasks t ON t.id = a.task_id
+	JOIN processes p ON p.id = t.process_id
+    WHERE a.id = @assignment_id::bigint
+	  AND a.deleted_at is NULL
+      AND p.owner_id = @user_id::bigint
+) AS can_manage;
+
+-- name: CanUserCreateAssignment :one
+SELECT EXISTS (
+    SELECT 1 FROM tasks t
+	JOIN processes p ON p.id = t.process_id
+    WHERE t.id = @task_id::bigint
+	  AND t.deleted_at is NULL
+      AND p.owner_id = @user_id::bigint
+) AS can_create;
 
 -- name: GetAssignment :one
-SELECT id, task_id, resource_id, quantity
+SELECT *
 FROM assignments
-WHERE id = $1
+WHERE id = @assignment_id
 	AND deleted_at IS NULL;
+
+-- name: CreateAssignment :one
+INSERT INTO assignments (task_id, resource_id, quantity)
+VALUES (@task_id, @resource_id, @quantity)
+RETURNING *;
 
 -- name: UpdateAssignment :one
 UPDATE assignments
 SET
-	quantity = $1,
+	quantity = @quantity,
 	updated_at = NOW()
-WHERE id = $2
+WHERE id = @assignment_id
 	AND deleted_at IS NULL
-RETURNING id, task_id, resource_id, quantity;
+RETURNING *;
 
 -- name: DeleteAssignment :exec
 UPDATE assignments
 SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1
+WHERE id = @assignment_id
 	AND deleted_at IS NULL;
-
-
--- name: ListAssignmentsByTaskID :many
-SELECT id, task_id, resource_id, quantity
-FROM assignments
-WHERE task_id = $1
-	AND deleted_at IS NULL
-ORDER BY id ASC;

@@ -14,7 +14,6 @@ type AssignmentRepository interface {
 	GetAssignment(ctx context.Context, id int64) (*domain.Assignment, error)
 	UpdateAssignment(ctx context.Context, assignment domain.Assignment) (*domain.Assignment, error)
 	DeleteAssignment(ctx context.Context, id int64) error
-	ListAssignmentsByTaskID(ctx context.Context, taskID int64) ([]domain.Assignment, error)
 }
 
 type AssignmentService struct {
@@ -78,12 +77,4 @@ func (s *AssignmentService) UpdateAssignment(ctx context.Context, id int64, req 
 
 func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) error {
 	return s.repository.DeleteAssignment(ctx, id)
-}
-
-func (s *AssignmentService) ListAssignmentsByTaskID(ctx context.Context, taskID int64) ([]dto.AssignmentResponse, error) {
-	assignments, err := s.repository.ListAssignmentsByTaskID(ctx, taskID)
-	if err != nil {
-		return nil, err
-	}
-	return s.mapper.ToDTOs(assignments), nil
 }
