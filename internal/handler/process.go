@@ -11,11 +11,12 @@ import (
 )
 
 type ProcessService interface {
-	ListProcesses(ctx context.Context, projectID int64) ([]dto.ProcessResponse, error)
 	GetProcess(ctx context.Context, id int64) (*dto.ProcessResponse, error)
 	CreateProcess(ctx context.Context, process dto.CreateProcessRequest) (*dto.ProcessResponse, error)
 	DeleteProcess(ctx context.Context, id int64) error
 	UpdateProcess(ctx context.Context, id int64, process dto.UpdateProcessRequest) (*dto.ProcessResponse, error)
+	ListProcesses(ctx context.Context, projectID int64) ([]dto.ProcessResponse, error)
+	GetDetailedProcess(ctx context.Context, id int64) (*dto.ProcessDetailResponse, error)
 }
 
 type ProcessHandler struct {
@@ -28,6 +29,27 @@ func NewProcessHandler(logger *slog.Logger, service ProcessService) *ProcessHand
 		logger:  logger,
 		service: service,
 	}
+}
+
+func (h *ProcessHandler) GetDetailedProcess(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid process id",
+		})
+		return
+	}
+
+	process, err := h.service.GetDetailedProcess(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, process)
 }
 
 func (h *ProcessHandler) ListProcesses(c *gin.Context) {

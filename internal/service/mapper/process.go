@@ -12,12 +12,63 @@ func NewProcessMapper() *ProcessMapper {
 	return &ProcessMapper{}
 }
 
+func (p *ProcessMapper) ToDetailedDTO(process *domain.DetailedProcess) *dto.ProcessDetailResponse {
+	tasks := make([]dto.TaskDetailResponse, len(process.Tasks))
+	for i, task := range process.Tasks {
+		assignments := make([]dto.AssignmentResponse, len(task.Assignments))
+		for j, a := range task.Assignments {
+			assignments[j] = dto.AssignmentResponse{
+				ID:         a.ID,
+				TaskID:     a.TaskID,
+				ResourceID: a.ResourceID,
+				Quantity:   a.Quantity,
+			}
+		}
+
+		tasks[i] = dto.TaskDetailResponse{
+			TaskResponse: dto.TaskResponse{
+				ID:        task.ID,
+				ProcessID: task.ProcessID,
+				Title:     task.Title,
+				StartDate: task.StartDate,
+				EndDate:   task.EndDate,
+			},
+			Assignments: assignments,
+		}
+	}
+
+	milestones := make([]dto.MilestoneResponse, len(process.Milestones))
+	for i, m := range process.Milestones {
+		milestones[i] = dto.MilestoneResponse{
+			ID:        m.ID,
+			Content:   m.Content,
+			ProcessID: m.ProcessID,
+			Title:     m.Title,
+			Date:      m.Date,
+		}
+	}
+
+	return &dto.ProcessDetailResponse{
+		ProcessResponse: dto.ProcessResponse{
+			ID:        process.ID,
+			OwnerID:   process.OwnerID,
+			ProjectID: process.ProjectID,
+			Title:     process.Title,
+			StartDate: process.StartDate,
+			EndDate:   process.EndDate,
+		},
+		Tasks:      tasks,
+		Milestones: milestones,
+	}
+}
+
 func (m *ProcessMapper) ToDTO(process *domain.Process) *dto.ProcessResponse {
 	if process == nil {
 		return nil
 	}
 	return &dto.ProcessResponse{
 		ID:        process.ID,
+		OwnerID:   process.OwnerID,
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
 		StartDate: process.StartDate,

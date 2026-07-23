@@ -35,6 +35,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 				processes.POST("", h.CreateProcess)
 				processes.DELETE("/:id", h.DeleteProcess)
 				processes.PATCH("/:id", h.UpdateProcess)
+				processes.GET("/:id/detailed", h.GetDetailedProcess)
 			}
 
 			// Milestones routes
