@@ -12,7 +12,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, username, role, password_hash)
 VALUES ($1, $2, $3, $4)
-RETURNING id, name, username, role, password_hash
+RETURNING id, name, role, username, password_hash, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -22,28 +22,23 @@ type CreateUserParams struct {
 	PasswordHash string `json:"password_hash"`
 }
 
-type CreateUserRow struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Username     string `json:"username"`
-	Role         string `json:"role"`
-	PasswordHash string `json:"password_hash"`
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.Name,
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
 	)
-	var i CreateUserRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Username,
 		&i.Role,
+		&i.Username,
 		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -55,70 +50,60 @@ WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteUser, id)
+func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, deleteUser, userID)
 	return err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, username, role, password_hash
+SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
 	AND deleted_at IS NULL
 LIMIT 1
 `
 
-type GetUserRow struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Username     string `json:"username"`
-	Role         string `json:"role"`
-	PasswordHash string `json:"password_hash"`
-}
-
-func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
-	row := q.db.QueryRow(ctx, getUser, id)
-	var i GetUserRow
+func (q *Queries) GetUser(ctx context.Context, userID int64) (User, error) {
+	row := q.db.QueryRow(ctx, getUser, userID)
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Username,
 		&i.Role,
+		&i.Username,
 		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, username, role, password_hash
+SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
 ORDER BY username ASC, id ASC
 `
 
-type ListUsersRow struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Username     string `json:"username"`
-	Role         string `json:"role"`
-	PasswordHash string `json:"password_hash"`
-}
-
-func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	rows, err := q.db.Query(ctx, listUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListUsersRow{}
+	items := []User{}
 	for rows.Next() {
-		var i ListUsersRow
+		var i User
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Username,
 			&i.Role,
+			&i.Username,
 			&i.PasswordHash,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -140,7 +125,7 @@ SET
 	updated_at = NOW()
 WHERE id = $5
 	AND deleted_at IS NULL
-RETURNING id, name, username, role, password_hash
+RETURNING id, name, role, username, password_hash, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
@@ -148,32 +133,27 @@ type UpdateUserParams struct {
 	Username     string `json:"username"`
 	Role         string `json:"role"`
 	PasswordHash string `json:"password_hash"`
-	ID           int64  `json:"id"`
+	UserID       int64  `json:"user_id"`
 }
 
-type UpdateUserRow struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Username     string `json:"username"`
-	Role         string `json:"role"`
-	PasswordHash string `json:"password_hash"`
-}
-
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.Name,
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
-		arg.ID,
+		arg.UserID,
 	)
-	var i UpdateUserRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Username,
 		&i.Role,
+		&i.Username,
 		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

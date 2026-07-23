@@ -44,7 +44,7 @@ func (r *TaskRepository) GetTask(ctx context.Context, id int64) (*domain.Task, e
 
 func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
 	row, err := r.db.UpdateTask(ctx, sqlc.UpdateTaskParams{
-		ID:        task.ID,
+		TaskID:    task.ID,
 		Title:     task.Title,
 		StartDate: toDate(task.StartDate),
 		EndDate:   toDate(task.EndDate),
@@ -59,18 +59,4 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 
 func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
 	return r.db.DeleteTask(ctx, id)
-}
-
-func (r *TaskRepository) ListTasksByProcessID(ctx context.Context, processID int64) ([]domain.Task, error) {
-	rows, err := r.db.ListTasksByProcessID(ctx, processID)
-	if err != nil {
-		return nil, err
-	}
-
-	tasks := make([]domain.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTask(row))
-	}
-
-	return tasks, nil
 }

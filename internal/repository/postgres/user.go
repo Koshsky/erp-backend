@@ -44,7 +44,7 @@ func (r *UserRepository) GetUser(ctx context.Context, id int64) (*domain.User, e
 
 func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*domain.User, error) {
 	row, err := r.db.UpdateUser(ctx, sqlc.UpdateUserParams{
-		ID:           user.ID,
+		UserID:       user.ID,
 		Name:         user.Name,
 		Username:     user.Username,
 		Role:         string(user.Role),

@@ -11,10 +11,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const canUserCreateProject = `-- name: CanUserCreateProject :one
+SELECT EXISTS (
+    SELECT 1 FROM users 
+    WHERE id = $1::bigint 
+      AND role = 'ДП'
+      AND deleted_at IS NULL
+) AS can_create
+`
+
+func (q *Queries) CanUserCreateProject(ctx context.Context, userID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserCreateProject, userID)
+	var can_create bool
+	err := row.Scan(&can_create)
+	return can_create, err
+}
+
+const canUserManageProject = `-- name: CanUserManageProject :one
+SELECT EXISTS (
+    SELECT 1 FROM projects p
+    WHERE p.id = $1::bigint
+      AND p.deleted_at IS NULL
+      AND EXISTS (
+          SELECT 1 FROM users u
+          WHERE u.id = $2::bigint
+            AND u.role = 'ДП'
+            AND u.deleted_at IS NULL
+      )
+) AS can_manage
+`
+
+type CanUserManageProjectParams struct {
+	ProjectID int64 `json:"project_id"`
+	UserID    int64 `json:"user_id"`
+}
+
+func (q *Queries) CanUserManageProject(ctx context.Context, arg CanUserManageProjectParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUserManageProject, arg.ProjectID, arg.UserID)
+	var can_manage bool
+	err := row.Scan(&can_manage)
+	return can_manage, err
+}
+
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (code, start_date, end_date, priority)
-VALUES ($1, $2, $3, $4)
-RETURNING id, code, start_date, end_date, priority
+INSERT INTO projects (code, start_date, end_date, priority, owner_id)
+VALUES (
+  $1::text,
+  $2::date,
+  $3::date,
+  $4,
+  $5::bigint
+)
+RETURNING id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 `
 
 type CreateProjectParams struct {
@@ -22,30 +70,28 @@ type CreateProjectParams struct {
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
 	Priority  int32       `json:"priority"`
+	OwnerID   int64       `json:"owner_id"`
 }
 
-type CreateProjectRow struct {
-	ID        int64       `json:"id"`
-	Code      string      `json:"code"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	Priority  int32       `json:"priority"`
-}
-
-func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (CreateProjectRow, error) {
+func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
 	row := q.db.QueryRow(ctx, createProject,
 		arg.Code,
 		arg.StartDate,
 		arg.EndDate,
 		arg.Priority,
+		arg.OwnerID,
 	)
-	var i CreateProjectRow
+	var i Project
 	err := row.Scan(
 		&i.ID,
+		&i.OwnerID,
 		&i.Code,
 		&i.StartDate,
 		&i.EndDate,
 		&i.Priority,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -53,73 +99,74 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (C
 const deleteProject = `-- name: DeleteProject :exec
 UPDATE projects
 SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1
-	AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+	AND id = $1::bigint
 `
 
-func (q *Queries) DeleteProject(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteProject, id)
+func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
+	_, err := q.db.Exec(ctx, deleteProject, projectID)
 	return err
 }
 
 const getProject = `-- name: GetProject :one
-SELECT id, code, start_date, end_date, priority
+SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
-WHERE id = $1
-	AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+  AND id = $1::bigint
 `
 
-type GetProjectRow struct {
-	ID        int64       `json:"id"`
-	Code      string      `json:"code"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	Priority  int32       `json:"priority"`
-}
-
-func (q *Queries) GetProject(ctx context.Context, id int64) (GetProjectRow, error) {
-	row := q.db.QueryRow(ctx, getProject, id)
-	var i GetProjectRow
+func (q *Queries) GetProject(ctx context.Context, projectID int64) (Project, error) {
+	row := q.db.QueryRow(ctx, getProject, projectID)
+	var i Project
 	err := row.Scan(
 		&i.ID,
+		&i.OwnerID,
 		&i.Code,
 		&i.StartDate,
 		&i.EndDate,
 		&i.Priority,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, code, start_date, end_date, priority
+SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
 WHERE deleted_at IS NULL
+  AND (
+    $1::text = 'ДП' OR
+    owner_id = $2::bigint
+  )
 ORDER BY priority ASC, start_date ASC, id ASC
 `
 
-type ListProjectsRow struct {
-	ID        int64       `json:"id"`
-	Code      string      `json:"code"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	Priority  int32       `json:"priority"`
+type ListProjectsParams struct {
+	Role   string `json:"role"`
+	UserID int64  `json:"user_id"`
 }
 
-func (q *Queries) ListProjects(ctx context.Context) ([]ListProjectsRow, error) {
-	rows, err := q.db.Query(ctx, listProjects)
+func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listProjects, arg.Role, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListProjectsRow{}
+	items := []Project{}
 	for rows.Next() {
-		var i ListProjectsRow
+		var i Project
 		if err := rows.Scan(
 			&i.ID,
+			&i.OwnerID,
 			&i.Code,
 			&i.StartDate,
 			&i.EndDate,
 			&i.Priority,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -138,10 +185,11 @@ SET
 	priority = $2,
 	start_date = $3,
 	end_date = $4,
+  owner_id = $5,
 	updated_at = NOW()
-WHERE id = $5
-	AND deleted_at IS NULL
-RETURNING id, code, start_date, end_date, priority
+WHERE deleted_at IS NULL
+	AND id = $6::bigint
+RETURNING id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 `
 
 type UpdateProjectParams struct {
@@ -149,32 +197,30 @@ type UpdateProjectParams struct {
 	Priority  int32       `json:"priority"`
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
-	ID        int64       `json:"id"`
+	OwnerID   int64       `json:"owner_id"`
+	ProjectID int64       `json:"project_id"`
 }
 
-type UpdateProjectRow struct {
-	ID        int64       `json:"id"`
-	Code      string      `json:"code"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	Priority  int32       `json:"priority"`
-}
-
-func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (UpdateProjectRow, error) {
+func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
 	row := q.db.QueryRow(ctx, updateProject,
 		arg.Code,
 		arg.Priority,
 		arg.StartDate,
 		arg.EndDate,
-		arg.ID,
+		arg.OwnerID,
+		arg.ProjectID,
 	)
-	var i UpdateProjectRow
+	var i Project
 	err := row.Scan(
 		&i.ID,
+		&i.OwnerID,
 		&i.Code,
 		&i.StartDate,
 		&i.EndDate,
 		&i.Priority,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

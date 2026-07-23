@@ -25,28 +25,16 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 				projects.DELETE("/:id", h.DeleteProject)
 				projects.PATCH("/:id", h.UpdateProject)
 
-				// Processes under projects
-				projects.GET("/:id/processes", h.ListProcessesByProject)
 			}
 
 			// Processes routes
 			processes := v1.Group("/processes")
 			{
+				processes.GET("", h.ListProcesses)
 				processes.GET("/:id", h.GetProcess)
 				processes.POST("", h.CreateProcess)
 				processes.DELETE("/:id", h.DeleteProcess)
 				processes.PATCH("/:id", h.UpdateProcess)
-
-				// Milestones under processes
-				processes.GET("/:id/milestones", h.ListMilestonesByProcess)
-				// Tasks under processes
-				processes.GET("/:id/tasks", h.ListTasksByProcess)
-			}
-
-			// Timeline routes
-			timeline := v1.Group("/timeline")
-			{
-				timeline.GET("/processes/:id", h.GetProcessTimeline)
 			}
 
 			// Milestones routes
@@ -65,9 +53,6 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 				tasks.POST("", h.CreateTask)
 				tasks.DELETE("/:id", h.DeleteTask)
 				tasks.PATCH("/:id", h.UpdateTask)
-
-				// Assignments under tasks
-				tasks.GET("/:id/assignments", h.ListAssignmentsByTask)
 			}
 
 			// Resources routes
@@ -78,7 +63,6 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 				resources.POST("", h.CreateResource)
 				resources.DELETE("/:id", h.DeleteResource)
 				resources.PATCH("/:id", h.UpdateResource)
-				resources.GET("/usage", h.GetResourceUsage)
 			}
 
 			// Users routes

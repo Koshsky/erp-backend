@@ -1,35 +1,35 @@
 -- name: CreateUser :one
 INSERT INTO users (name, username, role, password_hash)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, username, role, password_hash;
+VALUES (@name, @username, @role, @password_hash)
+RETURNING *;
 
 -- name: GetUser :one
-SELECT id, name, username, role, password_hash
+SELECT *
 FROM users
-WHERE id = $1
+WHERE id = @user_id
 	AND deleted_at IS NULL
 LIMIT 1;
 
 -- name: UpdateUser :one
 UPDATE users
 SET
-	name = $1,
-	username = $2,
-	role = $3,
-	password_hash = $4,
+	name = @name,
+	username = @username,
+	role = @role,
+	password_hash = @password_hash,
 	updated_at = NOW()
-WHERE id = $5
+WHERE id = @user_id
 	AND deleted_at IS NULL
-RETURNING id, name, username, role, password_hash;
+RETURNING *;
 
 -- name: DeleteUser :exec
 UPDATE users
 SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1
+WHERE id = @user_id
 	AND deleted_at IS NULL;
 
 -- name: ListUsers :many
-SELECT id, name, username, role, password_hash
+SELECT *
 FROM users
 WHERE deleted_at IS NULL
 ORDER BY username ASC, id ASC;

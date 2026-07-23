@@ -44,9 +44,10 @@ func (r *MilestoneRepository) GetMilestone(ctx context.Context, id int64) (*doma
 
 func (r *MilestoneRepository) UpdateMilestone(ctx context.Context, milestone domain.Milestone) (*domain.Milestone, error) {
 	row, err := r.db.UpdateMilestone(ctx, sqlc.UpdateMilestoneParams{
-		ID:      milestone.ID,
-		Title:   milestone.Title,
-		Content: milestone.Content,
+		MilestoneID: milestone.ID,
+		Date:        toDate(milestone.Date),
+		Title:       milestone.Title,
+		Content:     milestone.Content,
 	})
 	if err != nil {
 		return nil, err
@@ -58,18 +59,4 @@ func (r *MilestoneRepository) UpdateMilestone(ctx context.Context, milestone dom
 
 func (r *MilestoneRepository) DeleteMilestone(ctx context.Context, id int64) error {
 	return r.db.DeleteMilestone(ctx, id)
-}
-
-func (r *MilestoneRepository) ListMilestonesByProcessID(ctx context.Context, processID int64) ([]domain.Milestone, error) {
-	rows, err := r.db.ListMilestonesByProcessID(ctx, processID)
-	if err != nil {
-		return nil, err
-	}
-
-	milestones := make([]domain.Milestone, 0, len(rows))
-	for _, row := range rows {
-		milestones = append(milestones, mapMilestone(row))
-	}
-
-	return milestones, nil
 }

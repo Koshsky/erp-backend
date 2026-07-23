@@ -14,7 +14,6 @@ type MilestoneRepository interface {
 	GetMilestone(ctx context.Context, id int64) (*domain.Milestone, error)
 	UpdateMilestone(ctx context.Context, milestone domain.Milestone) (*domain.Milestone, error)
 	DeleteMilestone(ctx context.Context, id int64) error
-	ListMilestonesByProcessID(ctx context.Context, processID int64) ([]domain.Milestone, error)
 }
 
 type MilestoneService struct {
@@ -78,13 +77,4 @@ func (s *MilestoneService) UpdateMilestone(ctx context.Context, id int64, req dt
 
 func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error {
 	return s.repository.DeleteMilestone(ctx, id)
-}
-
-func (s *MilestoneService) ListMilestonesByProcessID(ctx context.Context, processID int64) ([]dto.MilestoneResponse, error) {
-	milestones, err := s.repository.ListMilestonesByProcessID(ctx, processID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.mapper.ToDTOs(milestones), nil
 }
