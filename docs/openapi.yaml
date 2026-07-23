@@ -265,6 +265,27 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /processes/{id}/detailed:
+    get:
+      summary: Get detailed process by ID with tasks and milestones
+      tags:
+        - Processes
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Detailed process found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   # Milestones
   /milestones:
     post:
@@ -962,6 +983,21 @@ components:
           type: string
           format: date
           example: "2026-03-30"
+
+    ProcessDetailResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ProcessResponse'
+        - type: object
+          properties:
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/TaskDetailResponse'
+            milestones:
+              type: array
+              items:
+                $ref: '#/components/schemas/MilestoneResponse'
 
     # Task schemas
     TaskResponse:

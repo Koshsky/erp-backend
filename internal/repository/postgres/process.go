@@ -78,3 +78,17 @@ func (r *ProcessRepository) ListProcesses(ctx context.Context) ([]domain.Process
 
 	return processes, nil
 }
+
+func (r *ProcessRepository) GetDetailedProcess(ctx context.Context, id int64) (*domain.DetailedProcess, error) {
+	row, err := r.db.GetDetailedProcess(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	detailedProcess, err := mapDetailedProcess(row)
+	if err != nil {
+		return nil, err
+	}
+
+	return &detailedProcess, nil
+}

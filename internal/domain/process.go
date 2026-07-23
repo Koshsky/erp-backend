@@ -10,3 +10,9 @@ type Process struct {
 	StartDate time.Time `db:"start_date" json:"start_date"`
 	EndDate   time.Time `db:"end_date" json:"end_date"`
 }
+
+type DetailedProcess struct {
+	Process
+	Tasks      []DetailedTask `json:"tasks"`
+	Milestones []Milestone    `json:"milestones"`
+}

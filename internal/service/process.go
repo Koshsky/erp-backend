@@ -15,6 +15,7 @@ type ProcessRepository interface {
 	UpdateProcess(ctx context.Context, process domain.Process) (*domain.Process, error)
 	DeleteProcess(ctx context.Context, id int64) error
 	ListProcesses(ctx context.Context) ([]domain.Process, error)
+	GetDetailedProcess(ctx context.Context, id int64) (*domain.DetailedProcess, error)
 }
 
 type ProcessService struct {
@@ -31,6 +32,15 @@ func NewProcessService(logger *slog.Logger, repository ProcessRepository, valida
 		mapper:     mapper.NewProcessMapper(),
 		validator:  validator,
 	}
+}
+
+func (s *ProcessService) GetDetailedProcess(ctx context.Context, id int64) (*dto.ProcessDetailResponse, error) {
+	detailedProcess, err := s.repository.GetDetailedProcess(ctx, id)
+	if err != nil {
+		return nil, ErrMilestoneNotFound
+	}
+
+	return s.mapper.ToDetailedDTO(detailedProcess), nil
 }
 
 func (s *ProcessService) CreateProcess(ctx context.Context, req dto.CreateProcessRequest) (*dto.ProcessResponse, error) {

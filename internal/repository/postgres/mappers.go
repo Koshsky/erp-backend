@@ -115,3 +115,123 @@ func mapDetailedTask(row sqlc.GetDetailedTaskRow) (domain.DetailedTask, error) {
 		Assignments: assignments,
 	}, nil
 }
+
+func mapDetailedProcess(row sqlc.GetDetailedProcessRow) (domain.DetailedProcess, error) {
+	var tasks []domain.DetailedTask
+
+	if row.Tasks != nil {
+		var jsonData []byte
+		switch v := row.Tasks.(type) {
+		case []byte:
+			jsonData = v
+		case string:
+			jsonData = []byte(v)
+		default:
+			data, err := json.Marshal(v)
+			if err != nil {
+				return domain.DetailedProcess{}, fmt.Errorf("marshal tasks: %w", err)
+			}
+			jsonData = data
+		}
+
+		if len(jsonData) > 0 && string(jsonData) != "[]" {
+			var rawTasks []struct {
+				ID          int64       `json:"id"`
+				ProcessID   int64       `json:"process_id"`
+				Title       string      `json:"title"`
+				StartDate   pgtype.Date `json:"start_date"`
+				EndDate     pgtype.Date `json:"end_date"`
+				Assignments []struct {
+					ID         int64 `json:"id"`
+					TaskID     int64 `json:"task_id"`
+					ResourceID int64 `json:"resource_id"`
+					Quantity   int   `json:"quantity"`
+				} `json:"assignments"`
+			}
+
+			if err := json.Unmarshal(jsonData, &rawTasks); err != nil {
+				return domain.DetailedProcess{}, fmt.Errorf("parse tasks: %w", err)
+			}
+
+			tasks = make([]domain.DetailedTask, len(rawTasks))
+			for i, t := range rawTasks {
+				assignments := make([]domain.Assignment, len(t.Assignments))
+				for j, a := range t.Assignments {
+					assignments[j] = domain.Assignment{
+						ID:         a.ID,
+						TaskID:     a.TaskID,
+						ResourceID: a.ResourceID,
+						Quantity:   a.Quantity,
+					}
+				}
+
+				tasks[i] = domain.DetailedTask{
+					Task: domain.Task{
+						ID:        t.ID,
+						ProcessID: t.ProcessID,
+						Title:     t.Title,
+						StartDate: fromDate(t.StartDate),
+						EndDate:   fromDate(t.EndDate),
+					},
+					Assignments: assignments,
+				}
+			}
+		}
+	}
+
+	var milestones []domain.Milestone
+
+	if row.Milestones != nil {
+		var jsonData []byte
+		switch v := row.Milestones.(type) {
+		case []byte:
+			jsonData = v
+		case string:
+			jsonData = []byte(v)
+		default:
+			data, err := json.Marshal(v)
+			if err != nil {
+				return domain.DetailedProcess{}, fmt.Errorf("marshal milestones: %w", err)
+			}
+			jsonData = data
+		}
+
+		if len(jsonData) > 0 && string(jsonData) != "[]" {
+			var rawMilestones []struct {
+				ID            int64       `json:"id"`
+				ProcessID     int64       `json:"process_id"`
+				Content       string      `json:"content"`
+				Title         string      `json:"title"`
+				MilestoneDate pgtype.Date `json:"milestone_date"`
+			}
+
+			if err := json.Unmarshal(jsonData, &rawMilestones); err != nil {
+				return domain.DetailedProcess{}, fmt.Errorf("parse milestones: %w", err)
+			}
+
+			milestones = make([]domain.Milestone, len(rawMilestones))
+			for i, m := range rawMilestones {
+				milestones[i] = domain.Milestone{
+					ID:        m.ID,
+					Content:   m.Content,
+					ProcessID: m.ProcessID,
+					Title:     m.Title,
+					Date:      fromDate(m.MilestoneDate),
+				}
+			}
+		}
+	}
+
+	return domain.DetailedProcess{
+		Process: domain.Process{
+			ID:        row.ID,
+			OwnerID:   row.OwnerID,
+			ProjectID: row.ProjectID,
+			Title:     row.Title,
+			StartDate: fromDate(row.StartDate),
+			EndDate:   fromDate(row.EndDate),
+		},
+		Tasks:      tasks,
+		Milestones: milestones,
+	}, nil
+}
