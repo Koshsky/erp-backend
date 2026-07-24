@@ -13,7 +13,7 @@ import (
 	assignmentRepo "github.com/Koshsky/erp/api/internal/assignment/repository"
 	milestoneDelivery "github.com/Koshsky/erp/api/internal/milestone/delivery"
 	milestoneDomain "github.com/Koshsky/erp/api/internal/milestone/domain"
-	milestoneRepoPkg "github.com/Koshsky/erp/api/internal/milestone/repository"
+	milestoneRepo "github.com/Koshsky/erp/api/internal/milestone/repository"
 	processDelivery "github.com/Koshsky/erp/api/internal/process/delivery"
 	processDomain "github.com/Koshsky/erp/api/internal/process/domain"
 	processRepo "github.com/Koshsky/erp/api/internal/process/repository"
@@ -23,6 +23,9 @@ import (
 	resourceDelivery "github.com/Koshsky/erp/api/internal/resource/delivery"
 	resourceDomain "github.com/Koshsky/erp/api/internal/resource/domain"
 	resourceRepo "github.com/Koshsky/erp/api/internal/resource/repository"
+	schedulingDelivery "github.com/Koshsky/erp/api/internal/scheduling/delivery"
+	schedulingDomain "github.com/Koshsky/erp/api/internal/scheduling/domain"
+	schedulingRepo "github.com/Koshsky/erp/api/internal/scheduling/repository"
 	"github.com/Koshsky/erp/api/internal/security/password"
 	taskDelivery "github.com/Koshsky/erp/api/internal/task/delivery"
 	taskDomain "github.com/Koshsky/erp/api/internal/task/domain"
@@ -93,6 +96,11 @@ func (a *App) Start() error {
 }
 
 func (a *App) registerRoutes(router *gin.Engine) {
+	// --- Scheduling ---
+	schedulingQueries := schedulingRepo.NewSchedulingRepository(a.logger, a.pool)
+	schedulingSvc := schedulingDomain.NewSchedulingService(a.logger, schedulingQueries)
+	schedulingHandler := schedulingDelivery.NewSchedulingHandler(a.logger, schedulingSvc)
+
 	// --- User ---
 	userQueries := userRepo.NewUserRepository(a.logger, a.pool)
 	userHasher := password.NewBcryptHasher()
@@ -120,7 +128,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	processHandler := processDelivery.NewProcessHandler(a.logger, processSvc)
 
 	// --- Milestone ---
-	milestoneQueries := milestoneRepoPkg.NewMilestoneRepository(a.logger, a.pool)
+	milestoneQueries := milestoneRepo.NewMilestoneRepository(a.logger, a.pool)
 	milestoneSvc := milestoneDomain.NewMilestoneService(a.logger, milestoneQueries)
 	milestoneHandler := milestoneDelivery.NewMilestoneHandler(a.logger, milestoneSvc)
 
@@ -131,6 +139,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 
 	// Register routes
 	api := router.Group("/api")
+	schedulingHandler.RegisterRoutes(api)
 	userHandler.RegisterRoutes(api)
 	taskHandler.RegisterRoutes(api)
 	resourceHandler.RegisterRoutes(api)
