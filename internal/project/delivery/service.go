@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp/api/internal/project/dto"
+	"github.com/Koshsky/erp-backend/internal/project/dto"
 )
 
 type ProjectService interface {

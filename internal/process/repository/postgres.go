@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp/api/internal/process/domain"
-	"github.com/Koshsky/erp/api/internal/process/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/process/domain"
+	"github.com/Koshsky/erp-backend/internal/process/repository/sqlc"
 )
 
 type ProcessRepository struct {

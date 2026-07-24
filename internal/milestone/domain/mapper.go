@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/Koshsky/erp/api/internal/milestone/dto"
+import "github.com/Koshsky/erp-backend/internal/milestone/dto"
 
 type MilestoneMapper struct{}
 

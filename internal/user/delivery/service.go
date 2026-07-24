@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp/api/internal/user/dto"
+	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
 type UserService interface {

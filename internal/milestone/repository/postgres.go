@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp/api/internal/milestone/domain"
-	"github.com/Koshsky/erp/api/internal/milestone/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/milestone/domain"
+	"github.com/Koshsky/erp-backend/internal/milestone/repository/sqlc"
 )
 
 type MilestoneRepository struct {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Koshsky/erp/api/internal/resource/dto"
+	"github.com/Koshsky/erp-backend/internal/resource/dto"
 	"github.com/gin-gonic/gin"
 )
 

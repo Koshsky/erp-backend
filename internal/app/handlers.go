@@ -3,14 +3,14 @@ package app
 import (
 	"github.com/gin-gonic/gin"
 
-	assignmentDelivery "github.com/Koshsky/erp/api/internal/assignment/delivery"
-	milestoneDelivery "github.com/Koshsky/erp/api/internal/milestone/delivery"
-	processDelivery "github.com/Koshsky/erp/api/internal/process/delivery"
-	projectDelivery "github.com/Koshsky/erp/api/internal/project/delivery"
-	resourceDelivery "github.com/Koshsky/erp/api/internal/resource/delivery"
-	schedulingDelivery "github.com/Koshsky/erp/api/internal/scheduling/delivery"
-	taskDelivery "github.com/Koshsky/erp/api/internal/task/delivery"
-	userDelivery "github.com/Koshsky/erp/api/internal/user/delivery"
+	assignmentDelivery "github.com/Koshsky/erp-backend/internal/assignment/delivery"
+	milestoneDelivery "github.com/Koshsky/erp-backend/internal/milestone/delivery"
+	processDelivery "github.com/Koshsky/erp-backend/internal/process/delivery"
+	projectDelivery "github.com/Koshsky/erp-backend/internal/project/delivery"
+	resourceDelivery "github.com/Koshsky/erp-backend/internal/resource/delivery"
+	schedulingDelivery "github.com/Koshsky/erp-backend/internal/scheduling/delivery"
+	taskDelivery "github.com/Koshsky/erp-backend/internal/task/delivery"
+	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 )
 
 type RouteRegistrar interface {

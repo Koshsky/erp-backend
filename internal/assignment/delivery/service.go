@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp/api/internal/assignment/dto"
+	"github.com/Koshsky/erp-backend/internal/assignment/dto"
 )
 
 type AssignmentService interface {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp/api/internal/assignment/domain"
-	"github.com/Koshsky/erp/api/internal/assignment/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/assignment/domain"
+	"github.com/Koshsky/erp-backend/internal/assignment/repository/sqlc"
 )
 
 type AssignmentRepository struct {

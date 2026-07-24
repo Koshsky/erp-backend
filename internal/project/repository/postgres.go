@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp/api/internal/project/domain"
-	"github.com/Koshsky/erp/api/internal/project/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/project/domain"
+	"github.com/Koshsky/erp-backend/internal/project/repository/sqlc"
 )
 
 type ProjectRepository struct {

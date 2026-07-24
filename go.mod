@@ -1,4 +1,4 @@
-module github.com/Koshsky/erp/api
+module github.com/Koshsky/erp-backend
 
 go 1.25.0
 

@@ -1,22 +1,22 @@
 package app
 
 import (
-	assignmentDomain "github.com/Koshsky/erp/api/internal/assignment/domain"
-	assignmentRepo "github.com/Koshsky/erp/api/internal/assignment/repository"
-	milestoneDomain "github.com/Koshsky/erp/api/internal/milestone/domain"
-	milestoneRepoPkg "github.com/Koshsky/erp/api/internal/milestone/repository"
-	processDomain "github.com/Koshsky/erp/api/internal/process/domain"
-	processRepo "github.com/Koshsky/erp/api/internal/process/repository"
-	projectDomain "github.com/Koshsky/erp/api/internal/project/domain"
-	projectRepo "github.com/Koshsky/erp/api/internal/project/repository"
-	resourceDomain "github.com/Koshsky/erp/api/internal/resource/domain"
-	resourceRepo "github.com/Koshsky/erp/api/internal/resource/repository"
-	schedulingDomain "github.com/Koshsky/erp/api/internal/scheduling/domain"
-	schedulingRepo "github.com/Koshsky/erp/api/internal/scheduling/repository"
-	taskDomain "github.com/Koshsky/erp/api/internal/task/domain"
-	taskRepo "github.com/Koshsky/erp/api/internal/task/repository"
-	userDomain "github.com/Koshsky/erp/api/internal/user/domain"
-	userRepo "github.com/Koshsky/erp/api/internal/user/repository"
+	assignmentDomain "github.com/Koshsky/erp-backend/internal/assignment/domain"
+	assignmentRepo "github.com/Koshsky/erp-backend/internal/assignment/repository"
+	milestoneDomain "github.com/Koshsky/erp-backend/internal/milestone/domain"
+	milestoneRepoPkg "github.com/Koshsky/erp-backend/internal/milestone/repository"
+	processDomain "github.com/Koshsky/erp-backend/internal/process/domain"
+	processRepo "github.com/Koshsky/erp-backend/internal/process/repository"
+	projectDomain "github.com/Koshsky/erp-backend/internal/project/domain"
+	projectRepo "github.com/Koshsky/erp-backend/internal/project/repository"
+	resourceDomain "github.com/Koshsky/erp-backend/internal/resource/domain"
+	resourceRepo "github.com/Koshsky/erp-backend/internal/resource/repository"
+	schedulingDomain "github.com/Koshsky/erp-backend/internal/scheduling/domain"
+	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
+	taskDomain "github.com/Koshsky/erp-backend/internal/task/domain"
+	taskRepo "github.com/Koshsky/erp-backend/internal/task/repository"
+	userDomain "github.com/Koshsky/erp-backend/internal/user/domain"
+	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 )
 
 type (
