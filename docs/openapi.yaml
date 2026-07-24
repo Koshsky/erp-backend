@@ -1,60 +1,104 @@
 openapi: 3.0.0
 info:
   title: MVS ERP API
-  description: API для управления проектами, процессами, задачами, ресурсами и пользователями
   version: 1.0.0
-  contact:
-    name: MVS ERP Team
 
 servers:
-  - url: /api/v1
-    description: API v1
+  - url: /api
 
 paths:
-  # Health Check
-  /api/health:
+  # Users
+  /users:
     get:
-      summary: Health check endpoint
-      tags:
-        - System
+      summary: Get all users
+      tags: [Users]
       responses:
         '200':
-          description: Service is healthy
+          description: List of users
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: ok
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserResponse'
+    post:
+      summary: Create user
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+  /users/{id}:
+    get:
+      summary: Get user by ID
+      tags: [Users]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+    put:
+      summary: Update user
+      tags: [Users]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+    delete:
+      summary: Delete user
+      tags: [Users]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
+      responses:
+        '200':
+          description: User deleted
 
   # Projects
-  /projects:
+  /project:
     get:
       summary: Get all projects
-      tags:
-        - Projects
+      tags: [Projects]
       responses:
         '200':
           description: List of projects
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ProjectResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProjectResponse'
     post:
-      summary: Create new project
-      tags:
-        - Projects
+      summary: Create project
+      tags: [Projects]
       requestBody:
         required: true
         content:
@@ -62,53 +106,20 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateProjectRequest'
       responses:
-        '201':
+        '200':
           description: Project created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProjectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /projects/{id}:
+  /project/{id}:
     get:
       summary: Get project by ID
-      tags:
-        - Projects
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Projects]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
         '200':
           description: Project found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProjectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
+    put:
       summary: Update project
-      tags:
-        - Projects
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Projects]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       requestBody:
         required: true
         content:
@@ -118,82 +129,34 @@ paths:
       responses:
         '200':
           description: Project updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProjectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       summary: Delete project
-      tags:
-        - Projects
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-      responses:
-        '204':
-          description: Project deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /projects/{id}/detailed:
-    get:
-      summary: Get detailed project by ID with processes, tasks, milestones and assignments
-      tags:
-        - Projects
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Projects]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
         '200':
-          description: Detailed project found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectDetailResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Project deleted
 
   # Processes
-  /processes:
+  /process:
     get:
       summary: Get all processes
-      tags:
-        - Processes
+      tags: [Processes]
       responses:
         '200':
           description: List of processes
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ProcessResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProcessResponse'
     post:
-      summary: Create new process
-      tags:
-        - Processes
+      summary: Create process
+      tags: [Processes]
       requestBody:
         required: true
         content:
@@ -201,53 +164,20 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateProcessRequest'
       responses:
-        '201':
+        '200':
           description: Process created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProcessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /processes/{id}:
+  /process/{id}:
     get:
       summary: Get process by ID
-      tags:
-        - Processes
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Processes]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
         '200':
           description: Process found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProcessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
+    put:
       summary: Update process
-      tags:
-        - Processes
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Processes]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       requestBody:
         required: true
         content:
@@ -257,160 +187,34 @@ paths:
       responses:
         '200':
           description: Process updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProcessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       summary: Delete process
-      tags:
-        - Processes
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Processes]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
-        '204':
+        '200':
           description: Process deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /processes/{id}/detailed:
-    get:
-      summary: Get detailed process by ID with tasks and milestones
-      tags:
-        - Processes
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-      responses:
-        '200':
-          description: Detailed process found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProcessDetailResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  # Milestones
-  /milestones:
-    post:
-      summary: Create new milestone
-      tags:
-        - Milestones
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateMilestoneRequest'
-      responses:
-        '201':
-          description: Milestone created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MilestoneResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /milestones/{id}:
-    get:
-      summary: Get milestone by ID
-      tags:
-        - Milestones
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-      responses:
-        '200':
-          description: Milestone found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MilestoneResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      summary: Update milestone
-      tags:
-        - Milestones
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateMilestoneRequest'
-      responses:
-        '200':
-          description: Milestone updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MilestoneResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: Delete milestone
-      tags:
-        - Milestones
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-      responses:
-        '204':
-          description: Milestone deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   # Tasks
-  /tasks:
+  /task:
+    get:
+      summary: Get all tasks
+      tags: [Tasks]
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskResponse'
     post:
-      summary: Create new task
-      tags:
-        - Tasks
+      summary: Create task
+      tags: [Tasks]
       requestBody:
         required: true
         content:
@@ -418,53 +222,20 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateTaskRequest'
       responses:
-        '201':
+        '200':
           description: Task created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TaskResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /tasks/{id}:
+  /task/{id}:
     get:
       summary: Get task by ID
-      tags:
-        - Tasks
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Tasks]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
         '200':
           description: Task found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TaskResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
+    put:
       summary: Update task
-      tags:
-        - Tasks
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Tasks]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       requestBody:
         required: true
         content:
@@ -474,180 +245,92 @@ paths:
       responses:
         '200':
           description: Task updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TaskResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       summary: Delete task
-      tags:
-        - Tasks
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Tasks]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
-        '204':
+        '200':
           description: Task deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
-  /tasks/{id}/detailed:
+  # Milestones
+  /milestone:
     get:
-      summary: Get detailed task by ID with assignments
-      tags:
-        - Tasks
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      summary: Get all milestones
+      tags: [Milestones]
       responses:
         '200':
-          description: Detailed task found
+          description: List of milestones
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskDetailResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  # Assignments
-  /assignments:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MilestoneResponse'
     post:
-      summary: Create new assignment
-      tags:
-        - Assignments
+      summary: Create milestone
+      tags: [Milestones]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAssignmentRequest'
+              $ref: '#/components/schemas/CreateMilestoneRequest'
       responses:
-        '201':
-          description: Assignment created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/AssignmentResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /assignments/{id}:
+        '200':
+          description: Milestone created
+  /milestone/{id}:
     get:
-      summary: Get assignment by ID
-      tags:
-        - Assignments
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      summary: Get milestone by ID
+      tags: [Milestones]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
         '200':
-          description: Assignment found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/AssignmentResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      summary: Update assignment
-      tags:
-        - Assignments
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+          description: Milestone found
+    put:
+      summary: Update milestone
+      tags: [Milestones]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAssignmentRequest'
+              $ref: '#/components/schemas/UpdateMilestoneRequest'
       responses:
         '200':
-          description: Assignment updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/AssignmentResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Milestone updated
     delete:
-      summary: Delete assignment
-      tags:
-        - Assignments
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      summary: Delete milestone
+      tags: [Milestones]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
-        '204':
-          description: Assignment deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        '200':
+          description: Milestone deleted
 
   # Resources
-  /resources:
+  /resource:
     get:
       summary: Get all resources
-      tags:
-        - Resources
+      tags: [Resources]
       responses:
         '200':
           description: List of resources
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ResourceResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResourceResponse'
     post:
-      summary: Create new resource
-      tags:
-        - Resources
+      summary: Create resource
+      tags: [Resources]
       requestBody:
         required: true
         content:
@@ -655,53 +338,20 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateResourceRequest'
       responses:
-        '201':
+        '200':
           description: Resource created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ResourceResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /resources/{id}:
+  /resource/{id}:
     get:
       summary: Get resource by ID
-      tags:
-        - Resources
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Resources]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
         '200':
           description: Resource found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ResourceResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
+    put:
       summary: Update resource
-      tags:
-        - Resources
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+      tags: [Resources]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       requestBody:
         required: true
         content:
@@ -711,122 +361,71 @@ paths:
       responses:
         '200':
           description: Resource updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ResourceResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       summary: Delete resource
-      tags:
-        - Resources
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-      responses:
-        '204':
-          description: Resource deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  # Users
-  /users:
-    get:
-      summary: Get all users
-      tags:
-        - Users
+      tags: [Resources]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
         '200':
-          description: List of users
+          description: Resource deleted
+
+  # Assignments
+  /assignment:
+    get:
+      summary: Get all assignments
+      tags: [Assignments]
+      responses:
+        '200':
+          description: List of assignments
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/UserResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AssignmentResponse'
     post:
-      summary: Create new user
-      tags:
-        - Users
+      summary: Create assignment
+      tags: [Assignments]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserRequest'
-      responses:
-        '201':
-          description: User created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/UserResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /users/{id}:
-    get:
-      summary: Get user by ID
-      tags:
-        - Users
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+              $ref: '#/components/schemas/CreateAssignmentRequest'
       responses:
         '200':
-          description: User found
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/UserResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: Delete user
-      tags:
-        - Users
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
+          description: Assignment created
+  /assignment/{id}:
+    get:
+      summary: Get assignment by ID
+      tags: [Assignments]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
       responses:
-        '204':
-          description: User deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        '200':
+          description: Assignment found
+    put:
+      summary: Update assignment
+      tags: [Assignments]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssignmentRequest'
+      responses:
+        '200':
+          description: Assignment updated
+    delete:
+      summary: Delete assignment
+      tags: [Assignments]
+      parameters: [ $ref: '#/components/parameters/IdParam' ]
+      responses:
+        '200':
+          description: Assignment deleted
 
 components:
   parameters:
@@ -837,484 +436,169 @@ components:
       schema:
         type: integer
         format: int64
-      description: Resource ID
-
-  responses:
-    BadRequest:
-      description: Bad request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    InternalServerError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
 
   schemas:
-    # Base response
-    Response:
+    CreateUserRequest:
+      type: object
+      required: [name, username, role, password]
+      properties:
+        name: { type: string }
+        username: { type: string }
+        role: { type: string, enum: [admin, manager, user] }
+        password: { type: string, format: password }
+    UpdateUserRequest:
       type: object
       properties:
-        data:
-          description: Response data (can be object or array)
-      required:
-        - data
-
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-          description: Error message
-      required:
-        - error
-
-    # Project schemas
-    ProjectResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        code:
-          type: string
-          example: "PRJ-2026-001"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-01"
-        end_date:
-          type: string
-          format: date
-          example: "2026-12-31"
-        priority:
-          type: integer
-          example: 1
-
-    CreateProjectRequest:
-      type: object
-      required:
-        - code
-        - start_date
-        - end_date
-        - priority
-      properties:
-        code:
-          type: string
-          example: "PRJ-2026-001"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-01"
-        end_date:
-          type: string
-          format: date
-          example: "2026-12-31"
-        priority:
-          type: integer
-          example: 1
-
-    UpdateProjectRequest:
-      type: object
-      properties:
-        code:
-          type: string
-          example: "PRJ-2026-001"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-01"
-        end_date:
-          type: string
-          format: date
-          example: "2026-12-31"
-        priority:
-          type: integer
-          example: 2
-
-    ProjectDetailResponse:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/ProjectResponse'
-        - type: object
-          properties:
-            processes:
-              type: array
-              items:
-                $ref: '#/components/schemas/ProcessDetailResponse'
-
-    # Process schemas
-    ProcessResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        project_id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "Development Phase"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-15"
-        end_date:
-          type: string
-          format: date
-          example: "2026-03-15"
-
-    CreateProcessRequest:
-      type: object
-      required:
-        - project_id
-        - title
-        - start_date
-        - end_date
-      properties:
-        project_id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "Development Phase"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-15"
-        end_date:
-          type: string
-          format: date
-          example: "2026-03-15"
-
-    UpdateProcessRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          example: "Updated Development Phase"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-15"
-        end_date:
-          type: string
-          format: date
-          example: "2026-03-30"
-
-    ProcessDetailResponse:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/ProcessResponse'
-        - type: object
-          properties:
-            tasks:
-              type: array
-              items:
-                $ref: '#/components/schemas/TaskDetailResponse'
-            milestones:
-              type: array
-              items:
-                $ref: '#/components/schemas/MilestoneResponse'
-
-    # Task schemas
-    TaskResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        process_id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "Implement API"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-20"
-        end_date:
-          type: string
-          format: date
-          example: "2026-02-10"
-
-    CreateTaskRequest:
-      type: object
-      required:
-        - process_id
-        - title
-        - start_date
-        - end_date
-      properties:
-        process_id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "Implement API"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-20"
-        end_date:
-          type: string
-          format: date
-          example: "2026-02-10"
-
-    UpdateTaskRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          example: "Updated API Implementation"
-        start_date:
-          type: string
-          format: date
-          example: "2026-01-20"
-        end_date:
-          type: string
-          format: date
-          example: "2026-02-15"
-
-    TaskDetailResponse:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/TaskResponse'
-        - type: object
-          properties:
-            assignments:
-              type: array
-              items:
-                $ref: '#/components/schemas/AssignmentResponse'
-
-    # Milestone schemas
-    MilestoneResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        process_id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "API Design Review"
-        content:
-          type: string
-          example: "Review and approve API design documents"
-        date:
-          type: string
-          format: date
-          example: "2026-01-25"
-
-    CreateMilestoneRequest:
-      type: object
-      required:
-        - process_id
-        - title
-        - content
-        - date
-      properties:
-        process_id:
-          type: integer
-          format: int64
-          example: 1
-        title:
-          type: string
-          example: "API Design Review"
-        content:
-          type: string
-          example: "Review and approve API design documents"
-        date:
-          type: string
-          format: date
-          example: "2026-01-25"
-
-    UpdateMilestoneRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          example: "Updated Design Review"
-        content:
-          type: string
-          example: "Updated review description"
-        date:
-          type: string
-          format: date
-          example: "2026-01-26"
-
-    # Resource schemas
-    ResourceResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        code:
-          type: string
-          example: "RES-001"
-        title:
-          type: string
-          example: "Developer"
-        quantity:
-          type: integer
-          example: 5
-
-    CreateResourceRequest:
-      type: object
-      required:
-        - code
-        - title
-        - quantity
-      properties:
-        code:
-          type: string
-          example: "RES-001"
-        title:
-          type: string
-          example: "Developer"
-        quantity:
-          type: integer
-          example: 5
-
-    UpdateResourceRequest:
-      type: object
-      properties:
-        code:
-          type: string
-          example: "RES-001-UPD"
-        title:
-          type: string
-          example: "Senior Developer"
-        quantity:
-          type: integer
-          example: 3
-
-    # Assignment schemas
-    AssignmentResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        task_id:
-          type: integer
-          format: int64
-          example: 1
-        resource_id:
-          type: integer
-          format: int64
-          example: 1
-        quantity:
-          type: integer
-          example: 2
-
-    CreateAssignmentRequest:
-      type: object
-      required:
-        - task_id
-        - resource_id
-        - quantity
-      properties:
-        task_id:
-          type: integer
-          format: int64
-          example: 1
-        resource_id:
-          type: integer
-          format: int64
-          example: 1
-        quantity:
-          type: integer
-          example: 2
-
-    UpdateAssignmentRequest:
-      type: object
-      properties:
-        quantity:
-          type: integer
-          example: 3
-
-    # User schemas
+        name: { type: string }
+        username: { type: string }
+        role: { type: string, enum: [admin, manager, user] }
+        password: { type: string, format: password }
     UserResponse:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        name:
-          type: string
-          example: "John Doe"
-        username:
-          type: string
-          example: "johndoe"
-        role:
-          type: string
-          example: "admin"
-          enum: ["admin", "manager", "user"]
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        username: { type: string }
+        role: { type: string, enum: [admin, manager, user] }
 
-    CreateUserRequest:
+    CreateProjectRequest:
       type: object
-      required:
-        - name
-        - username
-        - role
-        - password
+      required: [code, start_date, end_date, priority]
       properties:
-        name:
-          type: string
-          example: "John Doe"
-        username:
-          type: string
-          example: "johndoe"
-        role:
-          type: string
-          example: "admin"
-          enum: ["admin", "manager", "user"]
-        password:
-          type: string
-          format: password
-          example: "securepassword123"
+        code: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        priority: { type: integer }
+    UpdateProjectRequest:
+      type: object
+      properties:
+        code: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        priority: { type: integer }
+    ProjectResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        priority: { type: integer }
+
+    CreateProcessRequest:
+      type: object
+      required: [project_id, title, start_date, end_date]
+      properties:
+        project_id: { type: integer, format: int64 }
+        title: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+    UpdateProcessRequest:
+      type: object
+      properties:
+        title: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+    ProcessResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        project_id: { type: integer, format: int64 }
+        title: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+
+    CreateTaskRequest:
+      type: object
+      required: [process_id, title, start_date, end_date]
+      properties:
+        process_id: { type: integer, format: int64 }
+        title: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+    TaskResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        process_id: { type: integer, format: int64 }
+        title: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+
+    CreateMilestoneRequest:
+      type: object
+      required: [process_id, title, content, date]
+      properties:
+        process_id: { type: integer, format: int64 }
+        title: { type: string }
+        content: { type: string }
+        date: { type: string, format: date }
+    UpdateMilestoneRequest:
+      type: object
+      properties:
+        title: { type: string }
+        content: { type: string }
+        date: { type: string, format: date }
+    MilestoneResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        process_id: { type: integer, format: int64 }
+        title: { type: string }
+        content: { type: string }
+        date: { type: string, format: date }
+
+    CreateResourceRequest:
+      type: object
+      required: [code, title, quantity]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        quantity: { type: integer }
+    UpdateResourceRequest:
+      type: object
+      properties:
+        code: { type: string }
+        title: { type: string }
+        quantity: { type: integer }
+    ResourceResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string }
+        title: { type: string }
+        quantity: { type: integer }
+
+    CreateAssignmentRequest:
+      type: object
+      required: [task_id, resource_id, quantity]
+      properties:
+        task_id: { type: integer, format: int64 }
+        resource_id: { type: integer, format: int64 }
+        quantity: { type: integer }
+    UpdateAssignmentRequest:
+      type: object
+      properties:
+        quantity: { type: integer }
+    AssignmentResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        task_id: { type: integer, format: int64 }
+        resource_id: { type: integer, format: int64 }
+        quantity: { type: integer }
 
 tags:
-  - name: System
-    description: System endpoints
-  - name: Projects
-    description: Project management
-  - name: Processes
-    description: Process management
-  - name: Tasks
-    description: Task management
-  - name: Milestones
-    description: Milestone management
-  - name: Assignments
-    description: Resource assignments
-  - name: Resources
-    description: Resource management
   - name: Users
-    description: User management
+  - name: Projects
+  - name: Processes
+  - name: Tasks
+  - name: Milestones
+  - name: Resources
+  - name: Assignments

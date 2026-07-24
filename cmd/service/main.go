@@ -11,8 +11,8 @@ import (
 
 	"github.com/Koshsky/erp/api/internal/app"
 	"github.com/Koshsky/erp/api/internal/config"
+	"github.com/Koshsky/erp/api/internal/database"
 	appLogger "github.com/Koshsky/erp/api/internal/logger"
-	"github.com/Koshsky/erp/api/internal/repository/postgres"
 )
 
 func main() {
@@ -33,15 +33,14 @@ func main() {
 	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// initialize the repository
-	pool, err := postgres.InitDBPool(cfg.DatabaseURL, logger)
+	// initialize the database pool
+	pool, err := database.InitDBPool(cfg.DatabaseURL, logger)
 	if err != nil {
 		log.Fatal(err)
 	}
-	repo := postgres.NewRepository(appLogger.WithComponent(logger, "repository.postgres"), pool)
 
 	// initialize the application
-	application, err := app.New(runCtx, cfg.SwaggerEnable, appLogger.WithComponent(logger, "app"), repo)
+	application, err := app.New(runCtx, cfg.SwaggerEnable, appLogger.WithComponent(logger, "app"), pool)
 	if err != nil {
 		log.Fatal(err)
 	}
