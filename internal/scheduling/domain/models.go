@@ -1,11 +1,11 @@
 package domain
 
 import (
-	assignmentDomain "github.com/Koshsky/erp-backend/internal/assignment/domain"
-	processDomain "github.com/Koshsky/erp-backend/internal/process/domain"
-	projectDomain "github.com/Koshsky/erp-backend/internal/project/domain"
-	resourceDomain "github.com/Koshsky/erp-backend/internal/resource/domain"
-	taskDomain "github.com/Koshsky/erp-backend/internal/task/domain"
+	assignmentDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
+	processDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
+	projectDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
+	resourceDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/domain"
+	taskDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 )
 
 type Project projectDomain.Project

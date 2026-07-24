@@ -3,13 +3,13 @@ package app
 import (
 	"github.com/gin-gonic/gin"
 
-	assignmentDelivery "github.com/Koshsky/erp-backend/internal/assignment/delivery"
-	milestoneDelivery "github.com/Koshsky/erp-backend/internal/milestone/delivery"
-	processDelivery "github.com/Koshsky/erp-backend/internal/process/delivery"
-	projectDelivery "github.com/Koshsky/erp-backend/internal/project/delivery"
-	resourceDelivery "github.com/Koshsky/erp-backend/internal/resource/delivery"
+	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
+	milestoneDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
+	processDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
+	projectDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/project/delivery"
+	resourceDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/delivery"
+	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
 	schedulingDelivery "github.com/Koshsky/erp-backend/internal/scheduling/delivery"
-	taskDelivery "github.com/Koshsky/erp-backend/internal/task/delivery"
 	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 )
 
