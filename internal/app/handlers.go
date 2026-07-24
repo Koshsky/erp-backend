@@ -8,6 +8,7 @@ import (
 	processDelivery "github.com/Koshsky/erp/api/internal/process/delivery"
 	projectDelivery "github.com/Koshsky/erp/api/internal/project/delivery"
 	resourceDelivery "github.com/Koshsky/erp/api/internal/resource/delivery"
+	schedulingDelivery "github.com/Koshsky/erp/api/internal/scheduling/delivery"
 	taskDelivery "github.com/Koshsky/erp/api/internal/task/delivery"
 	userDelivery "github.com/Koshsky/erp/api/internal/user/delivery"
 )
@@ -17,6 +18,7 @@ type RouteRegistrar interface {
 }
 
 var (
+	_ RouteRegistrar = (*schedulingDelivery.SchedulingHandler)(nil)
 	_ RouteRegistrar = (*userDelivery.UserHandler)(nil)
 	_ RouteRegistrar = (*taskDelivery.TaskHandler)(nil)
 	_ RouteRegistrar = (*resourceDelivery.ResourceHandler)(nil)

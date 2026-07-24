@@ -11,6 +11,8 @@ import (
 	projectRepo "github.com/Koshsky/erp/api/internal/project/repository"
 	resourceDomain "github.com/Koshsky/erp/api/internal/resource/domain"
 	resourceRepo "github.com/Koshsky/erp/api/internal/resource/repository"
+	schedulingDomain "github.com/Koshsky/erp/api/internal/scheduling/domain"
+	schedulingRepo "github.com/Koshsky/erp/api/internal/scheduling/repository"
 	taskDomain "github.com/Koshsky/erp/api/internal/task/domain"
 	taskRepo "github.com/Koshsky/erp/api/internal/task/repository"
 	userDomain "github.com/Koshsky/erp/api/internal/user/domain"
@@ -18,6 +20,7 @@ import (
 )
 
 type (
+	SchedulingRepository = schedulingDomain.Repository
 	UserRepository       = userDomain.RepositoryInterface
 	TaskRepository       = taskDomain.Repository
 	ResourceRepository   = resourceDomain.RepositoryInterface
@@ -28,6 +31,7 @@ type (
 )
 
 var (
+	_ SchedulingRepository = (*schedulingRepo.SchedulingRepository)(nil)
 	_ UserRepository       = (*userRepo.Repository)(nil)
 	_ TaskRepository       = (*taskRepo.TaskRepository)(nil)
 	_ ResourceRepository   = (*resourceRepo.ResourceRepository)(nil)
