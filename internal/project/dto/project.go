@@ -11,11 +11,6 @@ type ProjectResponse struct {
 	Priority  int       `json:"priority"`
 }
 
-type ProjectDetailResponse struct {
-	ProjectResponse
-	Processes []ProcessDetailResponse `json:"processes"`
-}
-
 type CreateProjectRequest struct {
 	Code      string    `json:"code"`
 	StartDate time.Time `json:"start_date" time_format:"2006-01-02"`

@@ -1,8 +1,6 @@
 package domain
 
-import (
-	"github.com/Koshsky/erp/api/internal/dto"
-)
+import "github.com/Koshsky/erp/api/internal/process/dto"
 
 type ProcessMapper struct{}
 

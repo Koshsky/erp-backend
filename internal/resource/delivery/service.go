@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp/api/internal/dto"
+	"github.com/Koshsky/erp/api/internal/resource/dto"
 )
 
 type ResourceService interface {

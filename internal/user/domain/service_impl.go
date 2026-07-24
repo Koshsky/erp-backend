@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/Koshsky/erp/api/internal/dto"
 	"github.com/Koshsky/erp/api/internal/security/password"
+	"github.com/Koshsky/erp/api/internal/user/dto"
 )
 
 type UserService struct {
