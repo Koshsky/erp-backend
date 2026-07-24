@@ -20,9 +20,9 @@ import (
 )
 
 type (
-	SchedulingRepository = schedulingDomain.Repository
+	SchedulingRepository = schedulingDomain.RepositoryInterface
 	UserRepository       = userDomain.RepositoryInterface
-	TaskRepository       = taskDomain.Repository
+	TaskRepository       = taskDomain.RepositoryInterface
 	ResourceRepository   = resourceDomain.RepositoryInterface
 	ProjectRepository    = projectDomain.RepositoryInterface
 	ProcessRepository    = processDomain.RepositoryInterface
@@ -32,7 +32,7 @@ type (
 
 var (
 	_ SchedulingRepository = (*schedulingRepo.SchedulingRepository)(nil)
-	_ UserRepository       = (*userRepo.Repository)(nil)
+	_ UserRepository       = (*userRepo.UserRepository)(nil)
 	_ TaskRepository       = (*taskRepo.TaskRepository)(nil)
 	_ ResourceRepository   = (*resourceRepo.ResourceRepository)(nil)
 	_ ProjectRepository    = (*projectRepo.ProjectRepository)(nil)

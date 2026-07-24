@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type Repository interface {
+type RepositoryInterface interface {
 	CreateTask(ctx context.Context, task Task) (*Task, error)
 	GetTask(ctx context.Context, id int64) (*Task, error)
 	UpdateTask(ctx context.Context, task Task) (*Task, error)

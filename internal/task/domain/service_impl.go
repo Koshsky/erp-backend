@@ -10,12 +10,12 @@ import (
 
 type TaskService struct {
 	logger     *slog.Logger
-	repository Repository
+	repository RepositoryInterface
 	mapper     *TaskMapper
 	validator  *TaskValidator
 }
 
-func NewTaskService(logger *slog.Logger, repository Repository) *TaskService {
+func NewTaskService(logger *slog.Logger, repository RepositoryInterface) *TaskService {
 	return &TaskService{
 		logger:     logger,
 		repository: repository,
