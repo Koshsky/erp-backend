@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp/api/internal/task/domain"
-	"github.com/Koshsky/erp/api/internal/task/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/task/domain"
+	"github.com/Koshsky/erp-backend/internal/task/repository/sqlc"
 )
 
 type TaskRepository struct {

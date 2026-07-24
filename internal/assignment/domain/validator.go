@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	"github.com/Koshsky/erp/api/internal/validator"
+	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
 type AssignmentValidator struct {

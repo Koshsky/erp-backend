@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp/api/internal/task/dto"
+	"github.com/Koshsky/erp-backend/internal/task/dto"
 )
 
 type TaskService interface {

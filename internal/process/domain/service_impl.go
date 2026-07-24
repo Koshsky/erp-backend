@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Koshsky/erp/api/internal/process/dto"
+	"github.com/Koshsky/erp-backend/internal/process/dto"
 )
 
 type ProcessService struct {

@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/Koshsky/erp/api/internal/project/dto"
+import "github.com/Koshsky/erp-backend/internal/project/dto"
 
 type ProjectMapper struct{}
 

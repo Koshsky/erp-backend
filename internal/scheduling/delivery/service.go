@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp/api/internal/scheduling/domain"
+	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
 )
 
 type MilestoneService interface {

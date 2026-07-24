@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp/api/internal/process/dto"
+	"github.com/Koshsky/erp-backend/internal/process/dto"
 )
 
 type ProcessService interface {

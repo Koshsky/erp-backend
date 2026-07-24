@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Koshsky/erp/api/internal/app"
-	"github.com/Koshsky/erp/api/internal/config"
-	"github.com/Koshsky/erp/api/internal/database"
-	appLogger "github.com/Koshsky/erp/api/internal/logger"
+	"github.com/Koshsky/erp-backend/internal/app"
+	"github.com/Koshsky/erp-backend/internal/config"
+	"github.com/Koshsky/erp-backend/internal/database"
+	appLogger "github.com/Koshsky/erp-backend/internal/logger"
 )
 
 func main() {

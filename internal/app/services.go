@@ -1,20 +1,20 @@
 package app
 
 import (
-	assignmentDelivery "github.com/Koshsky/erp/api/internal/assignment/delivery"
-	assignmentDomain "github.com/Koshsky/erp/api/internal/assignment/domain"
-	milestoneDelivery "github.com/Koshsky/erp/api/internal/milestone/delivery"
-	milestoneDomain "github.com/Koshsky/erp/api/internal/milestone/domain"
-	processDelivery "github.com/Koshsky/erp/api/internal/process/delivery"
-	processDomain "github.com/Koshsky/erp/api/internal/process/domain"
-	projectDelivery "github.com/Koshsky/erp/api/internal/project/delivery"
-	projectDomain "github.com/Koshsky/erp/api/internal/project/domain"
-	resourceDelivery "github.com/Koshsky/erp/api/internal/resource/delivery"
-	resourceDomain "github.com/Koshsky/erp/api/internal/resource/domain"
-	taskDelivery "github.com/Koshsky/erp/api/internal/task/delivery"
-	taskDomain "github.com/Koshsky/erp/api/internal/task/domain"
-	userDelivery "github.com/Koshsky/erp/api/internal/user/delivery"
-	userDomain "github.com/Koshsky/erp/api/internal/user/domain"
+	assignmentDelivery "github.com/Koshsky/erp-backend/internal/assignment/delivery"
+	assignmentDomain "github.com/Koshsky/erp-backend/internal/assignment/domain"
+	milestoneDelivery "github.com/Koshsky/erp-backend/internal/milestone/delivery"
+	milestoneDomain "github.com/Koshsky/erp-backend/internal/milestone/domain"
+	processDelivery "github.com/Koshsky/erp-backend/internal/process/delivery"
+	processDomain "github.com/Koshsky/erp-backend/internal/process/domain"
+	projectDelivery "github.com/Koshsky/erp-backend/internal/project/delivery"
+	projectDomain "github.com/Koshsky/erp-backend/internal/project/domain"
+	resourceDelivery "github.com/Koshsky/erp-backend/internal/resource/delivery"
+	resourceDomain "github.com/Koshsky/erp-backend/internal/resource/domain"
+	taskDelivery "github.com/Koshsky/erp-backend/internal/task/delivery"
+	taskDomain "github.com/Koshsky/erp-backend/internal/task/domain"
+	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
+	userDomain "github.com/Koshsky/erp-backend/internal/user/domain"
 )
 
 // TYPE ALIASES

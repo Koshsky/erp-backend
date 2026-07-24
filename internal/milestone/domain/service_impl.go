@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Koshsky/erp/api/internal/milestone/dto"
+	"github.com/Koshsky/erp-backend/internal/milestone/dto"
 )
 
 type MilestoneService struct {

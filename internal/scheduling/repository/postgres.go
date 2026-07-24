@@ -5,8 +5,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Koshsky/erp/api/internal/scheduling/domain"
-	"github.com/Koshsky/erp/api/internal/scheduling/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
+	"github.com/Koshsky/erp-backend/internal/scheduling/repository/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

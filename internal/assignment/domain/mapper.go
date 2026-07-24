@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"github.com/Koshsky/erp/api/internal/assignment/dto"
+	"github.com/Koshsky/erp-backend/internal/assignment/dto"
 )
 
 type AssignmentMapper struct{}

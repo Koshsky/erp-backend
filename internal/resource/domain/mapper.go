@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"github.com/Koshsky/erp/api/internal/resource/dto"
+	"github.com/Koshsky/erp-backend/internal/resource/dto"
 )
 
 type ResourceMapper struct{}
