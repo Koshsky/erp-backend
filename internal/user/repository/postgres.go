@@ -11,19 +11,19 @@ import (
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 )
 
-type Repository struct {
+type UserRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
 }
 
-func NewUserRepository(logger *slog.Logger, pool *pgxpool.Pool) *Repository {
-	return &Repository{
+func NewUserRepository(logger *slog.Logger, pool *pgxpool.Pool) *UserRepository {
+	return &UserRepository{
 		logger: logger,
 		db:     sqlc.New(pool),
 	}
 }
 
-func (r *Repository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
 	row, err := r.db.CreateUser(ctx, sqlc.CreateUserParams{
 		Name:         user.Name,
 		Username:     user.Username,
@@ -38,7 +38,7 @@ func (r *Repository) CreateUser(ctx context.Context, user domain.User) (*domain.
 	return &mapped, nil
 }
 
-func (r *Repository) GetUser(ctx context.Context, id int64) (*domain.User, error) {
+func (r *UserRepository) GetUser(ctx context.Context, id int64) (*domain.User, error) {
 	row, err := r.db.GetUser(ctx, id)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (r *Repository) GetUser(ctx context.Context, id int64) (*domain.User, error
 	return &mapped, nil
 }
 
-func (r *Repository) UpdateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*domain.User, error) {
 	row, err := r.db.UpdateUser(ctx, sqlc.UpdateUserParams{
 		UserID:       user.ID,
 		Name:         user.Name,
@@ -64,11 +64,11 @@ func (r *Repository) UpdateUser(ctx context.Context, user domain.User) (*domain.
 	return &mapped, nil
 }
 
-func (r *Repository) DeleteUser(ctx context.Context, id int64) error {
+func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
 	return r.db.DeleteUser(ctx, id)
 }
 
-func (r *Repository) ListUsers(ctx context.Context) ([]domain.User, error) {
+func (r *UserRepository) ListUsers(ctx context.Context) ([]domain.User, error) {
 	rows, err := r.db.ListUsers(ctx)
 	if err != nil {
 		return nil, err
