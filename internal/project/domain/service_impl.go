@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Koshsky/erp/api/internal/dto"
+	"github.com/Koshsky/erp/api/internal/project/dto"
 )
 
 type ProjectService struct {

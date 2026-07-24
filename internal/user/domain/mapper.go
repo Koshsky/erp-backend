@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"github.com/Koshsky/erp/api/internal/dto"
+	"github.com/Koshsky/erp/api/internal/user/dto"
 )
 
 type UserMapper struct{}

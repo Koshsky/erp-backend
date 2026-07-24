@@ -1,10 +1,10 @@
 package domain
 
 import (
-	"github.com/Koshsky/erp/api/internal/dto"
+	"github.com/Koshsky/erp/api/internal/assignment/dto"
 )
 
-type AssignmentMapper struct {}
+type AssignmentMapper struct{}
 
 func NewAssignmentMapper() *AssignmentMapper {
 	return &AssignmentMapper{}
