@@ -427,6 +427,53 @@ paths:
         '200':
           description: Assignment deleted
 
+  # Scheduling
+  /scheduling/projects:
+    get:
+      summary: Get project scheduling
+      description: Возвращает все проекты для построения диаграммы Ганта
+      tags: [Scheduling]
+      responses:
+        '200':
+          description: Project scheduling data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProjectSchedulingResponse'
+  /scheduling/processes:
+    get:
+      summary: Get process scheduling
+      description: Возвращает процессы с привязкой к проектам для построения диаграммы Ганта
+      tags: [Scheduling]
+      responses:
+        '200':
+          description: Process scheduling data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProcessSchedulingResponse'
+  /scheduling/tasks:
+    get:
+      summary: Get task scheduling
+      description: Возвращает задачи с процессами, проектами, назначениями, вехами и ресурсами для построения диаграммы Ганта
+      tags: [Scheduling]
+      responses:
+        '200':
+          description: Task scheduling data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TaskSchedulingResponse'
+
 components:
   parameters:
     IdParam:
@@ -438,161 +485,290 @@ components:
         format: int64
 
   schemas:
+    # === User ===
     CreateUserRequest:
       type: object
       required: [name, username, role, password]
       properties:
-        name: { type: string }
-        username: { type: string }
-        role: { type: string, enum: [admin, manager, user] }
-        password: { type: string, format: password }
+        name: { type: string, example: "Иван Иванов" }
+        username: { type: string, example: "ivanov" }
+        role: { type: string, enum: [admin, manager, user], example: "admin" }
+        password: { type: string, format: password, example: "securepassword123" }
     UpdateUserRequest:
       type: object
       properties:
-        name: { type: string }
-        username: { type: string }
-        role: { type: string, enum: [admin, manager, user] }
+        name: { type: string, example: "Иван Иванов" }
+        username: { type: string, example: "ivanov" }
+        role: { type: string, enum: [admin, manager, user], example: "manager" }
         password: { type: string, format: password }
     UserResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        name: { type: string }
-        username: { type: string }
-        role: { type: string, enum: [admin, manager, user] }
+        id: { type: integer, format: int64, example: 1 }
+        name: { type: string, example: "Иван Иванов" }
+        username: { type: string, example: "ivanov" }
+        role: { type: string, enum: [admin, manager, user], example: "admin" }
 
+    # === Project ===
     CreateProjectRequest:
       type: object
       required: [code, start_date, end_date, priority]
       properties:
-        code: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
-        priority: { type: integer }
+        code: { type: string, example: "KO-1001" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
+        priority: { type: integer, example: 1 }
     UpdateProjectRequest:
       type: object
       properties:
-        code: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
-        priority: { type: integer }
+        code: { type: string, example: "KO-1001" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
+        priority: { type: integer, example: 2 }
     ProjectResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        code: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
-        priority: { type: integer }
+        id: { type: integer, format: int64, example: 1 }
+        owner_id: { type: integer, format: int64, example: 1 }
+        code: { type: string, example: "KO-1001" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
+        priority: { type: integer, example: 1 }
 
+    # === Process ===
     CreateProcessRequest:
       type: object
       required: [project_id, title, start_date, end_date]
       properties:
-        project_id: { type: integer, format: int64 }
-        title: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
+        project_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Инсталляция" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
     UpdateProcessRequest:
       type: object
       properties:
-        title: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
+        title: { type: string, example: "Инсталляция" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
     ProcessResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        project_id: { type: integer, format: int64 }
-        title: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
+        id: { type: integer, format: int64, example: 1 }
+        owner_id: { type: integer, format: int64, example: 1 }
+        project_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Инсталляция" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
 
+    # === Task ===
     CreateTaskRequest:
       type: object
       required: [process_id, title, start_date, end_date]
       properties:
-        process_id: { type: integer, format: int64 }
-        title: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
+        process_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Осмотр объекта" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
     UpdateTaskRequest:
       type: object
       properties:
-        title: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
+        title: { type: string, example: "Осмотр объекта" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
     TaskResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        process_id: { type: integer, format: int64 }
-        title: { type: string }
-        start_date: { type: string, format: date }
-        end_date: { type: string, format: date }
+        id: { type: integer, format: int64, example: 1 }
+        process_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Осмотр объекта" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
 
+    # === Milestone ===
     CreateMilestoneRequest:
       type: object
       required: [process_id, title, content, date]
       properties:
-        process_id: { type: integer, format: int64 }
-        title: { type: string }
-        content: { type: string }
-        date: { type: string, format: date }
+        process_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Ввод в эксплуатацию" }
+        content: { type: string, example: "Подписан акт ввода в эксплуатацию" }
+        date: { type: string, format: date, example: "2026-08-22" }
     UpdateMilestoneRequest:
       type: object
       properties:
-        title: { type: string }
-        content: { type: string }
-        date: { type: string, format: date }
+        title: { type: string, example: "Ввод в эксплуатацию" }
+        content: { type: string, example: "Подписан акт ввода в эксплуатацию" }
+        date: { type: string, format: date, example: "2026-08-22" }
     MilestoneResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        process_id: { type: integer, format: int64 }
-        title: { type: string }
-        content: { type: string }
-        date: { type: string, format: date }
+        id: { type: integer, format: int64, example: 1 }
+        process_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Ввод в эксплуатацию" }
+        content: { type: string, example: "Подписан акт ввода в эксплуатацию" }
+        date: { type: string, format: date, example: "2026-08-22" }
 
+    # === Resource ===
     CreateResourceRequest:
       type: object
       required: [code, title, quantity]
       properties:
-        code: { type: string }
-        title: { type: string }
-        quantity: { type: integer }
+        code: { type: string, example: "И" }
+        title: { type: string, example: "Инженер" }
+        quantity: { type: integer, example: 7 }
     UpdateResourceRequest:
       type: object
       properties:
-        code: { type: string }
-        title: { type: string }
-        quantity: { type: integer }
+        code: { type: string, example: "И" }
+        title: { type: string, example: "Инженер" }
+        quantity: { type: integer, example: 5 }
     ResourceResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        code: { type: string }
-        title: { type: string }
-        quantity: { type: integer }
+        id: { type: integer, format: int64, example: 1 }
+        code: { type: string, example: "И" }
+        title: { type: string, example: "Инженер" }
+        quantity: { type: integer, example: 7 }
 
+    # === Assignment ===
     CreateAssignmentRequest:
       type: object
       required: [task_id, resource_id, quantity]
       properties:
-        task_id: { type: integer, format: int64 }
-        resource_id: { type: integer, format: int64 }
-        quantity: { type: integer }
+        task_id: { type: integer, format: int64, example: 1 }
+        resource_id: { type: integer, format: int64, example: 5 }
+        quantity: { type: integer, example: 1 }
     UpdateAssignmentRequest:
       type: object
       properties:
-        quantity: { type: integer }
+        quantity: { type: integer, example: 2 }
     AssignmentResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        task_id: { type: integer, format: int64 }
-        resource_id: { type: integer, format: int64 }
-        quantity: { type: integer }
+        id: { type: integer, format: int64, example: 1 }
+        task_id: { type: integer, format: int64, example: 1 }
+        resource_id: { type: integer, format: int64, example: 5 }
+        quantity: { type: integer, example: 1 }
+
+    # === Scheduling ===
+    Timeline:
+      type: object
+      properties:
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-10-25" }
+        total_days: { type: integer, example: 0 }
+
+    SchedulingProject:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 1 }
+        owner_id: { type: integer, format: int64, example: 1 }
+        code: { type: string, example: "KO-1001" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
+        priority: { type: integer, example: 1 }
+
+    SchedulingProcess:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 1 }
+        owner_id: { type: integer, format: int64, example: 1 }
+        project_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Инсталляция" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
+
+    SchedulingTask:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 1 }
+        process_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Осмотр объекта" }
+        start_date: { type: string, format: date, example: "2026-07-15" }
+        end_date: { type: string, format: date, example: "2026-08-30" }
+
+    SchedulingMilestone:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 1 }
+        process_id: { type: integer, format: int64, example: 1 }
+        title: { type: string, example: "Ввод в эксплуатацию" }
+        content: { type: string, example: "Подписан акт ввода в эксплуатацию" }
+        date: { type: string, format: date, example: "2026-08-22" }
+
+    SchedulingAssignment:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 1 }
+        task_id: { type: integer, format: int64, example: 1 }
+        resource_id: { type: integer, format: int64, example: 5 }
+        quantity: { type: integer, example: 1 }
+
+    SchedulingResource:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 1 }
+        code: { type: string, example: "И" }
+        title: { type: string, example: "Инженер" }
+        quantity: { type: integer, example: 7 }
+
+    ProjectSchedulingResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchedulingProject'
+        timeline:
+          $ref: '#/components/schemas/Timeline'
+
+    ProcessSchedulingResponse:
+      type: object
+      properties:
+        processes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchedulingProcess'
+        projects:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SchedulingProject'
+        timeline:
+          $ref: '#/components/schemas/Timeline'
+
+    TaskSchedulingResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchedulingTask'
+        processes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SchedulingProcess'
+        projects:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SchedulingProject'
+        milestones:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/SchedulingMilestone'
+        assignments:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/SchedulingAssignment'
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SchedulingResource'
+        timeline:
+          $ref: '#/components/schemas/Timeline'
 
 tags:
   - name: Users
@@ -602,3 +778,4 @@ tags:
   - name: Milestones
   - name: Resources
   - name: Assignments
+  - name: Scheduling

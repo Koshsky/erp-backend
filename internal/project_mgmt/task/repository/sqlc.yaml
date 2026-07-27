@@ -3,7 +3,7 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema:
-      - "../../../migrations/V1__initial_schema.sql"
+      - "../../../../migrations/V1__initial_schema.sql"
     queries:
       - "./query"
     gen:
