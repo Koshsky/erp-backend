@@ -1,19 +1,27 @@
--- name: GetTaskScheduling :many
-SELECT sqlc.embed(t) tasks,
-    sqlc.embed(p) processes,
-    sqlc.embed(pr) projects,
-    sqlc.embed(a) assignments
+-- name: GetDescribedTasks :many
+SELECT sqlc.embed(t), sqlc.embed(p), sqlc.embed(pr)
 FROM tasks t
 JOIN processes p ON t.process_id = p.id
 JOIN projects pr ON p.project_id = pr.id
-LEFT JOIN assignments a ON t.id = a.task_id
-WHERE tasks.deleted_at IS NULL
-    AND (
-        p.owner_id = @user_id OR
-        pr.owner_id = @user_id OR
-        @role = 'ДП'
-    )
-ORDER BY pr.priority ASC;
+WHERE t.deleted_at IS NULL
+  AND (
+    @role = 'ДП' OR
+    p.owner_id = @user_id OR
+    pr.owner_id = @user_id
+  )
+ORDER BY pr.priority ASC, p.id ASC;
+
+-- name: ListAssignmentsByTaskIDs :many
+SELECT *
+FROM assignments a
+WHERE a.task_id = ANY(@task_ids::bigint[])
+  AND a.deleted_at IS NULL;
+
+-- name: ListMilestonesByProcessIDs :many
+SELECT *
+FROM milestones m
+WHERE m.process_id = ANY(@process_ids::bigint[])
+  AND m.deleted_at IS NULL;
 
 -- name: GetResources :many
 SELECT * FROM resources

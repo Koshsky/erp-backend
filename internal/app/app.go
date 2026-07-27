@@ -29,6 +29,7 @@ import (
 	schedulingDelivery "github.com/Koshsky/erp-backend/internal/scheduling/delivery"
 	schedulingDomain "github.com/Koshsky/erp-backend/internal/scheduling/domain"
 	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
+	"github.com/Koshsky/erp-backend/internal/security/auth"
 	"github.com/Koshsky/erp-backend/internal/security/password"
 	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 	userDomain "github.com/Koshsky/erp-backend/internal/user/domain"
@@ -64,6 +65,8 @@ func (a *App) Start() error {
 
 	// Register middleware
 	router.Use(gin.Recovery())
+	authMiddleware := auth.NewAuthMiddleware()
+	router.Use(authMiddleware.Middleware())
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()

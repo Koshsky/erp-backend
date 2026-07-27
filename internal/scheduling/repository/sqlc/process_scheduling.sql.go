@@ -10,11 +10,11 @@ import (
 )
 
 const getProcessScheduling = `-- name: GetProcessScheduling :many
-SELECT p.processes, p.processes, p.processes, p.processes, p.processes, p.processes, p.processes, p.processes, p.processes processes,
-    pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects projects
+SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at,
+    pr.id, pr.owner_id, pr.code, pr.start_date, pr.end_date, pr.priority, pr.created_at, pr.updated_at, pr.deleted_at
 FROM processes p
 JOIN projects pr ON p.project_id = pr.id
-WHERE  deleted_at IS NULL
+WHERE  p.deleted_at IS NULL
     AND (
         pr.owner_id = $1 OR
         $2 = 'ДП'

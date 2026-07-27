@@ -9,6 +9,78 @@ import (
 	"context"
 )
 
+const getDescribedTasks = `-- name: GetDescribedTasks :many
+SELECT t.id, t.process_id, t.title, t.start_date, t.end_date, t.created_at, t.updated_at, t.deleted_at, p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at, pr.id, pr.owner_id, pr.code, pr.start_date, pr.end_date, pr.priority, pr.created_at, pr.updated_at, pr.deleted_at
+FROM tasks t
+JOIN processes p ON t.process_id = p.id
+JOIN projects pr ON p.project_id = pr.id
+WHERE t.deleted_at IS NULL
+  AND (
+    $1 = 'ДП' OR
+    p.owner_id = $2 OR
+    pr.owner_id = $2
+  )
+ORDER BY pr.priority ASC, p.id ASC
+`
+
+type GetDescribedTasksParams struct {
+	Role   interface{} `json:"role"`
+	UserID int64       `json:"user_id"`
+}
+
+type GetDescribedTasksRow struct {
+	Task    Task    `json:"task"`
+	Process Process `json:"process"`
+	Project Project `json:"project"`
+}
+
+func (q *Queries) GetDescribedTasks(ctx context.Context, arg GetDescribedTasksParams) ([]GetDescribedTasksRow, error) {
+	rows, err := q.db.Query(ctx, getDescribedTasks, arg.Role, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetDescribedTasksRow{}
+	for rows.Next() {
+		var i GetDescribedTasksRow
+		if err := rows.Scan(
+			&i.Task.ID,
+			&i.Task.ProcessID,
+			&i.Task.Title,
+			&i.Task.StartDate,
+			&i.Task.EndDate,
+			&i.Task.CreatedAt,
+			&i.Task.UpdatedAt,
+			&i.Task.DeletedAt,
+			&i.Process.ID,
+			&i.Process.ProjectID,
+			&i.Process.OwnerID,
+			&i.Process.Title,
+			&i.Process.StartDate,
+			&i.Process.EndDate,
+			&i.Process.CreatedAt,
+			&i.Process.UpdatedAt,
+			&i.Process.DeletedAt,
+			&i.Project.ID,
+			&i.Project.OwnerID,
+			&i.Project.Code,
+			&i.Project.StartDate,
+			&i.Project.EndDate,
+			&i.Project.Priority,
+			&i.Project.CreatedAt,
+			&i.Project.UpdatedAt,
+			&i.Project.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getResources = `-- name: GetResources :many
 SELECT id, title, code, quantity, created_at, updated_at, deleted_at FROM resources
 WHERE deleted_at IS NULL
@@ -42,79 +114,66 @@ func (q *Queries) GetResources(ctx context.Context) ([]Resource, error) {
 	return items, nil
 }
 
-const getTaskScheduling = `-- name: GetTaskScheduling :many
-SELECT t.tasks, t.tasks, t.tasks, t.tasks, t.tasks, t.tasks, t.tasks, t.tasks tasks,
-    p.processes, p.processes, p.processes, p.processes, p.processes, p.processes, p.processes, p.processes, p.processes processes,
-    pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects, pr.projects projects,
-    a.assignments, a.assignments, a.assignments, a.assignments, a.assignments, a.assignments, a.assignments assignments
-FROM tasks t
-JOIN processes p ON t.process_id = p.id
-JOIN projects pr ON p.project_id = pr.id
-LEFT JOIN assignments a ON t.id = a.task_id
-WHERE tasks.deleted_at IS NULL
-    AND (
-        p.owner_id = $1 OR
-        pr.owner_id = $1 OR
-        $2 = 'ДП'
-    )
-ORDER BY pr.priority ASC
+const listAssignmentsByTaskIDs = `-- name: ListAssignmentsByTaskIDs :many
+SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
+FROM assignments a
+WHERE a.task_id = ANY($1::bigint[])
+  AND a.deleted_at IS NULL
 `
 
-type GetTaskSchedulingParams struct {
-	UserID int64       `json:"user_id"`
-	Role   interface{} `json:"role"`
-}
-
-type GetTaskSchedulingRow struct {
-	Task       Task       `json:"task"`
-	Process    Process    `json:"process"`
-	Project    Project    `json:"project"`
-	Assignment Assignment `json:"assignment"`
-}
-
-func (q *Queries) GetTaskScheduling(ctx context.Context, arg GetTaskSchedulingParams) ([]GetTaskSchedulingRow, error) {
-	rows, err := q.db.Query(ctx, getTaskScheduling, arg.UserID, arg.Role)
+func (q *Queries) ListAssignmentsByTaskIDs(ctx context.Context, taskIds []int64) ([]Assignment, error) {
+	rows, err := q.db.Query(ctx, listAssignmentsByTaskIDs, taskIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetTaskSchedulingRow{}
+	items := []Assignment{}
 	for rows.Next() {
-		var i GetTaskSchedulingRow
+		var i Assignment
 		if err := rows.Scan(
-			&i.Task.ID,
-			&i.Task.ProcessID,
-			&i.Task.Title,
-			&i.Task.StartDate,
-			&i.Task.EndDate,
-			&i.Task.CreatedAt,
-			&i.Task.UpdatedAt,
-			&i.Task.DeletedAt,
-			&i.Process.ID,
-			&i.Process.ProjectID,
-			&i.Process.OwnerID,
-			&i.Process.Title,
-			&i.Process.StartDate,
-			&i.Process.EndDate,
-			&i.Process.CreatedAt,
-			&i.Process.UpdatedAt,
-			&i.Process.DeletedAt,
-			&i.Project.ID,
-			&i.Project.OwnerID,
-			&i.Project.Code,
-			&i.Project.StartDate,
-			&i.Project.EndDate,
-			&i.Project.Priority,
-			&i.Project.CreatedAt,
-			&i.Project.UpdatedAt,
-			&i.Project.DeletedAt,
-			&i.Assignment.ID,
-			&i.Assignment.TaskID,
-			&i.Assignment.ResourceID,
-			&i.Assignment.Quantity,
-			&i.Assignment.CreatedAt,
-			&i.Assignment.UpdatedAt,
-			&i.Assignment.DeletedAt,
+			&i.ID,
+			&i.TaskID,
+			&i.ResourceID,
+			&i.Quantity,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMilestonesByProcessIDs = `-- name: ListMilestonesByProcessIDs :many
+SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at
+FROM milestones m
+WHERE m.process_id = ANY($1::bigint[])
+  AND m.deleted_at IS NULL
+`
+
+func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []int64) ([]Milestone, error) {
+	rows, err := q.db.Query(ctx, listMilestonesByProcessIDs, processIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Milestone{}
+	for rows.Next() {
+		var i Milestone
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProcessID,
+			&i.Title,
+			&i.Content,
+			&i.Date,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}

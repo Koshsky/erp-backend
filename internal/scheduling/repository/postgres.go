@@ -89,74 +89,123 @@ func (r *SchedulingRepository) GetTaskScheduling(ctx context.Context) (*domain.T
 	role := ctx.Value("role").(string)
 	userID := ctx.Value("user_id").(int64)
 
-	rows, err := r.db.GetTaskScheduling(ctx, sqlc.GetTaskSchedulingParams{
+	taskRows, err := r.db.GetDescribedTasks(ctx, sqlc.GetDescribedTasksParams{
 		Role:   role,
 		UserID: userID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	resources, err := r.db.GetResources(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	scheduling := domain.TaskScheduling{
-		Tasks:       make([]domain.Task, len(rows)),
-		Projects:    make(map[int64]domain.Project),
+		Tasks:       make([]domain.Task, len(taskRows)),
 		Processes:   make(map[int64]domain.Process),
+		Projects:    make(map[int64]domain.Project),
 		Assignments: make(map[int64][]domain.Assignment),
+		Milestones:  make(map[int64][]domain.Milestone),
 		Resources:   make(map[int64]domain.Resource),
 	}
 
-	for i, row := range rows {
+	taskIDs := make([]int64, len(taskRows))
+	processIDs := []int64{}
+	for i, r := range taskRows {
 		task := domain.Task{
-			ID:        row.Task.ID,
-			ProcessID: row.Task.ProcessID,
-			Title:     row.Task.Title,
-			StartDate: row.Task.StartDate,
-			EndDate:   row.Task.EndDate,
-		}
-		project := domain.Project{
-			ID:        row.Project.ID,
-			OwnerID:   row.Project.OwnerID,
-			Code:      row.Project.Code,
-			StartDate: row.Project.StartDate,
-			EndDate:   row.Project.EndDate,
-			Priority:  int(row.Project.Priority),
+			ID:        r.Task.ID,
+			ProcessID: r.Task.ProcessID,
+			Title:     r.Task.Title,
+			StartDate: r.Task.StartDate,
+			EndDate:   r.Task.EndDate,
 		}
 		process := domain.Process{
-			ID:        row.Process.ID,
-			OwnerID:   row.Process.OwnerID,
-			ProjectID: row.Process.ProjectID,
-			Title:     row.Process.Title,
-			StartDate: row.Process.StartDate,
-			EndDate:   row.Process.EndDate,
+			ID:        r.Process.ID,
+			OwnerID:   r.Process.OwnerID,
+			ProjectID: r.Process.ProjectID,
+			Title:     r.Process.Title,
+			StartDate: r.Process.StartDate,
+			EndDate:   r.Process.EndDate,
 		}
-		assignment := domain.Assignment{
-			ID:         row.Assignment.ID,
-			TaskID:     row.Assignment.TaskID,
-			ResourceID: row.Assignment.ResourceID,
-			Quantity:   int(row.Assignment.Quantity),
+		project := domain.Project{
+			ID:        r.Project.ID,
+			Code:      r.Project.Code,
+			StartDate: r.Project.StartDate,
+			EndDate:   r.Project.EndDate,
+			Priority:  int(r.Project.Priority),
+			OwnerID:   r.Project.OwnerID,
 		}
-
 		scheduling.Tasks[i] = task
 		scheduling.Processes[process.ID] = process
 		scheduling.Projects[project.ID] = project
-		if scheduling.Assignments[task.ID] == nil {
-			scheduling.Assignments[task.ID] = []domain.Assignment{}
+
+		if i == 0 {
+			scheduling.Timeline.StartDate = process.StartDate
+			scheduling.Timeline.EndDate = process.EndDate
+		} else {
+			if scheduling.Timeline.StartDate.After(process.StartDate) {
+				scheduling.Timeline.StartDate = process.StartDate
+			}
+			if scheduling.Timeline.EndDate.Before(process.EndDate) {
+				scheduling.Timeline.EndDate = process.EndDate
+			}
 		}
-		scheduling.Assignments[task.ID] = append(scheduling.Assignments[task.ID], assignment)
+
+		taskIDs[i] = r.Task.ID
+		if len(processIDs) == 0 || processIDs[len(processIDs)-1] != r.Task.ProcessID {
+			processIDs = append(processIDs, r.Task.ProcessID)
+		}
+	}
+	duration := scheduling.Timeline.EndDate.Sub(scheduling.Timeline.StartDate)
+	scheduling.Timeline.TotalDays = int(duration.Hours() / 24)
+
+	milestoneRows, err := r.db.ListMilestonesByProcessIDs(ctx, processIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, milestone := range milestoneRows {
+		if scheduling.Milestones[milestone.ProcessID] == nil {
+			scheduling.Milestones[milestone.ProcessID] = []domain.Milestone{}
+		}
+		scheduling.Milestones[milestone.ID] = append(
+			scheduling.Milestones[milestone.ProcessID], domain.Milestone{
+				ID:        milestone.ID,
+				ProcessID: milestone.ProcessID,
+				Title:     milestone.Title,
+				Content:   milestone.Content,
+				Date:      milestone.Date,
+			},
+		)
 	}
 
-	for _, row := range resources {
-		resource := domain.Resource{
-			ID:       row.ID,
-			Code:     row.Code,
-			Title:    row.Title,
-			Quantity: int(row.Quantity),
-		}
-		scheduling.Resources[resource.ID] = resource
+	assignmentRows, err := r.db.ListAssignmentsByTaskIDs(ctx, taskIDs)
+	if err != nil {
+		return nil, err
 	}
+	for _, assignment := range assignmentRows {
+		if scheduling.Assignments[assignment.TaskID] == nil {
+			scheduling.Assignments[assignment.TaskID] = []domain.Assignment{}
+		}
+		scheduling.Assignments[assignment.TaskID] = append(
+			scheduling.Assignments[assignment.TaskID], domain.Assignment{
+				ID:         assignment.ID,
+				TaskID:     assignment.TaskID,
+				ResourceID: assignment.ResourceID,
+				Quantity:   int(assignment.Quantity),
+			},
+		)
+	}
+
+	resourceRows, err := r.db.GetResources(ctx)
+	if err != nil {
+		return nil, err
+	}
+	scheduling.Resources = make(map[int64]domain.Resource)
+	for _, resource := range resourceRows {
+		scheduling.Resources[resource.ID] = domain.Resource{
+			ID:       resource.ID,
+			Code:     resource.Code,
+			Quantity: int(resource.Quantity),
+			Title:    resource.Title,
+		}
+	}
+
 	return &scheduling, nil
 }
