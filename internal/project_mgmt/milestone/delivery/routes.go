@@ -3,9 +3,12 @@ package delivery
 import "github.com/gin-gonic/gin"
 
 func (h *MilestoneHandler) RegisterRoutes(router *gin.RouterGroup) {
-	router.GET("/milestone", h.ListMilestones)
-	router.GET("/milestone/:id", h.GetMilestone)
-	router.POST("/milestone", h.CreateMilestone)
-	router.PUT("/milestone/:id", h.UpdateMilestone)
-	router.DELETE("/milestone/:id", h.DeleteMilestone)
+	r := router.Group("/milestone")
+	{
+		r.GET("/", h.ListMilestones)
+		r.GET("/:id", h.GetMilestone)
+		r.POST("/", h.CreateMilestone)
+		r.PUT("/:id", h.UpdateMilestone)
+		r.DELETE("/:id", h.DeleteMilestone)
+	}
 }

@@ -9,15 +9,24 @@ import (
 	"context"
 )
 
-const getProjectScheduling = `-- name: GetProjectScheduling :many
+const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
-AND $1 = 'ДП'
+AND (
+    $1 = 'ДП' OR
+    owner_id = $2
+)
 ORDER BY priority ASC
 `
 
-func (q *Queries) GetProjectScheduling(ctx context.Context, role interface{}) ([]Project, error) {
-	rows, err := q.db.Query(ctx, getProjectScheduling, role)
+type ListProjectsParams struct {
+	Role   interface{} `json:"role"`
+	UserID int64       `json:"user_id"`
+}
+
+// Project Scheduling
+func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listProjects, arg.Role, arg.UserID)
 	if err != nil {
 		return nil, err
 	}

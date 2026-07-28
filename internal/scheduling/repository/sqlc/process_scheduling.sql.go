@@ -70,3 +70,39 @@ func (q *Queries) GetProcessScheduling(ctx context.Context, arg GetProcessSchedu
 	}
 	return items, nil
 }
+
+const listProcessesByProjectID = `-- name: ListProcessesByProjectID :many
+SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at FROM processes
+WHERE project_id = ANY($1::bigint[])
+AND deleted_at IS NULL
+`
+
+func (q *Queries) ListProcessesByProjectID(ctx context.Context, projectIds []int64) ([]Process, error) {
+	rows, err := q.db.Query(ctx, listProcessesByProjectID, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Process{}
+	for rows.Next() {
+		var i Process
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.OwnerID,
+			&i.Title,
+			&i.StartDate,
+			&i.EndDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

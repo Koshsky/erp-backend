@@ -23,16 +23,20 @@ func NewSchedulingRepository(logger *slog.Logger, pool *pgxpool.Pool) *Schedulin
 	}
 }
 
-func (r *SchedulingRepository) GetProjectScheduling(ctx context.Context) (*domain.ProjectScheduling, error) {
-	rows, err := r.db.GetProjectScheduling(ctx, auth.GetRole(ctx))
+func (r *SchedulingRepository) ListProjects(ctx context.Context) ([]domain.Project, error) {
+	userID := auth.GetUserID(ctx)
+	role := auth.GetRole(ctx)
+	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
+		UserID: userID,
+		Role:   role,
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	scheduling := domain.ProjectScheduling{
-		Projects: make([]domain.Project, len(rows)),
-	}
+	projetcs := make([]domain.Project, len(rows))
 	for i, row := range rows {
-		scheduling.Projects[i] = domain.Project{
+		projetcs[i] = domain.Project{
 			ID:        row.ID,
 			OwnerID:   row.OwnerID,
 			Code:      row.Code,
@@ -42,7 +46,25 @@ func (r *SchedulingRepository) GetProjectScheduling(ctx context.Context) (*domai
 		}
 	}
 
-	return &scheduling, nil
+	return projetcs, nil
+}
+
+func (r *SchedulingRepository) ListProcessesByProjectID(ctx context.Context, projectIDs []int64) ([]domain.Process, error) {
+	rows, err := r.db.ListProcessesByProjectID(ctx, projectIDs)
+	if err != nil {
+		return nil, err
+	}
+	processes := make([]domain.Process, len(rows))
+	for i, row := range rows {
+		processes[i] = domain.Process{
+			ID:        row.ID,
+			OwnerID:   row.OwnerID,
+			ProjectID: row.ProjectID,
+			StartDate: row.StartDate,
+			EndDate:   row.EndDate,
+		}
+	}
+	return processes, nil
 }
 
 func (r *SchedulingRepository) GetProcessScheduling(ctx context.Context) (*domain.ProcessScheduling, error) {
