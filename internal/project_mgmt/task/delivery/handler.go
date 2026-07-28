@@ -32,6 +32,14 @@ func NewTaskHandler(logger *slog.Logger, service TaskService) *TaskHandler {
 	}
 }
 
+// @Tags Tasks
+// @Summary List all tasks
+// @Description Get a list of all tasks
+// @Security ApiKeyAuth
+// @Produce json
+// @Success 200 {object} response{data=[]dto.TaskResponse}
+// @Failure 500 {object} response{error=string}
+// @Router /task [get]
 func (h *TaskHandler) ListTasks(c *gin.Context) {
 	tasks, err := h.service.ListTasks(c.Request.Context())
 	if err != nil {
@@ -42,6 +50,16 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: tasks})
 }
 
+// @Tags Tasks
+// @Summary Get a task by ID
+// @Description Get a task by its ID
+// @Security ApiKeyAuth
+// @Produce json
+// @Param id path int true "Task ID"
+// @Success 200 {object} response{data=dto.TaskResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /task/{id} [get]
 func (h *TaskHandler) GetTask(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -58,6 +76,17 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: task})
 }
 
+// @Tags Tasks
+// @Summary Create a new task
+// @Description Create a new task
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param task body dto.CreateTaskRequest true "Task"
+// @Success 201 {object} response{data=dto.TaskResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /task [post]
 func (h *TaskHandler) CreateTask(c *gin.Context) {
 	var task dto.CreateTaskRequest
 	if err := c.ShouldBindJSON(&task); err != nil {
@@ -74,6 +103,17 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 	c.JSON(http.StatusCreated, response{Data: created})
 }
 
+// @Tags Tasks
+// @Summary Delete a task
+// @Description Delete a task by ID
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Task ID"
+// @Success 204
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /task/{id} [delete]
 func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -89,6 +129,18 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// @Tags Tasks
+// @Summary Update a task
+// @Description Update a task by ID
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Task ID"
+// @Param task body dto.UpdateTaskRequest true "Task data"
+// @Success 200 {object} response{data=dto.TaskResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /task/{id} [put]
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

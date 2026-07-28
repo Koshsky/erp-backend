@@ -1,0 +1,1880 @@
+basePath: /api/v1
+definitions:
+  dto.AssignmentResponse:
+    properties:
+      id:
+        type: integer
+      quantity:
+        type: integer
+      resource_id:
+        type: integer
+      task_id:
+        type: integer
+    type: object
+  dto.AuthResponse:
+    properties:
+      tokens:
+        $ref: '#/definitions/jwt.TokenPair'
+      user:
+        $ref: '#/definitions/dto.UserInfo'
+    type: object
+  dto.ChangePasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  dto.CreateAssignmentRequest:
+    properties:
+      quantity:
+        type: integer
+      resource_id:
+        type: integer
+      task_id:
+        type: integer
+    type: object
+  dto.CreateMilestoneRequest:
+    properties:
+      content:
+        type: string
+      date:
+        type: string
+      process_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  dto.CreateProcessRequest:
+    properties:
+      end_date:
+        type: string
+      project_id:
+        type: integer
+      start_date:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.CreateProjectRequest:
+    properties:
+      code:
+        type: string
+      end_date:
+        type: string
+      priority:
+        type: integer
+      start_date:
+        type: string
+    type: object
+  dto.CreateResourceRequest:
+    properties:
+      code:
+        type: string
+      quantity:
+        type: integer
+      title:
+        type: string
+    type: object
+  dto.CreateTaskRequest:
+    properties:
+      end_date:
+        type: string
+      process_id:
+        type: integer
+      start_date:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.CreateUserRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  dto.MilestoneResponse:
+    properties:
+      content:
+        type: string
+      date:
+        type: string
+      id:
+        type: integer
+      process_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  dto.ProcessResponse:
+    properties:
+      end_date:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        type: integer
+      project_id:
+        type: integer
+      start_date:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.ProjectResponse:
+    properties:
+      code:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        type: integer
+      priority:
+        type: integer
+      start_date:
+        type: string
+    type: object
+  dto.RefreshResponse:
+    properties:
+      message:
+        type: string
+      tokens:
+        $ref: '#/definitions/jwt.TokenPair'
+    type: object
+  dto.RegisterRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    required:
+    - name
+    - password
+    - username
+    type: object
+  dto.ResourceResponse:
+    properties:
+      code:
+        type: string
+      id:
+        type: integer
+      quantity:
+        type: integer
+      title:
+        type: string
+    type: object
+  dto.TaskResponse:
+    properties:
+      end_date:
+        type: string
+      id:
+        type: integer
+      process_id:
+        type: integer
+      start_date:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.UpdateAssignmentRequest:
+    properties:
+      quantity:
+        type: integer
+    type: object
+  dto.UpdateMilestoneRequest:
+    properties:
+      content:
+        type: string
+      date:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.UpdateProcessRequest:
+    properties:
+      end_date:
+        type: string
+      start_date:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.UpdateProjectRequest:
+    properties:
+      code:
+        type: string
+      end_date:
+        type: string
+      priority:
+        type: integer
+      start_date:
+        type: string
+    type: object
+  dto.UpdateResourceRequest:
+    properties:
+      code:
+        type: string
+      quantity:
+        type: integer
+      title:
+        type: string
+    type: object
+  dto.UpdateTaskRequest:
+    properties:
+      end_date:
+        type: string
+      start_date:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.UpdateUserRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.UserInfo:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.UserResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_project_mgmt_assignment_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  internal_project_mgmt_milestone_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  internal_project_mgmt_process_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  internal_project_mgmt_project_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  internal_project_mgmt_resource_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  internal_project_mgmt_task_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  internal_scheduling_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  internal_user_delivery.response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+  jwt.TokenPair:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        description: секунды
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+externalDocs:
+  description: Документация ERP (заглушка)
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    email: shmonov.mv@gmail.com
+    name: Shmonov Matvey
+    url: https://t.me/Koshsky
+  description: For managing the enterprise's universal resources
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Enterprise Resource Planning
+  version: "1.0"
+paths:
+  /assignments:
+    get:
+      description: Get a list of all assignments
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.AssignmentResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List assignments
+      tags:
+      - Assignments
+    post:
+      consumes:
+      - application/json
+      description: Create a new assignment
+      parameters:
+      - description: Assignment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAssignmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AssignmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create assignment
+      tags:
+      - Assignments
+  /assignments/{id}:
+    delete:
+      description: Delete an assignment by ID
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an assignment
+      tags:
+      - Assignments
+    get:
+      description: Get assignment by id
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AssignmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get assignment
+      tags:
+      - Assignments
+    put:
+      consumes:
+      - application/json
+      description: Update an assignment by ID
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Assignment data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAssignmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AssignmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update an assignment
+      tags:
+      - Assignments
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change password (requires old password)
+      parameters:
+      - description: Old and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChangePasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Change Password
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Revoke refresh token
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Logout
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh access token using refresh token, returns new pair
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            refresh_token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh Token
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create user and return JWT token
+      parameters:
+      - description: Register credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register
+      tags:
+      - Auth
+  /milestone:
+    get:
+      description: List all milestones
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.MilestoneResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: List milestones
+      tags:
+      - Milestones
+    post:
+      consumes:
+      - application/json
+      description: Create milestone with the input payload
+      parameters:
+      - description: Milestone data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMilestoneRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.MilestoneResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create milestone
+      tags:
+      - Milestones
+  /milestone/{id}:
+    delete:
+      description: Delete milestone by ID
+      parameters:
+      - description: Milestone ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete milestone
+      tags:
+      - Milestones
+    get:
+      description: Get milestone by id
+      parameters:
+      - description: Milestone ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.MilestoneResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get milestone
+      tags:
+      - Milestones
+    put:
+      consumes:
+      - application/json
+      description: Update milestone by ID
+      parameters:
+      - description: Milestone ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Milestone data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateMilestoneRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.MilestoneResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update milestone
+      tags:
+      - Milestones
+  /process:
+    get:
+      description: Get a list of all processes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.ProcessResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: List processes
+      tags:
+      - Processes
+    post:
+      consumes:
+      - application/json
+      description: Create a new process
+      parameters:
+      - description: Process data
+        in: body
+        name: process
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateProcessRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProcessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create process
+      tags:
+      - Processes
+  /process/{id}:
+    delete:
+      description: Delete a process by ID
+      parameters:
+      - description: Process ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete process
+      tags:
+      - Processes
+    get:
+      description: Get a process by ID
+      parameters:
+      - description: Process ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProcessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get process
+      tags:
+      - Processes
+    put:
+      consumes:
+      - application/json
+      description: Update a process by ID
+      parameters:
+      - description: Process ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Process data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProcessRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProcessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update process
+      tags:
+      - Processes
+  /project:
+    get:
+      description: Get a list of all projects
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.ProjectResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List projects
+      tags:
+      - Projects
+    post:
+      consumes:
+      - application/json
+      description: Create a new project with the provided details
+      parameters:
+      - description: Project details
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProjectResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new project
+      tags:
+      - Projects
+  /project/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete project
+      tags:
+      - Projects
+    get:
+      description: Get a project by ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProjectResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get project
+      tags:
+      - Projects
+    put:
+      consumes:
+      - application/json
+      description: Update a project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Project data
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProjectResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update project
+      tags:
+      - Projects
+  /resource:
+    get:
+      description: List all resources
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.ResourceResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: List resources
+      tags:
+      - Resources
+    post:
+      consumes:
+      - application/json
+      description: Create resource
+      parameters:
+      - description: Resource
+        in: body
+        name: resource
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateResourceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ResourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create resource
+      tags:
+      - Resources
+  /resource/{id}:
+    delete:
+      description: Delete resource by id
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete resource
+      tags:
+      - Resources
+    get:
+      description: Get resource by id
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ResourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get resource
+      tags:
+      - Resources
+    put:
+      consumes:
+      - application/json
+      description: Update resource by id
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Resource
+        in: body
+        name: resource
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateResourceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ResourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update resource
+      tags:
+      - Resources
+  /scheduling/processes:
+    get:
+      description: Get process scheduling
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get process scheduling
+      tags:
+      - Scheduling
+  /scheduling/projects:
+    get:
+      description: Get project scheduling (project portfolio)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get project scheduling
+      tags:
+      - Scheduling
+  /scheduling/tasks:
+    get:
+      description: Get task scheduling
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_scheduling_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get task scheduling
+      tags:
+      - Scheduling
+  /task:
+    get:
+      description: Get a list of all tasks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.TaskResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List all tasks
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task
+      parameters:
+      - description: Task
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TaskResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new task
+      tags:
+      - Tasks
+  /task/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a task by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a task
+      tags:
+      - Tasks
+    get:
+      description: Get a task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TaskResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a task by ID
+      tags:
+      - Tasks
+    put:
+      consumes:
+      - application/json
+      description: Update a task by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TaskResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a task
+      tags:
+      - Tasks
+  /user:
+    get:
+      description: Returns all users in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_user_delivery.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.UserResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: List all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the provided data
+      parameters:
+      - description: User data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_user_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new user
+      tags:
+      - Users
+  /user/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a user
+      tags:
+      - Users
+    get:
+      description: Returns information about a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_user_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: User information
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_user_delivery.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_user_delivery.response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a user
+      tags:
+      - Users
+securityDefinitions:
+  ApiKeyAuth:
+    description: '"Введите JWT токен в формате: Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

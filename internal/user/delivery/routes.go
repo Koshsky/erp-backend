@@ -3,9 +3,12 @@ package delivery
 import "github.com/gin-gonic/gin"
 
 func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup) {
-	router.GET("/users", h.ListUsers)
-	router.GET("/users/:id", h.GetUser)
-	router.POST("/users", h.CreateUser)
-	router.PUT("/users/:id", h.UpdateUser)
-	router.DELETE("/users/:id", h.DeleteUser)
+	r := router.Group("/user")
+	{
+		r.GET("/", h.ListUsers)
+		r.GET("/:id", h.GetUser)
+		r.POST("/", h.CreateUser)
+		r.PUT("/:id", h.UpdateUser)
+		r.DELETE("/:id", h.DeleteUser)
+	}
 }

@@ -33,6 +33,14 @@ func NewProjectHandler(logger *slog.Logger, service ProjectService) *ProjectHand
 	}
 }
 
+// @Tags Projects
+// @Summary List projects
+// @Description Get a list of all projects
+// @Security ApiKeyAuth
+// @Produce json
+// @Success 200 {object} response{data=[]dto.ProjectResponse}
+// @Failure 500 {object} response{error=string}
+// @Router /project [get]
 func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	projects, err := h.service.ListProjects(c.Request.Context())
 	if err != nil {
@@ -43,6 +51,16 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: projects})
 }
 
+// @Tags Projects
+// @Summary Get project
+// @Description Get a project by ID
+// @Security ApiKeyAuth
+// @Produce json
+// @Param id path int true "Project ID"
+// @Success 200 {object} response{data=dto.ProjectResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /project/{id} [get]
 func (h *ProjectHandler) GetProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -59,6 +77,17 @@ func (h *ProjectHandler) GetProject(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: project})
 }
 
+// @Tags Projects
+// @Summary Create a new project
+// @Description Create a new project with the provided details
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param project body dto.CreateProjectRequest true "Project details"
+// @Success 201 {object} response{data=dto.ProjectResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /project [post]
 func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	var project dto.CreateProjectRequest
 	if err := c.ShouldBindJSON(&project); err != nil {
@@ -75,6 +104,17 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	c.JSON(http.StatusCreated, response{Data: created})
 }
 
+// @Tags Projects
+// @Summary Delete project
+// @Description Delete a project by its ID
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Project ID"
+// @Success 204
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /project/{id} [delete]
 func (h *ProjectHandler) DeleteProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -90,6 +130,18 @@ func (h *ProjectHandler) DeleteProject(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// @Tags Projects
+// @Summary Update project
+// @Description Update a project by its ID
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Project ID"
+// @Param project body dto.UpdateProjectRequest true "Project data"
+// @Success 200 {object} response{data=dto.ProjectResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /project/{id} [put]
 func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
