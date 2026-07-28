@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
 	"github.com/Koshsky/erp-backend/internal/scheduling/dto"
 )
 
@@ -21,41 +20,85 @@ func NewSchedulingService(logger *slog.Logger, repository RepositoryInterface) *
 }
 
 func (s *SchedulingService) GetProjectScheduling(ctx context.Context) (*dto.ProjectScheduling, error) {
-	projects, err := s.repository.ListProjects(ctx)
+	userID := ctx.Value("user_id").(int64)
+	role := ctx.Value("role").(string)
+
+	projects, err := s.repository.ListProjects(ctx, userID, role)
 	if err != nil {
 		return nil, err
 	}
+
 	return &dto.ProjectScheduling{
 		Projects: projects,
 	}, nil
 }
 
 func (s *SchedulingService) GetProcessScheduling(ctx context.Context) (*dto.ProcessScheduling, error) {
-	projects, err := s.repository.ListProjects(ctx)
+	userID := ctx.Value("user_id").(int64)
+	role := ctx.Value("role").(string)
+
+	projects, err := s.repository.ListProjects(ctx, userID, role)
 	if err != nil {
 		return nil, err
-	}
-
-	scheduling := &dto.ProcessScheduling{
-		Projects: make(map[int64]domain.Project),
 	}
 	projectIDs := make([]int64, len(projects))
 	for i, project := range projects {
 		projectIDs[i] = project.ID
-		scheduling.Projects[project.ID] = project
 	}
-	processes, err := s.repository.ListProcessesByProjectID(ctx, projectIDs)
+	processes, err := s.repository.ListProcessesByProjectIDs(ctx, projectIDs)
 	if err != nil {
 		return nil, err
 	}
-	scheduling.Processes = processes
-	return scheduling, nil
+
+	return &dto.ProcessScheduling{
+		Projects:  projects,
+		Processes: processes,
+	}, nil
 }
 
 func (s *SchedulingService) GetTaskScheduling(ctx context.Context) (*dto.TaskScheduling, error) {
-	scheduling, err := s.repository.GetTaskScheduling(ctx)
+	userID := ctx.Value("user_id").(int64)
+	role := ctx.Value("role").(string)
+
+	processes, err := s.repository.ListProcesses(ctx, userID, role)
 	if err != nil {
 		return nil, err
 	}
-	return scheduling, nil
+	
+	processIDs := make([]int64, len(processes))
+	for i, process := range processes {
+		processIDs[i] = process.ID
+	}
+	milestones, err := s.repository.ListMilestonesByProcessIDs(ctx, processIDs)
+	if err != nil {
+		return nil, err
+	}
+	tasks, err := s.repository.ListTasksByProcessIDs(ctx, processIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	taskIDs := make([]int64, 0, len(tasks))
+	for _, group := range tasks {
+		for _, task := range group {
+			taskIDs = append(taskIDs, task.ID)
+		}
+	}
+	assignments, err := s.repository.ListAssignmentsByTaskIDs(ctx, taskIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := s.repository.ListResources(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.TaskScheduling{
+		Processes:   processes,
+		Milestones:  milestones,
+		Tasks:       tasks,
+		Assignments: assignments,
+		Resources:   resources,
+	}, nil
 }
