@@ -3,17 +3,17 @@ package delivery
 import (
 	"net/http"
 
-	"github.com/Koshsky/erp-backend/internal/auth/domain"
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
+	"github.com/Koshsky/erp-backend/internal/auth/service"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
-	service *domain.AuthService
+	service *service.AuthService
 }
 
-func NewAuthHandler(service *domain.AuthService) *AuthHandler {
+func NewAuthHandler(service *service.AuthService) *AuthHandler {
 	return &AuthHandler{service: service}
 }
 
