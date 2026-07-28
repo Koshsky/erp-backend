@@ -7,6 +7,102 @@ servers:
   - url: /api
 
 paths:
+  # Auth
+  /auth/register:
+    post:
+      summary: Register new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+  /auth/login:
+    post:
+      summary: Login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+  /auth/logout:
+    post:
+      summary: Logout
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "logout successful"
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+                  example: "eyJ..."
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    $ref: '#/components/schemas/TokenPair'
+                  message:
+                    type: string
+                    example: "token refreshed"
+  /auth/change-password:
+    post:
+      summary: Change password
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+
   # Users
   /users:
     get:
@@ -433,6 +529,8 @@ paths:
       summary: Get project scheduling
       description: Возвращает все проекты для построения диаграммы Ганта
       tags: [Scheduling]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Project scheduling data
@@ -448,6 +546,8 @@ paths:
       summary: Get process scheduling
       description: Возвращает процессы с привязкой к проектам для построения диаграммы Ганта
       tags: [Scheduling]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Process scheduling data
@@ -463,6 +563,8 @@ paths:
       summary: Get task scheduling
       description: Возвращает задачи с процессами, проектами, назначениями, вехами и ресурсами для построения диаграммы Ганта
       tags: [Scheduling]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Task scheduling data
@@ -484,7 +586,85 @@ components:
         type: integer
         format: int64
 
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
+    # === Auth ===
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: "ivanov"
+        password:
+          type: string
+          format: password
+          example: "securepassword123"
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: integer, format: int64, example: 1 }
+            name: { type: string, example: "Иван Иванов" }
+            username: { type: string, example: "ivanov" }
+            role: { type: string, example: "admin" }
+        tokens:
+          $ref: '#/components/schemas/TokenPair'
+    RegisterRequest:
+      type: object
+      required: [name, username, password]
+      properties:
+        name: { type: string, example: "Иван Иванов" }
+        username: { type: string, example: "ivanov" }
+        password: { type: string, format: password, example: "securepassword123" }
+        role: { type: string, enum: [ДП, РП, ВП], default: ДП, example: "ДП" }
+  RegisterResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: integer, format: int64, example: 2 }
+            name: { type: string, example: "Иван Иванов" }
+            username: { type: string, example: "ivanov" }
+            role: { type: string, example: "manager" }
+        tokens:
+          $ref: '#/components/schemas/TokenPair'
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          example: 900
+    ChangePasswordRequest:
+      type: object
+      required: [old_password, new_password]
+      properties:
+        old_password:
+          type: string
+          format: password
+          example: "oldpass123"
+        new_password:
+          type: string
+          format: password
+          example: "newpass456"
+
     # === User ===
     CreateUserRequest:
       type: object
@@ -492,14 +672,14 @@ components:
       properties:
         name: { type: string, example: "Иван Иванов" }
         username: { type: string, example: "ivanov" }
-        role: { type: string, enum: [admin, manager, user], example: "admin" }
+        role: { type: string, enum: [ДП, РП, ВП], example: "ДП" }
         password: { type: string, format: password, example: "securepassword123" }
     UpdateUserRequest:
       type: object
       properties:
         name: { type: string, example: "Иван Иванов" }
         username: { type: string, example: "ivanov" }
-        role: { type: string, enum: [admin, manager, user], example: "manager" }
+        role: { type: string, enum: [ДП, РП, ВП], example: "РП" }
         password: { type: string, format: password }
     UserResponse:
       type: object
@@ -507,9 +687,8 @@ components:
         id: { type: integer, format: int64, example: 1 }
         name: { type: string, example: "Иван Иванов" }
         username: { type: string, example: "ivanov" }
-        role: { type: string, enum: [admin, manager, user], example: "admin" }
-
-    # === Project ===
+        role: { type: string, enum: [ДП, РП, ВП], example: "ДП" }
+  # === Project ===
     CreateProjectRequest:
       type: object
       required: [code, start_date, end_date, priority]
@@ -771,6 +950,7 @@ components:
           $ref: '#/components/schemas/Timeline'
 
 tags:
+  - name: Auth
   - name: Users
   - name: Projects
   - name: Processes

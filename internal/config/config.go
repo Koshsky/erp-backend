@@ -5,6 +5,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
 type Config struct {
@@ -12,64 +15,56 @@ type Config struct {
 	LogLevel      string
 	LogFormat     string
 	SwaggerEnable bool
+	JWT           jwt.JWTConfig
 }
 
 func Load() (*Config, error) {
-	dbURL, err := loadDatabaseURL()
-	if err != nil {
-		return nil, err
-	}
+	dbURL := loadDatabaseURL()
 
-	logLevel, err := requiredEnv("LOG_LEVEL")
-	if err != nil {
-		return nil, err
-	}
-
-	logFormat, err := requiredEnv("LOG_FORMAT")
-	if err != nil {
-		return nil, err
-	}
+	logLevel := getEnv("LOG_LEVEL", "info")
+	logFormat := getEnv("LOG_FORMAT", "json")
 
 	swaggerEnable := os.Getenv("SWAGGER_ENABLE") == "true"
+
+	jwtCfg := jwt.JWTConfig{
+		SecretKey:     getEnv("JWT_SECRET_KEY", "super-secret-key-change-in-production"),
+		RefreshKey:    getEnv("JWT_REFRESH_KEY", "super-refresh-key-change-in-production"),
+		AccessExpiry:  parseDuration(getEnv("JWT_ACCESS_EXPIRY", "15m"), 15*time.Minute),
+		RefreshExpiry: parseDuration(getEnv("JWT_REFRESH_EXPIRY", "168h"), 168*time.Hour),
+		Issuer:        getEnv("JWT_ISSUER", "mvs-erp"),
+	}
 
 	return &Config{
 		DatabaseURL:   dbURL,
 		LogLevel:      logLevel,
 		LogFormat:     logFormat,
 		SwaggerEnable: swaggerEnable,
+		JWT:           jwtCfg,
 	}, nil
 }
 
-func loadDatabaseURL() (string, error) {
-	user, err := requiredEnv("DATABASE_USER")
-	if err != nil {
-		return "", err
+func getEnv(key, fallback string) string {
+	if val := strings.TrimSpace(os.Getenv(key)); val != "" {
+		return val
 	}
+	return fallback
+}
 
-	password, err := requiredEnv("DATABASE_PASSWORD")
+func parseDuration(val string, fallback time.Duration) time.Duration {
+	d, err := time.ParseDuration(val)
 	if err != nil {
-		return "", err
+		return fallback
 	}
+	return d
+}
 
-	host, err := requiredEnv("DATABASE_HOST")
-	if err != nil {
-		return "", err
-	}
-
-	port, err := requiredEnv("DATABASE_PORT")
-	if err != nil {
-		return "", err
-	}
-
-	name, err := requiredEnv("DATABASE_NAME")
-	if err != nil {
-		return "", err
-	}
-
-	sslMode, err := requiredEnv("DATABASE_SSL_MODE")
-	if err != nil {
-		return "", err
-	}
+func loadDatabaseURL() string {
+	user := getEnv("DATABASE_USER", "postgres")
+	password := getEnv("DATABASE_PASSWORD", "postgres")
+	host := getEnv("DATABASE_HOST", "localhost")
+	port := getEnv("DATABASE_PORT", "5432")
+	name := getEnv("DATABASE_NAME", "mvs-erp")
+	sslMode := getEnv("DATABASE_SSL_MODE", "disable")
 
 	built := &url.URL{
 		Scheme: "postgres",
@@ -82,14 +77,5 @@ func loadDatabaseURL() (string, error) {
 	query.Set("sslmode", sslMode)
 	built.RawQuery = query.Encode()
 
-	return built.String(), nil
-}
-
-func requiredEnv(key string) (string, error) {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return "", fmt.Errorf("%s environment variable is required", key)
-	}
-
-	return value, nil
+	return built.String()
 }

@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// initialize the application
-	application, err := app.New(runCtx, cfg.SwaggerEnable, appLogger.WithComponent(logger, "app"), pool)
+	application, err := app.New(runCtx, cfg, appLogger.WithComponent(logger, "app"), pool)
 	if err != nil {
 		log.Fatal(err)
 	}
