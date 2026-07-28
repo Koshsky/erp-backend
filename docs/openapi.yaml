@@ -625,7 +625,7 @@ components:
         username: { type: string, example: "ivanov" }
         password: { type: string, format: password, example: "securepassword123" }
         role: { type: string, enum: [ДП, РП, ВП], default: ДП, example: "ДП" }
-  RegisterResponse:
+    RegisterResponse:
       type: object
       properties:
         user:

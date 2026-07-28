@@ -3,11 +3,11 @@ package delivery
 import (
 	"context"
 
-	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
+	"github.com/Koshsky/erp-backend/internal/scheduling/dto"
 )
 
 type MilestoneService interface {
-	GetProjectScheduling(ctx context.Context) (*domain.ProjectScheduling, error)
-	GetProcessScheduling(ctx context.Context) (*domain.ProcessScheduling, error)
-	GetTaskScheduling(ctx context.Context) (*domain.TaskScheduling, error)
+	GetProjectScheduling(ctx context.Context) (*dto.ProjectScheduling, error)
+	GetProcessScheduling(ctx context.Context) (*dto.ProcessScheduling, error)
+	GetTaskScheduling(ctx context.Context) (*dto.TaskScheduling, error)
 }

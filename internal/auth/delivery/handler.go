@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Koshsky/erp-backend/internal/auth/domain"
+	"github.com/Koshsky/erp-backend/internal/auth/dto"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/gin-gonic/gin"
 )
@@ -16,25 +17,8 @@ func NewAuthHandler(service *domain.AuthService) *AuthHandler {
 	return &AuthHandler{service: service}
 }
 
-type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-type RegisterRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Role     string `json:"role"`
-}
-
-type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password" binding:"required"`
-	NewPassword string `json:"new_password" binding:"required"`
-}
-
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req LoginRequest
+	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
 		return
@@ -49,7 +33,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 func (h *AuthHandler) Register(c *gin.Context) {
-	var req RegisterRequest
+	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
 		return
@@ -77,7 +61,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	userID := auth.GetUserID(c.Request.Context())
 
-	var req ChangePasswordRequest
+	var req dto.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
 		return

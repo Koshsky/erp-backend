@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Koshsky/erp-backend/internal/auth/dto"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
@@ -21,7 +22,7 @@ func NewAuthService(repo AuthRepository, hasher PasswordHasher, jwtService *jwt.
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, name, username, password, role string) (map[string]interface{}, error) {
+func (s *AuthService) Register(ctx context.Context, name, username, password, role string) (*dto.AuthResponse, error) {
 	if role == "" {
 		role = "user"
 	}
@@ -41,18 +42,18 @@ func (s *AuthService) Register(ctx context.Context, name, username, password, ro
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
-	return map[string]interface{}{
-		"user": map[string]interface{}{
-			"id":       userID,
-			"name":     name,
-			"username": username,
-			"role":     role,
+	return &dto.AuthResponse{
+		User: dto.UserInfo{
+			ID:       userID,
+			Name:     name,
+			Username: username,
+			Role:     role,
 		},
-		"tokens": tokens,
+		Tokens: tokens,
 	}, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, username, password string) (map[string]interface{}, error) {
+func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.AuthResponse, error) {
 	userID, name, role, passwordHash, err := s.repo.FindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
@@ -67,14 +68,14 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (map
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
-	return map[string]interface{}{
-		"user": map[string]interface{}{
-			"id":       userID,
-			"name":     name,
-			"username": username,
-			"role":     role,
+	return &dto.AuthResponse{
+		User: dto.UserInfo{
+			ID:       userID,
+			Name:     name,
+			Username: username,
+			Role:     role,
 		},
-		"tokens": tokens,
+		Tokens: tokens,
 	}, nil
 }
 
@@ -100,7 +101,7 @@ func (s *AuthService) Logout(ctx context.Context, userID int64) error {
 	return s.repo.DeleteRefreshToken(ctx, userID)
 }
 
-func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (map[string]interface{}, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshResponse, error) {
 	claims, err := s.jwt.ValidateRefreshToken(refreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token")
@@ -121,8 +122,8 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (ma
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
-	return map[string]interface{}{
-		"tokens":  tokens,
-		"message": "token refreshed",
+	return &dto.RefreshResponse{
+		Tokens:  tokens,
+		Message: "Token refreshed successfully",
 	}, nil
 }

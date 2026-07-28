@@ -3,12 +3,12 @@ package delivery
 import "github.com/gin-gonic/gin"
 
 func (h *AuthHandler) RegisterRoutes(router *gin.RouterGroup) {
-	auth := router.Group("/auth")
+	r := router.Group("/auth")
 	{
-		auth.POST("/register", h.Register)
-		auth.POST("/login", h.Login)
-		auth.POST("/logout", h.Logout)
-		auth.POST("/change-password", h.ChangePassword)
-		auth.POST("/refresh", h.RefreshToken)
+		r.POST("/register", h.Register)
+		r.POST("/login", h.Login)
+		r.POST("/logout", h.Logout)
+		r.POST("/change-password", h.ChangePassword)
+		r.POST("/refresh", h.RefreshToken)
 	}
 }
