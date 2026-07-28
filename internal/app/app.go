@@ -8,6 +8,12 @@ import (
 	"net/http"
 	"time"
 
+	authDelivery "github.com/Koshsky/erp-backend/internal/auth/delivery"
+	authDomain "github.com/Koshsky/erp-backend/internal/auth/domain"
+	authRepo "github.com/Koshsky/erp-backend/internal/auth/repository"
+	"github.com/Koshsky/erp-backend/internal/middleware/auth"
+
+	"github.com/Koshsky/erp-backend/internal/config"
 	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	assignmentDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
@@ -29,7 +35,7 @@ import (
 	schedulingDelivery "github.com/Koshsky/erp-backend/internal/scheduling/delivery"
 	schedulingDomain "github.com/Koshsky/erp-backend/internal/scheduling/domain"
 	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
-	"github.com/Koshsky/erp-backend/internal/security/auth"
+	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/security/password"
 	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 	userDomain "github.com/Koshsky/erp-backend/internal/user/domain"
@@ -41,17 +47,18 @@ import (
 const APP_PORT = 8080
 
 type App struct {
-	enableSwagger bool
-	logger        *slog.Logger
-	pool          *pgxpool.Pool
-	httpServer    *http.Server
+	cfg        *config.Config
+	logger     *slog.Logger
+	pool       *pgxpool.Pool
+	httpServer *http.Server
+	jwtManager *jwt.JWTService
 }
 
-func New(ctx context.Context, enableSwagger bool, logger *slog.Logger, pool *pgxpool.Pool) (*App, error) {
+func New(ctx context.Context, cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) (*App, error) {
 	return &App{
-		enableSwagger: enableSwagger,
-		logger:        logger,
-		pool:          pool,
+		cfg:    cfg,
+		logger: logger,
+		pool:   pool,
 	}, nil
 }
 
@@ -59,14 +66,15 @@ func (a *App) Start() error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	if a.enableSwagger {
+	if a.cfg.SwaggerEnable {
 		a.runSwaggerServer(router)
 	}
 
 	// Register middleware
 	router.Use(gin.Recovery())
-	authMiddleware := auth.NewAuthMiddleware()
-	router.Use(authMiddleware.Middleware())
+	a.jwtManager = jwt.NewJWTService(a.cfg.JWT)
+	authMw := auth.NewAuthMiddleware(a.logger, a.jwtManager)
+	router.Use(authMw.Middleware())
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()
@@ -99,6 +107,12 @@ func (a *App) Start() error {
 }
 
 func (a *App) registerRoutes(router *gin.Engine) {
+	// --- Auth ---
+	authQueries := authRepo.NewAuthRepository(a.pool)
+	authHasher := password.NewBcryptHasher()
+	authSvc := authDomain.NewAuthService(authQueries, authHasher, a.jwtManager)
+	authHandler := authDelivery.NewAuthHandler(authSvc)
+
 	// --- Scheduling ---
 	schedulingQueries := schedulingRepo.NewSchedulingRepository(a.logger, a.pool)
 	schedulingSvc := schedulingDomain.NewSchedulingService(a.logger, schedulingQueries)
@@ -142,6 +156,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 
 	// Register routes
 	api := router.Group("/api")
+	authHandler.RegisterRoutes(api)
 	schedulingHandler.RegisterRoutes(api)
 	userHandler.RegisterRoutes(api)
 	taskHandler.RegisterRoutes(api)

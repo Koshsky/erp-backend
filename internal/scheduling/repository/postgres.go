@@ -5,6 +5,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
 	"github.com/Koshsky/erp-backend/internal/scheduling/repository/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,9 +24,7 @@ func NewSchedulingRepository(logger *slog.Logger, pool *pgxpool.Pool) *Schedulin
 }
 
 func (r *SchedulingRepository) GetProjectScheduling(ctx context.Context) (*domain.ProjectScheduling, error) {
-	role := ctx.Value("role").(string)
-
-	rows, err := r.db.GetProjectScheduling(ctx, role)
+	rows, err := r.db.GetProjectScheduling(ctx, auth.GetRole(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -47,12 +46,9 @@ func (r *SchedulingRepository) GetProjectScheduling(ctx context.Context) (*domai
 }
 
 func (r *SchedulingRepository) GetProcessScheduling(ctx context.Context) (*domain.ProcessScheduling, error) {
-	role := ctx.Value("role").(string)
-	userID := ctx.Value("user_id").(int64)
-
 	rows, err := r.db.GetProcessScheduling(ctx, sqlc.GetProcessSchedulingParams{
-		Role:   role,
-		UserID: userID,
+		Role:   auth.GetRole(ctx),
+		UserID: auth.GetUserID(ctx),
 	})
 	if err != nil {
 		return nil, err
@@ -86,12 +82,9 @@ func (r *SchedulingRepository) GetProcessScheduling(ctx context.Context) (*domai
 }
 
 func (r *SchedulingRepository) GetTaskScheduling(ctx context.Context) (*domain.TaskScheduling, error) {
-	role := ctx.Value("role").(string)
-	userID := ctx.Value("user_id").(int64)
-
 	taskRows, err := r.db.GetDescribedTasks(ctx, sqlc.GetDescribedTasksParams{
-		Role:   role,
-		UserID: userID,
+		Role:   auth.GetRole(ctx),
+		UserID: auth.GetUserID(ctx),
 	})
 	if err != nil {
 		return nil, err
