@@ -32,6 +32,15 @@ func NewUserHandler(logger *slog.Logger, service UserService) *UserHandler {
 	}
 }
 
+// ListUsers
+// @Summary List all users
+// @Description Returns all users in the system
+// @Tags Users
+// @Security ApiKeyAuth
+// @Produce json
+// @Success 200 {object} response{data=[]dto.UserResponse}
+// @Failure 500 {object} response
+// @Router /user [get]
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	users, err := h.service.ListUsers(c.Request.Context())
 	if err != nil {
@@ -42,6 +51,17 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: users})
 }
 
+// GetUser
+// @Summary User information
+// @Description Returns information about a specific user
+// @Tags Users
+// @Security ApiKeyAuth
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} response{data=dto.UserResponse}
+// @Failure 400 {object} response
+// @Failure 500 {object} response
+// @Router /user/{id} [get]
 func (h *UserHandler) GetUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -58,6 +78,17 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: user})
 }
 
+// @Tags Users
+// @Summary Create a new user
+// @Description Create a new user with the provided data
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param body body dto.CreateUserRequest true "User data"
+// @Success 201 {object} response{data=dto.UserResponse}
+// @Failure 400 {object} response
+// @Failure 500 {object} response
+// @Router /user [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var body dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -73,6 +104,17 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, response{Data: created})
 }
 
+// @Tags Users
+// @Summary Delete a user
+// @Description Delete a user by ID
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 204
+// @Failure 400 {object} response
+// @Failure 500 {object} response
+// @Router /user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -88,6 +130,18 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// @Tags Users
+// @Summary Update a user
+// @Description Update a user by ID
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param body body dto.UpdateUserRequest true "User data"
+// @Success 200 {object} response{data=dto.UserResponse}
+// @Failure 400 {object} response
+// @Failure 500 {object} response
+// @Router /user/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -109,63 +163,3 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response{Data: updated})
 }
-
-// func (h *UserHandler) UpdateUserRole(c *gin.Context) {
-// 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, response{Error: "invalid user id"})
-// 		return
-// 	}
-
-// 	var body struct {
-// 		Role domain.UserRole `json:"role"`
-// 	}
-// 	if err := c.ShouldBindJSON(&body); err != nil {
-// 		c.JSON(http.StatusBadRequest, response{Error: err.Error()})
-// 		return
-// 	}
-
-// 	user, err := h.service.UpdateUserRole(c.Request.Context(), id, body.Role)
-// 	if err != nil {
-// 		if isNotFoundError(err) {
-// 			c.JSON(http.StatusNotFound, response{Error: "user not found"})
-// 			return
-// 		}
-// 		h.logger.Error("failed to update user role", "id", id, "error", err)
-// 		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, response{Data: user})
-// }
-
-// func (h *UserHandler) UpdateUserPassword(c *gin.Context) {
-// 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, response{Error: "invalid user id"})
-// 		return
-// 	}
-
-// 	var body struct {
-// 		Password string `json:"password"`
-// 	}
-// 	if err := c.ShouldBindJSON(&body); err != nil {
-// 		c.JSON(http.StatusBadRequest, response{Error: err.Error()})
-// 		return
-// 	}
-// 	if body.Password == "" {
-// 		c.JSON(http.StatusBadRequest, response{Error: "password is required"})
-// 		return
-// 	}
-
-// 	user, err := h.service.UpdateUserPassword(c.Request.Context(), id, body.Password)
-// 	if err != nil {
-// 		if isNotFoundError(err) {
-// 			c.JSON(http.StatusNotFound, response{Error: "user not found"})
-// 			return
-// 		}
-// 		h.logger.Error("failed to update user password", "id", id, "error", err)
-// 		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, response{Data: user})
-// }

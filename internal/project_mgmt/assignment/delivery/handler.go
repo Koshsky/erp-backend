@@ -33,6 +33,14 @@ func NewAssignmentHandler(logger *slog.Logger, service AssignmentService) *Assig
 	}
 }
 
+// @Tags Assignments
+// @Summary List assignments
+// @Description Get a list of all assignments
+// @Security ApiKeyAuth
+// @Produce json
+// @Success 200 {object} response{data=[]dto.AssignmentResponse}
+// @Failure 500 {object} response{error=string}
+// @Router /assignments [get]
 func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 	assignments, err := h.service.ListAssignments(c.Request.Context())
 	if err != nil {
@@ -43,6 +51,16 @@ func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: assignments})
 }
 
+// @Tags Assignments
+// @Summary Get assignment
+// @Description Get assignment by id
+// @Security ApiKeyAuth
+// @Produce json
+// @Param id path int true "Assignment ID"
+// @Success 200 {object} response{data=dto.AssignmentResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /assignments/{id} [get]
 func (h *AssignmentHandler) GetAssignment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -59,6 +77,17 @@ func (h *AssignmentHandler) GetAssignment(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: assignment})
 }
 
+// @Tags Assignments
+// @Summary Create assignment
+// @Description Create a new assignment
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param request body dto.CreateAssignmentRequest true "Assignment data"
+// @Success 201 {object} response{data=dto.AssignmentResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /assignments [post]
 func (h *AssignmentHandler) CreateAssignment(c *gin.Context) {
 	var assignment dto.CreateAssignmentRequest
 	if err := c.ShouldBindJSON(&assignment); err != nil {
@@ -75,6 +104,16 @@ func (h *AssignmentHandler) CreateAssignment(c *gin.Context) {
 	c.JSON(http.StatusCreated, response{Data: created})
 }
 
+// @Tags Assignments
+// @Summary Delete an assignment
+// @Description Delete an assignment by ID
+// @Security ApiKeyAuth
+// @Produce json
+// @Param id path int true "Assignment ID"
+// @Success 204
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /assignments/{id} [delete]
 func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -90,6 +129,18 @@ func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// @Tags Assignments
+// @Summary Update an assignment
+// @Description Update an assignment by ID
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Assignment ID"
+// @Param body body dto.UpdateAssignmentRequest true "Assignment data"
+// @Success 200 {object} response{data=dto.AssignmentResponse}
+// @Failure 400 {object} response{error=string}
+// @Failure 500 {object} response{error=string}
+// @Router /assignments/{id} [put]
 func (h *AssignmentHandler) UpdateAssignment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

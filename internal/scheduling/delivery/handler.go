@@ -26,6 +26,15 @@ func NewSchedulingHandler(logger *slog.Logger, service MilestoneService) *Schedu
 	}
 }
 
+// @Tags Scheduling
+// @Summary Get project scheduling
+// @Description Get project scheduling (project portfolio)
+// @Security ApiKeyAuth
+// @Produce  json
+// @Success 200 {object} response
+// @Failure 400 {object} response
+// @Failure 500 {object} response
+// @Router /scheduling/projects [get]
 func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	sheduling, err := h.service.GetProjectScheduling(c.Request.Context())
 	if err != nil {
@@ -35,6 +44,16 @@ func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response{Data: sheduling})
 }
+
+// @Tags Scheduling
+// @Summary Get process scheduling
+// @Description Get process scheduling
+// @Security ApiKeyAuth
+// @Produce  json
+// @Success 200 {object} response
+// @Failure 400 {object} response
+// @Failure 500 {object} response
+// @Router /scheduling/processes [get]
 func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 	sheduling, err := h.service.GetProcessScheduling(c.Request.Context())
 	if err != nil {
@@ -45,6 +64,15 @@ func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 	c.JSON(http.StatusOK, response{Data: sheduling})
 }
 
+// @Tags Scheduling
+// @Summary Get task scheduling
+// @Description Get task scheduling
+// @Security ApiKeyAuth
+// @Produce  json
+// @Success 200 {object} response
+// @Failure 400 {object} response
+// @Failure 500 {object} response
+// @Router /scheduling/tasks [get]
 func (h *SchedulingHandler) GetTaskScheduling(c *gin.Context) {
 	sheduling, err := h.service.GetTaskScheduling(c.Request.Context())
 	if err != nil {
