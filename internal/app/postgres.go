@@ -13,14 +13,14 @@ import (
 	resourceRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/repository"
 	taskDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
-	schedulingDomain "github.com/Koshsky/erp-backend/internal/scheduling/domain"
 	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
+	schedulingService "github.com/Koshsky/erp-backend/internal/scheduling/service"
 	userDomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 )
 
 type (
-	SchedulingRepository = schedulingDomain.RepositoryInterface
+	SchedulingRepository = schedulingService.RepositoryInterface
 	UserRepository       = userDomain.RepositoryInterface
 	TaskRepository       = taskDomain.RepositoryInterface
 	ResourceRepository   = resourceDomain.RepositoryInterface

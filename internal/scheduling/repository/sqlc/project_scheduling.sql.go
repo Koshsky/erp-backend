@@ -9,22 +9,176 @@ import (
 	"context"
 )
 
+const listAssignmentsByTaskIDs = `-- name: ListAssignmentsByTaskIDs :many
+SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at FROM assignments
+WHERE task_id = ANY($1::bigint[])
+AND deleted_at IS NULL
+`
+
+func (q *Queries) ListAssignmentsByTaskIDs(ctx context.Context, taskIds []int64) ([]Assignment, error) {
+	rows, err := q.db.Query(ctx, listAssignmentsByTaskIDs, taskIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Assignment{}
+	for rows.Next() {
+		var i Assignment
+		if err := rows.Scan(
+			&i.ID,
+			&i.TaskID,
+			&i.ResourceID,
+			&i.Quantity,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMilestonesByProcessIDs = `-- name: ListMilestonesByProcessIDs :many
+SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at FROM milestones
+WHERE process_id = ANY($1::bigint[])
+AND deleted_at IS NULL
+`
+
+func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []int64) ([]Milestone, error) {
+	rows, err := q.db.Query(ctx, listMilestonesByProcessIDs, processIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Milestone{}
+	for rows.Next() {
+		var i Milestone
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProcessID,
+			&i.Title,
+			&i.Content,
+			&i.Date,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProcesses = `-- name: ListProcesses :many
+SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at FROM processes p
+JOIN projects pr ON pr.id = p.project_id
+WHERE deleted_at IS NULL
+AND (
+    $1::text = 'ДП' OR
+    p.owner_id = $2::bigint OR
+    pr.owner_id = $2::bigint
+)
+`
+
+type ListProcessesParams struct {
+	Role   string `json:"role"`
+	UserID int64  `json:"user_id"`
+}
+
+type ListProcessesRow struct {
+	Process Process `json:"process"`
+}
+
+func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([]ListProcessesRow, error) {
+	rows, err := q.db.Query(ctx, listProcesses, arg.Role, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListProcessesRow{}
+	for rows.Next() {
+		var i ListProcessesRow
+		if err := rows.Scan(
+			&i.Process.ID,
+			&i.Process.ProjectID,
+			&i.Process.OwnerID,
+			&i.Process.Title,
+			&i.Process.StartDate,
+			&i.Process.EndDate,
+			&i.Process.CreatedAt,
+			&i.Process.UpdatedAt,
+			&i.Process.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProcessesByProjectIDs = `-- name: ListProcessesByProjectIDs :many
+SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at FROM processes
+WHERE project_id = ANY($1::bigint[])
+AND deleted_at IS NULL
+`
+
+func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []int64) ([]Process, error) {
+	rows, err := q.db.Query(ctx, listProcessesByProjectIDs, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Process{}
+	for rows.Next() {
+		var i Process
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.OwnerID,
+			&i.Title,
+			&i.StartDate,
+			&i.EndDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
 AND (
-    $1 = 'ДП' OR
-    owner_id = $2
+    $1::text = 'ДП' OR
+    owner_id::bigint = $2
 )
 ORDER BY priority ASC
 `
 
 type ListProjectsParams struct {
-	Role   interface{} `json:"role"`
-	UserID int64       `json:"user_id"`
+	Role   string `json:"role"`
+	UserID int64  `json:"user_id"`
 }
 
-// Project Scheduling
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listProjects, arg.Role, arg.UserID)
 	if err != nil {
@@ -41,6 +195,110 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.StartDate,
 			&i.EndDate,
 			&i.Priority,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProjectsByIDs = `-- name: ListProjectsByIDs :many
+SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
+WHERE id = ANY($1::bigint[])
+AND deleted_at IS NULL
+`
+
+func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listProjectsByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Project{}
+	for rows.Next() {
+		var i Project
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.Code,
+			&i.StartDate,
+			&i.EndDate,
+			&i.Priority,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listResources = `-- name: ListResources :many
+SELECT id, title, code, quantity, created_at, updated_at, deleted_at FROM resources
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
+	rows, err := q.db.Query(ctx, listResources)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Resource{}
+	for rows.Next() {
+		var i Resource
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Code,
+			&i.Quantity,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
+SELECT id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at FROM tasks
+WHERE process_id = ANY($1::bigint[])
+AND deleted_at IS NULL
+`
+
+func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listTasksByProcessIDs, processIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Task{}
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProcessID,
+			&i.Title,
+			&i.StartDate,
+			&i.EndDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,

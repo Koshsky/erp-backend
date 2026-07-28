@@ -26,8 +26,8 @@ import (
 	taskDomain "github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	schedulingDelivery "github.com/Koshsky/erp-backend/internal/scheduling/delivery"
-	schedulingDomain "github.com/Koshsky/erp-backend/internal/scheduling/domain"
 	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
+	schedulingService "github.com/Koshsky/erp-backend/internal/scheduling/service"
 	"github.com/Koshsky/erp-backend/internal/security/password"
 	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 	userDomain "github.com/Koshsky/erp-backend/internal/user/domain"
@@ -58,7 +58,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 
 	// --- Scheduling ---
 	schedulingQueries := schedulingRepo.NewSchedulingRepository(a.logger, a.pool)
-	schedulingSvc := schedulingDomain.NewSchedulingService(a.logger, schedulingQueries)
+	schedulingSvc := schedulingService.NewSchedulingService(a.logger, schedulingQueries)
 	schedulingHandler := schedulingDelivery.NewSchedulingHandler(a.logger, schedulingSvc)
 
 	// --- User ---
@@ -97,7 +97,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	assignmentSvc := assignmentDomain.NewAssignmentService(a.logger, assignmentQueries)
 	assignmentHandler := assignmentDelivery.NewAssignmentHandler(a.logger, assignmentSvc)
 
-	api := router.Group("/api/v1")
+	api := router.Group("/api")
 
 	authHandler.RegisterRoutes(api)
 
