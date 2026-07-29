@@ -11,16 +11,16 @@ func NewUserMapper() *UserMapper {
 	return &UserMapper{}
 }
 
-// Обычные мапперы
 func (m *UserMapper) ToDTO(user *domain.User) *dto.UserResponse {
 	if user == nil {
 		return nil
 	}
 	return &dto.UserResponse{
-		ID:       user.ID,
-		Name:     user.Name,
-		Username: user.Username,
-		Role:     string(user.Role),
+		ID:           user.ID,
+		Name:         user.Name,
+		Username:     user.Username,
+		Role:         string(user.Role),
+		PasswordHash: user.PasswordHash,
 	}
 }
 
@@ -35,16 +35,15 @@ func (m *UserMapper) ToDTOs(users []domain.User) []dto.UserResponse {
 	return responses
 }
 
-// ToDomainFromCreate maps request fields except password hashing.
 func (m *UserMapper) ToDomainFromCreate(req dto.CreateUserRequest) domain.User {
 	return domain.User{
-		Name:     req.Name,
-		Username: req.Username,
-		Role:     domain.UserRole(req.Role),
+		Name:         req.Name,
+		Username:     req.Username,
+		Role:         domain.UserRole(req.Role),
+		PasswordHash: req.PasswordHash,
 	}
 }
 
-// ApplyUpdateToDomain applies mutable profile fields; password is handled by service.
 func (m *UserMapper) ApplyUpdateToDomain(user *domain.User, req dto.UpdateUserRequest) {
 	if user == nil {
 		return

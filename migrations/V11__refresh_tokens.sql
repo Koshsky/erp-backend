@@ -1,5 +1,0 @@
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-    user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    token TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);

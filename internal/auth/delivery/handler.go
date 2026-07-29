@@ -70,24 +70,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 }
 
 // @Tags Auth
-// @Summary Logout
-// @Description Revoke refresh token
-// @Security ApiKeyAuth
-// @Success 200 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /auth/logout [post]
-func (h *AuthHandler) Logout(c *gin.Context) {
-	userID := auth.GetUserID(c.Request.Context())
-
-	if err := h.service.Logout(c.Request.Context(), userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "logout failed"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "logout successful"})
-}
-
-// @Tags Auth
 // @Summary Change Password
 // @Description Change password (requires old password)
 // @Security ApiKeyAuth
@@ -124,9 +106,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 // @Failure 401 {object} map[string]string
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	var req struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
-	}
+	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "refresh_token required"})
 		return

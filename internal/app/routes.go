@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	authDelivery "github.com/Koshsky/erp-backend/internal/auth/delivery"
-	authRepo "github.com/Koshsky/erp-backend/internal/auth/repository"
 	authService "github.com/Koshsky/erp-backend/internal/auth/service"
 
 	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
@@ -17,14 +16,14 @@ import (
 	processRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	processService "github.com/Koshsky/erp-backend/internal/project_mgmt/process/service"
 	projectDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/project/delivery"
-	projectService "github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
+	projectService "github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
 	resourceDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/delivery"
-	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/repository"
+	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
 	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
-	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
 	schedulingDelivery "github.com/Koshsky/erp-backend/internal/scheduling/delivery"
 	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
 	schedulingService "github.com/Koshsky/erp-backend/internal/scheduling/service"
@@ -50,22 +49,22 @@ var (
 )
 
 func (a *App) registerRoutes(router *gin.Engine) {
-	// --- Auth ---
-	authQueries := authRepo.NewAuthRepository(a.pool)
+	// --- Shared dependencies ---
+	userRepo := userRepo.NewUserRepository(a.logger, a.pool)
+
+	// --- User ---
+	userSvc := userService.NewUserService(a.logger, userRepo)
+	userHandler := userDelivery.NewUserHandler(a.logger, userSvc)
+
+	// --- Auth (uses userSvc for user data) ---
 	authHasher := password.NewBcryptHasher()
-	authSvc := authService.NewAuthService(authQueries, authHasher, a.jwtManager)
+	authSvc := authService.NewAuthService(userSvc, authHasher, a.jwtManager)
 	authHandler := authDelivery.NewAuthHandler(authSvc)
 
 	// --- Scheduling ---
 	schedulingQueries := schedulingRepo.NewSchedulingRepository(a.logger, a.pool)
 	schedulingSvc := schedulingService.NewSchedulingService(a.logger, schedulingQueries)
 	schedulingHandler := schedulingDelivery.NewSchedulingHandler(a.logger, schedulingSvc)
-
-	// --- User ---
-	userQueries := userRepo.NewUserRepository(a.logger, a.pool)
-	userHasher := password.NewBcryptHasher()
-	userSvc := userService.NewUserService(a.logger, userQueries, userHasher)
-	userHandler := userDelivery.NewUserHandler(a.logger, userSvc)
 
 	// --- Task ---
 	taskQueries := taskRepo.NewTaskRepository(a.logger, a.pool)
