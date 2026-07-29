@@ -43,8 +43,8 @@ func (s *ResourceService) CreateResource(ctx context.Context, resource dto.Creat
 	return s.mapper.ToDTO(createdResource), nil
 }
 
-func (s *ResourceService) GetResource(ctx context.Context, id int64) (*dto.ResourceResponse, error) {
-	resource, err := s.repository.GetResource(ctx, id)
+func (s *ResourceService) FindResource(ctx context.Context, id int64) (*dto.ResourceResponse, error) {
+	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (s *ResourceService) GetResource(ctx context.Context, id int64) (*dto.Resou
 }
 
 func (s *ResourceService) UpdateResource(ctx context.Context, id int64, req dto.UpdateResourceRequest) (*dto.ResourceResponse, error) {
-	resource, err := s.repository.GetResource(ctx, id)
+	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil {
 		return nil, err
 	}

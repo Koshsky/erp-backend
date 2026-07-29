@@ -37,8 +37,8 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 	return &mapped, nil
 }
 
-func (r *ResourceRepository) GetResource(ctx context.Context, id int64) (*domain.Resource, error) {
-	row, err := r.db.GetResource(ctx, id)
+func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*domain.Resource, error) {
+	row, err := r.db.FindResource(ctx, id)
 	if err != nil {
 		return nil, err
 	}

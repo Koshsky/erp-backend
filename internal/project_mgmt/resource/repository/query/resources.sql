@@ -11,7 +11,7 @@ INSERT INTO resources (title, code, quantity)
 VALUES (@title, @code, @quantity)
 RETURNING *;
 
--- name: GetResource :one
+-- name: FindResource :one
 SELECT *
 FROM resources
 WHERE deleted_at IS NULL

@@ -19,7 +19,7 @@ FROM milestones
 WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
--- name: GetMilestone :one
+-- name: FindMilestone :one
 SELECT *
 FROM milestones
 WHERE id = @milestone_id

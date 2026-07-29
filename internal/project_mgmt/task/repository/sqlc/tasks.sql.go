@@ -121,15 +121,15 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
 	return err
 }
 
-const getTask = `-- name: GetTask :one
+const findTask = `-- name: FindTask :one
 SELECT id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM tasks
 WHERE deleted_at IS NULL
 	AND id = $1::bigint
 `
 
-func (q *Queries) GetTask(ctx context.Context, resourceID int64) (Task, error) {
-	row := q.db.QueryRow(ctx, getTask, resourceID)
+func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) {
+	row := q.db.QueryRow(ctx, findTask, resourceID)
 	var i Task
 	err := row.Scan(
 		&i.ID,

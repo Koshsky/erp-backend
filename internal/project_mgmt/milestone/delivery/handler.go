@@ -48,14 +48,14 @@ func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /milestone/{id} [get]
-func (h *MilestoneHandler) GetMilestone(c *gin.Context) {
+func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid milestone id")
 		return
 	}
 
-	milestone, err := h.service.GetMilestone(c.Request.Context(), id)
+	milestone, err := h.service.FindMilestone(c.Request.Context(), id)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

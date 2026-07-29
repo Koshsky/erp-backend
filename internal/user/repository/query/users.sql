@@ -6,7 +6,7 @@ FROM users
 WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
--- name: GetUser :one
+-- name: FindUser :one
 SELECT *
 FROM users
 WHERE id = @user_id

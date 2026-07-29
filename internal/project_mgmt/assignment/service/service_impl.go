@@ -35,8 +35,8 @@ func (s *AssignmentService) CreateAssignment(ctx context.Context, req dto.Create
 	return s.mapper.ToDTO(created), nil
 }
 
-func (s *AssignmentService) GetAssignment(ctx context.Context, id int64) (*dto.AssignmentResponse, error) {
-	assignment, err := s.repository.GetAssignment(ctx, id)
+func (s *AssignmentService) FindAssignment(ctx context.Context, id int64) (*dto.AssignmentResponse, error) {
+	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (s *AssignmentService) GetAssignment(ctx context.Context, id int64) (*dto.A
 }
 
 func (s *AssignmentService) UpdateAssignment(ctx context.Context, id int64, req dto.UpdateAssignmentRequest) (*dto.AssignmentResponse, error) {
-	assignment, err := s.repository.GetAssignment(ctx, id)
+	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
 		return nil, err
 	}

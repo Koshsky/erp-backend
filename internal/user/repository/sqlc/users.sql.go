@@ -79,7 +79,7 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 	return i, err
 }
 
-const getUser = `-- name: GetUser :one
+const findUser = `-- name: FindUser :one
 SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
@@ -87,8 +87,8 @@ WHERE id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, userID int64) (User, error) {
-	row := q.db.QueryRow(ctx, getUser, userID)
+func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
+	row := q.db.QueryRow(ctx, findUser, userID)
 	var i User
 	err := row.Scan(
 		&i.ID,

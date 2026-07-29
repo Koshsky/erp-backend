@@ -116,7 +116,7 @@ func (q *Queries) DeleteAssignment(ctx context.Context, assignmentID int64) erro
 	return err
 }
 
-const getAssignment = `-- name: GetAssignment :one
+const findAssignment = `-- name: FindAssignment :one
 SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 FROM assignments
 WHERE id = $1
@@ -124,8 +124,8 @@ WHERE id = $1
 `
 
 // TODO: write CanUserViewAssignment
-func (q *Queries) GetAssignment(ctx context.Context, assignmentID int64) (Assignment, error) {
-	row := q.db.QueryRow(ctx, getAssignment, assignmentID)
+func (q *Queries) FindAssignment(ctx context.Context, assignmentID int64) (Assignment, error) {
+	row := q.db.QueryRow(ctx, findAssignment, assignmentID)
 	var i Assignment
 	err := row.Scan(
 		&i.ID,

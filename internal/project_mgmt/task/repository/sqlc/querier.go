@@ -15,7 +15,7 @@ type Querier interface {
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	DeleteTask(ctx context.Context, taskID int64) error
 	// TODO: write CanUserViewTask
-	GetTask(ctx context.Context, resourceID int64) (Task, error)
+	FindTask(ctx context.Context, resourceID int64) (Task, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 }
 

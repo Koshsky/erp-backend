@@ -130,15 +130,15 @@ func (q *Queries) DeleteProcess(ctx context.Context, processID int64) error {
 	return err
 }
 
-const getProcess = `-- name: GetProcess :one
+const findProcess = `-- name: FindProcess :one
 SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM processes
 WHERE id = $1::bigint
 	AND deleted_at IS NULL
 `
 
-func (q *Queries) GetProcess(ctx context.Context, id int64) (Process, error) {
-	row := q.db.QueryRow(ctx, getProcess, id)
+func (q *Queries) FindProcess(ctx context.Context, id int64) (Process, error) {
+	row := q.db.QueryRow(ctx, findProcess, id)
 	var i Process
 	err := row.Scan(
 		&i.ID,

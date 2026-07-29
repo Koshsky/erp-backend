@@ -36,8 +36,8 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 	return s.mapper.ToDTO(createdTask), nil
 }
 
-func (s *TaskService) GetTask(ctx context.Context, id int64) (*dto.TaskResponse, error) {
-	task, err := s.repository.GetTask(ctx, id)
+func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse, error) {
+	task, err := s.repository.FindTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (s *TaskService) GetTask(ctx context.Context, id int64) (*dto.TaskResponse,
 }
 
 func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTaskRequest) (*dto.TaskResponse, error) {
-	task, err := s.repository.GetTask(ctx, id)
+	task, err := s.repository.FindTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}

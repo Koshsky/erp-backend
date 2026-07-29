@@ -38,8 +38,8 @@ func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Pr
 	return &mapped, nil
 }
 
-func (r *ProcessRepository) GetProcess(ctx context.Context, id int64) (*domain.Process, error) {
-	row, err := r.db.GetProcess(ctx, id)
+func (r *ProcessRepository) FindProcess(ctx context.Context, id int64) (*domain.Process, error) {
+	row, err := r.db.FindProcess(ctx, id)
 	if err != nil {
 		return nil, err
 	}

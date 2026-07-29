@@ -39,8 +39,8 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 	return &mapped, nil
 }
 
-func (r *ProjectRepository) GetProject(ctx context.Context, id int64) (*domain.Project, error) {
-	project, err := r.db.GetProject(ctx, id)
+func (r *ProjectRepository) FindProject(ctx context.Context, id int64) (*domain.Project, error) {
+	project, err := r.db.FindProject(ctx, id)
 	if err != nil {
 		return nil, err
 	}

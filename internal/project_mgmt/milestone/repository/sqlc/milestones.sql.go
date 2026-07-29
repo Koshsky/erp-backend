@@ -121,15 +121,15 @@ func (q *Queries) DeleteMilestone(ctx context.Context, milestoneID int64) error 
 	return err
 }
 
-const getMilestone = `-- name: GetMilestone :one
+const findMilestone = `-- name: FindMilestone :one
 SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at
 FROM milestones
 WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-func (q *Queries) GetMilestone(ctx context.Context, milestoneID int64) (Milestone, error) {
-	row := q.db.QueryRow(ctx, getMilestone, milestoneID)
+func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milestone, error) {
+	row := q.db.QueryRow(ctx, findMilestone, milestoneID)
 	var i Milestone
 	err := row.Scan(
 		&i.ID,

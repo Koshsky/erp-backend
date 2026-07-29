@@ -25,7 +25,7 @@ FROM processes
 WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
--- name: GetProcess :one
+-- name: FindProcess :one
 SELECT *
 FROM processes
 WHERE id = @id::bigint

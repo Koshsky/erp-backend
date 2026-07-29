@@ -36,8 +36,8 @@ func (s *ProjectService) CreateProject(ctx context.Context, req dto.CreateProjec
 	return s.mapper.ToDTO(createdProject), nil
 }
 
-func (s *ProjectService) GetProject(ctx context.Context, id int64) (*dto.ProjectResponse, error) {
-	project, err := s.repository.GetProject(ctx, id)
+func (s *ProjectService) FindProject(ctx context.Context, id int64) (*dto.ProjectResponse, error) {
+	project, err := s.repository.FindProject(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (s *ProjectService) GetProject(ctx context.Context, id int64) (*dto.Project
 }
 
 func (s *ProjectService) UpdateProject(ctx context.Context, id int64, req dto.UpdateProjectRequest) (*dto.ProjectResponse, error) {
-	project, err := s.repository.GetProject(ctx, id)
+	project, err := s.repository.FindProject(ctx, id)
 	if err != nil {
 		return nil, err
 	}

@@ -48,15 +48,15 @@ func (q *Queries) DeleteResource(ctx context.Context, resourceID int64) error {
 	return err
 }
 
-const getResource = `-- name: GetResource :one
+const findResource = `-- name: FindResource :one
 SELECT id, title, code, quantity, created_at, updated_at, deleted_at
 FROM resources
 WHERE deleted_at IS NULL
 	AND id = $1::bigint
 `
 
-func (q *Queries) GetResource(ctx context.Context, resourceID int64) (Resource, error) {
-	row := q.db.QueryRow(ctx, getResource, resourceID)
+func (q *Queries) FindResource(ctx context.Context, resourceID int64) (Resource, error) {
+	row := q.db.QueryRow(ctx, findResource, resourceID)
 	var i Resource
 	err := row.Scan(
 		&i.ID,

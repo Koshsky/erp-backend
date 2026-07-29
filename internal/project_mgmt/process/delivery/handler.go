@@ -48,14 +48,14 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /process/{id} [get]
-func (h *ProcessHandler) GetProcess(c *gin.Context) {
+func (h *ProcessHandler) FindProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid process id")
 		return
 	}
 
-	process, err := h.service.GetProcess(c, id)
+	process, err := h.service.FindProcess(c, id)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

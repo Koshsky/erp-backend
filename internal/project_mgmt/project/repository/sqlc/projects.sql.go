@@ -133,15 +133,15 @@ func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
 	return err
 }
 
-const getProject = `-- name: GetProject :one
+const findProject = `-- name: FindProject :one
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
 WHERE deleted_at IS NULL
   AND id = $1::bigint
 `
 
-func (q *Queries) GetProject(ctx context.Context, projectID int64) (Project, error) {
-	row := q.db.QueryRow(ctx, getProject, projectID)
+func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, error) {
+	row := q.db.QueryRow(ctx, findProject, projectID)
 	var i Project
 	err := row.Scan(
 		&i.ID,

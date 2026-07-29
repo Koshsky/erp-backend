@@ -48,14 +48,14 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /task/{id} [get]
-func (h *TaskHandler) GetTask(c *gin.Context) {
+func (h *TaskHandler) FindTask(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid task id")
 		return
 	}
 
-	task, err := h.service.GetTask(c.Request.Context(), id)
+	task, err := h.service.FindTask(c.Request.Context(), id)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

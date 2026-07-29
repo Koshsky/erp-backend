@@ -19,7 +19,7 @@ FROM tasks
 WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
--- name: GetTask :one
+-- name: FindTask :one
 SELECT *
 FROM tasks
 WHERE deleted_at IS NULL

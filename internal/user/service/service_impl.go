@@ -25,7 +25,7 @@ func NewUserService(logger *slog.Logger, repository UserRepository) *UserService
 }
 
 func (s *UserService) FindUserByID(ctx context.Context, id int64) (*dto.UserResponse, error) {
-	return s.GetUser(ctx, id)
+	return s.FindUser(ctx, id)
 }
 
 func (s *UserService) UpdatePassword(ctx context.Context, userID int64, passwordHash string) error {
@@ -52,8 +52,8 @@ func (s *UserService) FindUserByUsername(ctx context.Context, username string) (
 	return s.mapper.ToDTO(user), nil
 }
 
-func (s *UserService) GetUser(ctx context.Context, id int64) (*dto.UserResponse, error) {
-	user, err := s.repository.GetUser(ctx, id)
+func (s *UserService) FindUser(ctx context.Context, id int64) (*dto.UserResponse, error) {
+	user, err := s.repository.FindUser(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (s *UserService) GetUser(ctx context.Context, id int64) (*dto.UserResponse,
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	user, err := s.repository.GetUser(ctx, id)
+	user, err := s.repository.FindUser(ctx, id)
 	if err != nil {
 		return nil, err
 	}
