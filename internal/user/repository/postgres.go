@@ -23,6 +23,31 @@ func NewUserRepository(logger *slog.Logger, pool *pgxpool.Pool) *UserRepository 
 	}
 }
 
+func (r *UserRepository) FindUserByUsername(ctx context.Context, username string) (*domain.User, error) {
+	row, err := r.db.FindUserByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+
+	mapped := mapUser(row)
+	return &mapped, nil
+}
+
+func (r *UserRepository) FindUserByID(ctx context.Context, userID int64) (*domain.User, error) {
+	return r.GetUser(ctx, userID)
+}
+
+func (r *UserRepository) UpdatePassword(ctx context.Context, userID int64, hash string) error {
+	return r.db.UpdateUserPassword(ctx, sqlc.UpdateUserPasswordParams{
+		UserID:       userID,
+		PasswordHash: hash,
+	})
+}
+
+func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
+	return r.db.DeleteUser(ctx, id)
+}
+
 func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
 	row, err := r.db.CreateUser(ctx, sqlc.CreateUserParams{
 		Name:         user.Name,
@@ -64,10 +89,6 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 	return &mapped, nil
 }
 
-func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
-	return r.db.DeleteUser(ctx, id)
-}
-
 func (r *UserRepository) ListUsers(ctx context.Context) ([]domain.User, error) {
 	rows, err := r.db.ListUsers(ctx)
 	if err != nil {
@@ -91,3 +112,4 @@ func mapUser(row sqlc.User) domain.User {
 		PasswordHash: row.PasswordHash,
 	}
 }
+

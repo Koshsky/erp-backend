@@ -55,6 +55,30 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 	return err
 }
 
+const findUserByUsername = `-- name: FindUserByUsername :one
+SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
+FROM users
+WHERE username = $1
+	AND deleted_at IS NULL
+LIMIT 1
+`
+
+func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRow(ctx, findUserByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Role,
+		&i.Username,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
@@ -158,4 +182,21 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $1, updated_at = NOW()
+WHERE id = $2
+	AND deleted_at IS NULL
+`
+
+type UpdateUserPasswordParams struct {
+	PasswordHash string `json:"password_hash"`
+	UserID       int64  `json:"user_id"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, updateUserPassword, arg.PasswordHash, arg.UserID)
+	return err
 }

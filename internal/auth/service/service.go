@@ -6,17 +6,18 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
+	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
 type AuthService struct {
-	repo   AuthRepository
+	users  UserService
 	hasher PasswordHasher
 	jwt    *jwt.JWTService
 }
 
-func NewAuthService(repo AuthRepository, hasher PasswordHasher, jwtService *jwt.JWTService) *AuthService {
+func NewAuthService(users UserService, hasher PasswordHasher, jwtService *jwt.JWTService) *AuthService {
 	return &AuthService{
-		repo:   repo,
+		users:  users,
 		hasher: hasher,
 		jwt:    jwtService,
 	}
@@ -32,60 +33,65 @@ func (s *AuthService) Register(ctx context.Context, name, username, password, ro
 		return nil, fmt.Errorf("failed to hash password")
 	}
 
-	userID, err := s.repo.CreateUser(ctx, name, username, role, hash)
+	user, err := s.users.CreateUser(ctx, userDTO.CreateUserRequest{
+		Name:         name,
+		Username:     username,
+		Role:         role,
+		PasswordHash: hash,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(userID, role, username)
+	tokens, err := s.jwt.GenerateTokenPair(user.ID, string(user.Role), user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
 	return &dto.AuthResponse{
 		User: dto.UserInfo{
-			ID:       userID,
-			Name:     name,
-			Username: username,
-			Role:     role,
+			ID:       user.ID,
+			Name:     user.Name,
+			Username: user.Username,
+			Role:     string(user.Role),
 		},
 		Tokens: tokens,
 	}, nil
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.AuthResponse, error) {
-	userID, name, role, passwordHash, err := s.repo.FindUserByUsername(ctx, username)
+	user, err := s.users.FindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	if err := s.hasher.Compare(passwordHash, password); err != nil {
+	if err := s.hasher.Compare(user.PasswordHash, password); err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(userID, role, username)
+	tokens, err := s.jwt.GenerateTokenPair(user.ID, string(user.Role), user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
 	return &dto.AuthResponse{
 		User: dto.UserInfo{
-			ID:       userID,
-			Name:     name,
-			Username: username,
-			Role:     role,
+			ID:       user.ID,
+			Name:     user.Name,
+			Username: user.Username,
+			Role:     string(user.Role),
 		},
 		Tokens: tokens,
 	}, nil
 }
 
 func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
-	_, _, _, passwordHash, err := s.repo.FindUserByID(ctx, userID)
+	user, err := s.users.FindUserByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("user not found")
 	}
 
-	if err := s.hasher.Compare(passwordHash, oldPassword); err != nil {
+	if err := s.hasher.Compare(user.PasswordHash, oldPassword); err != nil {
 		return fmt.Errorf("invalid current password")
 	}
 
@@ -94,11 +100,7 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassw
 		return fmt.Errorf("failed to hash password")
 	}
 
-	return s.repo.UpdatePassword(ctx, userID, newHash)
-}
-
-func (s *AuthService) Logout(ctx context.Context, userID int64) error {
-	return s.repo.DeleteRefreshToken(ctx, userID)
+	return s.users.UpdatePassword(ctx, userID, newHash)
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshResponse, error) {
@@ -112,12 +114,12 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 		return nil, fmt.Errorf("invalid token subject")
 	}
 
-	_, _, role, _, err := s.repo.FindUserByID(ctx, userID)
+	user, err := s.users.FindUserByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("user not found")
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(userID, role, claims.Subject)
+	tokens, err := s.jwt.GenerateTokenPair(userID, string(user.Role), claims.Subject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens")
 	}

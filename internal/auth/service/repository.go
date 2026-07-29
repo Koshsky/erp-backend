@@ -1,15 +1,20 @@
 package service
 
-import "context"
+import (
+	"context"
 
-type AuthRepository interface {
-	FindUserByUsername(ctx context.Context, username string) (id int64, name, role, passwordHash string, err error)
-	FindUserByID(ctx context.Context, userID int64) (id int64, name, role, passwordHash string, err error)
-	CreateUser(ctx context.Context, name, username, role, passwordHash string) (int64, error)
+	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
+)
+
+// UserService is the interface auth depends on instead of a direct repository.
+type UserService interface {
+	FindUserByUsername(ctx context.Context, username string) (*userDTO.UserResponse, error)
+	FindUserByID(ctx context.Context, userID int64) (*userDTO.UserResponse, error)
+	CreateUser(ctx context.Context, req userDTO.CreateUserRequest) (*userDTO.UserResponse, error)
 	UpdatePassword(ctx context.Context, userID int64, newHash string) error
-	SaveRefreshToken(ctx context.Context, userID int64, token string) error
-	DeleteRefreshToken(ctx context.Context, userID int64) error
 }
+
+// PasswordHasher is used to hash and compare passwords.
 type PasswordHasher interface {
 	Hash(raw string) (string, error)
 	Compare(hashed, raw string) error
