@@ -15,7 +15,7 @@ type Querier interface {
 	CreateProcess(ctx context.Context, arg CreateProcessParams) (Process, error)
 	DeleteProcess(ctx context.Context, processID int64) error
 	// TODO: write CanUserViewProcess
-	GetProcess(ctx context.Context, id int64) (Process, error)
+	FindProcess(ctx context.Context, id int64) (Process, error)
 	UpdateProcess(ctx context.Context, arg UpdateProcessParams) (Process, error)
 }
 

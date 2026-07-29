@@ -38,8 +38,8 @@ func (r *MilestoneRepository) CreateMilestone(ctx context.Context, milestone dom
 	return &mapped, nil
 }
 
-func (r *MilestoneRepository) GetMilestone(ctx context.Context, id int64) (*domain.Milestone, error) {
-	row, err := r.db.GetMilestone(ctx, id)
+func (r *MilestoneRepository) FindMilestone(ctx context.Context, id int64) (*domain.Milestone, error) {
+	row, err := r.db.FindMilestone(ctx, id)
 	if err != nil {
 		return nil, err
 	}

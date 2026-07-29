@@ -12,7 +12,7 @@ VALUES (@task_id, @resource_id, @quantity)
 RETURNING *;
 
 -- TODO: write CanUserViewAssignment
--- name: GetAssignment :one
+-- name: FindAssignment :one
 SELECT *
 FROM assignments
 WHERE id = @assignment_id

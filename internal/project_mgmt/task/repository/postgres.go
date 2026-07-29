@@ -38,8 +38,8 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 	return &mapped, nil
 }
 
-func (r *TaskRepository) GetTask(ctx context.Context, id int64) (*domain.Task, error) {
-	row, err := r.db.GetTask(ctx, id)
+func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*domain.Task, error) {
+	row, err := r.db.FindTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}

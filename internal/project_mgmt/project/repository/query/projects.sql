@@ -27,7 +27,7 @@ FROM projects
 WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
--- name: GetProject :one
+-- name: FindProject :one
 SELECT *
 FROM projects
 WHERE deleted_at IS NULL

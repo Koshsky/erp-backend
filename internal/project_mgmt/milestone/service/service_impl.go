@@ -35,8 +35,8 @@ func (s *MilestoneService) CreateMilestone(ctx context.Context, req dto.CreateMi
 	return s.mapper.ToDTO(created), nil
 }
 
-func (s *MilestoneService) GetMilestone(ctx context.Context, id int64) (*dto.MilestoneResponse, error) {
-	milestone, err := s.repository.GetMilestone(ctx, id)
+func (s *MilestoneService) FindMilestone(ctx context.Context, id int64) (*dto.MilestoneResponse, error) {
+	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (s *MilestoneService) GetMilestone(ctx context.Context, id int64) (*dto.Mil
 }
 
 func (s *MilestoneService) UpdateMilestone(ctx context.Context, id int64, req dto.UpdateMilestoneRequest) (*dto.MilestoneResponse, error) {
-	milestone, err := s.repository.GetMilestone(ctx, id)
+	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil {
 		return nil, err
 	}

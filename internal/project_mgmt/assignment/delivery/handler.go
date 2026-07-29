@@ -48,14 +48,14 @@ func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /assignments/{id} [get]
-func (h *AssignmentHandler) GetAssignment(c *gin.Context) {
+func (h *AssignmentHandler) FindAssignment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid assignment id")
 		return
 	}
 
-	assignment, err := h.service.GetAssignment(c.Request.Context(), id)
+	assignment, err := h.service.FindAssignment(c.Request.Context(), id)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

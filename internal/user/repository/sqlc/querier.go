@@ -11,7 +11,7 @@ import (
 type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteUser(ctx context.Context, userID int64) error
-	GetUser(ctx context.Context, userID int64) (User, error)
+	FindUser(ctx context.Context, userID int64) (User, error)
 	// TODO: CanUser...User
 	ListUsers(ctx context.Context) ([]User, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)

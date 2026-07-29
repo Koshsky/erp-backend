@@ -6,7 +6,7 @@ func (h *TaskHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/task")
 	{
 		r.GET("/", h.ListTasks)
-		r.GET("/:id", h.GetTask)
+		r.GET("/:id", h.FindTask)
 		r.POST("/", h.CreateTask)
 		r.PUT("/:id", h.UpdateTask)
 		r.DELETE("/:id", h.DeleteTask)

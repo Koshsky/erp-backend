@@ -37,8 +37,8 @@ func (r *AssignmentRepository) CreateAssignment(ctx context.Context, assignment 
 	return &mapped, nil
 }
 
-func (r *AssignmentRepository) GetAssignment(ctx context.Context, id int64) (*domain.Assignment, error) {
-	row, err := r.db.GetAssignment(ctx, id)
+func (r *AssignmentRepository) FindAssignment(ctx context.Context, id int64) (*domain.Assignment, error) {
+	row, err := r.db.FindAssignment(ctx, id)
 	if err != nil {
 		return nil, err
 	}

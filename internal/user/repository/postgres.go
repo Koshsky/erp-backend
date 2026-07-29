@@ -34,7 +34,7 @@ func (r *UserRepository) FindUserByUsername(ctx context.Context, username string
 }
 
 func (r *UserRepository) FindUserByID(ctx context.Context, userID int64) (*domain.User, error) {
-	return r.GetUser(ctx, userID)
+	return r.FindUser(ctx, userID)
 }
 
 func (r *UserRepository) UpdatePassword(ctx context.Context, userID int64, hash string) error {
@@ -63,8 +63,8 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 	return &mapped, nil
 }
 
-func (r *UserRepository) GetUser(ctx context.Context, id int64) (*domain.User, error) {
-	row, err := r.db.GetUser(ctx, id)
+func (r *UserRepository) FindUser(ctx context.Context, id int64) (*domain.User, error) {
+	row, err := r.db.FindUser(ctx, id)
 	if err != nil {
 		return nil, err
 	}

@@ -48,14 +48,14 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /resource/{id} [get]
-func (h *ResourceHandler) GetResource(c *gin.Context) {
+func (h *ResourceHandler) FindResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid resource id")
 		return
 	}
 
-	resource, err := h.service.GetResource(c.Request.Context(), id)
+	resource, err := h.service.FindResource(c.Request.Context(), id)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

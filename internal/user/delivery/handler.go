@@ -41,7 +41,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	response.OK(c, users)
 }
 
-// GetUser
+// FindUser
 // @Summary User information
 // @Description Returns information about a specific user
 // @Tags Users
@@ -52,14 +52,14 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /user/{id} [get]
-func (h *UserHandler) GetUser(c *gin.Context) {
+func (h *UserHandler) FindUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid user id")
 		return
 	}
 
-	user, err := h.service.GetUser(c.Request.Context(), id)
+	user, err := h.service.FindUser(c.Request.Context(), id)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

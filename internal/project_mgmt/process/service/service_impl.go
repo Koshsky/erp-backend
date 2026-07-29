@@ -35,8 +35,8 @@ func (s *ProcessService) CreateProcess(ctx context.Context, req dto.CreateProces
 	return s.mapper.ToDTO(created), nil
 }
 
-func (s *ProcessService) GetProcess(ctx context.Context, id int64) (*dto.ProcessResponse, error) {
-	process, err := s.repository.GetProcess(ctx, id)
+func (s *ProcessService) FindProcess(ctx context.Context, id int64) (*dto.ProcessResponse, error) {
+	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (s *ProcessService) GetProcess(ctx context.Context, id int64) (*dto.Process
 }
 
 func (s *ProcessService) UpdateProcess(ctx context.Context, id int64, req dto.UpdateProcessRequest) (*dto.ProcessResponse, error) {
-	process, err := s.repository.GetProcess(ctx, id)
+	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil {
 		return nil, err
 	}

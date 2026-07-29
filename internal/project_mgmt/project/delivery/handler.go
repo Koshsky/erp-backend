@@ -48,14 +48,14 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /project/{id} [get]
-func (h *ProjectHandler) GetProject(c *gin.Context) {
+func (h *ProjectHandler) FindProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid project id")
 		return
 	}
 
-	project, err := h.service.GetProject(c.Request.Context(), id)
+	project, err := h.service.FindProject(c.Request.Context(), id)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
