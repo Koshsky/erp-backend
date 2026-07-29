@@ -4,16 +4,15 @@ import (
 	"net/http"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
-	"github.com/Koshsky/erp-backend/internal/auth/service"
 	"github.com/Koshsky/erp-backend/internal/common/ctx"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
-	service *service.AuthService
+	service AuthService
 }
 
-func NewAuthHandler(service *service.AuthService) *AuthHandler {
+func NewAuthHandler(service AuthService) *AuthHandler {
 	return &AuthHandler{service: service}
 }
 
@@ -60,7 +59,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.service.Register(c.Request.Context(), req.Name, req.Username, req.Password, req.Role)
+	resp, err := h.service.Register(c.Request.Context(), req.Name, req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
