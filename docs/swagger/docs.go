@@ -398,40 +398,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/logout": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Revoke refresh token",
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Logout",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/auth/refresh": {
             "post": {
                 "description": "Refresh access token using refresh token, returns new pair",
@@ -2452,7 +2418,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "password": {
+                "password_hash": {
                     "type": "string"
                 },
                 "role": {
@@ -2567,9 +2533,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
-                    "type": "string"
-                },
-                "role": {
                     "type": "string"
                 },
                 "username": {
@@ -2699,9 +2662,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
-                    "type": "string"
-                },
-                "password": {
                     "type": "string"
                 },
                 "role": {

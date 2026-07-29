@@ -3,9 +3,9 @@ package domain
 import "time"
 
 type Task struct {
-	ID        int64     `db:"id" json:"id"`
-	ProcessID int64     `db:"process_id" json:"process_id"`
-	Title     string    `db:"title" json:"title"`
-	StartDate time.Time `db:"start_date" json:"start_date"`
-	EndDate   time.Time `db:"end_date" json:"end_date"`
+	ID        int64     `json:"id"`
+	ProcessID int64     `json:"process_id"`
+	Title     string    `json:"title"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
 }
