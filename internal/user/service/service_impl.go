@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
@@ -34,7 +33,7 @@ func (s *UserService) UpdatePassword(ctx context.Context, userID int64, password
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req dto.CreateUserRequest) (*dto.UserResponse, error) {
-	if err := s.validator.ValidateUserCreate(req.Name, req.Username, domain.UserRole(req.Role)); err != nil {
+	if err := s.validator.ValidateUserCreate(req.Name, req.Username, req.Role); err != nil {
 		return nil, err
 	}
 	user := s.mapper.ToDomainFromCreate(req)
@@ -65,10 +64,6 @@ func (s *UserService) GetUser(ctx context.Context, id int64) (*dto.UserResponse,
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	userID := ctx.Value("user_id").(int64)
-	if userID != id {
-		return nil, fmt.Errorf("you can only edit your own account")
-	}
 	user, err := s.repository.GetUser(ctx, id)
 	if err != nil {
 		return nil, err
@@ -90,10 +85,6 @@ func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUs
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
-	userID := ctx.Value("user_id").(int64)
-	if userID != id {
-		return fmt.Errorf("you can only delete your own account")
-	}
 	return s.repository.DeleteUser(ctx, id)
 }
 

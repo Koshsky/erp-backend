@@ -4,7 +4,9 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/common/ctx"
 	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 	"github.com/gin-gonic/gin"
 )
@@ -77,6 +79,11 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // @Failure 500 {object} response.Response
 // @Router /user [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
+	if role := ctx.GetRole(c); role != domain.ProjectDirector {
+		response.Forbidden(c, "only ДП can create users")
+		return
+	}
+
 	var body dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.HandleBindError(c, h.logger, err)
@@ -108,6 +115,13 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
+	role := ctx.GetRole(c)
+	userID := ctx.GetUserID(c)
+	if role != domain.ProjectDirector && userID != id {
+		response.BadRequest(c, "you can only delete your own account")
+		return
+	}
+
 	if err := h.service.DeleteUser(c.Request.Context(), id); err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -131,6 +145,13 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid user id")
+		return
+	}
+
+	role := ctx.GetRole(c)
+	userID := ctx.GetUserID(c)
+	if role != domain.ProjectDirector && userID != id {
+		response.BadRequest(c, "you can only update your own account")
 		return
 	}
 

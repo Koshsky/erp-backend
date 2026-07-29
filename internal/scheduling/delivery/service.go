@@ -7,7 +7,7 @@ import (
 )
 
 type MilestoneService interface {
-	GetProjectScheduling(ctx context.Context) (*dto.ProjectScheduling, error)
-	GetProcessScheduling(ctx context.Context) (*dto.ProcessScheduling, error)
-	GetTaskScheduling(ctx context.Context) (*dto.TaskScheduling, error)
+	GetProjectScheduling(ctx context.Context, userID int64, role string) (*dto.ProjectScheduling, error)
+	GetProcessScheduling(ctx context.Context, userID int64, role string) (*dto.ProcessScheduling, error)
+	GetTaskScheduling(ctx context.Context, userID int64, role string) (*dto.TaskScheduling, error)
 }

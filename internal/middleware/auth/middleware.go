@@ -6,13 +6,9 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/Koshsky/erp-backend/internal/common/ctx"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	ContextKeyRole   = "role"
-	ContextKeyUserID = "user_id"
 )
 
 type AuthMiddleware struct {
@@ -26,7 +22,7 @@ func NewAuthMiddleware(logger *slog.Logger, jwtManager *jwt.JWTService) *AuthMid
 	return &AuthMiddleware{
 		logger:        logger,
 		jwtManager:    jwtManager,
-		DefaultRole:   "ДП",
+		DefaultRole:   "unauthenticated",
 		DefaultUserID: 1,
 	}
 }
@@ -50,8 +46,8 @@ func (m *AuthMiddleware) Middleware() gin.HandlerFunc {
 			}
 		}
 
-		reqCtx = context.WithValue(reqCtx, ContextKeyRole, role)
-		reqCtx = context.WithValue(reqCtx, ContextKeyUserID, userID)
+		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyRole, role)
+		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyUserID, userID)
 		fmt.Println()
 		c.Request = c.Request.WithContext(reqCtx)
 
@@ -75,28 +71,10 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		}
 
 		reqCtx := c.Request.Context()
-		reqCtx = context.WithValue(reqCtx, ContextKeyUserID, claims.UserID)
-		reqCtx = context.WithValue(reqCtx, ContextKeyRole, claims.Role)
+		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyUserID, claims.UserID)
+		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyRole, claims.Role)
 		c.Request = c.Request.WithContext(reqCtx)
 
 		c.Next()
 	}
-}
-
-// GetRole извлекает роль из контекста запроса (для использования в репозиториях/сервисах)
-func GetRole(ctx context.Context) string {
-	role, ok := ctx.Value(ContextKeyRole).(string)
-	if !ok {
-		return ""
-	}
-	return role
-}
-
-// GetUserID извлекает user_id из контекста запроса (для использования в репозиториях/сервисах)
-func GetUserID(ctx context.Context) int64 {
-	userID, ok := ctx.Value(ContextKeyUserID).(int64)
-	if !ok {
-		return 0
-	}
-	return userID
 }
