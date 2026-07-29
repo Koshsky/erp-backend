@@ -6,7 +6,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/resource/domain"
 )
 
-type RepositoryInterface interface {
+type ResourceRepository interface {
 	CreateResource(ctx context.Context, Resource domain.Resource) (*domain.Resource, error)
 	GetResource(ctx context.Context, id int64) (*domain.Resource, error)
 	UpdateResource(ctx context.Context, new domain.Resource) (*domain.Resource, error)

@@ -6,7 +6,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
 )
 
-type RepositoryInterface interface {
+type SchedulingRepository interface {
 	ListProjects(ctx context.Context, userID int64, role string) ([]domain.Project, error)
 	ListProcesses(ctx context.Context, userID int64, role string) ([]domain.Process, error)
 	ListResources(ctx context.Context) ([]domain.Resource, error)

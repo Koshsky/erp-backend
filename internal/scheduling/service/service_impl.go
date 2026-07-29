@@ -9,10 +9,10 @@ import (
 
 type SchedulingService struct {
 	logger     *slog.Logger
-	repository RepositoryInterface
+	repository SchedulingRepository
 }
 
-func NewSchedulingService(logger *slog.Logger, repository RepositoryInterface) *SchedulingService {
+func NewSchedulingService(logger *slog.Logger, repository SchedulingRepository) *SchedulingService {
 	return &SchedulingService{
 		logger:     logger,
 		repository: repository,

@@ -10,12 +10,12 @@ import (
 
 type ResourceService struct {
 	logger     *slog.Logger
-	repository RepositoryInterface
+	repository ResourceRepository
 	mapper     *ResourceMapper
 	validator  *ResourceValidator
 }
 
-func NewResourceService(logger *slog.Logger, repository RepositoryInterface) *ResourceService {
+func NewResourceService(logger *slog.Logger, repository ResourceRepository) *ResourceService {
 	return &ResourceService{
 		logger:     logger,
 		repository: repository,
