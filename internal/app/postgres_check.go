@@ -1,18 +1,18 @@
 package app
 
 import (
-	assignmentService "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
-	milestoneService "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
+	assignmentService "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
 	milestoneRepoPkg "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
-	processService "github.com/Koshsky/erp-backend/internal/project_mgmt/process/service"
+	milestoneService "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
 	processRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
-	projectService "github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
+	processService "github.com/Koshsky/erp-backend/internal/project_mgmt/process/service"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
-	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
+	projectService "github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/repository"
-	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
+	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
 	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
 	schedulingService "github.com/Koshsky/erp-backend/internal/scheduling/service"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
@@ -20,14 +20,14 @@ import (
 )
 
 type (
-	SchedulingRepository = schedulingService.RepositoryInterface
-	UserRepository       = userService.RepositoryInterface
-	TaskRepository       = taskService.RepositoryInterface
-	ResourceRepository   = resourceService.RepositoryInterface
-	ProjectRepository    = projectService.RepositoryInterface
-	ProcessRepository    = processService.RepositoryInterface
-	MilestoneRepository  = milestoneService.RepositoryInterface
-	AssignmentRepository = assignmentService.RepositoryInterface
+	SchedulingRepository = schedulingService.SchedulingRepository
+	UserRepository       = userService.UserRepository
+	TaskRepository       = taskService.TaskRepository
+	ResourceRepository   = resourceService.ResourceRepository
+	ProjectRepository    = projectService.ProjectRepository
+	ProcessRepository    = processService.ProcessRepository
+	MilestoneRepository  = milestoneService.MilestoneRepository
+	AssignmentRepository = assignmentService.AssignmentRepository
 )
 
 var (

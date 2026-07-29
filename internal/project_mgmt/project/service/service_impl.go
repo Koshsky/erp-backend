@@ -10,12 +10,12 @@ import (
 
 type ProjectService struct {
 	logger     *slog.Logger
-	repository RepositoryInterface
+	repository ProjectRepository
 	mapper     *ProjectMapper
 	validator  *ProjectValidator
 }
 
-func NewProjectService(logger *slog.Logger, repository RepositoryInterface) *ProjectService {
+func NewProjectService(logger *slog.Logger, repository ProjectRepository) *ProjectService {
 	return &ProjectService{
 		logger:     logger,
 		repository: repository,

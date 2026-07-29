@@ -10,12 +10,12 @@ import (
 
 type ProcessService struct {
 	logger     *slog.Logger
-	repository RepositoryInterface
+	repository ProcessRepository
 	mapper     *ProcessMapper
 	validator  *ProcessValidator
 }
 
-func NewProcessService(logger *slog.Logger, repository RepositoryInterface) *ProcessService {
+func NewProcessService(logger *slog.Logger, repository ProcessRepository) *ProcessService {
 	return &ProcessService{
 		logger:     logger,
 		repository: repository,

@@ -10,12 +10,12 @@ import (
 
 type AssignmentService struct {
 	logger     *slog.Logger
-	repository RepositoryInterface
+	repository AssignmentRepository
 	mapper     *AssignmentMapper
 	validator  *AssignmentValidator
 }
 
-func NewAssignmentService(logger *slog.Logger, repository RepositoryInterface) *AssignmentService {
+func NewAssignmentService(logger *slog.Logger, repository AssignmentRepository) *AssignmentService {
 	return &AssignmentService{
 		logger:     logger,
 		repository: repository,

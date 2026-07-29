@@ -10,12 +10,12 @@ import (
 
 type UserService struct {
 	logger     *slog.Logger
-	repository RepositoryInterface
+	repository UserRepository
 	mapper     *UserMapper
 	validator  *UserValidator
 }
 
-func NewUserService(logger *slog.Logger, repository RepositoryInterface) *UserService {
+func NewUserService(logger *slog.Logger, repository UserRepository) *UserService {
 	return &UserService{
 		logger:     logger,
 		repository: repository,

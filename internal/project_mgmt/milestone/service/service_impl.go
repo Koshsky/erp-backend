@@ -10,12 +10,12 @@ import (
 
 type MilestoneService struct {
 	logger     *slog.Logger
-	repository RepositoryInterface
+	repository MilestoneRepository
 	mapper     *MilestoneMapper
 	validator  *MilestoneValidator
 }
 
-func NewMilestoneService(logger *slog.Logger, repository RepositoryInterface) *MilestoneService {
+func NewMilestoneService(logger *slog.Logger, repository MilestoneRepository) *MilestoneService {
 	return &MilestoneService{
 		logger:     logger,
 		repository: repository,
