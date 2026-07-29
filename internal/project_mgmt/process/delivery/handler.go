@@ -21,14 +21,14 @@ func NewProcessHandler(logger *slog.Logger, service ProcessService) *ProcessHand
 	}
 }
 
-// @Tags Processes
-// @Summary List processes
-// @Description Get a list of all processes
-// @Produce json
-// @Security ApiKeyAuth
-// @Success 200 {object} response.Response{data=[]dto.ProcessResponse}
-// @Failure 500 {object} response.Response
-// @Router /process [get]
+// @Tags			Processes
+// @Summary		List processes
+// @Description	Get a list of all processes
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Success		200	{object}	response.Response{data=[]dto.ProcessResponse}
+// @Failure		500	{object}	response.Response
+// @Router			/process [get]
 func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	processes, err := h.service.ListProcesses(c.Request.Context())
 	if err != nil {
@@ -38,16 +38,16 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	response.OK(c, processes)
 }
 
-// @Tags Processes
-// @Summary Get process
-// @Description Get a process by ID
-// @Produce json
-// @Security ApiKeyAuth
-// @Param id path int true "Process ID"
-// @Success 200 {object} response.Response{data=dto.ProcessResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /process/{id} [get]
+// @Tags			Processes
+// @Summary		Get process
+// @Description	Get a process by ID
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Param			id	path		int	true	"Process ID"
+// @Success		200	{object}	response.Response{data=dto.ProcessResponse}
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/process/{id} [get]
 func (h *ProcessHandler) FindProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -63,17 +63,17 @@ func (h *ProcessHandler) FindProcess(c *gin.Context) {
 	response.OK(c, process)
 }
 
-// @Tags Processes
-// @Summary Create process
-// @Description Create a new process
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param process body dto.CreateProcessRequest true "Process data"
-// @Success 201 {object} response.Response{data=dto.ProcessResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /process [post]
+// @Tags			Processes
+// @Summary		Create process
+// @Description	Create a new process
+// @Accept			json
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Param			process	body		dto.CreateProcessRequest	true	"Process data"
+// @Success		201		{object}	response.Response{data=dto.ProcessResponse}
+// @Failure		400		{object}	response.Response
+// @Failure		500		{object}	response.Response
+// @Router			/process [post]
 func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 	var process dto.CreateProcessRequest
 	if err := c.ShouldBindJSON(&process); err != nil {
@@ -89,16 +89,16 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 	response.Created(c, created)
 }
 
-// @Tags Processes
-// @Summary Delete process
-// @Description Delete a process by ID
-// @Produce json
-// @Security ApiKeyAuth
-// @Param id path int true "Process ID"
-// @Success 204
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /process/{id} [delete]
+// @Tags			Processes
+// @Summary		Delete process
+// @Description	Delete a process by ID
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Param			id	path	int	true	"Process ID"
+// @Success		204
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/process/{id} [delete]
 func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -113,18 +113,18 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	response.NoContent(c)
 }
 
-// @Tags Processes
-// @Summary Update process
-// @Description Update a process by ID
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param id path int true "Process ID"
-// @Param body body dto.UpdateProcessRequest true "Process data"
-// @Success 200 {object} response.Response{data=dto.ProcessResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /process/{id} [put]
+// @Tags			Processes
+// @Summary		Update process
+// @Description	Update a process by ID
+// @Accept			json
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Param			id		path		int							true	"Process ID"
+// @Param			body	body		dto.UpdateProcessRequest	true	"Process data"
+// @Success		200		{object}	response.Response{data=dto.ProcessResponse}
+// @Failure		400		{object}	response.Response
+// @Failure		500		{object}	response.Response
+// @Router			/process/{id} [put]
 func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

@@ -24,14 +24,15 @@ func NewUserHandler(logger *slog.Logger, service UserService) *UserHandler {
 }
 
 // ListUsers
-// @Summary List all users
-// @Description Returns all users in the system
-// @Tags Users
-// @Security ApiKeyAuth
-// @Produce json
-// @Success 200 {object} response.Response{data=[]dto.UserResponse}
-// @Failure 500 {object} response.Response
-// @Router /user [get]
+//
+//	@Summary		List all users
+//	@Description	Returns all users in the system
+//	@Tags			Users
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Success		200	{object}	response.Response{data=[]dto.UserResponse}
+//	@Failure		500	{object}	response.Response
+//	@Router			/user [get]
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	users, err := h.service.ListUsers(c.Request.Context())
 	if err != nil {
@@ -42,16 +43,17 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 }
 
 // FindUser
-// @Summary User information
-// @Description Returns information about a specific user
-// @Tags Users
-// @Security ApiKeyAuth
-// @Produce json
-// @Param id path int true "User ID"
-// @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /user/{id} [get]
+//
+//	@Summary		User information
+//	@Description	Returns information about a specific user
+//	@Tags			Users
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Param			id	path		int	true	"User ID"
+//	@Success		200	{object}	response.Response{data=dto.UserResponse}
+//	@Failure		400	{object}	response.Response
+//	@Failure		500	{object}	response.Response
+//	@Router			/user/{id} [get]
 func (h *UserHandler) FindUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -67,17 +69,17 @@ func (h *UserHandler) FindUser(c *gin.Context) {
 	response.OK(c, user)
 }
 
-// @Tags Users
-// @Summary Create a new user
-// @Description Create a new user with the provided data
-// @Security ApiKeyAuth
-// @Accept json
-// @Produce json
-// @Param body body dto.CreateUserRequest true "User data"
-// @Success 201 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /user [post]
+// @Tags			Users
+// @Summary		Create a new user
+// @Description	Create a new user with the provided data
+// @Security		ApiKeyAuth
+// @Accept			json
+// @Produce		json
+// @Param			body	body		dto.CreateUserRequest	true	"User data"
+// @Success		201		{object}	response.Response{data=dto.UserResponse}
+// @Failure		400		{object}	response.Response
+// @Failure		500		{object}	response.Response
+// @Router			/user [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	if role := ctx.GetRole(c); role != domain.ProjectDirector {
 		response.Forbidden(c, "only ДП can create users")
@@ -97,17 +99,17 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	response.Created(c, created)
 }
 
-// @Tags Users
-// @Summary Delete a user
-// @Description Delete a user by ID
-// @Security ApiKeyAuth
-// @Accept json
-// @Produce json
-// @Param id path int true "User ID"
-// @Success 204
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /user/{id} [delete]
+// @Tags			Users
+// @Summary		Delete a user
+// @Description	Delete a user by ID
+// @Security		ApiKeyAuth
+// @Accept			json
+// @Produce		json
+// @Param			id	path	int	true	"User ID"
+// @Success		204
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -129,18 +131,18 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	response.NoContent(c)
 }
 
-// @Tags Users
-// @Summary Update a user
-// @Description Update a user by ID
-// @Security ApiKeyAuth
-// @Accept json
-// @Produce json
-// @Param id path int true "User ID"
-// @Param body body dto.UpdateUserRequest true "User data"
-// @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /user/{id} [put]
+// @Tags			Users
+// @Summary		Update a user
+// @Description	Update a user by ID
+// @Security		ApiKeyAuth
+// @Accept			json
+// @Produce		json
+// @Param			id		path		int						true	"User ID"
+// @Param			body	body		dto.UpdateUserRequest	true	"User data"
+// @Success		200		{object}	response.Response{data=dto.UserResponse}
+// @Failure		400		{object}	response.Response
+// @Failure		500		{object}	response.Response
+// @Router			/user/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
