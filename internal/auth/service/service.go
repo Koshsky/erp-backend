@@ -23,11 +23,7 @@ func NewAuthService(users UserService, hasher PasswordHasher, jwtService *jwt.JW
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, name, username, password, role string) (*dto.AuthResponse, error) {
-	if role == "" {
-		role = "user"
-	}
-
+func (s *AuthService) Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error) {
 	hash, err := s.hasher.Hash(password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password")
@@ -36,7 +32,7 @@ func (s *AuthService) Register(ctx context.Context, name, username, password, ro
 	user, err := s.users.CreateUser(ctx, userDTO.CreateUserRequest{
 		Name:         name,
 		Username:     username,
-		Role:         role,
+		Role:         "ВП",
 		PasswordHash: hash,
 	})
 	if err != nil {
