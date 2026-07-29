@@ -39,7 +39,7 @@ func (m *UserMapper) ToDomainFromCreate(req dto.CreateUserRequest) domain.User {
 	return domain.User{
 		Name:         req.Name,
 		Username:     req.Username,
-		Role:         domain.UserRole(req.Role),
+		Role:         req.Role,
 		PasswordHash: req.PasswordHash,
 	}
 }
@@ -56,6 +56,6 @@ func (m *UserMapper) ApplyUpdateToDomain(user *domain.User, req dto.UpdateUserRe
 		user.Username = *req.Username
 	}
 	if req.Role != nil {
-		user.Role = domain.UserRole(*req.Role)
+		user.Role = *req.Role
 	}
 }

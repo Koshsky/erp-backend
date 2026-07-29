@@ -107,9 +107,8 @@ func mapUser(row sqlc.User) domain.User {
 	return domain.User{
 		ID:           row.ID,
 		Name:         row.Name,
-		Role:         domain.UserRole(row.Role),
+		Role:         row.Role,
 		Username:     row.Username,
 		PasswordHash: row.PasswordHash,
 	}
 }
-

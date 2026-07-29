@@ -52,3 +52,14 @@ func HandleBindError(c *gin.Context, logger *slog.Logger, err error) {
 	logger.Warn("invalid request payload", "error", err)
 	BadRequest(c, "invalid request payload")
 }
+
+// Forbidden sends a 403 error response.
+func Forbidden(c *gin.Context, msg string) {
+	c.JSON(http.StatusForbidden, Response{Error: msg})
+}
+
+// NotFound sends a 404 error response.
+func NotFound(c *gin.Context, msg string) {
+	c.JSON(http.StatusNotFound, Response{Error: msg})
+}
+
