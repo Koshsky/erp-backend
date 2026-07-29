@@ -17,7 +17,7 @@ import (
 	userService "github.com/Koshsky/erp-backend/internal/user/service"
 )
 
-// TYPE ALIASES
+// TYPE ALIASES.
 type (
 	UserService       = userDelivery.UserService
 	TaskService       = taskDelivery.TaskService
@@ -28,7 +28,7 @@ type (
 	AssignmentService = assignmentDelivery.AssignmentService
 )
 
-// COMPILATION CHECK
+// COMPILATION CHECK.
 var (
 	_ UserService       = (*userService.UserService)(nil)
 	_ TaskService       = (*taskService.TaskService)(nil)

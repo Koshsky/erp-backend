@@ -469,3 +469,15 @@ linters:
           - gosec
           - noctx
           - wrapcheck
+      - path: 'docs/'
+        linters:
+          - gochecknoglobals
+          - gochecknoinits
+          - funclen
+          - gomnd
+          - lll
+          - goconst
+          - godot
+      - path: delivery/
+        linters:
+          - godot

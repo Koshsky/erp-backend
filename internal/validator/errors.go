@@ -26,7 +26,7 @@ var (
 
 // FieldError is a structured validation error carrying the offending field,
 // a machine-readable code and a human-readable message. It wraps ErrValidation
-// so errors.Is(err, ErrValidation) and IsValidationError keep working unchanged.
+// so [errors.Is](err, ErrValidation) and IsValidationError keep working unchanged.
 // Field/Code are not yet exposed over the API, but are kept ready for a future
 // structured error response payload.
 type FieldError struct {
@@ -35,16 +35,16 @@ type FieldError struct {
 	Message string `json:"message"`
 }
 
+func NewFieldError(field, code, message string) *FieldError {
+	return &FieldError{Field: field, Code: code, Message: message}
+}
+
 func (e *FieldError) Error() string {
 	return fmt.Sprintf("%s: %s", ErrValidation.Error(), e.Message)
 }
 
 func (e *FieldError) Unwrap() error {
 	return ErrValidation
-}
-
-func NewFieldError(field, code, message string) *FieldError {
-	return &FieldError{Field: field, Code: code, Message: message}
 }
 
 // NewValidationError is a generic fallback constructor for validation errors
