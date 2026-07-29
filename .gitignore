@@ -14,6 +14,7 @@ coverage.out
 coverage.html
 *.coverprofile
 
+.continue/
 .idea/
 .vscode/
 *.swp

@@ -2,24 +2,12 @@ package delivery
 
 import (
 	"log/slog"
-	"net/http"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 	"github.com/gin-gonic/gin"
 )
-
-// TODO: move response to common DTO
-
-type response struct {
-	Data  interface{} `json:"data,omitempty"`
-	Error string      `json:"error,omitempty"`
-}
-
-func writeBindError(c *gin.Context, logger *slog.Logger, err error) {
-	logger.Warn("invalid request payload", "error", err)
-	c.JSON(http.StatusBadRequest, response{Error: "invalid request payload"})
-}
 
 type MilestoneHandler struct {
 	logger  *slog.Logger
@@ -38,17 +26,16 @@ func NewMilestoneHandler(logger *slog.Logger, service MilestoneService) *Milesto
 // @Description List all milestones
 // @Security ApiKeyAuth
 // @Produce json
-// @Success 200 {object} response{data=[]dto.MilestoneResponse}
-// @Failure 500 {object} response
+// @Success 200 {object} response.Response{data=[]dto.MilestoneResponse}
+// @Failure 500 {object} response.Response
 // @Router /milestone [get]
 func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 	milestones, err := h.service.ListMilestones(c.Request.Context())
 	if err != nil {
-		h.logger.Error("failed to list milestones", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: milestones})
+	response.OK(c, milestones)
 }
 
 // @Tags Milestones
@@ -57,24 +44,23 @@ func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Produce json
 // @Param id path int true "Milestone ID"
-// @Success 200 {object} response{data=dto.MilestoneResponse}
-// @Failure 400 {object} response
-// @Failure 500 {object} response
+// @Success 200 {object} response.Response{data=dto.MilestoneResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /milestone/{id} [get]
 func (h *MilestoneHandler) GetMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid milestone id"})
+		response.BadRequest(c, "invalid milestone id")
 		return
 	}
 
 	milestone, err := h.service.GetMilestone(c.Request.Context(), id)
 	if err != nil {
-		h.logger.Error("failed to get milestone", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: milestone})
+	response.OK(c, milestone)
 }
 
 // @Tags Milestones
@@ -84,24 +70,23 @@ func (h *MilestoneHandler) GetMilestone(c *gin.Context) {
 // @Produce json
 // @Security ApiKeyAuth
 // @Param request body dto.CreateMilestoneRequest true "Milestone data"
-// @Success 201 {object} response{data=dto.MilestoneResponse}
-// @Failure 400 {object} response
-// @Failure 500 {object} response
+// @Success 201 {object} response.Response{data=dto.MilestoneResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /milestone [post]
 func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 	var milestone dto.CreateMilestoneRequest
 	if err := c.ShouldBindJSON(&milestone); err != nil {
-		writeBindError(c, h.logger, err)
+		response.HandleBindError(c, h.logger, err)
 		return
 	}
 
 	created, err := h.service.CreateMilestone(c.Request.Context(), milestone)
 	if err != nil {
-		h.logger.Error("failed to create milestone", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusCreated, response{Data: created})
+	response.Created(c, created)
 }
 
 // @Tags Milestones
@@ -111,22 +96,21 @@ func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Param id path int true "Milestone ID"
 // @Success 204
-// @Failure 400 {object} response
-// @Failure 500 {object} response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /milestone/{id} [delete]
 func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid milestone id"})
+		response.BadRequest(c, "invalid milestone id")
 		return
 	}
 
 	if err := h.service.DeleteMilestone(c.Request.Context(), id); err != nil {
-		h.logger.Error("failed to delete milestone", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusNoContent, nil)
+	response.NoContent(c)
 }
 
 // @Tags Milestones
@@ -137,28 +121,27 @@ func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Param id path int true "Milestone ID"
 // @Param body body dto.UpdateMilestoneRequest true "Milestone data"
-// @Success 200 {object} response{data=dto.MilestoneResponse}
-// @Failure 400 {object} response
-// @Failure 500 {object} response
+// @Success 200 {object} response.Response{data=dto.MilestoneResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /milestone/{id} [put]
 func (h *MilestoneHandler) UpdateMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid milestone id"})
+		response.BadRequest(c, "invalid milestone id")
 		return
 	}
 
 	body := dto.UpdateMilestoneRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		writeBindError(c, h.logger, err)
+		response.HandleBindError(c, h.logger, err)
 		return
 	}
 
 	updated, err := h.service.UpdateMilestone(c.Request.Context(), id, body)
 	if err != nil {
-		h.logger.Error("failed to update milestone", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: updated})
+	response.OK(c, updated)
 }

@@ -2,17 +2,10 @@ package delivery
 
 import (
 	"log/slog"
-	"net/http"
 
+	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/gin-gonic/gin"
 )
-
-// TODO: move response to common DTO?
-
-type response struct {
-	Data  interface{} `json:"data,omitempty"`
-	Error string      `json:"error,omitempty"`
-}
 
 type SchedulingHandler struct {
 	logger  *slog.Logger
@@ -31,18 +24,17 @@ func NewSchedulingHandler(logger *slog.Logger, service MilestoneService) *Schedu
 // @Description Get project scheduling (project portfolio)
 // @Security ApiKeyAuth
 // @Produce  json
-// @Success 200 {object} response
-// @Failure 400 {object} response
-// @Failure 500 {object} response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /scheduling/projects [get]
 func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
-	sheduling, err := h.service.GetProjectScheduling(c.Request.Context())
+	scheduling, err := h.service.GetProjectScheduling(c.Request.Context())
 	if err != nil {
-		h.logger.Error("failed to get scheduling", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: sheduling})
+	response.OK(c, scheduling)
 }
 
 // @Tags Scheduling
@@ -50,18 +42,17 @@ func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 // @Description Get process scheduling
 // @Security ApiKeyAuth
 // @Produce  json
-// @Success 200 {object} response
-// @Failure 400 {object} response
-// @Failure 500 {object} response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /scheduling/processes [get]
 func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
-	sheduling, err := h.service.GetProcessScheduling(c.Request.Context())
+	scheduling, err := h.service.GetProcessScheduling(c.Request.Context())
 	if err != nil {
-		h.logger.Error("failed to get scheduling", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: sheduling})
+	response.OK(c, scheduling)
 }
 
 // @Tags Scheduling
@@ -69,16 +60,15 @@ func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 // @Description Get task scheduling
 // @Security ApiKeyAuth
 // @Produce  json
-// @Success 200 {object} response
-// @Failure 400 {object} response
-// @Failure 500 {object} response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /scheduling/tasks [get]
 func (h *SchedulingHandler) GetTaskScheduling(c *gin.Context) {
-	sheduling, err := h.service.GetTaskScheduling(c.Request.Context())
+	scheduling, err := h.service.GetTaskScheduling(c.Request.Context())
 	if err != nil {
-		h.logger.Error("failed to get scheduling", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: sheduling})
+	response.OK(c, scheduling)
 }
