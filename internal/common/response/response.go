@@ -40,6 +40,11 @@ func BadRequest(c *gin.Context, msg string) {
 	c.JSON(http.StatusBadRequest, Response{Error: msg})
 }
 
+// Unauthorized sends a 401 error response.
+func Unauthorized(c *gin.Context, msg string) {
+	c.JSON(http.StatusUnauthorized, Response{Error: msg})
+}
+
 // InternalError sends a 500 error response and logs the internal error.
 func InternalError(c *gin.Context, logger *slog.Logger, msg string, err error) {
 	logger.Error(msg, "error", err)
@@ -62,4 +67,3 @@ func Forbidden(c *gin.Context, msg string) {
 func NotFound(c *gin.Context, msg string) {
 	c.JSON(http.StatusNotFound, Response{Error: msg})
 }
-

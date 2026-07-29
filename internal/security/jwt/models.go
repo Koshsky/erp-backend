@@ -5,10 +5,11 @@ import (
 )
 
 type JWTClaims struct {
+	jwt.RegisteredClaims
+
 	UserID int64  `json:"user_id"`
 	Role   string `json:"role"`
 	Email  string `json:"email"`
-	jwt.RegisteredClaims
 }
 
 type TokenPair struct {

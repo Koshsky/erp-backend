@@ -59,7 +59,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	// --- Auth (uses userSvc for user data) ---
 	authHasher := password.NewBcryptHasher()
 	authSvc := authService.NewAuthService(userSvc, authHasher, a.jwtManager)
-	authHandler := authDelivery.NewAuthHandler(authSvc)
+	authHandler := authDelivery.NewAuthHandler(a.logger, authSvc)
 
 	// --- Scheduling ---
 	schedulingQueries := schedulingRepo.NewSchedulingRepository(a.logger, a.pool)

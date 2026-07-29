@@ -52,19 +52,20 @@ func main() {
 	slog.SetDefault(logger)
 
 	// create a context that is canceled on SIGINT or SIGTERM
-	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	runCtx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
 	// initialize the database pool
 	pool, err := database.InitDBPool(cfg.DatabaseURL, logger)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("Failed to initialize database pool", "error", err)
+		os.Exit(1)
 	}
 
 	// initialize the application
 	application, err := app.New(runCtx, cfg, appLogger.WithComponent(logger, "app"), pool)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("Failed to initialize application", "error", err)
+		os.Exit(1)
 	}
 
 	logger.Info("service configuration loaded")

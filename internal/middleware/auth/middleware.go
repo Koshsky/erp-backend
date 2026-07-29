@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -48,7 +47,6 @@ func (m *AuthMiddleware) Middleware() gin.HandlerFunc {
 
 		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyRole, role)
 		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyUserID, userID)
-		fmt.Println()
 		c.Request = c.Request.WithContext(reqCtx)
 
 		c.Next()
