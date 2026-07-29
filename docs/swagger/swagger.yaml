@@ -285,54 +285,6 @@ definitions:
       username:
         type: string
     type: object
-  internal_project_mgmt_assignment_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
-  internal_project_mgmt_milestone_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
-  internal_project_mgmt_process_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
-  internal_project_mgmt_project_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
-  internal_project_mgmt_resource_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
-  internal_project_mgmt_task_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
-  internal_scheduling_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
-  internal_user_delivery.response:
-    properties:
-      data: {}
-      error:
-        type: string
-    type: object
   jwt.TokenPair:
     properties:
       access_token:
@@ -343,6 +295,12 @@ definitions:
       refresh_token:
         type: string
       token_type:
+        type: string
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      error:
         type: string
     type: object
 externalDocs:
@@ -372,7 +330,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
@@ -382,12 +340,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: List assignments
@@ -411,7 +364,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.AssignmentResponse'
@@ -419,21 +372,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Create assignment
@@ -456,21 +399,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Delete an assignment
@@ -491,7 +424,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.AssignmentResponse'
@@ -499,21 +432,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get assignment
@@ -542,7 +465,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.AssignmentResponse'
@@ -550,21 +473,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_assignment_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Update an assignment
@@ -736,7 +649,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
@@ -746,7 +659,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: List milestones
@@ -770,7 +683,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.MilestoneResponse'
@@ -778,11 +691,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Create milestone
@@ -805,11 +718,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Delete milestone
@@ -830,7 +743,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.MilestoneResponse'
@@ -838,11 +751,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get milestone
@@ -871,7 +784,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.MilestoneResponse'
@@ -879,11 +792,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_milestone_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Update milestone
@@ -899,7 +812,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
@@ -909,7 +822,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: List processes
@@ -933,7 +846,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ProcessResponse'
@@ -941,11 +854,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Create process
@@ -968,11 +881,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Delete process
@@ -993,7 +906,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ProcessResponse'
@@ -1001,11 +914,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get process
@@ -1034,7 +947,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ProcessResponse'
@@ -1042,11 +955,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_process_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Update process
@@ -1062,7 +975,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
@@ -1072,12 +985,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: List projects
@@ -1101,7 +1009,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ProjectResponse'
@@ -1109,21 +1017,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Create a new project
@@ -1148,21 +1046,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Delete project
@@ -1183,7 +1071,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ProjectResponse'
@@ -1191,21 +1079,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get project
@@ -1234,7 +1112,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ProjectResponse'
@@ -1242,21 +1120,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_project_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Update project
@@ -1272,7 +1140,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
@@ -1282,7 +1150,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: List resources
@@ -1306,7 +1174,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ResourceResponse'
@@ -1314,11 +1182,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Create resource
@@ -1338,16 +1206,14 @@ paths:
       responses:
         "204":
           description: No Content
-          schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Delete resource
@@ -1368,7 +1234,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ResourceResponse'
@@ -1376,11 +1242,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get resource
@@ -1409,7 +1275,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.ResourceResponse'
@@ -1417,11 +1283,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_project_mgmt_resource_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Update resource
@@ -1436,15 +1302,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get process scheduling
@@ -1459,15 +1325,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get project scheduling
@@ -1482,15 +1348,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_scheduling_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get task scheduling
@@ -1506,7 +1372,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
@@ -1516,12 +1382,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: List all tasks
@@ -1545,7 +1406,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.TaskResponse'
@@ -1553,21 +1414,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Create a new task
@@ -1592,21 +1443,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Delete a task
@@ -1627,7 +1468,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.TaskResponse'
@@ -1635,21 +1476,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Get a task by ID
@@ -1678,7 +1509,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.TaskResponse'
@@ -1686,21 +1517,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            allOf:
-            - $ref: '#/definitions/internal_project_mgmt_task_delivery.response'
-            - properties:
-                error:
-                  type: string
-              type: object
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Update a task
@@ -1716,7 +1537,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_user_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
@@ -1726,7 +1547,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: List all users
@@ -1750,7 +1571,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/internal_user_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.UserResponse'
@@ -1758,11 +1579,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Create a new user
@@ -1787,11 +1608,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Delete a user
@@ -1812,7 +1633,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_user_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.UserResponse'
@@ -1820,11 +1641,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: User information
@@ -1853,7 +1674,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_user_delivery.response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/dto.UserResponse'
@@ -1861,11 +1682,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_user_delivery.response'
+            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
       summary: Update a user

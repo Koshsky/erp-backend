@@ -2,23 +2,12 @@ package delivery
 
 import (
 	"log/slog"
-	"net/http"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 	"github.com/gin-gonic/gin"
 )
-
-// Response structures
-type response struct {
-	Data  interface{} `json:"data,omitempty"`
-	Error string      `json:"error,omitempty"`
-}
-
-func writeBindError(c *gin.Context, logger *slog.Logger, err error) {
-	logger.Warn("invalid request payload", "error", err)
-	c.JSON(http.StatusBadRequest, response{Error: "invalid request payload"})
-}
 
 type TaskHandler struct {
 	logger  *slog.Logger
@@ -37,17 +26,16 @@ func NewTaskHandler(logger *slog.Logger, service TaskService) *TaskHandler {
 // @Description Get a list of all tasks
 // @Security ApiKeyAuth
 // @Produce json
-// @Success 200 {object} response{data=[]dto.TaskResponse}
-// @Failure 500 {object} response{error=string}
+// @Success 200 {object} response.Response{data=[]dto.TaskResponse}
+// @Failure 500 {object} response.Response
 // @Router /task [get]
 func (h *TaskHandler) ListTasks(c *gin.Context) {
 	tasks, err := h.service.ListTasks(c.Request.Context())
 	if err != nil {
-		h.logger.Error("failed to list tasks", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: tasks})
+	response.OK(c, tasks)
 }
 
 // @Tags Tasks
@@ -56,24 +44,23 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Produce json
 // @Param id path int true "Task ID"
-// @Success 200 {object} response{data=dto.TaskResponse}
-// @Failure 400 {object} response{error=string}
-// @Failure 500 {object} response{error=string}
+// @Success 200 {object} response.Response{data=dto.TaskResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /task/{id} [get]
 func (h *TaskHandler) GetTask(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid task id"})
+		response.BadRequest(c, "invalid task id")
 		return
 	}
 
 	task, err := h.service.GetTask(c.Request.Context(), id)
 	if err != nil {
-		h.logger.Error("failed to get task", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: task})
+	response.OK(c, task)
 }
 
 // @Tags Tasks
@@ -83,24 +70,23 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param task body dto.CreateTaskRequest true "Task"
-// @Success 201 {object} response{data=dto.TaskResponse}
-// @Failure 400 {object} response{error=string}
-// @Failure 500 {object} response{error=string}
+// @Success 201 {object} response.Response{data=dto.TaskResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /task [post]
 func (h *TaskHandler) CreateTask(c *gin.Context) {
 	var task dto.CreateTaskRequest
 	if err := c.ShouldBindJSON(&task); err != nil {
-		writeBindError(c, h.logger, err)
+		response.HandleBindError(c, h.logger, err)
 		return
 	}
 
 	created, err := h.service.CreateTask(c.Request.Context(), task)
 	if err != nil {
-		h.logger.Error("failed to create task", "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusCreated, response{Data: created})
+	response.Created(c, created)
 }
 
 // @Tags Tasks
@@ -111,22 +97,21 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Task ID"
 // @Success 204
-// @Failure 400 {object} response{error=string}
-// @Failure 500 {object} response{error=string}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /task/{id} [delete]
 func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid task id"})
+		response.BadRequest(c, "invalid task id")
 		return
 	}
 
 	if err := h.service.DeleteTask(c.Request.Context(), id); err != nil {
-		h.logger.Error("failed to delete task", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusNoContent, nil)
+	response.NoContent(c)
 }
 
 // @Tags Tasks
@@ -137,28 +122,27 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Task ID"
 // @Param task body dto.UpdateTaskRequest true "Task data"
-// @Success 200 {object} response{data=dto.TaskResponse}
-// @Failure 400 {object} response{error=string}
-// @Failure 500 {object} response{error=string}
+// @Success 200 {object} response.Response{data=dto.TaskResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /task/{id} [put]
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response{Error: "invalid task id"})
+		response.BadRequest(c, "invalid task id")
 		return
 	}
 
 	var body dto.UpdateTaskRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
-		writeBindError(c, h.logger, err)
+		response.HandleBindError(c, h.logger, err)
 		return
 	}
 
 	updated, err := h.service.UpdateTask(c.Request.Context(), id, body)
 	if err != nil {
-		h.logger.Error("failed to update task", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, response{Error: err.Error()})
+		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	c.JSON(http.StatusOK, response{Data: updated})
+	response.OK(c, updated)
 }
