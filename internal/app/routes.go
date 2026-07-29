@@ -96,7 +96,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	assignmentSvc := assignmentService.NewAssignmentService(a.logger, assignmentQueries)
 	assignmentHandler := assignmentDelivery.NewAssignmentHandler(a.logger, assignmentSvc)
 
-	api := router.Group("/api")
+	api := router.Group("/api/v1")
 
 	authHandler.RegisterRoutes(api)
 

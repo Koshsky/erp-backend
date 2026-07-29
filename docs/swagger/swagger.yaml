@@ -94,7 +94,7 @@ definitions:
     properties:
       name:
         type: string
-      password:
+      password_hash:
         type: string
       role:
         type: string
@@ -166,8 +166,6 @@ definitions:
       name:
         type: string
       password:
-        type: string
-      role:
         type: string
       username:
         type: string
@@ -255,8 +253,6 @@ definitions:
   dto.UpdateUserRequest:
     properties:
       name:
-        type: string
-      password:
         type: string
       role:
         type: string
@@ -545,27 +541,6 @@ paths:
               type: string
             type: object
       summary: Login
-      tags:
-      - Auth
-  /auth/logout:
-    post:
-      description: Revoke refresh token
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Logout
       tags:
       - Auth
   /auth/refresh:

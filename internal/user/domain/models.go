@@ -53,9 +53,9 @@ if process.owner_id == user_id
 */
 
 type User struct {
-	ID           int64  `db:"id" json:"id"`
-	Name         string `db:"name" json:"name"`
-	Role         string `db:"role" json:"role"`
-	Username     string `db:"username" json:"username"`
-	PasswordHash string `db:"password_hash" json:"-"`
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	Role         string `json:"role"`
+	Username     string `json:"username"`
+	PasswordHash string `json:"-"`
 }
