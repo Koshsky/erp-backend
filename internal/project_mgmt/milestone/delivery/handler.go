@@ -21,14 +21,14 @@ func NewMilestoneHandler(logger *slog.Logger, service MilestoneService) *Milesto
 	}
 }
 
-// @Tags Milestones
-// @Summary List milestones
-// @Description List all milestones
-// @Security ApiKeyAuth
-// @Produce json
-// @Success 200 {object} response.Response{data=[]dto.MilestoneResponse}
-// @Failure 500 {object} response.Response
-// @Router /milestone [get]
+// @Tags			Milestones
+// @Summary		List milestones
+// @Description	List all milestones
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Success		200	{object}	response.Response{data=[]dto.MilestoneResponse}
+// @Failure		500	{object}	response.Response
+// @Router			/milestone [get]
 func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 	milestones, err := h.service.ListMilestones(c.Request.Context())
 	if err != nil {
@@ -38,16 +38,16 @@ func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 	response.OK(c, milestones)
 }
 
-// @Tags Milestones
-// @Summary Get milestone
-// @Description Get milestone by id
-// @Security ApiKeyAuth
-// @Produce json
-// @Param id path int true "Milestone ID"
-// @Success 200 {object} response.Response{data=dto.MilestoneResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /milestone/{id} [get]
+// @Tags			Milestones
+// @Summary		Get milestone
+// @Description	Get milestone by id
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Param			id	path		int	true	"Milestone ID"
+// @Success		200	{object}	response.Response{data=dto.MilestoneResponse}
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/milestone/{id} [get]
 func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -63,17 +63,17 @@ func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 	response.OK(c, milestone)
 }
 
-// @Tags Milestones
-// @Summary Create milestone
-// @Description Create milestone with the input payload
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param request body dto.CreateMilestoneRequest true "Milestone data"
-// @Success 201 {object} response.Response{data=dto.MilestoneResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /milestone [post]
+// @Tags			Milestones
+// @Summary		Create milestone
+// @Description	Create milestone with the input payload
+// @Accept			json
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Param			request	body		dto.CreateMilestoneRequest	true	"Milestone data"
+// @Success		201		{object}	response.Response{data=dto.MilestoneResponse}
+// @Failure		400		{object}	response.Response
+// @Failure		500		{object}	response.Response
+// @Router			/milestone [post]
 func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 	var milestone dto.CreateMilestoneRequest
 	if err := c.ShouldBindJSON(&milestone); err != nil {
@@ -89,16 +89,16 @@ func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 	response.Created(c, created)
 }
 
-// @Tags Milestones
-// @Summary Delete milestone
-// @Description Delete milestone by ID
-// @Produce json
-// @Security ApiKeyAuth
-// @Param id path int true "Milestone ID"
-// @Success 204
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /milestone/{id} [delete]
+// @Tags			Milestones
+// @Summary		Delete milestone
+// @Description	Delete milestone by ID
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Param			id	path	int	true	"Milestone ID"
+// @Success		204
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/milestone/{id} [delete]
 func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -113,18 +113,18 @@ func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 	response.NoContent(c)
 }
 
-// @Tags Milestones
-// @Summary Update milestone
-// @Description Update milestone by ID
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param id path int true "Milestone ID"
-// @Param body body dto.UpdateMilestoneRequest true "Milestone data"
-// @Success 200 {object} response.Response{data=dto.MilestoneResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /milestone/{id} [put]
+// @Tags			Milestones
+// @Summary		Update milestone
+// @Description	Update milestone by ID
+// @Accept			json
+// @Produce		json
+// @Security		ApiKeyAuth
+// @Param			id		path		int							true	"Milestone ID"
+// @Param			body	body		dto.UpdateMilestoneRequest	true	"Milestone data"
+// @Success		200		{object}	response.Response{data=dto.MilestoneResponse}
+// @Failure		400		{object}	response.Response
+// @Failure		500		{object}	response.Response
+// @Router			/milestone/{id} [put]
 func (h *MilestoneHandler) UpdateMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

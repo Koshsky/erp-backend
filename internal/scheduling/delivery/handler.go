@@ -20,15 +20,15 @@ func NewSchedulingHandler(logger *slog.Logger, service MilestoneService) *Schedu
 	}
 }
 
-// @Tags Scheduling
-// @Summary Get project scheduling
-// @Description Get project scheduling (project portfolio)
-// @Security ApiKeyAuth
-// @Produce  json
-// @Success 200 {object} response.Response
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /scheduling/projects [get]
+// @Tags			Scheduling
+// @Summary		Get project scheduling
+// @Description	Get project scheduling (project portfolio)
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Success		200	{object}	response.Response
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/scheduling/projects [get]
 func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
 	role := ctx.GetRole(c)
@@ -40,15 +40,15 @@ func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	response.OK(c, scheduling)
 }
 
-// @Tags Scheduling
-// @Summary Get process scheduling
-// @Description Get process scheduling
-// @Security ApiKeyAuth
-// @Produce  json
-// @Success 200 {object} response.Response
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /scheduling/processes [get]
+// @Tags			Scheduling
+// @Summary		Get process scheduling
+// @Description	Get process scheduling
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Success		200	{object}	response.Response
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/scheduling/processes [get]
 func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
 	role := ctx.GetRole(c)
@@ -60,15 +60,15 @@ func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 	response.OK(c, scheduling)
 }
 
-// @Tags Scheduling
-// @Summary Get task scheduling
-// @Description Get task scheduling
-// @Security ApiKeyAuth
-// @Produce  json
-// @Success 200 {object} response.Response
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /scheduling/tasks [get]
+// @Tags			Scheduling
+// @Summary		Get task scheduling
+// @Description	Get task scheduling
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Success		200	{object}	response.Response
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/scheduling/tasks [get]
 func (h *SchedulingHandler) GetTaskScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
 	role := ctx.GetRole(c)

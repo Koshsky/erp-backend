@@ -21,14 +21,14 @@ func NewResourceHandler(logger *slog.Logger, service ResourceService) *ResourceH
 	}
 }
 
-// @Tags Resources
-// @Summary List resources
-// @Description List all resources
-// @Security ApiKeyAuth
-// @Produce json
-// @Success 200 {object} response.Response{data=[]dto.ResourceResponse}
-// @Failure 500 {object} response.Response
-// @Router /resource [get]
+// @Tags			Resources
+// @Summary		List resources
+// @Description	List all resources
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Success		200	{object}	response.Response{data=[]dto.ResourceResponse}
+// @Failure		500	{object}	response.Response
+// @Router			/resource [get]
 func (h *ResourceHandler) ListResources(c *gin.Context) {
 	resources, err := h.service.ListResources(c.Request.Context())
 	if err != nil {
@@ -38,16 +38,16 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 	response.OK(c, resources)
 }
 
-// @Tags Resources
-// @Summary Get resource
-// @Description Get resource by id
-// @Security ApiKeyAuth
-// @Produce json
-// @Param id path int true "Resource ID"
-// @Success 200 {object} response.Response{data=dto.ResourceResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /resource/{id} [get]
+// @Tags			Resources
+// @Summary		Get resource
+// @Description	Get resource by id
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Param			id	path		int	true	"Resource ID"
+// @Success		200	{object}	response.Response{data=dto.ResourceResponse}
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/resource/{id} [get]
 func (h *ResourceHandler) FindResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -63,17 +63,17 @@ func (h *ResourceHandler) FindResource(c *gin.Context) {
 	response.OK(c, resource)
 }
 
-// @Tags Resources
-// @Summary Create resource
-// @Description Create resource
-// @Security ApiKeyAuth
-// @Accept json
-// @Produce json
-// @Param resource body dto.CreateResourceRequest true "Resource"
-// @Success 201 {object} response.Response{data=dto.ResourceResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /resource [post]
+// @Tags			Resources
+// @Summary		Create resource
+// @Description	Create resource
+// @Security		ApiKeyAuth
+// @Accept			json
+// @Produce		json
+// @Param			resource	body		dto.CreateResourceRequest	true	"Resource"
+// @Success		201			{object}	response.Response{data=dto.ResourceResponse}
+// @Failure		400			{object}	response.Response
+// @Failure		500			{object}	response.Response
+// @Router			/resource [post]
 func (h *ResourceHandler) CreateResource(c *gin.Context) {
 	var resource dto.CreateResourceRequest
 	if err := c.ShouldBindJSON(&resource); err != nil {
@@ -89,16 +89,16 @@ func (h *ResourceHandler) CreateResource(c *gin.Context) {
 	response.Created(c, created)
 }
 
-// @Tags Resources
-// @Summary Delete resource
-// @Description Delete resource by id
-// @Security ApiKeyAuth
-// @Produce json
-// @Param id path int true "Resource ID"
-// @Success 204
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /resource/{id} [delete]
+// @Tags			Resources
+// @Summary		Delete resource
+// @Description	Delete resource by id
+// @Security		ApiKeyAuth
+// @Produce		json
+// @Param			id	path	int	true	"Resource ID"
+// @Success		204
+// @Failure		400	{object}	response.Response
+// @Failure		500	{object}	response.Response
+// @Router			/resource/{id} [delete]
 func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -113,18 +113,18 @@ func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 	response.NoContent(c)
 }
 
-// @Tags Resources
-// @Summary Update resource
-// @Description Update resource by id
-// @Security ApiKeyAuth
-// @Accept json
-// @Produce json
-// @Param id path int true "Resource ID"
-// @Param resource body dto.UpdateResourceRequest true "Resource"
-// @Success 200 {object} response.Response{data=dto.ResourceResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /resource/{id} [put]
+// @Tags			Resources
+// @Summary		Update resource
+// @Description	Update resource by id
+// @Security		ApiKeyAuth
+// @Accept			json
+// @Produce		json
+// @Param			id			path		int							true	"Resource ID"
+// @Param			resource	body		dto.UpdateResourceRequest	true	"Resource"
+// @Success		200			{object}	response.Response{data=dto.ResourceResponse}
+// @Failure		400			{object}	response.Response
+// @Failure		500			{object}	response.Response
+// @Router			/resource/{id} [put]
 func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
