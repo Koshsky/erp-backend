@@ -39,7 +39,7 @@ func (s *AuthService) Register(ctx context.Context, name, username, password str
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(user.ID, string(user.Role), user.Username)
+	tokens, err := s.jwt.GenerateTokenPair(user.ID, user.Role, user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
@@ -49,7 +49,7 @@ func (s *AuthService) Register(ctx context.Context, name, username, password str
 			ID:       user.ID,
 			Name:     user.Name,
 			Username: user.Username,
-			Role:     string(user.Role),
+			Role:     user.Role,
 		},
 		Tokens: tokens,
 	}, nil
@@ -65,7 +65,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(user.ID, string(user.Role), user.Username)
+	tokens, err := s.jwt.GenerateTokenPair(user.ID, user.Role, user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
@@ -75,7 +75,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 			ID:       user.ID,
 			Name:     user.Name,
 			Username: user.Username,
-			Role:     string(user.Role),
+			Role:     user.Role,
 		},
 		Tokens: tokens,
 	}, nil
@@ -115,7 +115,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 		return nil, fmt.Errorf("user not found")
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(userID, string(user.Role), claims.Subject)
+	tokens, err := s.jwt.GenerateTokenPair(userID, user.Role, claims.Subject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens")
 	}

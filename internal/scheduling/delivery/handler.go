@@ -3,9 +3,10 @@ package delivery
 import (
 	"log/slog"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/Koshsky/erp-backend/internal/common/ctx"
 	"github.com/Koshsky/erp-backend/internal/common/response"
-	"github.com/gin-gonic/gin"
 )
 
 type SchedulingHandler struct {
@@ -20,15 +21,17 @@ func NewSchedulingHandler(logger *slog.Logger, service MilestoneService) *Schedu
 	}
 }
 
-// @Tags			Scheduling
-// @Summary		Get project scheduling
-// @Description	Get project scheduling (project portfolio)
-// @Security		ApiKeyAuth
-// @Produce		json
-// @Success		200	{object}	response.Response
-// @Failure		400	{object}	response.Response
-// @Failure		500	{object}	response.Response
-// @Router			/scheduling/projects [get]
+// GetProjectScheduling handles the request to get project scheduling (project portfolio).
+//
+//	@Tags			Scheduling
+//	@Summary		Get project scheduling
+//	@Description	Get project scheduling (project portfolio)
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Success		200	{object}	response.Response
+//	@Failure		400	{object}	response.Response
+//	@Failure		500	{object}	response.Response
+//	@Router			/scheduling/projects [get]
 func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
 	role := ctx.GetRole(c)
@@ -40,15 +43,17 @@ func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	response.OK(c, scheduling)
 }
 
-// @Tags			Scheduling
-// @Summary		Get process scheduling
-// @Description	Get process scheduling
-// @Security		ApiKeyAuth
-// @Produce		json
-// @Success		200	{object}	response.Response
-// @Failure		400	{object}	response.Response
-// @Failure		500	{object}	response.Response
-// @Router			/scheduling/processes [get]
+// GetProcessScheuling handles the request to get process scheduling.
+//
+//	@Tags			Scheduling
+//	@Summary		Get process scheduling
+//	@Description	Get process scheduling
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Success		200	{object}	response.Response
+//	@Failure		400	{object}	response.Response
+//	@Failure		500	{object}	response.Response
+//	@Router			/scheduling/processes [get]
 func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
 	role := ctx.GetRole(c)
@@ -60,15 +65,17 @@ func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 	response.OK(c, scheduling)
 }
 
-// @Tags			Scheduling
-// @Summary		Get task scheduling
-// @Description	Get task scheduling
-// @Security		ApiKeyAuth
-// @Produce		json
-// @Success		200	{object}	response.Response
-// @Failure		400	{object}	response.Response
-// @Failure		500	{object}	response.Response
-// @Router			/scheduling/tasks [get]
+// GetTaskScheduling handles the request to get task scheduling.
+//
+//	@Tags			Scheduling
+//	@Summary		Get task scheduling
+//	@Description	Get task scheduling
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Success		200	{object}	response.Response
+//	@Failure		400	{object}	response.Response
+//	@Failure		500	{object}	response.Response
+//	@Router			/scheduling/tasks [get]
 func (h *SchedulingHandler) GetTaskScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
 	role := ctx.GetRole(c)

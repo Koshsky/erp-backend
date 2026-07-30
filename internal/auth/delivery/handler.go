@@ -22,16 +22,18 @@ func NewAuthHandler(logger *slog.Logger, service AuthService) *AuthHandler {
 	}
 }
 
-// @Tags			Auth
-// @Summary		Login
-// @Description	Authenticate user and return JWT token
-// @Accept			json
-// @Produce		json
-// @Param			request	body		dto.LoginRequest	true	"Login credentials"
-// @Success		200		{object}	dto.AuthResponse
-// @Failure		400		{object}	map[string]string
-// @Failure		401		{object}	map[string]string
-// @Router			/auth/login [post]
+// Login handles the login request.
+//
+//	@Tags			Auth
+//	@Summary		Login
+//	@Description	Authenticate user and return JWT token
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.LoginRequest	true	"Login credentials"
+//	@Success		200		{object}	dto.AuthResponse
+//	@Failure		400		{object}	map[string]string
+//	@Failure		401		{object}	map[string]string
+//	@Router			/auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -48,16 +50,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// @Tags			Auth
-// @Summary		Register
-// @Description	Create user and return JWT token
-// @Accept			json
-// @Produce		json
-// @Param			request	body		dto.RegisterRequest	true	"Register credentials"
-// @Success		201		{object}	dto.AuthResponse
-// @Failure		400		{object}	map[string]string
-// @Failure		500		{object}	map[string]string
-// @Router			/auth/register [post]
+// Register handles the register request.
+//
+//	@Tags			Auth
+//	@Summary		Register
+//	@Description	Create user and return JWT token
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.RegisterRequest	true	"Register credentials"
+//	@Success		201		{object}	dto.AuthResponse
+//	@Failure		400		{object}	map[string]string
+//	@Failure		500		{object}	map[string]string
+//	@Router			/auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -74,15 +78,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, resp)
 }
 
-// @Tags			Auth
-// @Summary		Change Password
-// @Description	Change password (requires old password)
-// @Security		ApiKeyAuth
-// @Accept			json
-// @Param			request	body		dto.ChangePasswordRequest	true	"Old and new password"
-// @Success		200		{object}	map[string]string
-// @Failure		400		{object}	map[string]string
-// @Router			/auth/change-password [post]
+// ChangePassword handles the change password request.
+//
+//	@Tags			Auth
+//	@Summary		Change Password
+//	@Description	Change password (requires old password)
+//	@Security		ApiKeyAuth
+//	@Accept			json
+//	@Param			request	body		dto.ChangePasswordRequest	true	"Old and new password"
+//	@Success		200		{object}	map[string]string
+//	@Failure		400		{object}	map[string]string
+//	@Router			/auth/change-password [post]
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	userID := ctx.GetUserID(c.Request.Context())
 
@@ -100,16 +106,18 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "password changed"})
 }
 
-// @Tags			Auth
-// @Summary		Refresh Token
-// @Description	Refresh access token using refresh token, returns new pair
-// @Accept			json
-// @Produce		json
-// @Param			request	body		object{refresh_token=string}	true	"Refresh token"
-// @Success		200		{object}	dto.RefreshResponse
-// @Failure		400		{object}	map[string]string
-// @Failure		401		{object}	map[string]string
-// @Router			/auth/refresh [post]
+// RefreshToken handles the request to refresh access token.
+//
+//	@Tags			Auth
+//	@Summary		Refresh Token
+//	@Description	Refresh access token using refresh token, returns new pair
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		object{refresh_token=string}	true	"Refresh token"
+//	@Success		200		{object}	dto.RefreshResponse
+//	@Failure		400		{object}	map[string]string
+//	@Failure		401		{object}	map[string]string
+//	@Router			/auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -87,7 +87,6 @@ func (r *SchedulingRepository) ListProcessesByProjectIDs(ctx context.Context, pr
 		result[row.ProjectID] = append(result[row.ProjectID], p)
 	}
 	return result, nil
-
 }
 
 func (r *SchedulingRepository) ListTasksByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]domain.Task, error) {

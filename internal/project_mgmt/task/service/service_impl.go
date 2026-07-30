@@ -53,7 +53,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 		return nil, err
 	}
 	if task == nil {
-		return nil, fmt.Errorf("Task not found")
+		return nil, fmt.Errorf("task not found")
 	}
 
 	s.mapper.ApplyUpdateToDomain(task, req)
