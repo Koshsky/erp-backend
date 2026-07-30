@@ -19,7 +19,7 @@ func (m *UserMapper) ToDTO(user *domain.User) *dto.UserResponse {
 		ID:           user.ID,
 		Name:         user.Name,
 		Username:     user.Username,
-		Role:         string(user.Role),
+		Role:         user.Role,
 		PasswordHash: user.PasswordHash,
 	}
 }

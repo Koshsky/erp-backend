@@ -52,7 +52,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 	row, err := r.db.CreateUser(ctx, sqlc.CreateUserParams{
 		Name:         user.Name,
 		Username:     user.Username,
-		Role:         string(user.Role),
+		Role:         user.Role,
 		PasswordHash: user.PasswordHash,
 	})
 	if err != nil {
@@ -78,7 +78,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 		UserID:       user.ID,
 		Name:         user.Name,
 		Username:     user.Username,
-		Role:         string(user.Role),
+		Role:         user.Role,
 		PasswordHash: user.PasswordHash,
 	})
 	if err != nil {

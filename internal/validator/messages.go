@@ -31,7 +31,3 @@ func msgAtLeast(field string, min int) string {
 func msgDateRange(entity string) string {
 	return fmt.Sprintf("%s end_date must be greater than or equal to start_date", entity)
 }
-
-func msgOneOf(field, options string) string {
-	return fmt.Sprintf("%s must be one of: %s", field, options)
-}
