@@ -11,14 +11,14 @@ import (
 
 const createResource = `-- name: CreateResource :one
 INSERT INTO resources (title, code, quantity)
-VALUES ($1, $2, $3)
+VALUES ($1, $2, $3::bigint)
 RETURNING id, title, code, quantity, created_at, updated_at, deleted_at
 `
 
 type CreateResourceParams struct {
 	Title    string `json:"title"`
 	Code     string `json:"code"`
-	Quantity int32  `json:"quantity"`
+	Quantity int64  `json:"quantity"`
 }
 
 func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (Resource, error) {
@@ -112,7 +112,7 @@ UPDATE resources
 SET
 	title = $1,
 	code = $2,
-	quantity = $3,
+	quantity = $3::bigint,
 	updated_at = NOW()
 WHERE id = $4
     AND deleted_at IS NULL
@@ -122,7 +122,7 @@ RETURNING id, title, code, quantity, created_at, updated_at, deleted_at
 type UpdateResourceParams struct {
 	Title      string `json:"title"`
 	Code       string `json:"code"`
-	Quantity   int32  `json:"quantity"`
+	Quantity   int64  `json:"quantity"`
 	ResourceID int64  `json:"resource_id"`
 }
 

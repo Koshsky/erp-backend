@@ -63,7 +63,7 @@ func (s *ResourceService) UpdateResource(ctx context.Context, id int64, req dto.
 		return nil, fmt.Errorf("resource not found")
 	}
 	s.mapper.ApplyUpdateToDomain(resource, req)
-	if err := s.validator.ValidateResource(resource.Code, resource.Title, resource.Quantity); err != nil {
+	if err = s.validator.ValidateResource(resource.Code, resource.Title, resource.Quantity); err != nil {
 		return nil, err
 	}
 	updatedResource, err := s.repository.UpdateResource(ctx, *resource)

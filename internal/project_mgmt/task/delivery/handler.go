@@ -116,7 +116,7 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteTask(c.Request.Context(), id); err != nil {
+	if err = h.service.DeleteTask(c.Request.Context(), id); err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
@@ -145,7 +145,7 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	}
 
 	var body dto.UpdateTaskRequest
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err = c.ShouldBindJSON(&body); err != nil {
 		response.HandleBindError(c, h.logger, err)
 		return
 	}

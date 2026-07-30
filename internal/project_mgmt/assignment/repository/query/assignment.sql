@@ -8,7 +8,7 @@ SELECT EXISTS (
 ) AS can_create;
 -- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
-VALUES (@task_id, @resource_id, @quantity)
+VALUES (@task_id, @resource_id, @quantity::bigint)
 RETURNING *;
 
 -- TODO: write CanUserViewAssignment
@@ -35,7 +35,7 @@ SELECT EXISTS (
 -- name: UpdateAssignment :one
 UPDATE assignments
 SET
-	quantity = @quantity,
+	quantity = @quantity::bigint,
 	updated_at = NOW()
 WHERE id = @assignment_id
 	AND deleted_at IS NULL

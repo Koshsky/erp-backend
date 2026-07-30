@@ -84,7 +84,7 @@ VALUES (
   $1::text,
   $2::date,
   $3::date,
-  $4,
+  $4::bigint,
   $5::bigint
 )
 RETURNING id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
@@ -94,7 +94,7 @@ type CreateProjectParams struct {
 	Code      string    `json:"code"`
 	StartDate time.Time `json:"start_date"`
 	EndDate   time.Time `json:"end_date"`
-	Priority  int32     `json:"priority"`
+	Priority  int64     `json:"priority"`
 	OwnerID   int64     `json:"owner_id"`
 }
 
@@ -200,10 +200,10 @@ const updateProject = `-- name: UpdateProject :one
 UPDATE projects
 SET
 	code = $1,
-	priority = $2,
+	priority = $2::bigint,
 	start_date = $3,
 	end_date = $4,
-  owner_id = $5,
+  owner_id = $5::bigint,
 	updated_at = NOW()
 WHERE deleted_at IS NULL
 	AND id = $6::bigint
@@ -212,7 +212,7 @@ RETURNING id, owner_id, code, start_date, end_date, priority, created_at, update
 
 type UpdateProjectParams struct {
 	Code      string    `json:"code"`
-	Priority  int32     `json:"priority"`
+	Priority  int64     `json:"priority"`
 	StartDate time.Time `json:"start_date"`
 	EndDate   time.Time `json:"end_date"`
 	OwnerID   int64     `json:"owner_id"`

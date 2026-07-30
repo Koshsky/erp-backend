@@ -79,14 +79,14 @@ func (q *Queries) CanUserUpdateAssignment(ctx context.Context, arg CanUserUpdate
 
 const createAssignment = `-- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
-VALUES ($1, $2, $3)
+VALUES ($1, $2, $3::bigint)
 RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 `
 
 type CreateAssignmentParams struct {
 	TaskID     int64 `json:"task_id"`
 	ResourceID int64 `json:"resource_id"`
-	Quantity   int32 `json:"quantity"`
+	Quantity   int64 `json:"quantity"`
 }
 
 func (q *Queries) CreateAssignment(ctx context.Context, arg CreateAssignmentParams) (Assignment, error) {
@@ -177,7 +177,7 @@ func (q *Queries) ListAssigments(ctx context.Context) ([]Assignment, error) {
 const updateAssignment = `-- name: UpdateAssignment :one
 UPDATE assignments
 SET
-	quantity = $1,
+	quantity = $1::bigint,
 	updated_at = NOW()
 WHERE id = $2
 	AND deleted_at IS NULL
@@ -185,7 +185,7 @@ RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 `
 
 type UpdateAssignmentParams struct {
-	Quantity     int32 `json:"quantity"`
+	Quantity     int64 `json:"quantity"`
 	AssignmentID int64 `json:"assignment_id"`
 }
 

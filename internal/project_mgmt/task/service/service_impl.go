@@ -57,7 +57,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 	}
 
 	s.mapper.ApplyUpdateToDomain(task, req)
-	if err := s.validator.ValidateTask(task.ProcessID, task.Title, task.StartDate, task.EndDate); err != nil {
+	if err = s.validator.ValidateTask(task.ProcessID, task.Title, task.StartDate, task.EndDate); err != nil {
 		return nil, err
 	}
 	updatedTask, err := s.repository.UpdateTask(ctx, *task)

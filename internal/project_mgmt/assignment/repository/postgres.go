@@ -27,7 +27,7 @@ func (r *AssignmentRepository) CreateAssignment(ctx context.Context, assignment 
 	row, err := r.db.CreateAssignment(ctx, sqlc.CreateAssignmentParams{
 		TaskID:     assignment.TaskID,
 		ResourceID: assignment.ResourceID,
-		Quantity:   int32(assignment.Quantity),
+		Quantity:   int64(assignment.Quantity),
 	})
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (r *AssignmentRepository) FindAssignment(ctx context.Context, id int64) (*d
 func (r *AssignmentRepository) UpdateAssignment(ctx context.Context, assignment domain.Assignment) (*domain.Assignment, error) {
 	row, err := r.db.UpdateAssignment(ctx, sqlc.UpdateAssignmentParams{
 		AssignmentID: assignment.ID,
-		Quantity:     int32(assignment.Quantity),
+		Quantity:     int64(assignment.Quantity),
 	})
 	if err != nil {
 		return nil, err

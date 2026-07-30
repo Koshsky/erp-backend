@@ -33,7 +33,7 @@ func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger) (*pgxpool.Pool
 		return nil, fmt.Errorf("%s: create pool: %w", op, err)
 	}
 
-	if err := pool.Ping(ctx); err != nil {
+	if err = pool.Ping(ctx); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("%s: ping: %w", op, err)
 	}

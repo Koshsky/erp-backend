@@ -14,7 +14,7 @@ VALUES (
   @code::text,
   @start_date::date,
   @end_date::date,
-  @priority,
+  @priority::bigint,
   @owner_id::bigint
 )
 RETURNING *;
@@ -50,10 +50,10 @@ SELECT EXISTS (
 UPDATE projects
 SET
 	code = @code,
-	priority = @priority,
+	priority = @priority::bigint,
 	start_date = @start_date,
 	end_date = @end_date,
-  owner_id = @owner_id,
+  owner_id = @owner_id::bigint,
 	updated_at = NOW()
 WHERE deleted_at IS NULL
 	AND id = @project_id::bigint

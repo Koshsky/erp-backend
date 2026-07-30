@@ -115,7 +115,7 @@ func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteAssignment(c.Request.Context(), id); err != nil {
+	if err = h.service.DeleteAssignment(c.Request.Context(), id); err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
@@ -144,7 +144,7 @@ func (h *AssignmentHandler) UpdateAssignment(c *gin.Context) {
 	}
 
 	body := dto.UpdateAssignmentRequest{}
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err = c.ShouldBindJSON(&body); err != nil {
 		response.HandleBindError(c, h.logger, err)
 		return
 	}

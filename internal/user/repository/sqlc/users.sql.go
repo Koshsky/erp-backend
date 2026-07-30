@@ -55,16 +55,16 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 	return err
 }
 
-const findUserByUsername = `-- name: FindUserByUsername :one
+const findUser = `-- name: FindUser :one
 SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
-WHERE username = $1
+WHERE id = $1
 	AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User, error) {
-	row := q.db.QueryRow(ctx, findUserByUsername, username)
+func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
+	row := q.db.QueryRow(ctx, findUser, userID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -79,16 +79,16 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 	return i, err
 }
 
-const findUser = `-- name: FindUser :one
+const findUserByUsername = `-- name: FindUserByUsername :one
 SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
-WHERE id = $1
+WHERE username = $1
 	AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
-	row := q.db.QueryRow(ctx, findUser, userID)
+func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRow(ctx, findUserByUsername, username)
 	var i User
 	err := row.Scan(
 		&i.ID,

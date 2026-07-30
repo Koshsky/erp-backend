@@ -16,6 +16,35 @@ import (
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
+const (
+	defaultServerStartTimeout = 5 * time.Second
+	defaultDialTimeout        = 1 * time.Second
+	defaultPollInterval       = 100 * time.Millisecond
+)
+
+//	@title			Enterprise Resource Planning
+//	@version		1.0
+//	@description	For managing the enterprise's universal resources
+//	@termsOfService	http://swagger.io/terms/
+
+//	@contact.name	Shmonov Matvey
+//	@contact.url	https://t.me/Koshsky
+//	@contact.email	shmonov.mv@gmail.com
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+//	@host		localhost:8080
+//	@BasePath	/api/v1
+
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@in							header
+//	@name						Authorization
+//	@description				"Введите JWT токен в формате: Bearer {token}"
+
+//	@externalDocs.description	Документация ERP (заглушка)
+//	@externalDocs.url			https://swagger.io/resources/open-api/
+
 type App struct {
 	cfg        *config.Config
 	logger     *slog.Logger
@@ -76,10 +105,9 @@ func (a *App) Start() error {
 		}
 	}()
 
-	if err := a.waitForServer(5 * time.Second); err != nil {
+	if err := a.waitForServer(defaultServerStartTimeout); err != nil {
 		return fmt.Errorf("server failed to start: %w", err)
 	}
-
 	return nil
 }
 
@@ -90,13 +118,13 @@ func (a *App) waitForServer(timeout time.Duration) error {
 	addr := fmt.Sprintf("localhost:%d", a.cfg.HTTPServer.Port)
 
 	dialer := &net.Dialer{
-		Timeout: time.Second,
+		Timeout: defaultDialTimeout,
 	}
 
 	for {
 		conn, err := dialer.DialContext(ctx, "tcp", addr)
 		if err == nil {
-			conn.Close()
+			_ = conn.Close()
 			return nil
 		}
 
@@ -106,7 +134,7 @@ func (a *App) waitForServer(timeout time.Duration) error {
 		default:
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(defaultPollInterval)
 	}
 }
 
