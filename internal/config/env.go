@@ -27,7 +27,17 @@ func getEnvAsInt(key string, fallback int) int {
 }
 
 func getEnvAsInt32(key string, fallback int32) int32 {
-	return int32(getEnvAsInt(key, int(fallback)))
+	val := strings.TrimSpace(os.Getenv(key))
+	if val == "" {
+		return fallback
+	}
+
+	i, err := strconv.ParseInt(val, 10, 32)
+	if err != nil {
+		return fallback
+	}
+
+	return int32(i)
 }
 
 func getEnvAsBool(key string, fallback bool) bool {

@@ -134,7 +134,7 @@ func (s *Service) RefreshAccessToken(refreshTokenString string) (*TokenPair, err
 
 	// Извлекаем userID из Subject
 	var userID int64
-	if _, err := fmt.Sscanf(claims.Subject, "%d", &userID); err != nil {
+	if _, err = fmt.Sscanf(claims.Subject, "%d", &userID); err != nil {
 		return nil, fmt.Errorf("invalid user id in token")
 	}
 

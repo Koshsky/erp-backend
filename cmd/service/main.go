@@ -17,28 +17,8 @@ import (
 	_ "github.com/Koshsky/erp-backend/docs/swagger"
 )
 
-//	@title			Enterprise Resource Planning
-//	@version		1.0
-//	@description	For managing the enterprise's universal resources
-//	@termsOfService	http://swagger.io/terms/
+const defaultShutdownTimeout = 5 * time.Second
 
-//	@contact.name	Shmonov Matvey
-//	@contact.url	https://t.me/Koshsky
-//	@contact.email	shmonov.mv@gmail.com
-
-//	@license.name	Apache 2.0
-//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
-
-//	@host		localhost:8080
-//	@BasePath	/api/v1
-
-//	@securityDefinitions.apikey	ApiKeyAuth
-//	@in							header
-//	@name						Authorization
-//	@description				"Введите JWT токен в формате: Bearer {token}"
-
-// @externalDocs.description	Документация ERP (заглушка)
-// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	// load configuration and initialize logger
 	cfg, err := config.Load()
@@ -73,7 +53,7 @@ func main() {
 	logger.Info("service configuration loaded")
 
 	// start HTTP server
-	if err := application.Start(); err != nil {
+	if err = application.Start(); err != nil {
 		logger.Error("failed to start server", "error", err)
 		os.Exit(1)
 	}
@@ -83,10 +63,10 @@ func main() {
 	logger.Info("shutdown signal received")
 
 	// stop server with 5 second timeout
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
 	defer cancel()
 
-	if err := application.Stop(shutdownCtx); err != nil {
+	if err = application.Stop(shutdownCtx); err != nil {
 		logger.Error("error during graceful shutdown", "error", err)
 	}
 

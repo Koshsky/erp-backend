@@ -27,7 +27,7 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 	row, err := r.db.CreateResource(ctx, sqlc.CreateResourceParams{
 		Title:    resource.Title,
 		Code:     resource.Code,
-		Quantity: int32(resource.Quantity),
+		Quantity: int64(resource.Quantity),
 	})
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (r *ResourceRepository) UpdateResource(ctx context.Context, resource domain
 		ResourceID: resource.ID,
 		Title:      resource.Title,
 		Code:       resource.Code,
-		Quantity:   int32(resource.Quantity),
+		Quantity:   int64(resource.Quantity),
 	})
 	if err != nil {
 		return nil, err

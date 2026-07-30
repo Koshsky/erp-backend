@@ -74,13 +74,15 @@ func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUs
 
 	s.mapper.ApplyUpdateToDomain(user, req)
 
-	if err := s.validator.ValidateUserUpdate(user.Name, user.Username, user.Role); err != nil {
+	if err = s.validator.ValidateUserUpdate(user.Name, user.Username, user.Role); err != nil {
 		return nil, err
 	}
+
 	updatedUser, err := s.repository.UpdateUser(ctx, *user)
 	if err != nil {
 		return nil, err
 	}
+	
 	return s.mapper.ToDTO(updatedUser), nil
 }
 

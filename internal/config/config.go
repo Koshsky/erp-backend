@@ -6,36 +6,35 @@ import (
 	"time"
 )
 
-// PostgresConfig — конфигурация для подключения к БД и пула соединений.
-type PostgresConfig struct {
-	DSN               string
-	MaxConns          int32
-	MinConns          int32
-	MaxConnLifetime   time.Duration
-	MaxConnIdleTime   time.Duration
-	HealthCheckPeriod time.Duration
-	ConnectTimeout    time.Duration
-}
+// Default values for configuration
+const (
+	// JWT defaults
+	defaultJWTAccessExpiry  = 15 * time.Minute
+	defaultJWTRefreshExpiry = 168 * time.Hour // 7 days
 
+	// HTTP server defaults
+	defaultHTTPPort         = 8080
+	defaultHTTPReadTimeout  = 15 * time.Second
+	defaultHTTPWriteTimeout = 15 * time.Second
+	defaultHTTPIdleTimeout  = 60 * time.Second
+
+	// Postgres pool defaults
+	defaultPostgresMaxConns          = 25
+	defaultPostgresMinConns          = 5
+	defaultPostgresMaxConnLifetime   = 30 * time.Minute
+	defaultPostgresMaxConnIdleTime   = 5 * time.Minute
+	defaultPostgresHealthCheckPeriod = 5 * time.Minute
+	defaultPostgresConnectTimeout    = 10 * time.Second
+)
+
+// Config — application configuration
 type Config struct {
-	DatabaseURL string
-	LogLevel    string
-	LogFormat   string
-	Swagger     SwaggerConfig
-	JWT         JWTConfig
-	HTTPServer  HTTPServerConfig
-	Postgres    PostgresConfig
-}
-
-type SwaggerConfig struct {
-	Enabled bool
-}
-
-type HTTPServerConfig struct {
-	Port         int
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	LogLevel   string
+	LogFormat  string
+	Swagger    SwaggerConfig
+	JWT        JWTConfig
+	HTTPServer HTTPServerConfig
+	Postgres   PostgresConfig
 }
 
 type JWTConfig struct {
@@ -46,6 +45,31 @@ type JWTConfig struct {
 	Issuer        string
 }
 
+// HTTPServerConfig — configuration for http server
+type HTTPServerConfig struct {
+	Port         int
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+}
+
+// PostgresConfig — configuration for postgres database
+type PostgresConfig struct {
+	DSN               string
+	MaxConns          int32
+	MinConns          int32
+	MaxConnLifetime   time.Duration
+	MaxConnIdleTime   time.Duration
+	HealthCheckPeriod time.Duration
+	ConnectTimeout    time.Duration
+}
+
+// SwaggerConfig — configuration for swagger
+type SwaggerConfig struct {
+	Enabled bool
+}
+
+// Load loads configuration from environment variables
 func Load() (*Config, error) {
 	dbURL := loadDatabaseURL()
 
@@ -55,16 +79,16 @@ func Load() (*Config, error) {
 	jwtCfg := JWTConfig{
 		SecretKey:     getEnv("JWT_SECRET_KEY", "super-secret-key-change-in-production"),
 		RefreshKey:    getEnv("JWT_REFRESH_KEY", "super-refresh-key-change-in-production"),
-		AccessExpiry:  getEnvAsDuration("JWT_ACCESS_EXPIRY", 15*time.Minute),
-		RefreshExpiry: getEnvAsDuration("JWT_REFRESH_EXPIRY", 168*time.Hour),
+		AccessExpiry:  getEnvAsDuration("JWT_ACCESS_EXPIRY", defaultJWTAccessExpiry),
+		RefreshExpiry: getEnvAsDuration("JWT_REFRESH_EXPIRY", defaultJWTRefreshExpiry),
 		Issuer:        getEnv("JWT_ISSUER", "mvs-erp"),
 	}
 
 	httpServerCfg := HTTPServerConfig{
-		Port:         getEnvAsInt("HTTP_PORT", 8080),
-		ReadTimeout:  getEnvAsDuration("HTTP_READ_TIMEOUT", 15*time.Second),
-		WriteTimeout: getEnvAsDuration("HTTP_WRITE_TIMEOUT", 15*time.Second),
-		IdleTimeout:  getEnvAsDuration("HTTP_IDLE_TIMEOUT", 60*time.Second),
+		Port:         getEnvAsInt("HTTP_PORT", defaultHTTPPort),
+		ReadTimeout:  getEnvAsDuration("HTTP_READ_TIMEOUT", defaultHTTPReadTimeout),
+		WriteTimeout: getEnvAsDuration("HTTP_WRITE_TIMEOUT", defaultHTTPWriteTimeout),
+		IdleTimeout:  getEnvAsDuration("HTTP_IDLE_TIMEOUT", defaultHTTPIdleTimeout),
 	}
 
 	swaggerCfg := SwaggerConfig{
@@ -73,25 +97,25 @@ func Load() (*Config, error) {
 
 	pgCfg := PostgresConfig{
 		DSN:               dbURL,
-		MaxConns:          getEnvAsInt32("POSTGRES_MAX_CONNS", 25),
-		MinConns:          getEnvAsInt32("POSTGRES_MIN_CONNS", 5),
-		MaxConnLifetime:   getEnvAsDuration("POSTGRES_MAX_CONN_LIFETIME", 30*time.Minute),
-		MaxConnIdleTime:   getEnvAsDuration("POSTGRES_MAX_CONN_IDLE_TIME", 5*time.Minute),
-		HealthCheckPeriod: getEnvAsDuration("POSTGRES_HEALTH_CHECK_PERIOD", 5*time.Minute),
-		ConnectTimeout:    getEnvAsDuration("POSTGRES_CONNECT_TIMEOUT", 10*time.Second),
+		MaxConns:          getEnvAsInt32("POSTGRES_MAX_CONNS", defaultPostgresMaxConns),
+		MinConns:          getEnvAsInt32("POSTGRES_MIN_CONNS", defaultPostgresMinConns),
+		MaxConnLifetime:   getEnvAsDuration("POSTGRES_MAX_CONN_LIFETIME", defaultPostgresMaxConnLifetime),
+		MaxConnIdleTime:   getEnvAsDuration("POSTGRES_MAX_CONN_IDLE_TIME", defaultPostgresMaxConnIdleTime),
+		HealthCheckPeriod: getEnvAsDuration("POSTGRES_HEALTH_CHECK_PERIOD", defaultPostgresHealthCheckPeriod),
+		ConnectTimeout:    getEnvAsDuration("POSTGRES_CONNECT_TIMEOUT", defaultPostgresConnectTimeout),
 	}
 
 	return &Config{
-		DatabaseURL: dbURL,
-		LogLevel:    logLevel,
-		LogFormat:   logFormat,
-		Swagger:     swaggerCfg,
-		JWT:         jwtCfg,
-		HTTPServer:  httpServerCfg,
-		Postgres:    pgCfg,
+		LogLevel:   logLevel,
+		LogFormat:  logFormat,
+		Swagger:    swaggerCfg,
+		JWT:        jwtCfg,
+		HTTPServer: httpServerCfg,
+		Postgres:   pgCfg,
 	}, nil
 }
 
+// loadDatabaseURL loads the database URL from the environment variables.
 func loadDatabaseURL() string {
 	user := getEnv("DATABASE_USER", "postgres")
 	password := getEnv("DATABASE_PASSWORD", "postgres")

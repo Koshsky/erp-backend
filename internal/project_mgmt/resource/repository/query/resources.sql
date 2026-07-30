@@ -8,7 +8,7 @@ ORDER BY id ASC;
 
 -- name: CreateResource :one
 INSERT INTO resources (title, code, quantity)
-VALUES (@title, @code, @quantity)
+VALUES (@title, @code, @quantity::bigint)
 RETURNING *;
 
 -- name: FindResource :one
@@ -22,7 +22,7 @@ UPDATE resources
 SET
 	title = @title,
 	code = @code,
-	quantity = @quantity,
+	quantity = @quantity::bigint,
 	updated_at = NOW()
 WHERE id = @resource_id
     AND deleted_at IS NULL

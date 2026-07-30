@@ -29,7 +29,7 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 		OwnerID:   project.OwnerID,
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
-		Priority:  int32(project.Priority),
+		Priority:  int64(project.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (r *ProjectRepository) UpdateProject(ctx context.Context, project domain.Pr
 		ProjectID: project.ID,
 		OwnerID:   project.OwnerID,
 		Code:      project.Code,
-		Priority:  int32(project.Priority),
+		Priority:  int64(project.Priority),
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
 	})

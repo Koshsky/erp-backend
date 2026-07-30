@@ -61,7 +61,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	if err := s.hasher.Compare(user.PasswordHash, password); err != nil {
+	if err = s.hasher.Compare(user.PasswordHash, password); err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
@@ -87,7 +87,7 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassw
 		return fmt.Errorf("user not found")
 	}
 
-	if err := s.hasher.Compare(user.PasswordHash, oldPassword); err != nil {
+	if err = s.hasher.Compare(user.PasswordHash, oldPassword); err != nil {
 		return fmt.Errorf("invalid current password")
 	}
 
@@ -106,7 +106,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	var userID int64
-	if _, err := fmt.Sscanf(claims.Subject, "%d", &userID); err != nil {
+	if _, err = fmt.Sscanf(claims.Subject, "%d", &userID); err != nil {
 		return nil, fmt.Errorf("invalid token subject")
 	}
 
