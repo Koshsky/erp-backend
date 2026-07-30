@@ -8,14 +8,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
-	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-const APP_PORT = 8080
 
 type App struct {
 	cfg        *config.Config
@@ -38,7 +37,7 @@ func (a *App) Start() error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	if a.cfg.SwaggerEnable {
+	if a.cfg.Swagger.Enabled {
 		a.runSwaggerServer(router)
 	}
 
@@ -55,17 +54,23 @@ func (a *App) Start() error {
 	// Register routes
 	a.registerRoutes(router)
 
-	// Create HTTP server
+	// Create HTTP server with configurable settings
+	srvCfg := a.cfg.HTTPServer
 	a.httpServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", APP_PORT),
+		Addr:         fmt.Sprintf(":%d", srvCfg.Port),
 		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  srvCfg.ReadTimeout,
+		WriteTimeout: srvCfg.WriteTimeout,
+		IdleTimeout:  srvCfg.IdleTimeout,
 	}
 
 	go func() {
-		a.logger.Info("starting HTTP server", "addr", a.httpServer.Addr)
+		a.logger.Info("starting HTTP server",
+			"addr", a.httpServer.Addr,
+			"read_timeout", srvCfg.ReadTimeout,
+			"write_timeout", srvCfg.WriteTimeout,
+			"idle_timeout", srvCfg.IdleTimeout,
+		)
 		if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			a.logger.Error("HTTP server error", "error", err)
 		}
@@ -80,8 +85,9 @@ func (a *App) Start() error {
 
 func (a *App) waitForServer(timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
+	addr := fmt.Sprintf("localhost:%d", a.cfg.HTTPServer.Port)
 	for {
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", APP_PORT), time.Second)
+		conn, err := net.DialTimeout("tcp", addr, time.Second)
 		if err == nil {
 			conn.Close()
 			return nil

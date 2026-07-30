@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/Koshsky/erp-backend/internal/config"
 )
 
 type JWTService struct {
@@ -15,15 +17,7 @@ type JWTService struct {
 	issuer        string
 }
 
-type JWTConfig struct {
-	SecretKey     string
-	RefreshKey    string
-	AccessExpiry  time.Duration
-	RefreshExpiry time.Duration
-	Issuer        string
-}
-
-func NewJWTService(config JWTConfig) *JWTService {
+func NewJWTService(config config.JWTConfig) *JWTService {
 	return &JWTService{
 		secretKey:     []byte(config.SecretKey),
 		refreshKey:    []byte(config.RefreshKey),

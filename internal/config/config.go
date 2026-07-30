@@ -3,19 +3,35 @@ package config
 import (
 	"fmt"
 	"net/url"
-	"os"
-	"strings"
 	"time"
-
-	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
 type Config struct {
-	DatabaseURL   string
-	LogLevel      string
-	LogFormat     string
-	SwaggerEnable bool
-	JWT           jwt.JWTConfig
+	DatabaseURL string
+	LogLevel    string
+	LogFormat   string
+	Swagger     SwaggerConfig
+	JWT         JWTConfig
+	HTTPServer  HTTPServerConfig
+}
+
+type SwaggerConfig struct {
+	Enabled bool
+}
+
+type HTTPServerConfig struct {
+	Port         int
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+}
+
+type JWTConfig struct {
+	SecretKey     string
+	RefreshKey    string
+	AccessExpiry  time.Duration
+	RefreshExpiry time.Duration
+	Issuer        string
 }
 
 func Load() (*Config, error) {
@@ -24,38 +40,33 @@ func Load() (*Config, error) {
 	logLevel := getEnv("LOG_LEVEL", "info")
 	logFormat := getEnv("LOG_FORMAT", "json")
 
-	swaggerEnable := os.Getenv("SWAGGER_ENABLE") == "true"
-
-	jwtCfg := jwt.JWTConfig{
+	jwtCfg := JWTConfig{
 		SecretKey:     getEnv("JWT_SECRET_KEY", "super-secret-key-change-in-production"),
 		RefreshKey:    getEnv("JWT_REFRESH_KEY", "super-refresh-key-change-in-production"),
-		AccessExpiry:  parseDuration(getEnv("JWT_ACCESS_EXPIRY", "15m"), 15*time.Minute),
-		RefreshExpiry: parseDuration(getEnv("JWT_REFRESH_EXPIRY", "168h"), 168*time.Hour),
+		AccessExpiry:  getEnvAsDuration("JWT_ACCESS_EXPIRY", 15*time.Minute),
+		RefreshExpiry: getEnvAsDuration("JWT_REFRESH_EXPIRY", 168*time.Hour),
 		Issuer:        getEnv("JWT_ISSUER", "mvs-erp"),
 	}
 
+	httpServerCfg := HTTPServerConfig{
+		Port:         getEnvAsInt("HTTP_PORT", 8080),
+		ReadTimeout:  getEnvAsDuration("HTTP_READ_TIMEOUT", 15*time.Second),
+		WriteTimeout: getEnvAsDuration("HTTP_WRITE_TIMEOUT", 15*time.Second),
+		IdleTimeout:  getEnvAsDuration("HTTP_IDLE_TIMEOUT", 60*time.Second),
+	}
+
+	swaggerCfg := SwaggerConfig{
+		Enabled: getEnvAsBool("SWAGGER_ENABLE", false),
+	}
+
 	return &Config{
-		DatabaseURL:   dbURL,
-		LogLevel:      logLevel,
-		LogFormat:     logFormat,
-		SwaggerEnable: swaggerEnable,
-		JWT:           jwtCfg,
+		DatabaseURL: dbURL,
+		LogLevel:    logLevel,
+		LogFormat:   logFormat,
+		Swagger:     swaggerCfg,
+		JWT:         jwtCfg,
+		HTTPServer:  httpServerCfg,
 	}, nil
-}
-
-func getEnv(key, fallback string) string {
-	if val := strings.TrimSpace(os.Getenv(key)); val != "" {
-		return val
-	}
-	return fallback
-}
-
-func parseDuration(val string, fallback time.Duration) time.Duration {
-	d, err := time.ParseDuration(val)
-	if err != nil {
-		return fallback
-	}
-	return d
 }
 
 func loadDatabaseURL() string {
