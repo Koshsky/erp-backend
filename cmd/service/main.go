@@ -13,6 +13,8 @@ import (
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
 	appLogger "github.com/Koshsky/erp-backend/internal/logger"
+
+	_ "github.com/Koshsky/erp-backend/docs/swagger"
 )
 
 //	@title			Enterprise Resource Planning
@@ -62,7 +64,7 @@ func main() {
 	}
 
 	// initialize the application
-	application, err := app.New(runCtx, cfg, appLogger.WithComponent(logger, "app"), pool)
+	application, err := app.New(cfg, appLogger.WithComponent(logger, "app"), pool)
 	if err != nil {
 		logger.Error("Failed to initialize application", "error", err)
 		os.Exit(1)

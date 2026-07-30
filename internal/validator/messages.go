@@ -16,16 +16,12 @@ func msgRequired(field string) string {
 	return fmt.Sprintf("%s is required", field)
 }
 
-func msgGreaterThan(field string, min int) string {
-	return fmt.Sprintf("%s must be greater than %d", field, min)
+func msgGreaterThan(field string, minVal int) string {
+	return fmt.Sprintf("%s must be greater than %d", field, minVal)
 }
 
-func msgGreaterThanOrEqual(field string, min int) string {
-	return fmt.Sprintf("%s must be greater than or equal to %d", field, min)
-}
-
-func msgAtLeast(field string, min int) string {
-	return fmt.Sprintf("%s must be at least %d", field, min)
+func msgAtLeast(field string, minVal int) string {
+	return fmt.Sprintf("%s must be at least %d", field, minVal)
 }
 
 func msgDateRange(entity string) string {

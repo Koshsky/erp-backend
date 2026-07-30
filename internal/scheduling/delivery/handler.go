@@ -43,7 +43,7 @@ func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	response.OK(c, scheduling)
 }
 
-// GetProcessScheuling handles the request to get process scheduling.
+// GetProcessScheduling handles the request to get process scheduling.
 //
 //	@Tags			Scheduling
 //	@Summary		Get process scheduling

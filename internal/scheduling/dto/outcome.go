@@ -6,33 +6,15 @@ import (
 	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
 )
 
-/*
-Простой просмотр всех проектов
-*/
 type ProjectScheduling struct {
 	Projects []domain.Project `json:"projects"`
 }
 
-/*
-Просмотр всех процессов и связанных проектов
-Проекты важны - code, start_date, end_date использует фронтенд для отображения
-*/
 type ProcessScheduling struct {
 	Projects  []domain.Project           `json:"projects"`
 	Processes map[int64][]domain.Process `json:"processes"` // key: project_id
 }
 
-/*
-Детализированные процессы (процессы + таски + ассигны + ресурсы)
-
-Получаем все таски владельца процессов, order by project.priority ASC
-Projects в ответе для кода.
-TODO: после денормализации БД можно убрать projects
-
-Process для start_date, end_date
-
-Resources - все ресурсы, включая неиспользуемые.
-*/
 type TaskScheduling struct {
 	Projects    map[int64]domain.Project      `json:"projects"` // key: project_id
 	Processes   []domain.Process              `json:"processes"`

@@ -9,7 +9,7 @@ import (
 type ProcessRepository interface {
 	CreateProcess(ctx context.Context, Process domain.Process) (*domain.Process, error)
 	FindProcess(ctx context.Context, id int64) (*domain.Process, error)
-	UpdateProcess(ctx context.Context, new domain.Process) (*domain.Process, error)
+	UpdateProcess(ctx context.Context, process domain.Process) (*domain.Process, error)
 	DeleteProcess(ctx context.Context, id int64) error
 	ListProcesss(ctx context.Context) ([]domain.Process, error)
 }
