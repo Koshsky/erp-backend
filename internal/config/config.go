@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+// PostgresConfig — конфигурация для подключения к БД и пула соединений.
+type PostgresConfig struct {
+	DSN               string
+	MaxConns          int32
+	MinConns          int32
+	MaxConnLifetime   time.Duration
+	MaxConnIdleTime   time.Duration
+	HealthCheckPeriod time.Duration
+	ConnectTimeout    time.Duration
+}
+
 type Config struct {
 	DatabaseURL string
 	LogLevel    string
@@ -13,6 +24,7 @@ type Config struct {
 	Swagger     SwaggerConfig
 	JWT         JWTConfig
 	HTTPServer  HTTPServerConfig
+	Postgres    PostgresConfig
 }
 
 type SwaggerConfig struct {
@@ -59,6 +71,16 @@ func Load() (*Config, error) {
 		Enabled: getEnvAsBool("SWAGGER_ENABLE", false),
 	}
 
+	pgCfg := PostgresConfig{
+		DSN:               dbURL,
+		MaxConns:          getEnvAsInt32("POSTGRES_MAX_CONNS", 25),
+		MinConns:          getEnvAsInt32("POSTGRES_MIN_CONNS", 5),
+		MaxConnLifetime:   getEnvAsDuration("POSTGRES_MAX_CONN_LIFETIME", 30*time.Minute),
+		MaxConnIdleTime:   getEnvAsDuration("POSTGRES_MAX_CONN_IDLE_TIME", 5*time.Minute),
+		HealthCheckPeriod: getEnvAsDuration("POSTGRES_HEALTH_CHECK_PERIOD", 5*time.Minute),
+		ConnectTimeout:    getEnvAsDuration("POSTGRES_CONNECT_TIMEOUT", 10*time.Second),
+	}
+
 	return &Config{
 		DatabaseURL: dbURL,
 		LogLevel:    logLevel,
@@ -66,6 +88,7 @@ func Load() (*Config, error) {
 		Swagger:     swaggerCfg,
 		JWT:         jwtCfg,
 		HTTPServer:  httpServerCfg,
+		Postgres:    pgCfg,
 	}, nil
 }
 
