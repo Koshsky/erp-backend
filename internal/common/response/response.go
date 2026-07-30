@@ -11,17 +11,17 @@ import (
 // Fields use pointer/omitempty so that when Data is nil it's omitted,
 // and when Error is empty it's omitted.
 type Response struct {
-	Data  interface{} `json:"data,omitempty"`
-	Error string      `json:"error,omitempty"`
+	Data  any    `json:"data,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
 // OK sends a 200 response with the provided data.
-func OK(c *gin.Context, data interface{}) {
+func OK(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, Response{Data: data})
 }
 
 // Created sends a 201 response with the provided data.
-func Created(c *gin.Context, data interface{}) {
+func Created(c *gin.Context, data any) {
 	c.JSON(http.StatusCreated, Response{Data: data})
 }
 
