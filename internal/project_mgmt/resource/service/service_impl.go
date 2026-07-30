@@ -34,16 +34,19 @@ func (s *ResourceService) ListResources(ctx context.Context) ([]dto.ResourceResp
 
 func (s *ResourceService) CreateResource(
 	ctx context.Context,
-	resource dto.CreateResourceRequest,
+	req dto.CreateResourceRequest,
 ) (*dto.ResourceResponse, error) {
-	if err := s.validator.ValidateResource(resource.Code, resource.Title, resource.Quantity); err != nil {
+	resource := s.mapper.ToDomainFromCreate(req)
+	if err := s.validator.ValidateResource(&resource); err != nil {
 		return nil, err
 	}
-	createdResource, err := s.repository.CreateResource(ctx, s.mapper.ToDomainFromCreate(resource))
+
+	created, err := s.repository.CreateResource(ctx, resource)
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.ToDTO(createdResource), nil
+
+	return s.mapper.ToDTO(created), nil
 }
 
 func (s *ResourceService) FindResource(ctx context.Context, id int64) (*dto.ResourceResponse, error) {
@@ -63,21 +66,21 @@ func (s *ResourceService) UpdateResource(
 	req dto.UpdateResourceRequest,
 ) (*dto.ResourceResponse, error) {
 	resource, err := s.repository.FindResource(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if resource == nil {
+	if err != nil || resource == nil {
 		return nil, fmt.Errorf("resource not found")
 	}
+
 	s.mapper.ApplyUpdateToDomain(resource, req)
-	if err = s.validator.ValidateResource(resource.Code, resource.Title, resource.Quantity); err != nil {
+	if err = s.validator.ValidateResource(resource); err != nil {
 		return nil, err
 	}
-	updatedResource, err := s.repository.UpdateResource(ctx, *resource)
+
+	updated, err := s.repository.UpdateResource(ctx, *resource)
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.ToDTO(updatedResource), nil
+
+	return s.mapper.ToDTO(updated), nil
 }
 
 func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {

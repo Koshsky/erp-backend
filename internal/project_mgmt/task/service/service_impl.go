@@ -25,15 +25,17 @@ func NewTaskService(logger *slog.Logger, repository TaskRepository) *TaskService
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest) (*dto.TaskResponse, error) {
-	if err := s.validator.ValidateTask(req.ProcessID, req.Title, req.StartDate, req.EndDate); err != nil {
+	task := s.mapper.ToDomainFromCreate(req)
+	if err := s.validator.ValidateTask(&task); err != nil {
 		return nil, err
 	}
-	task := s.mapper.ToDomainFromCreate(req)
-	createdTask, err := s.repository.CreateTask(ctx, task)
+
+	created, err := s.repository.CreateTask(ctx, task)
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.ToDTO(createdTask), nil
+
+	return s.mapper.ToDTO(created), nil
 }
 
 func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse, error) {
@@ -49,22 +51,21 @@ func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse
 
 func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTaskRequest) (*dto.TaskResponse, error) {
 	task, err := s.repository.FindTask(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if task == nil {
+	if err != nil || task == nil {
 		return nil, fmt.Errorf("task not found")
 	}
 
 	s.mapper.ApplyUpdateToDomain(task, req)
-	if err = s.validator.ValidateTask(task.ProcessID, task.Title, task.StartDate, task.EndDate); err != nil {
+	if err = s.validator.ValidateTask(task); err != nil {
 		return nil, err
 	}
-	updatedTask, err := s.repository.UpdateTask(ctx, *task)
+
+	updated, err := s.repository.UpdateTask(ctx, *task)
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.ToDTO(updatedTask), nil
+
+	return s.mapper.ToDTO(updated), nil
 }
 
 func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {

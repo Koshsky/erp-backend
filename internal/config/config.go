@@ -6,19 +6,19 @@ import (
 	"time"
 )
 
-// Default values for configuration
+// Default values for configuration.
 const (
-	// JWT defaults
+	// JWT defaults.
 	defaultJWTAccessExpiry  = 15 * time.Minute
 	defaultJWTRefreshExpiry = 168 * time.Hour // 7 days
 
-	// HTTP server defaults
+	// HTTP server defaults.
 	defaultHTTPPort         = 8080
 	defaultHTTPReadTimeout  = 15 * time.Second
 	defaultHTTPWriteTimeout = 15 * time.Second
 	defaultHTTPIdleTimeout  = 60 * time.Second
 
-	// Postgres pool defaults
+	// Postgres pool defaults.
 	defaultPostgresMaxConns          = 25
 	defaultPostgresMinConns          = 5
 	defaultPostgresMaxConnLifetime   = 30 * time.Minute
@@ -27,7 +27,7 @@ const (
 	defaultPostgresConnectTimeout    = 10 * time.Second
 )
 
-// Config — application configuration
+// Config — application configuration.
 type Config struct {
 	LogLevel   string
 	LogFormat  string
@@ -45,7 +45,7 @@ type JWTConfig struct {
 	Issuer        string
 }
 
-// HTTPServerConfig — configuration for http server
+// HTTPServerConfig — configuration for http server.
 type HTTPServerConfig struct {
 	Port         int
 	ReadTimeout  time.Duration
@@ -53,7 +53,7 @@ type HTTPServerConfig struct {
 	IdleTimeout  time.Duration
 }
 
-// PostgresConfig — configuration for postgres database
+// PostgresConfig — configuration for postgres database.
 type PostgresConfig struct {
 	DSN               string
 	MaxConns          int32
@@ -64,12 +64,12 @@ type PostgresConfig struct {
 	ConnectTimeout    time.Duration
 }
 
-// SwaggerConfig — configuration for swagger
+// SwaggerConfig — configuration for swagger.
 type SwaggerConfig struct {
 	Enabled bool
 }
 
-// Load loads configuration from environment variables
+// Load loads configuration from environment variables.
 func Load() (*Config, error) {
 	dbURL := loadDatabaseURL()
 

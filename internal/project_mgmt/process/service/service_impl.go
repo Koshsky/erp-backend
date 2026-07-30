@@ -28,13 +28,16 @@ func (s *ProcessService) CreateProcess(
 	ctx context.Context,
 	req dto.CreateProcessRequest,
 ) (*dto.ProcessResponse, error) {
-	if err := s.validator.ValidateProcess(req.ProjectID, req.Title, req.StartDate, req.EndDate); err != nil {
+	process := s.mapper.ToDomainFromCreate(req)
+	if err := s.validator.ValidateProcess(&process); err != nil {
 		return nil, err
 	}
-	created, err := s.repository.CreateProcess(ctx, s.mapper.ToDomainFromCreate(req))
+
+	created, err := s.repository.CreateProcess(ctx, process)
 	if err != nil {
 		return nil, err
 	}
+
 	return s.mapper.ToDTO(created), nil
 }
 
@@ -55,20 +58,20 @@ func (s *ProcessService) UpdateProcess(
 	req dto.UpdateProcessRequest,
 ) (*dto.ProcessResponse, error) {
 	process, err := s.repository.FindProcess(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if process == nil {
+	if err != nil || process == nil {
 		return nil, fmt.Errorf("process not found")
 	}
+
 	s.mapper.ApplyUpdateToDomain(process, req)
-	if err := s.validator.ValidateProcess(process.ProjectID, process.Title, process.StartDate, process.EndDate); err != nil {
+	if err = s.validator.ValidateProcess(process); err != nil {
 		return nil, err
 	}
+
 	updated, err := s.repository.UpdateProcess(ctx, *process)
 	if err != nil {
 		return nil, err
 	}
+
 	return s.mapper.ToDTO(updated), nil
 }
 

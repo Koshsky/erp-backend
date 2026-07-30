@@ -4,10 +4,11 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
 	"github.com/Koshsky/erp-backend/internal/common/ctx"
 	"github.com/Koshsky/erp-backend/internal/common/response"
-	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {

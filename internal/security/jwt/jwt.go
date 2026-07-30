@@ -65,7 +65,7 @@ func (s *Service) GenerateRefreshToken(userID int64) (string, error) {
 	return token.SignedString(s.refreshKey)
 }
 
-// GenerateTokenPair generates both access and refresh tokens
+// GenerateTokenPair generates both access and refresh tokens.
 func (s *Service) GenerateTokenPair(userID int64, role, email string) (*TokenPair, error) {
 	accessToken, err := s.GenerateAccessToken(userID, role, email)
 	if err != nil {
@@ -85,7 +85,7 @@ func (s *Service) GenerateTokenPair(userID int64, role, email string) (*TokenPai
 	}, nil
 }
 
-// ValidateAccessToken проверяет и парсит access токен
+// ValidateAccessToken checks and validates the access token.
 func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -105,12 +105,12 @@ func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-// ValidateRefreshToken проверяет и парсит refresh токен
+// ValidateRefreshToken checks and parses the refresh token.
 func (s *Service) ValidateRefreshToken(tokenString string) (*jwt.RegisteredClaims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&jwt.RegisteredClaims{},
-		func(token *jwt.Token) (interface{}, error) {
+		func(token *jwt.Token) (any, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -129,7 +129,7 @@ func (s *Service) ValidateRefreshToken(tokenString string) (*jwt.RegisteredClaim
 	return claims, nil
 }
 
-// RefreshAccessToken создаёт новый access token по refresh токену
+// RefreshAccessToken creates a new access token using the refresh token.
 func (s *Service) RefreshAccessToken(refreshTokenString string) (*TokenPair, error) {
 	claims, err := s.ValidateRefreshToken(refreshTokenString)
 	if err != nil {
