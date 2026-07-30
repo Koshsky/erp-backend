@@ -12,10 +12,10 @@ import (
 type AuthService struct {
 	users  UserService
 	hasher PasswordHasher
-	jwt    *jwt.JWTService
+	jwt    *jwt.Service
 }
 
-func NewAuthService(users UserService, hasher PasswordHasher, jwtService *jwt.JWTService) *AuthService {
+func NewAuthService(users UserService, hasher PasswordHasher, jwtService *jwt.Service) *AuthService {
 	return &AuthService{
 		users:  users,
 		hasher: hasher,

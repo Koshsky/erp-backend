@@ -5,20 +5,22 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/Koshsky/erp-backend/internal/common/ctx"
-	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Koshsky/erp-backend/internal/common/ctx"
+	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
-type AuthMiddleware struct {
+type Middleware struct {
 	logger        *slog.Logger
-	jwtManager    *jwt.JWTService
+	jwtManager    *jwt.Service
 	DefaultRole   string
 	DefaultUserID int64
 }
 
-func NewAuthMiddleware(logger *slog.Logger, jwtManager *jwt.JWTService) *AuthMiddleware {
-	return &AuthMiddleware{
+func NewMiddleware(logger *slog.Logger, jwtManager *jwt.Service) *Middleware {
+	return &Middleware{
 		logger:        logger,
 		jwtManager:    jwtManager,
 		DefaultRole:   "unauthenticated",
@@ -26,7 +28,7 @@ func NewAuthMiddleware(logger *slog.Logger, jwtManager *jwt.JWTService) *AuthMid
 	}
 }
 
-func (m *AuthMiddleware) Middleware() gin.HandlerFunc {
+func (m *Middleware) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		reqCtx := c.Request.Context()
@@ -53,18 +55,18 @@ func (m *AuthMiddleware) Middleware() gin.HandlerFunc {
 	}
 }
 
-func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
+func (m *Middleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(401, gin.H{"error": "authorization header required"})
+			response.Unauthorized(c, "authorization header required")
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := m.jwtManager.ValidateAccessToken(tokenString)
 		if err != nil {
-			c.AbortWithStatusJSON(401, gin.H{"error": "invalid or expired token"})
+			response.Unauthorized(c, "invalid or expired token")
 			return
 		}
 

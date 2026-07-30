@@ -21,11 +21,11 @@ type App struct {
 	logger     *slog.Logger
 	pool       *pgxpool.Pool
 	httpServer *http.Server
-	jwtManager *jwt.JWTService
-	authMw     *auth.AuthMiddleware
+	jwtManager *jwt.Service
+	authMw     *auth.Middleware
 }
 
-func New(ctx context.Context, cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) (*App, error) {
+func New(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) (*App, error) {
 	return &App{
 		cfg:    cfg,
 		logger: logger,
@@ -44,7 +44,7 @@ func (a *App) Start() error {
 	// Register middleware
 	router.Use(gin.Recovery())
 	a.jwtManager = jwt.NewJWTService(a.cfg.JWT)
-	a.authMw = auth.NewAuthMiddleware(a.logger, a.jwtManager)
+	a.authMw = auth.NewMiddleware(a.logger, a.jwtManager)
 	router.Use(a.authMw.Middleware())
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
@@ -84,17 +84,28 @@ func (a *App) Start() error {
 }
 
 func (a *App) waitForServer(timeout time.Duration) error {
-	deadline := time.Now().Add(timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	addr := fmt.Sprintf("localhost:%d", a.cfg.HTTPServer.Port)
+
+	dialer := &net.Dialer{
+		Timeout: time.Second,
+	}
+
 	for {
-		conn, err := net.DialTimeout("tcp", addr, time.Second)
+		conn, err := dialer.DialContext(ctx, "tcp", addr)
 		if err == nil {
 			conn.Close()
 			return nil
 		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("timeout waiting for server")
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for server: %w", ctx.Err())
+		default:
 		}
+
 		time.Sleep(100 * time.Millisecond)
 	}
 }

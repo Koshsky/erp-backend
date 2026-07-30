@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -9,7 +10,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/config"
 )
 
-type JWTService struct {
+type Service struct {
 	secretKey     []byte
 	refreshKey    []byte
 	accessExpiry  time.Duration
@@ -17,8 +18,8 @@ type JWTService struct {
 	issuer        string
 }
 
-func NewJWTService(config config.JWTConfig) *JWTService {
-	return &JWTService{
+func NewJWTService(config config.JWTConfig) *Service {
+	return &Service{
 		secretKey:     []byte(config.SecretKey),
 		refreshKey:    []byte(config.RefreshKey),
 		accessExpiry:  config.AccessExpiry,
@@ -27,10 +28,10 @@ func NewJWTService(config config.JWTConfig) *JWTService {
 	}
 }
 
-// Генерация Access Token
-func (s *JWTService) GenerateAccessToken(userID int64, role, email string) (string, error) {
+// GenerateAccessToken generates a new JWT access token for the given user ID and role.
+func (s *Service) GenerateAccessToken(userID int64, role, email string) (string, error) {
 	now := time.Now()
-	claims := JWTClaims{
+	claims := Claims{
 		UserID: userID,
 		Role:   role,
 		Email:  email,
@@ -39,7 +40,7 @@ func (s *JWTService) GenerateAccessToken(userID int64, role, email string) (stri
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Issuer:    s.issuer,
-			Subject:   fmt.Sprintf("%d", userID),
+			Subject:   strconv.FormatInt(userID, 10),
 			ID:        generateTokenID(),
 		},
 	}
@@ -48,15 +49,15 @@ func (s *JWTService) GenerateAccessToken(userID int64, role, email string) (stri
 	return token.SignedString(s.secretKey)
 }
 
-// Генерация Refresh Token
-func (s *JWTService) GenerateRefreshToken(userID int64) (string, error) {
+// GenerateRefreshToken generates a refresh token with the given user ID.
+func (s *Service) GenerateRefreshToken(userID int64) (string, error) {
 	now := time.Now()
 	claims := jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(now.Add(s.refreshExpiry)),
 		IssuedAt:  jwt.NewNumericDate(now),
 		NotBefore: jwt.NewNumericDate(now),
 		Issuer:    s.issuer,
-		Subject:   fmt.Sprintf("%d", userID),
+		Subject:   strconv.FormatInt(userID, 10),
 		ID:        generateTokenID(),
 	}
 
@@ -64,8 +65,8 @@ func (s *JWTService) GenerateRefreshToken(userID int64) (string, error) {
 	return token.SignedString(s.refreshKey)
 }
 
-// Генерация пары токенов
-func (s *JWTService) GenerateTokenPair(userID int64, role, email string) (*TokenPair, error) {
+// GenerateTokenPair generates both access and refresh tokens
+func (s *Service) GenerateTokenPair(userID int64, role, email string) (*TokenPair, error) {
 	accessToken, err := s.GenerateAccessToken(userID, role, email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
@@ -85,8 +86,8 @@ func (s *JWTService) GenerateTokenPair(userID int64, role, email string) (*Token
 }
 
 // ValidateAccessToken проверяет и парсит access токен
-func (s *JWTService) ValidateAccessToken(tokenString string) (*JWTClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -96,7 +97,7 @@ func (s *JWTService) ValidateAccessToken(tokenString string) (*JWTClaims, error)
 		return nil, fmt.Errorf("invalid access token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*JWTClaims)
+	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
 		return nil, fmt.Errorf("invalid access token claims")
 	}
@@ -105,7 +106,7 @@ func (s *JWTService) ValidateAccessToken(tokenString string) (*JWTClaims, error)
 }
 
 // ValidateRefreshToken проверяет и парсит refresh токен
-func (s *JWTService) ValidateRefreshToken(tokenString string) (*jwt.RegisteredClaims, error) {
+func (s *Service) ValidateRefreshToken(tokenString string) (*jwt.RegisteredClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -125,7 +126,7 @@ func (s *JWTService) ValidateRefreshToken(tokenString string) (*jwt.RegisteredCl
 }
 
 // RefreshAccessToken создаёт новый access token по refresh токену
-func (s *JWTService) RefreshAccessToken(refreshTokenString string) (*TokenPair, error) {
+func (s *Service) RefreshAccessToken(refreshTokenString string) (*TokenPair, error) {
 	claims, err := s.ValidateRefreshToken(refreshTokenString)
 	if err != nil {
 		return nil, err
@@ -152,5 +153,5 @@ func (s *JWTService) RefreshAccessToken(refreshTokenString string) (*TokenPair, 
 }
 
 func generateTokenID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }

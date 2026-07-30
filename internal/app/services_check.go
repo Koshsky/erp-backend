@@ -17,7 +17,6 @@ import (
 	userService "github.com/Koshsky/erp-backend/internal/user/service"
 )
 
-// TYPE ALIASES.
 type (
 	UserService       = userDelivery.UserService
 	TaskService       = taskDelivery.TaskService
