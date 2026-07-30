@@ -11,28 +11,17 @@ type UserValidator struct {
 	validator.Validator
 }
 
-func (v *UserValidator) ValidateUserCreate(name, username, role string) error {
-	if err := v.ValidateRequiredText(name, "name"); err != nil {
+func (v *UserValidator) ValidateUser(user *domain.User) error {
+	if err := v.ValidateRequiredText(user.Name, "name"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredText(username, "username"); err != nil {
+	if err := v.ValidateRequiredText(user.Username, "username"); err != nil {
 		return err
 	}
-	if role != domain.ProjectDirector && role != domain.ProjectManager && role != domain.ProcessOwner {
-		return fmt.Errorf("unsupported role")
-	}
-	return nil
-}
-
-func (v *UserValidator) ValidateUserUpdate(name, username, role string) error {
-	if err := v.ValidateRequiredText(name, "name"); err != nil {
-		return err
-	}
-	if err := v.ValidateRequiredText(username, "username"); err != nil {
-		return err
-	}
-	if role != domain.ProjectDirector && role != domain.ProjectManager && role != domain.ProcessOwner {
-		return fmt.Errorf("unsupported role")
+	switch user.Role {
+	case domain.ProjectDirector, domain.ProjectManager, domain.ProcessOwner:
+	default:
+		return fmt.Errorf("unsupported role: %s", user.Role)
 	}
 	return nil
 }

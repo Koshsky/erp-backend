@@ -28,13 +28,16 @@ func (s *AssignmentService) CreateAssignment(
 	ctx context.Context,
 	req dto.CreateAssignmentRequest,
 ) (*dto.AssignmentResponse, error) {
-	if err := s.validator.ValidateAssignment(req.TaskID, req.ResourceID, req.Quantity); err != nil {
+	assignment := s.mapper.ToDomainFromCreate(req)
+	if err := s.validator.ValidateAssignment(&assignment); err != nil {
 		return nil, err
 	}
+
 	created, err := s.repository.CreateAssignment(ctx, s.mapper.ToDomainFromCreate(req))
 	if err != nil {
 		return nil, err
 	}
+
 	return s.mapper.ToDTO(created), nil
 }
 
@@ -55,15 +58,12 @@ func (s *AssignmentService) UpdateAssignment(
 	req dto.UpdateAssignmentRequest,
 ) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if assignment == nil {
+	if err != nil || assignment == nil {
 		return nil, fmt.Errorf("assignment not found")
 	}
 
 	s.mapper.ApplyUpdateToDomain(assignment, req)
-	if err := s.validator.ValidateAssignment(assignment.TaskID, assignment.ResourceID, assignment.Quantity); err != nil {
+	if err = s.validator.ValidateAssignment(assignment); err != nil {
 		return nil, err
 	}
 
@@ -71,6 +71,7 @@ func (s *AssignmentService) UpdateAssignment(
 	if err != nil {
 		return nil, err
 	}
+
 	return s.mapper.ToDTO(updated), nil
 }
 

@@ -5,9 +5,10 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
 	"github.com/Koshsky/erp-backend/internal/scheduling/repository/sqlc"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SchedulingRepository struct {

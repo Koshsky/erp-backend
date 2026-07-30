@@ -28,15 +28,17 @@ func (s *ProjectService) CreateProject(
 	ctx context.Context,
 	req dto.CreateProjectRequest,
 ) (*dto.ProjectResponse, error) {
-	if err := s.validator.ValidateProject(req.Code, req.StartDate, req.EndDate, req.Priority); err != nil {
+	project := s.mapper.ToDomainFromCreate(req)
+	if err := s.validator.ValidateProject(&project); err != nil {
 		return nil, err
 	}
-	project := s.mapper.ToDomainFromCreate(req)
-	createdProject, err := s.repository.CreateProject(ctx, project)
+
+	created, err := s.repository.CreateProject(ctx, project)
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.ToDTO(createdProject), nil
+
+	return s.mapper.ToDTO(created), nil
 }
 
 func (s *ProjectService) FindProject(ctx context.Context, id int64) (*dto.ProjectResponse, error) {
@@ -56,21 +58,21 @@ func (s *ProjectService) UpdateProject(
 	req dto.UpdateProjectRequest,
 ) (*dto.ProjectResponse, error) {
 	project, err := s.repository.FindProject(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
+	if err != nil || project == nil {
 		return nil, fmt.Errorf("project not found")
 	}
+
 	s.mapper.ApplyUpdateToDomain(project, req)
-	if err := s.validator.ValidateProject(project.Code, project.StartDate, project.EndDate, project.Priority); err != nil {
+	if err = s.validator.ValidateProject(project); err != nil {
 		return nil, err
 	}
-	updatedProject, err := s.repository.UpdateProject(ctx, *project)
+
+	updated, err := s.repository.UpdateProject(ctx, *project)
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.ToDTO(updatedProject), nil
+
+	return s.mapper.ToDTO(updated), nil
 }
 
 func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {

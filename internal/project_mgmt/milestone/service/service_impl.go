@@ -28,13 +28,16 @@ func (s *MilestoneService) CreateMilestone(
 	ctx context.Context,
 	req dto.CreateMilestoneRequest,
 ) (*dto.MilestoneResponse, error) {
-	if err := s.validator.ValidateMilestone(req.ProcessID, req.Title, req.Content, req.Date); err != nil {
+	milestone := s.mapper.ToDomainFromCreate(req)
+	if err := s.validator.ValidateMilestone(&milestone); err != nil {
 		return nil, err
 	}
-	created, err := s.repository.CreateMilestone(ctx, s.mapper.ToDomainFromCreate(req))
+
+	created, err := s.repository.CreateMilestone(ctx, milestone)
 	if err != nil {
 		return nil, err
 	}
+
 	return s.mapper.ToDTO(created), nil
 }
 
@@ -56,21 +59,20 @@ func (s *MilestoneService) UpdateMilestone(
 	req dto.UpdateMilestoneRequest,
 ) (*dto.MilestoneResponse, error) {
 	milestone, err := s.repository.FindMilestone(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if milestone == nil {
+	if err != nil || milestone == nil {
 		return nil, fmt.Errorf("milestone not found")
 	}
 
 	s.mapper.ApplyUpdateToDomain(milestone, req)
-	if err := s.validator.ValidateMilestone(milestone.ProcessID, milestone.Title, milestone.Content, milestone.Date); err != nil {
+	if err = s.validator.ValidateMilestone(milestone); err != nil {
 		return nil, err
 	}
+
 	updated, err := s.repository.UpdateMilestone(ctx, *milestone)
 	if err != nil {
 		return nil, err
 	}
+
 	return s.mapper.ToDTO(updated), nil
 }
 

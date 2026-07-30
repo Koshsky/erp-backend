@@ -1,8 +1,7 @@
 package service
 
 import (
-	"time"
-
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
@@ -10,18 +9,18 @@ type TaskValidator struct {
 	validator.Validator
 }
 
-func (v *TaskValidator) ValidateTask(processID int64, title string, startDate, endDate time.Time) error {
-	if err := v.ValidatePositiveID(processID, "process_id"); err != nil {
+func (v *TaskValidator) ValidateTask(task *domain.Task) error {
+	if err := v.ValidatePositiveID(task.ProcessID, "process_id"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredText(title, "title"); err != nil {
+	if err := v.ValidateRequiredText(task.Title, "title"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredDate(startDate, "start_date"); err != nil {
+	if err := v.ValidateRequiredDate(task.StartDate, "start_date"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredDate(endDate, "end_date"); err != nil {
+	if err := v.ValidateRequiredDate(task.EndDate, "end_date"); err != nil {
 		return err
 	}
-	return v.ValidateDateRange(startDate, endDate, "task")
+	return v.ValidateDateRange(task.StartDate, task.EndDate, "task")
 }
