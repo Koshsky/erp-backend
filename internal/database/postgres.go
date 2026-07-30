@@ -4,34 +4,34 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/Koshsky/erp-backend/internal/config"
 )
 
-func InitDBPool(dsn string, logger *slog.Logger) (*pgxpool.Pool, error) {
+func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger) (*pgxpool.Pool, error) {
 	const op = "initDBPool"
 
-	config, err := pgxpool.ParseConfig(dsn)
+	cfg, err := pgxpool.ParseConfig(pgCfg.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("%s: parse config: %w", op, err)
 	}
 
-	config.MaxConns = 10
-	config.MinConns = 2
-	config.MaxConnLifetime = time.Hour
-	config.MaxConnIdleTime = 30 * time.Minute
-	config.HealthCheckPeriod = 1 * time.Minute
+	cfg.MaxConns = pgCfg.MaxConns
+	cfg.MinConns = pgCfg.MinConns
+	cfg.MaxConnLifetime = pgCfg.MaxConnLifetime
+	cfg.MaxConnIdleTime = pgCfg.MaxConnIdleTime
+	cfg.HealthCheckPeriod = pgCfg.HealthCheckPeriod
+	cfg.ConnConfig.ConnectTimeout = pgCfg.ConnectTimeout
 
-	config.ConnConfig.ConnectTimeout = 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), pgCfg.ConnectTimeout)
+	defer cancel()
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("%s: create pool: %w", op, err)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
@@ -40,8 +40,8 @@ func InitDBPool(dsn string, logger *slog.Logger) (*pgxpool.Pool, error) {
 
 	stats := pool.Stat()
 	logger.Info("database connected",
-		"max_conns", config.MaxConns,
-		"min_conns", config.MinConns,
+		"max_conns", cfg.MaxConns,
+		"min_conns", cfg.MinConns,
 		"acquired_conns", stats.AcquiredConns(),
 		"total_conns", stats.TotalConns(),
 	)

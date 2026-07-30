@@ -57,7 +57,7 @@ func main() {
 	runCtx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
 	// initialize the database pool
-	pool, err := database.InitDBPool(cfg.DatabaseURL, logger)
+	pool, err := database.InitDBPool(cfg.Postgres, logger)
 	if err != nil {
 		logger.Error("Failed to initialize database pool", "error", err)
 		os.Exit(1)
