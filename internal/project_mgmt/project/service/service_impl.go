@@ -24,7 +24,10 @@ func NewProjectService(logger *slog.Logger, repository ProjectRepository) *Proje
 	}
 }
 
-func (s *ProjectService) CreateProject(ctx context.Context, req dto.CreateProjectRequest) (*dto.ProjectResponse, error) {
+func (s *ProjectService) CreateProject(
+	ctx context.Context,
+	req dto.CreateProjectRequest,
+) (*dto.ProjectResponse, error) {
 	if err := s.validator.ValidateProject(req.Code, req.StartDate, req.EndDate, req.Priority); err != nil {
 		return nil, err
 	}
@@ -47,7 +50,11 @@ func (s *ProjectService) FindProject(ctx context.Context, id int64) (*dto.Projec
 	return s.mapper.ToDTO(project), nil
 }
 
-func (s *ProjectService) UpdateProject(ctx context.Context, id int64, req dto.UpdateProjectRequest) (*dto.ProjectResponse, error) {
+func (s *ProjectService) UpdateProject(
+	ctx context.Context,
+	id int64,
+	req dto.UpdateProjectRequest,
+) (*dto.ProjectResponse, error) {
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil {
 		return nil, err

@@ -24,7 +24,10 @@ func NewMilestoneService(logger *slog.Logger, repository MilestoneRepository) *M
 	}
 }
 
-func (s *MilestoneService) CreateMilestone(ctx context.Context, req dto.CreateMilestoneRequest) (*dto.MilestoneResponse, error) {
+func (s *MilestoneService) CreateMilestone(
+	ctx context.Context,
+	req dto.CreateMilestoneRequest,
+) (*dto.MilestoneResponse, error) {
 	if err := s.validator.ValidateMilestone(req.ProcessID, req.Title, req.Content, req.Date); err != nil {
 		return nil, err
 	}
@@ -47,7 +50,11 @@ func (s *MilestoneService) FindMilestone(ctx context.Context, id int64) (*dto.Mi
 	return s.mapper.ToDTO(milestone), nil
 }
 
-func (s *MilestoneService) UpdateMilestone(ctx context.Context, id int64, req dto.UpdateMilestoneRequest) (*dto.MilestoneResponse, error) {
+func (s *MilestoneService) UpdateMilestone(
+	ctx context.Context,
+	id int64,
+	req dto.UpdateMilestoneRequest,
+) (*dto.MilestoneResponse, error) {
 	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil {
 		return nil, err

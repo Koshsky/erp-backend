@@ -23,7 +23,10 @@ func NewAssignmentRepository(logger *slog.Logger, pool *pgxpool.Pool) *Assignmen
 	}
 }
 
-func (r *AssignmentRepository) CreateAssignment(ctx context.Context, assignment domain.Assignment) (*domain.Assignment, error) {
+func (r *AssignmentRepository) CreateAssignment(
+	ctx context.Context,
+	assignment domain.Assignment,
+) (*domain.Assignment, error) {
 	row, err := r.db.CreateAssignment(ctx, sqlc.CreateAssignmentParams{
 		TaskID:     assignment.TaskID,
 		ResourceID: assignment.ResourceID,
@@ -47,7 +50,10 @@ func (r *AssignmentRepository) FindAssignment(ctx context.Context, id int64) (*d
 	return &mapped, nil
 }
 
-func (r *AssignmentRepository) UpdateAssignment(ctx context.Context, assignment domain.Assignment) (*domain.Assignment, error) {
+func (r *AssignmentRepository) UpdateAssignment(
+	ctx context.Context,
+	assignment domain.Assignment,
+) (*domain.Assignment, error) {
 	row, err := r.db.UpdateAssignment(ctx, sqlc.UpdateAssignmentParams{
 		AssignmentID: assignment.ID,
 		Quantity:     int64(assignment.Quantity),

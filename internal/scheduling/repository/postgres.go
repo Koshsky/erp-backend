@@ -67,7 +67,10 @@ func (r *SchedulingRepository) ListProcesses(ctx context.Context, userID int64, 
 	return processes, nil
 }
 
-func (r *SchedulingRepository) ListProcessesByProjectIDs(ctx context.Context, projectIDs []int64) (map[int64][]domain.Process, error) {
+func (r *SchedulingRepository) ListProcessesByProjectIDs(
+	ctx context.Context,
+	projectIDs []int64,
+) (map[int64][]domain.Process, error) {
 	rows, err := r.db.ListProcessesByProjectIDs(ctx, projectIDs)
 	if err != nil {
 		return nil, err
@@ -89,7 +92,10 @@ func (r *SchedulingRepository) ListProcessesByProjectIDs(ctx context.Context, pr
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListTasksByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]domain.Task, error) {
+func (r *SchedulingRepository) ListTasksByProcessIDs(
+	ctx context.Context,
+	processIDs []int64,
+) (map[int64][]domain.Task, error) {
 	rows, err := r.db.ListTasksByProcessIDs(ctx, processIDs)
 	if err != nil {
 		return nil, err
@@ -111,7 +117,10 @@ func (r *SchedulingRepository) ListTasksByProcessIDs(ctx context.Context, proces
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListMilestonesByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]domain.Milestone, error) {
+func (r *SchedulingRepository) ListMilestonesByProcessIDs(
+	ctx context.Context,
+	processIDs []int64,
+) (map[int64][]domain.Milestone, error) {
 	rows, err := r.db.ListMilestonesByProcessIDs(ctx, processIDs)
 	if err != nil {
 		return nil, err
@@ -133,7 +142,10 @@ func (r *SchedulingRepository) ListMilestonesByProcessIDs(ctx context.Context, p
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListAssignmentsByTaskIDs(ctx context.Context, taskIDs []int64) (map[int64][]domain.Assignment, error) {
+func (r *SchedulingRepository) ListAssignmentsByTaskIDs(
+	ctx context.Context,
+	taskIDs []int64,
+) (map[int64][]domain.Assignment, error) {
 	rows, err := r.db.ListAssignmentsByTaskIDs(ctx, taskIDs)
 	if err != nil {
 		return nil, err

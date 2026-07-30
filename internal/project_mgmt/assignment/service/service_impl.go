@@ -24,7 +24,10 @@ func NewAssignmentService(logger *slog.Logger, repository AssignmentRepository) 
 	}
 }
 
-func (s *AssignmentService) CreateAssignment(ctx context.Context, req dto.CreateAssignmentRequest) (*dto.AssignmentResponse, error) {
+func (s *AssignmentService) CreateAssignment(
+	ctx context.Context,
+	req dto.CreateAssignmentRequest,
+) (*dto.AssignmentResponse, error) {
 	if err := s.validator.ValidateAssignment(req.TaskID, req.ResourceID, req.Quantity); err != nil {
 		return nil, err
 	}
@@ -46,7 +49,11 @@ func (s *AssignmentService) FindAssignment(ctx context.Context, id int64) (*dto.
 	return s.mapper.ToDTO(assignment), nil
 }
 
-func (s *AssignmentService) UpdateAssignment(ctx context.Context, id int64, req dto.UpdateAssignmentRequest) (*dto.AssignmentResponse, error) {
+func (s *AssignmentService) UpdateAssignment(
+	ctx context.Context,
+	id int64,
+	req dto.UpdateAssignmentRequest,
+) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
 		return nil, err

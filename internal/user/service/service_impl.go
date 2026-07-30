@@ -82,7 +82,7 @@ func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUs
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return s.mapper.ToDTO(updatedUser), nil
 }
 

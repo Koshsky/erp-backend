@@ -19,7 +19,11 @@ func NewSchedulingService(logger *slog.Logger, repository SchedulingRepository) 
 	}
 }
 
-func (s *SchedulingService) GetProjectScheduling(ctx context.Context, userID int64, role string) (*dto.ProjectScheduling, error) {
+func (s *SchedulingService) GetProjectScheduling(
+	ctx context.Context,
+	userID int64,
+	role string,
+) (*dto.ProjectScheduling, error) {
 	projects, err := s.repository.ListProjects(ctx, userID, role)
 	if err != nil {
 		return nil, err
@@ -30,7 +34,11 @@ func (s *SchedulingService) GetProjectScheduling(ctx context.Context, userID int
 	}, nil
 }
 
-func (s *SchedulingService) GetProcessScheduling(ctx context.Context, userID int64, role string) (*dto.ProcessScheduling, error) {
+func (s *SchedulingService) GetProcessScheduling(
+	ctx context.Context,
+	userID int64,
+	role string,
+) (*dto.ProcessScheduling, error) {
 	projects, err := s.repository.ListProjects(ctx, userID, role)
 	if err != nil {
 		return nil, err
@@ -50,7 +58,11 @@ func (s *SchedulingService) GetProcessScheduling(ctx context.Context, userID int
 	}, nil
 }
 
-func (s *SchedulingService) GetTaskScheduling(ctx context.Context, userID int64, role string) (*dto.TaskScheduling, error) {
+func (s *SchedulingService) GetTaskScheduling(
+	ctx context.Context,
+	userID int64,
+	role string,
+) (*dto.TaskScheduling, error) {
 	processes, err := s.repository.ListProcesses(ctx, userID, role)
 	if err != nil {
 		return nil, err

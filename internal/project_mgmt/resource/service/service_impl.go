@@ -32,7 +32,10 @@ func (s *ResourceService) ListResources(ctx context.Context) ([]dto.ResourceResp
 	return s.mapper.ToDTOs(resources), nil
 }
 
-func (s *ResourceService) CreateResource(ctx context.Context, resource dto.CreateResourceRequest) (*dto.ResourceResponse, error) {
+func (s *ResourceService) CreateResource(
+	ctx context.Context,
+	resource dto.CreateResourceRequest,
+) (*dto.ResourceResponse, error) {
 	if err := s.validator.ValidateResource(resource.Code, resource.Title, resource.Quantity); err != nil {
 		return nil, err
 	}
@@ -54,7 +57,11 @@ func (s *ResourceService) FindResource(ctx context.Context, id int64) (*dto.Reso
 	return s.mapper.ToDTO(resource), nil
 }
 
-func (s *ResourceService) UpdateResource(ctx context.Context, id int64, req dto.UpdateResourceRequest) (*dto.ResourceResponse, error) {
+func (s *ResourceService) UpdateResource(
+	ctx context.Context,
+	id int64,
+	req dto.UpdateResourceRequest,
+) (*dto.ResourceResponse, error) {
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil {
 		return nil, err
