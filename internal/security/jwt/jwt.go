@@ -107,12 +107,16 @@ func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 
 // ValidateRefreshToken проверяет и парсит refresh токен
 func (s *Service) ValidateRefreshToken(tokenString string) (*jwt.RegisteredClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return s.refreshKey, nil
-	})
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&jwt.RegisteredClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return s.refreshKey, nil
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}

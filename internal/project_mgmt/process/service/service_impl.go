@@ -24,7 +24,10 @@ func NewProcessService(logger *slog.Logger, repository ProcessRepository) *Proce
 	}
 }
 
-func (s *ProcessService) CreateProcess(ctx context.Context, req dto.CreateProcessRequest) (*dto.ProcessResponse, error) {
+func (s *ProcessService) CreateProcess(
+	ctx context.Context,
+	req dto.CreateProcessRequest,
+) (*dto.ProcessResponse, error) {
 	if err := s.validator.ValidateProcess(req.ProjectID, req.Title, req.StartDate, req.EndDate); err != nil {
 		return nil, err
 	}
@@ -46,7 +49,11 @@ func (s *ProcessService) FindProcess(ctx context.Context, id int64) (*dto.Proces
 	return s.mapper.ToDTO(process), nil
 }
 
-func (s *ProcessService) UpdateProcess(ctx context.Context, id int64, req dto.UpdateProcessRequest) (*dto.ProcessResponse, error) {
+func (s *ProcessService) UpdateProcess(
+	ctx context.Context,
+	id int64,
+	req dto.UpdateProcessRequest,
+) (*dto.ProcessResponse, error) {
 	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil {
 		return nil, err

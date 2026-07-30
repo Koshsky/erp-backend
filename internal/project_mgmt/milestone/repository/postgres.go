@@ -23,7 +23,10 @@ func NewMilestoneRepository(logger *slog.Logger, pool *pgxpool.Pool) *MilestoneR
 	}
 }
 
-func (r *MilestoneRepository) CreateMilestone(ctx context.Context, milestone domain.Milestone) (*domain.Milestone, error) {
+func (r *MilestoneRepository) CreateMilestone(
+	ctx context.Context,
+	milestone domain.Milestone,
+) (*domain.Milestone, error) {
 	row, err := r.db.CreateMilestone(ctx, sqlc.CreateMilestoneParams{
 		ProcessID: milestone.ProcessID,
 		Title:     milestone.Title,
@@ -48,7 +51,10 @@ func (r *MilestoneRepository) FindMilestone(ctx context.Context, id int64) (*dom
 	return &mapped, nil
 }
 
-func (r *MilestoneRepository) UpdateMilestone(ctx context.Context, milestone domain.Milestone) (*domain.Milestone, error) {
+func (r *MilestoneRepository) UpdateMilestone(
+	ctx context.Context,
+	milestone domain.Milestone,
+) (*domain.Milestone, error) {
 	row, err := r.db.UpdateMilestone(ctx, sqlc.UpdateMilestoneParams{
 		MilestoneID: milestone.ID,
 		Date:        milestone.Date,
