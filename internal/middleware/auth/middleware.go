@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"log/slog"
 	"strings"
 
@@ -47,8 +46,8 @@ func (m *Middleware) Middleware() gin.HandlerFunc {
 			}
 		}
 
-		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyRole, role)
-		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyUserID, userID)
+		reqCtx = ctx.SetRole(reqCtx, role)
+		reqCtx = ctx.SetUserID(reqCtx, userID)
 		c.Request = c.Request.WithContext(reqCtx)
 
 		c.Next()
@@ -71,8 +70,8 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		}
 
 		reqCtx := c.Request.Context()
-		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyUserID, claims.UserID)
-		reqCtx = context.WithValue(reqCtx, ctx.ContextKeyRole, claims.Role)
+		reqCtx = ctx.SetUserID(reqCtx, claims.UserID)
+		reqCtx = ctx.SetRole(reqCtx, claims.Role)
 		c.Request = c.Request.WithContext(reqCtx)
 
 		c.Next()
