@@ -3,12 +3,16 @@ definitions:
   dto.AssignmentResponse:
     properties:
       id:
+        example: 1
         type: integer
       quantity:
+        example: 10
         type: integer
       resource_id:
+        example: 1
         type: integer
       task_id:
+        example: 1
         type: integer
     type: object
   dto.AuthResponse:
@@ -36,63 +40,85 @@ definitions:
   dto.CreateAssignmentRequest:
     properties:
       quantity:
+        example: 5
         type: integer
       resource_id:
+        example: 1
         type: integer
       task_id:
+        example: 1
         type: integer
     type: object
   dto.CreateMilestoneRequest:
     properties:
       content:
+        example: Приедут с России1
         type: string
       date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       process_id:
+        example: 1
         type: integer
       title:
+        example: Телевидение
         type: string
     type: object
   dto.CreateProcessRequest:
     properties:
       end_date:
+        example: "2026-02-01T00:00:00Z"
         type: string
       project_id:
+        example: 1
         type: integer
       start_date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       title:
+        example: Инсталляция
         type: string
     type: object
   dto.CreateProjectRequest:
     properties:
       code:
+        example: КО_001
         type: string
       end_date:
+        example: "2026-02-01T00:00:00Z"
         type: string
       priority:
+        example: 2
         type: integer
       start_date:
+        example: "2026-01-01T00:00:00Z"
         type: string
     type: object
   dto.CreateResourceRequest:
     properties:
       code:
+        example: М
         type: string
       quantity:
+        example: 7
         type: integer
       title:
+        example: Монтажник
         type: string
     type: object
   dto.CreateTaskRequest:
     properties:
       end_date:
+        example: "2026-02-01T00:00:00Z"
         type: string
       process_id:
+        example: 1
         type: integer
       start_date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       title:
+        example: Пуско-наладочные работы
         type: string
     type: object
   dto.DetailedProcess:
@@ -200,14 +226,19 @@ definitions:
   dto.MilestoneResponse:
     properties:
       content:
+        example: Приедут с России1
         type: string
       date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       id:
+        example: 1
         type: integer
       process_id:
+        example: 1
         type: integer
       title:
+        example: Телевидение
         type: string
     type: object
   dto.Process:
@@ -241,16 +272,22 @@ definitions:
   dto.ProcessResponse:
     properties:
       end_date:
+        example: "2026-02-01T00:00:00Z"
         type: string
       id:
+        example: 1
         type: integer
       owner_id:
+        example: 1
         type: integer
       project_id:
+        example: 1
         type: integer
       start_date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       title:
+        example: Инсталляция
         type: string
     type: object
   dto.Project:
@@ -340,12 +377,16 @@ definitions:
   dto.ResourceResponse:
     properties:
       code:
+        example: М
         type: string
       id:
+        example: 1
         type: integer
       quantity:
+        example: 7
         type: integer
       title:
+        example: Монтажник
         type: string
     type: object
   dto.TaskPlanning:
@@ -371,53 +412,70 @@ definitions:
   dto.UpdateAssignmentRequest:
     properties:
       quantity:
+        example: 10
         type: integer
     type: object
   dto.UpdateMilestoneRequest:
     properties:
       content:
+        example: Приедут с России1
         type: string
       date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       title:
+        example: Телевидение
         type: string
     type: object
   dto.UpdateProcessRequest:
     properties:
       end_date:
+        example: "2026-02-01T00:00:00Z"
         type: string
       start_date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       title:
+        example: Инсталляция
         type: string
     type: object
   dto.UpdateProjectRequest:
     properties:
       code:
+        example: "1"
         type: string
       end_date:
+        example: "2026-02-01T00:00:00Z"
         type: string
       priority:
+        example: 2
         type: integer
       start_date:
+        example: "2026-01-01T00:00:00Z"
         type: string
     type: object
   dto.UpdateResourceRequest:
     properties:
       code:
+        example: М
         type: string
       quantity:
+        example: 7
         type: integer
       title:
+        example: Монтажник
         type: string
     type: object
   dto.UpdateTaskRequest:
     properties:
       end_date:
+        example: "2026-02-01T00:00:00Z"
         type: string
       start_date:
+        example: "2026-01-01T00:00:00Z"
         type: string
       title:
+        example: Пуско-наладочные работы
         type: string
     type: object
   dto.UpdateUserRequest:
@@ -502,7 +560,7 @@ info:
   title: Enterprise Resource Planning
   version: "1.0"
 paths:
-  /assignments:
+  /assignment:
     get:
       description: Get a list of all assignments
       produces:
@@ -522,7 +580,12 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: List assignments
@@ -554,17 +617,27 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create assignment
       tags:
       - Assignments
-  /assignments/{id}:
+  /assignment/{id}:
     delete:
       description: Delete an assignment by ID
       parameters:
@@ -581,11 +654,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete an assignment
@@ -614,11 +697,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get assignment
@@ -655,11 +748,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update an assignment
@@ -856,7 +959,12 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: List milestones
@@ -888,11 +996,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create milestone
@@ -915,11 +1033,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete milestone
@@ -948,11 +1076,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get milestone
@@ -989,11 +1127,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update milestone
@@ -1133,7 +1281,12 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: List processes
@@ -1165,11 +1318,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create process
@@ -1192,11 +1355,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete process
@@ -1225,11 +1398,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get process
@@ -1266,11 +1449,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update process
@@ -1296,7 +1489,12 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: List projects
@@ -1328,11 +1526,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create a new project
@@ -1357,11 +1565,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete project
@@ -1390,11 +1608,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get project
@@ -1431,11 +1659,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update project
@@ -1461,7 +1699,12 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: List resources
@@ -1493,11 +1736,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create resource
@@ -1520,11 +1773,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete resource
@@ -1553,11 +1816,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get resource
@@ -1594,11 +1867,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update resource
@@ -1624,7 +1907,12 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: List all tasks
@@ -1656,11 +1944,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create a new task
@@ -1685,11 +1983,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete a task
@@ -1718,11 +2026,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get a task by ID
@@ -1759,11 +2077,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update a task

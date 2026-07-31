@@ -30,7 +30,7 @@ func NewResourceHandler(logger *slog.Logger, service ResourceService) *ResourceH
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Success		200	{object}	response.Response{data=[]dto.ResourceResponse}
-//	@Failure		500	{object}	response.Response
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/resource [get]
 func (h *ResourceHandler) ListResources(c *gin.Context) {
 	resources, err := h.service.ListResources(c.Request.Context())
@@ -50,8 +50,8 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		int	true	"Resource ID"
 //	@Success		200	{object}	response.Response{data=dto.ResourceResponse}
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/resource/{id} [get]
 func (h *ResourceHandler) FindResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -78,13 +78,13 @@ func (h *ResourceHandler) FindResource(c *gin.Context) {
 //	@Produce		json
 //	@Param			resource	body		dto.CreateResourceRequest	true	"Resource"
 //	@Success		201			{object}	response.Response{data=dto.ResourceResponse}
-//	@Failure		400			{object}	response.Response
-//	@Failure		500			{object}	response.Response
+//	@Failure		400			{object}	response.Response{data=nil}
+//	@Failure		500			{object}	response.Response{data=nil}
 //	@Router			/resource [post]
 func (h *ResourceHandler) CreateResource(c *gin.Context) {
 	var resource dto.CreateResourceRequest
 	if err := c.ShouldBindJSON(&resource); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -105,8 +105,8 @@ func (h *ResourceHandler) CreateResource(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"Resource ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/resource/{id} [delete]
 func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -133,8 +133,8 @@ func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 //	@Param			id			path		int							true	"Resource ID"
 //	@Param			resource	body		dto.UpdateResourceRequest	true	"Resource"
 //	@Success		200			{object}	response.Response{data=dto.ResourceResponse}
-//	@Failure		400			{object}	response.Response
-//	@Failure		500			{object}	response.Response
+//	@Failure		400			{object}	response.Response{data=nil}
+//	@Failure		500			{object}	response.Response{data=nil}
 //	@Router			/resource/{id} [put]
 func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -145,7 +145,7 @@ func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 
 	body := dto.UpdateResourceRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 

@@ -17,8 +17,8 @@ type ChangePasswordResponse struct {
 }
 
 type UserInfo struct {
-	ID       int64  `json:"id" example:"1"`
-	Name     string `json:"name" example:"Ivan Ivanov"`
+	ID       int64  `json:"id"       example:"1"`
+	Name     string `json:"name"     example:"Ivan Ivanov"`
 	Username string `json:"username" example:"ivanov"`
-	Role     string `json:"role" example:"РП"`
+	Role     string `json:"role"     example:"РП"`
 }

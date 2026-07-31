@@ -1,6 +1,8 @@
 package app
 
 import (
+	planningRepo "github.com/Koshsky/erp-backend/internal/planning/repository"
+	planningService "github.com/Koshsky/erp-backend/internal/planning/service"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	assignmentService "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
 	milestoneRepoPkg "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
@@ -13,14 +15,12 @@ import (
 	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
-	planningRepo "github.com/Koshsky/erp-backend/internal/planning/repository"
-	planningService "github.com/Koshsky/erp-backend/internal/planning/service"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 	userService "github.com/Koshsky/erp-backend/internal/user/service"
 )
 
 type (
-	PlanningRepository = planningService.PlanningRepository
+	PlanningRepository   = planningService.PlanningRepository
 	UserRepository       = userService.UserRepository
 	TaskRepository       = taskService.TaskRepository
 	ResourceRepository   = resourceService.ResourceRepository
@@ -31,7 +31,7 @@ type (
 )
 
 var (
-	_ PlanningRepository = (*planningRepo.PlanningRepository)(nil)
+	_ PlanningRepository   = (*planningRepo.PlanningRepository)(nil)
 	_ UserRepository       = (*userRepo.UserRepository)(nil)
 	_ TaskRepository       = (*taskRepo.TaskRepository)(nil)
 	_ ResourceRepository   = (*resourceRepo.ResourceRepository)(nil)

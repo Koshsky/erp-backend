@@ -14,16 +14,19 @@ type TaskPlanning struct {
 
 type DetailedProject struct {
 	Project
+
 	Processes []Process `json:"processes"`
 }
 
 type DetailedProcess struct {
 	Process
+
 	Tasks      []DetailedTask `json:"tasks"`
 	Milestones []Milestone    `json:"milestones"`
 }
 
 type DetailedTask struct {
 	Task
+
 	Resources []Resource `json:"resources"`
 }

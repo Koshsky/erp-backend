@@ -152,17 +152,11 @@ func (s *PlanningService) GetTaskPlanning(
 				taskAssignments = []dto.Assignment{}
 			}
 
-			// Собираем ресурсы
 			resources := make([]dto.Resource, 0, len(taskAssignments))
 			for _, assignment := range taskAssignments {
-				// БЕЗОПАСНО получаем ресурс
 				res, exists := resourcesMap[assignment.ResourceID]
 				if !exists {
-					s.logger.Warn("resource not found",
-						"resource_id", assignment.ResourceID,
-						"task_id", task.ID,
-					)
-					continue // пропускаем отсутствующий ресурс
+					continue
 				}
 
 				resources = append(resources, dto.Resource{

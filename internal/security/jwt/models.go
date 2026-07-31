@@ -13,8 +13,8 @@ type Claims struct {
 }
 
 type TokenPair struct {
-	AccessToken  string `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	AccessToken  string `json:"access_token"            example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 	RefreshToken string `json:"refresh_token,omitempty" example:"abcdef123456..."`
-	TokenType    string `json:"token_type" example:"Bearer"`
-	ExpiresIn    int    `json:"expires_in" example:"3600"` // секунды
+	TokenType    string `json:"token_type"              example:"Bearer"`
+	ExpiresIn    int    `json:"expires_in"              example:"3600"` // секунды
 }

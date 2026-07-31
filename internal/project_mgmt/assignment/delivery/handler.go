@@ -30,8 +30,8 @@ func NewAssignmentHandler(logger *slog.Logger, service AssignmentService) *Assig
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Success		200	{object}	response.Response{data=[]dto.AssignmentResponse}
-//	@Failure		500	{object}	response.Response
-//	@Router			/assignments [get]
+//	@Failure		500	{object}	response.Response{data=nil}
+//	@Router			/assignment [get]
 func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 	assignments, err := h.service.ListAssignments(c.Request.Context())
 	if err != nil {
@@ -50,9 +50,9 @@ func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		int	true	"Assignment ID"
 //	@Success		200	{object}	response.Response{data=dto.AssignmentResponse}
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
-//	@Router			/assignments/{id} [get]
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
+//	@Router			/assignment/{id} [get]
 func (h *AssignmentHandler) FindAssignment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -78,13 +78,13 @@ func (h *AssignmentHandler) FindAssignment(c *gin.Context) {
 //	@Produce		json
 //	@Param			request	body		dto.CreateAssignmentRequest	true	"Assignment data"
 //	@Success		201		{object}	response.Response{data=dto.AssignmentResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
-//	@Router			/assignments [post]
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
+//	@Router			/assignment [post]
 func (h *AssignmentHandler) CreateAssignment(c *gin.Context) {
 	var assignment dto.CreateAssignmentRequest
 	if err := c.ShouldBindJSON(&assignment); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -105,9 +105,9 @@ func (h *AssignmentHandler) CreateAssignment(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"Assignment ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
-//	@Router			/assignments/{id} [delete]
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
+//	@Router			/assignment/{id} [delete]
 func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -133,9 +133,9 @@ func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
 //	@Param			id		path		int							true	"Assignment ID"
 //	@Param			body	body		dto.UpdateAssignmentRequest	true	"Assignment data"
 //	@Success		200		{object}	response.Response{data=dto.AssignmentResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
-//	@Router			/assignments/{id} [put]
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
+//	@Router			/assignment/{id} [put]
 func (h *AssignmentHandler) UpdateAssignment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -145,7 +145,7 @@ func (h *AssignmentHandler) UpdateAssignment(c *gin.Context) {
 
 	body := dto.UpdateAssignmentRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 

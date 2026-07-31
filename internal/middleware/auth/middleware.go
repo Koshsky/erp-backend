@@ -23,7 +23,7 @@ func NewMiddleware(logger *slog.Logger, jwtManager *jwt.Service) *Middleware {
 	}
 }
 
-// RequireAuth - обязательная аутентификация
+// RequireAuth verifies the JWT token and sets the user context.
 func (m *Middleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. Проверяем наличие заголовка
@@ -53,7 +53,6 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		// 4. Валидируем токен
 		claims, err := m.jwtManager.ValidateAccessToken(tokenString)
 		if err != nil {
-			m.logger.Warn("invalid access token", "error", err)
 			response.Unauthorized(c, "invalid or expired token")
 			c.Abort()
 			return
