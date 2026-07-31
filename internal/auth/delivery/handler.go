@@ -2,7 +2,6 @@ package delivery
 
 import (
 	"log/slog"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 
@@ -31,9 +30,9 @@ func NewAuthHandler(logger *slog.Logger, service AuthService) *AuthHandler {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.LoginRequest	true	"Login credentials"
-//	@Success		200		{object}	dto.AuthResponse
-//	@Failure		400		{object}	map[string]string
-//	@Failure		401		{object}	map[string]string
+//	@Success		200		{object}	response.Response{data=dto.AuthResponse}
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		401		{object}	response.Response{data=nil}
 //	@Router			/auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
@@ -48,7 +47,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	response.OK(c, resp)
 }
 
 // Register handles the register request.
@@ -59,9 +58,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.RegisterRequest	true	"Register credentials"
-//	@Success		201		{object}	dto.AuthResponse
-//	@Failure		400		{object}	map[string]string
-//	@Failure		500		{object}	map[string]string
+//	@Success		201		{object}	response.Response{data=dto.AuthResponse}
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req dto.RegisterRequest
@@ -76,7 +75,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, resp)
+	response.Created(c, resp)
 }
 
 // ChangePassword handles the change password request.
@@ -87,8 +86,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Accept			json
 //	@Param			request	body		dto.ChangePasswordRequest	true	"Old and new password"
-//	@Success		200		{object}	map[string]string
-//	@Failure		400		{object}	map[string]string
+//	@Success		200		{object}	response.Response{data=dto.ChangePasswordResponse}
+//	@Failure		400		{object}	response.Response{data=nil}
 //	@Router			/auth/change-password [post]
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	userID := ctx.GetUserID(c.Request.Context())
@@ -104,7 +103,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "password changed"})
+	response.OK(c, dto.ChangePasswordResponse{Message: "password changed"})
 }
 
 // RefreshToken handles the request to refresh access token.
@@ -114,10 +113,10 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 //	@Description	Refresh access token using refresh token, returns new pair
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		object{refresh_token=string}	true	"Refresh token"
-//	@Success		200		{object}	dto.RefreshResponse
-//	@Failure		400		{object}	map[string]string
-//	@Failure		401		{object}	map[string]string
+//	@Param			request	body		dto.RefreshTokenRequest	true	"Refresh token"
+//	@Success		200		{object}	response.Response{data=dto.RefreshResponse}
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		401		{object}	response.Response{data=nil}
 //	@Router			/auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req dto.RefreshTokenRequest
@@ -132,5 +131,5 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	response.OK(c, resp)
 }

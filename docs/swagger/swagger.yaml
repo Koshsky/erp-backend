@@ -1,5 +1,20 @@
 basePath: /api/v1
 definitions:
+  dto.Assignment:
+    properties:
+      id:
+        example: 1
+        type: integer
+      quantity:
+        example: 2
+        type: integer
+      resource_id:
+        example: 1
+        type: integer
+      task_id:
+        example: 1
+        type: integer
+    type: object
   dto.AssignmentResponse:
     properties:
       id:
@@ -21,12 +36,17 @@ definitions:
   dto.ChangePasswordRequest:
     properties:
       new_password:
+        example: new_password
         type: string
       old_password:
+        example: password
         type: string
-    required:
-    - new_password
-    - old_password
+    type: object
+  dto.ChangePasswordResponse:
+    properties:
+      message:
+        example: password changed
+        type: string
     type: object
   dto.CreateAssignmentRequest:
     properties:
@@ -90,26 +110,31 @@ definitions:
       title:
         type: string
     type: object
-  dto.CreateUserRequest:
-    properties:
-      name:
-        type: string
-      password_hash:
-        type: string
-      role:
-        type: string
-      username:
-        type: string
-    type: object
   dto.LoginRequest:
     properties:
       password:
+        example: password
         type: string
       username:
+        example: ivanov
         type: string
-    required:
-    - password
-    - username
+    type: object
+  dto.Milestone:
+    properties:
+      content:
+        example: Начало работ по проекту
+        type: string
+      date:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      process_id:
+        example: 1
+        type: integer
+      title:
+        type: string
     type: object
   dto.MilestoneResponse:
     properties:
@@ -121,6 +146,26 @@ definitions:
         type: integer
       process_id:
         type: integer
+      title:
+        type: string
+    type: object
+  dto.Process:
+    properties:
+      end_date:
+        example: "2026-02-01T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      owner_id:
+        example: 1
+        type: integer
+      project_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01T00:00:00Z"
+        type: string
       title:
         type: string
     type: object
@@ -139,6 +184,41 @@ definitions:
       title:
         type: string
     type: object
+  dto.ProcessScheduling:
+    properties:
+      processes:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/dto.Process'
+          type: array
+        description: 'key: project_id'
+        type: object
+      projects:
+        items:
+          $ref: '#/definitions/dto.Project'
+        type: array
+    type: object
+  dto.Project:
+    properties:
+      code:
+        example: М
+        type: string
+      end_date:
+        example: "2026-02-01T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      owner_id:
+        example: 1
+        type: integer
+      priority:
+        example: 2
+        type: integer
+      start_date:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+    type: object
   dto.ProjectResponse:
     properties:
       code:
@@ -154,25 +234,53 @@ definitions:
       start_date:
         type: string
     type: object
+  dto.ProjectScheduling:
+    properties:
+      projects:
+        items:
+          $ref: '#/definitions/dto.Project'
+        type: array
+    type: object
   dto.RefreshResponse:
     properties:
       message:
+        example: Token refreshed successfully
         type: string
       tokens:
         $ref: '#/definitions/jwt.TokenPair'
     type: object
+  dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6I...
+        type: string
+    type: object
   dto.RegisterRequest:
     properties:
       name:
+        example: Ivan Ivanov
         type: string
       password:
+        example: password
         type: string
       username:
+        example: ivanov
         type: string
-    required:
-    - name
-    - password
-    - username
+    type: object
+  dto.Resource:
+    properties:
+      code:
+        example: М
+        type: string
+      id:
+        example: 1
+        type: integer
+      quantity:
+        example: 7
+        type: integer
+      title:
+        example: Монтажник
+        type: string
     type: object
   dto.ResourceResponse:
     properties:
@@ -183,6 +291,24 @@ definitions:
       quantity:
         type: integer
       title:
+        type: string
+    type: object
+  dto.Task:
+    properties:
+      end_date:
+        example: "2026-02-01T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      process_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+      title:
+        example: Пуско-наладочные работы
         type: string
     type: object
   dto.TaskResponse:
@@ -197,6 +323,52 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  dto.TaskScheduling:
+    properties:
+      assignments:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/dto.Assignment'
+          type: array
+        description: 'key: task_id'
+        type: object
+      milestones:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/dto.Milestone'
+          type: array
+        description: 'key: process_id'
+        type: object
+      processes:
+        items:
+          $ref: '#/definitions/dto.Process'
+        type: array
+      projects:
+        additionalProperties:
+          $ref: '#/definitions/dto.Project'
+        description: 'key: project_id'
+        type: object
+      resources:
+        items:
+          $ref: '#/definitions/dto.Resource'
+        type: array
+      tasks:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/dto.Task'
+          type: array
+        description: 'key: process_id'
+        type: object
+      timeline:
+        properties:
+          end_date:
+            type: string
+          start_date:
+            type: string
+          total_days:
+            type: integer
+        type: object
     type: object
   dto.UpdateAssignmentRequest:
     properties:
@@ -253,50 +425,66 @@ definitions:
   dto.UpdateUserRequest:
     properties:
       name:
+        example: Ivan Ivanov
         type: string
       role:
+        example: ДП
         type: string
       username:
+        example: ivanov
         type: string
     type: object
   dto.UserInfo:
     properties:
       id:
+        example: 1
         type: integer
       name:
+        example: Ivan Ivanov
         type: string
       role:
+        example: РП
         type: string
       username:
+        example: ivanov
         type: string
     type: object
   dto.UserResponse:
     properties:
       id:
+        example: 1
         type: integer
       name:
+        example: Ivan Ivanov
         type: string
       role:
+        example: ДП
         type: string
       username:
+        example: ivanov
         type: string
     type: object
   jwt.TokenPair:
     properties:
       access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
       expires_in:
         description: секунды
+        example: 3600
         type: integer
       refresh_token:
+        example: abcdef123456...
         type: string
       token_type:
+        example: Bearer
         type: string
     type: object
   response.Response:
     properties:
       data: {}
       error:
+        example: error message
         type: string
     type: object
 externalDocs:
@@ -495,15 +683,21 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ChangePasswordResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Change Password
@@ -527,19 +721,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.AuthResponse'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AuthResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       summary: Login
       tags:
       - Auth
@@ -554,29 +759,37 @@ paths:
         name: request
         required: true
         schema:
-          properties:
-            refresh_token:
-              type: string
-          type: object
+          $ref: '#/definitions/dto.RefreshTokenRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.RefreshResponse'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RefreshResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       summary: Refresh Token
       tags:
       - Auth
@@ -598,19 +811,30 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/dto.AuthResponse'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AuthResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       summary: Register
       tags:
       - Auth
@@ -1277,15 +1501,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProcessScheduling'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get process scheduling
@@ -1300,15 +1539,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProjectScheduling'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get project scheduling
@@ -1323,15 +1577,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TaskScheduling'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get task scheduling
@@ -1522,46 +1791,15 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: List all users
-      tags:
-      - Users
-    post:
-      consumes:
-      - application/json
-      description: Create a new user with the provided data
-      parameters:
-      - description: User data
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
             allOf:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.UserResponse'
+                  type: object
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.Response'
       security:
       - ApiKeyAuth: []
-      summary: Create a new user
+      summary: List all users
       tags:
       - Users
   /user/{id}:
@@ -1583,11 +1821,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete a user
@@ -1616,11 +1864,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: User information
@@ -1657,11 +1915,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update a user

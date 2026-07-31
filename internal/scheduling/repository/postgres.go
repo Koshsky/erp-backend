@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
+	"github.com/Koshsky/erp-backend/internal/scheduling/dto"
 	"github.com/Koshsky/erp-backend/internal/scheduling/repository/sqlc"
 )
 
@@ -23,7 +23,7 @@ func NewSchedulingRepository(logger *slog.Logger, pool *pgxpool.Pool) *Schedulin
 	}
 }
 
-func (r *SchedulingRepository) ListProjects(ctx context.Context, userID int64, role string) ([]domain.Project, error) {
+func (r *SchedulingRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
 		UserID: userID,
 		Role:   role,
@@ -32,9 +32,9 @@ func (r *SchedulingRepository) ListProjects(ctx context.Context, userID int64, r
 	if err != nil {
 		return nil, err
 	}
-	projetcs := make([]domain.Project, len(rows))
+	projetcs := make([]dto.Project, len(rows))
 	for i, row := range rows {
-		projetcs[i] = domain.Project{
+		projetcs[i] = dto.Project{
 			ID:        row.ID,
 			OwnerID:   row.OwnerID,
 			Code:      row.Code,
@@ -47,7 +47,7 @@ func (r *SchedulingRepository) ListProjects(ctx context.Context, userID int64, r
 	return projetcs, nil
 }
 
-func (r *SchedulingRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]domain.Process, error) {
+func (r *SchedulingRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
 	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
 		UserID: userID,
 		Role:   role,
@@ -55,9 +55,9 @@ func (r *SchedulingRepository) ListProcesses(ctx context.Context, userID int64, 
 	if err != nil {
 		return nil, err
 	}
-	processes := make([]domain.Process, len(rows))
+	processes := make([]dto.Process, len(rows))
 	for i, row := range rows {
-		processes[i] = domain.Process{
+		processes[i] = dto.Process{
 			ID:        row.Process.ID,
 			OwnerID:   row.Process.OwnerID,
 			ProjectID: row.Process.ProjectID,
@@ -71,14 +71,14 @@ func (r *SchedulingRepository) ListProcesses(ctx context.Context, userID int64, 
 func (r *SchedulingRepository) ListProcessesByProjectIDs(
 	ctx context.Context,
 	projectIDs []int64,
-) (map[int64][]domain.Process, error) {
+) (map[int64][]dto.Process, error) {
 	rows, err := r.db.ListProcessesByProjectIDs(ctx, projectIDs)
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]domain.Process)
+	result := make(map[int64][]dto.Process)
 	for _, row := range rows {
-		p := domain.Process{
+		p := dto.Process{
 			ID:        row.ID,
 			OwnerID:   row.OwnerID,
 			ProjectID: row.ProjectID,
@@ -86,7 +86,7 @@ func (r *SchedulingRepository) ListProcessesByProjectIDs(
 			EndDate:   row.EndDate,
 		}
 		if _, ok := result[row.ProjectID]; !ok {
-			result[row.ProjectID] = make([]domain.Process, 0)
+			result[row.ProjectID] = make([]dto.Process, 0)
 		}
 		result[row.ProjectID] = append(result[row.ProjectID], p)
 	}
@@ -96,14 +96,14 @@ func (r *SchedulingRepository) ListProcessesByProjectIDs(
 func (r *SchedulingRepository) ListTasksByProcessIDs(
 	ctx context.Context,
 	processIDs []int64,
-) (map[int64][]domain.Task, error) {
+) (map[int64][]dto.Task, error) {
 	rows, err := r.db.ListTasksByProcessIDs(ctx, processIDs)
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]domain.Task)
+	result := make(map[int64][]dto.Task)
 	for _, row := range rows {
-		t := domain.Task{
+		t := dto.Task{
 			ID:        row.ID,
 			ProcessID: row.ProcessID,
 			Title:     row.Title,
@@ -111,7 +111,7 @@ func (r *SchedulingRepository) ListTasksByProcessIDs(
 			EndDate:   row.EndDate,
 		}
 		if _, ok := result[row.ProcessID]; !ok {
-			result[row.ProcessID] = make([]domain.Task, 0)
+			result[row.ProcessID] = make([]dto.Task, 0)
 		}
 		result[row.ProcessID] = append(result[row.ProcessID], t)
 	}
@@ -121,14 +121,14 @@ func (r *SchedulingRepository) ListTasksByProcessIDs(
 func (r *SchedulingRepository) ListMilestonesByProcessIDs(
 	ctx context.Context,
 	processIDs []int64,
-) (map[int64][]domain.Milestone, error) {
+) (map[int64][]dto.Milestone, error) {
 	rows, err := r.db.ListMilestonesByProcessIDs(ctx, processIDs)
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]domain.Milestone)
+	result := make(map[int64][]dto.Milestone)
 	for _, row := range rows {
-		m := domain.Milestone{
+		m := dto.Milestone{
 			ID:        row.ID,
 			ProcessID: row.ProcessID,
 			Title:     row.Title,
@@ -136,7 +136,7 @@ func (r *SchedulingRepository) ListMilestonesByProcessIDs(
 			Date:      row.Date,
 		}
 		if _, ok := result[row.ProcessID]; !ok {
-			result[row.ProcessID] = make([]domain.Milestone, 0)
+			result[row.ProcessID] = make([]dto.Milestone, 0)
 		}
 		result[row.ProcessID] = append(result[row.ProcessID], m)
 	}
@@ -146,35 +146,35 @@ func (r *SchedulingRepository) ListMilestonesByProcessIDs(
 func (r *SchedulingRepository) ListAssignmentsByTaskIDs(
 	ctx context.Context,
 	taskIDs []int64,
-) (map[int64][]domain.Assignment, error) {
+) (map[int64][]dto.Assignment, error) {
 	rows, err := r.db.ListAssignmentsByTaskIDs(ctx, taskIDs)
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]domain.Assignment)
+	result := make(map[int64][]dto.Assignment)
 	for _, row := range rows {
-		a := domain.Assignment{
+		a := dto.Assignment{
 			ID:         row.ID,
 			TaskID:     row.TaskID,
 			ResourceID: row.ResourceID,
 			Quantity:   int(row.Quantity),
 		}
 		if _, ok := result[row.TaskID]; !ok {
-			result[row.TaskID] = make([]domain.Assignment, 0)
+			result[row.TaskID] = make([]dto.Assignment, 0)
 		}
 		result[row.TaskID] = append(result[row.TaskID], a)
 	}
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListResources(ctx context.Context) ([]domain.Resource, error) {
+func (r *SchedulingRepository) ListResources(ctx context.Context) ([]dto.Resource, error) {
 	rows, err := r.db.ListResources(ctx)
 	if err != nil {
 		return nil, err
 	}
-	result := make([]domain.Resource, 0, len(rows))
+	result := make([]dto.Resource, 0, len(rows))
 	for _, row := range rows {
-		r := domain.Resource{
+		r := dto.Resource{
 			ID:       row.ID,
 			Title:    row.Title,
 			Code:     row.Code,

@@ -8,7 +8,7 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Name     *string `json:"name"`
-	Username *string `json:"username"`
-	Role     *string `json:"role"`
+	Name     *string `json:"name" example:"Ivan Ivanov"`
+	Username *string `json:"username" example:"ivanov"`
+	Role     *string `json:"role" example:"ДП"`
 }

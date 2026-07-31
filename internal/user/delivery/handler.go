@@ -32,7 +32,7 @@ func NewUserHandler(logger *slog.Logger, service UserService) *UserHandler {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Success		200	{object}	response.Response{data=[]dto.UserResponse}
-//	@Failure		500	{object}	response.Response
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/user [get]
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	users, err := h.service.ListUsers(c.Request.Context())
@@ -52,8 +52,8 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		int	true	"User ID"
 //	@Success		200	{object}	response.Response{data=dto.UserResponse}
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/user/{id} [get]
 func (h *UserHandler) FindUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -70,38 +70,6 @@ func (h *UserHandler) FindUser(c *gin.Context) {
 	response.OK(c, user)
 }
 
-// CreateUser handles the creation of a new user.
-//
-//	@Tags			Users
-//	@Summary		Create a new user
-//	@Description	Create a new user with the provided data
-//	@Security		ApiKeyAuth
-//	@Accept			json
-//	@Produce		json
-//	@Param			body	body		dto.CreateUserRequest	true	"User data"
-//	@Success		201		{object}	response.Response{data=dto.UserResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
-//	@Router			/user [post]
-func (h *UserHandler) CreateUser(c *gin.Context) {
-	if role := ctx.GetRole(c); role != domain.ProjectDirector {
-		response.Forbidden(c, "only ДП can create users")
-		return
-	}
-
-	var body dto.CreateUserRequest
-	if err := c.ShouldBindJSON(&body); err != nil {
-		response.HandleBindError(c, h.logger, err)
-		return
-	}
-	created, err := h.service.CreateUser(c.Request.Context(), body)
-	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
-		return
-	}
-	response.Created(c, created)
-}
-
 // DeleteUser handle deleting a user.
 //
 //	@Tags			Users
@@ -112,8 +80,8 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"User ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -147,8 +115,8 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 //	@Param			id		path		int						true	"User ID"
 //	@Param			body	body		dto.UpdateUserRequest	true	"User data"
 //	@Success		200		{object}	response.Response{data=dto.UserResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/user/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)

@@ -1,21 +1,21 @@
 package dto
 
 type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username" example:"ivanov"`
+	Password string `json:"password" example:"password"`
 }
 
 type RegisterRequest struct {
-	Name     string `json:"name"     binding:"required"`
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Name     string `json:"name" example:"Ivan Ivanov"`
+	Username string `json:"username" example:"ivanov"`
+	Password string `json:"password" example:"password"`
 }
 
 type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password" binding:"required"`
-	NewPassword string `json:"new_password" binding:"required"`
+	OldPassword string `json:"old_password" example:"password"`
+	NewPassword string `json:"new_password" example:"new_password"`
 }
 
 type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
+	RefreshToken string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6I..."`
 }

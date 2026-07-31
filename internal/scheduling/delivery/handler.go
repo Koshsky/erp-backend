@@ -28,9 +28,9 @@ func NewSchedulingHandler(logger *slog.Logger, service MilestoneService) *Schedu
 //	@Description	Get project scheduling (project portfolio)
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Success		200	{object}	response.Response{data=dto.ProjectScheduling}
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/scheduling/projects [get]
 func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
@@ -50,9 +50,9 @@ func (h *SchedulingHandler) GetProjectScheduling(c *gin.Context) {
 //	@Description	Get process scheduling
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Success		200	{object}	response.Response{data=dto.ProcessScheduling}
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/scheduling/processes [get]
 func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)
@@ -72,9 +72,9 @@ func (h *SchedulingHandler) GetProcessScheduling(c *gin.Context) {
 //	@Description	Get task scheduling
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Success		200	{object}	response.Response{data=dto.TaskScheduling}
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/scheduling/tasks [get]
 func (h *SchedulingHandler) GetTaskScheduling(c *gin.Context) {
 	userID := ctx.GetUserID(c)

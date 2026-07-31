@@ -12,7 +12,7 @@ import (
 // and when Error is empty it's omitted.
 type Response struct {
 	Data  any    `json:"data,omitempty"`
-	Error string `json:"error,omitempty"`
+	Error string `json:"error,omitempty" example:"error message"`
 }
 
 // OK sends a 200 response with the provided data.
