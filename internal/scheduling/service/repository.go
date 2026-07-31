@@ -1,18 +1,18 @@
-package domain
+package service
 
 import (
 	"context"
 
-	"github.com/Koshsky/erp-backend/internal/scheduling/domain"
+	"github.com/Koshsky/erp-backend/internal/scheduling/dto"
 )
 
 type SchedulingRepository interface {
-	ListProjects(ctx context.Context, userID int64, role string) ([]domain.Project, error)
-	ListProcesses(ctx context.Context, userID int64, role string) ([]domain.Process, error)
-	ListResources(ctx context.Context) ([]domain.Resource, error)
+	ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error)
+	ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error)
+	ListResources(ctx context.Context) ([]dto.Resource, error)
 
-	ListProcessesByProjectIDs(ctx context.Context, projectIDs []int64) (map[int64][]domain.Process, error)
-	ListMilestonesByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]domain.Milestone, error)
-	ListTasksByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]domain.Task, error)
-	ListAssignmentsByTaskIDs(ctx context.Context, taskIDs []int64) (map[int64][]domain.Assignment, error)
+	ListProcessesByProjectIDs(ctx context.Context, projectIDs []int64) (map[int64][]dto.Process, error)
+	ListMilestonesByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]dto.Milestone, error)
+	ListTasksByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]dto.Task, error)
+	ListAssignmentsByTaskIDs(ctx context.Context, taskIDs []int64) (map[int64][]dto.Assignment, error)
 }

@@ -7,7 +7,6 @@ func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup) {
 	{
 		r.GET("/", h.ListUsers)
 		r.GET("/:id", h.FindUser)
-		r.POST("/", h.CreateUser)
 		r.PUT("/:id", h.UpdateUser)
 		r.DELETE("/:id", h.DeleteUser)
 	}
