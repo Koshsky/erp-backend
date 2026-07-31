@@ -768,42 +768,6 @@ paths:
       summary: Update an assignment
       tags:
       - Assignments
-  /auth/change-password:
-    post:
-      consumes:
-      - application/json
-      description: Change password (requires old password)
-      parameters:
-      - description: Old and new password
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ChangePasswordRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ChangePasswordResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Change Password
-      tags:
-      - Auth
   /auth/login:
     post:
       consumes:
@@ -2259,6 +2223,42 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update a user
+      tags:
+      - Users
+  /user/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change password (requires old password)
+      parameters:
+      - description: Old and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChangePasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ChangePasswordResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Change Password
       tags:
       - Users
 securityDefinitions:

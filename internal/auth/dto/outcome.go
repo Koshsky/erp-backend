@@ -12,10 +12,6 @@ type AuthResponse struct {
 	Tokens *jwt.TokenPair `json:"tokens"`
 }
 
-type ChangePasswordResponse struct {
-	Message string `json:"message" example:"password changed"`
-}
-
 type UserInfo struct {
 	ID       int64  `json:"id"       example:"1"`
 	Name     string `json:"name"     example:"Ivan Ivanov"`

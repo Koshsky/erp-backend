@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
@@ -28,8 +29,22 @@ func (s *UserService) FindUserByID(ctx context.Context, id int64) (*dto.UserResp
 	return s.FindUser(ctx, id)
 }
 
-func (s *UserService) UpdatePassword(ctx context.Context, userID int64, passwordHash string) error {
-	return s.repository.UpdatePassword(ctx, userID, passwordHash)
+func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
+	user, err := s.FindUserByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	if err = hasher.Compare(user.PasswordHash, oldPassword); err != nil {
+		return fmt.Errorf("invalid current password")
+	}
+
+	newHash, err := hasher.Hash(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password")
+	}
+
+	return s.repository.UpdatePassword(ctx, userID, newHash)
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req dto.CreateUserRequest) (*dto.UserResponse, error) {

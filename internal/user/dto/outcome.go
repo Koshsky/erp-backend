@@ -9,3 +9,7 @@ type UserResponse struct {
 	// PasswordHash does not serialize to JSON.
 	PasswordHash string `json:"-"`
 }
+
+type ChangePasswordResponse struct {
+	Message string `json:"message" example:"password changed"`
+}

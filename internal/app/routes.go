@@ -27,7 +27,6 @@ import (
 	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
-	"github.com/Koshsky/erp-backend/internal/security/password"
 	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 	userService "github.com/Koshsky/erp-backend/internal/user/service"
@@ -57,8 +56,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	userHandler := userDelivery.NewUserHandler(a.logger, userSvc)
 
 	// --- Auth (uses userSvc for user data) ---
-	authHasher := password.NewBcryptHasher()
-	authSvc := authService.NewAuthService(userSvc, authHasher, a.jwtManager)
+	authSvc := authService.NewAuthService(userSvc, a.jwtManager)
 	authHandler := authDelivery.NewAuthHandler(a.logger, authSvc)
 
 	// --- Planning ---

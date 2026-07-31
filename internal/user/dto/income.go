@@ -12,3 +12,8 @@ type UpdateUserRequest struct {
 	Username *string `json:"username" example:"ivanov"`
 	Role     *string `json:"role"     example:"ДП"`
 }
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" example:"password"`
+	NewPassword string `json:"new_password" example:"new_password"`
+}
