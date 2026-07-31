@@ -140,7 +140,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	body := dto.UpdateUserRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 

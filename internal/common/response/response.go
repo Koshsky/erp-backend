@@ -51,13 +51,6 @@ func InternalError(c *gin.Context, logger *slog.Logger, msg string, err error) {
 	c.JSON(http.StatusInternalServerError, Response{Error: msg})
 }
 
-// HandleBindError is a convenience helper for JSON binding errors.
-// It logs the original error at warn level and responds with 400.
-func HandleBindError(c *gin.Context, logger *slog.Logger, err error) {
-	logger.Warn("invalid request payload", "error", err)
-	BadRequest(c, "invalid request payload")
-}
-
 // Forbidden sends a 403 error response.
 func Forbidden(c *gin.Context, msg string) {
 	c.JSON(http.StatusForbidden, Response{Error: msg})

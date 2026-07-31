@@ -2,13 +2,14 @@ package helpers
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/Koshsky/erp-backend/internal/common/ctx"
 
 	"github.com/gin-gonic/gin"
 )
 
-// GetUser извлекает пользователя из контекста
+// GetUser extracts the user context from the Gin context.
 func GetUser(c *gin.Context) (ctx.UserContext, error) {
 	val, exists := c.Get(ctx.KeyUser)
 	if !exists {
@@ -23,7 +24,7 @@ func GetUser(c *gin.Context) (ctx.UserContext, error) {
 	return user, nil
 }
 
-// MustGetUser - паникует если нет пользователя
+// MustGetUser panics if the user is not found in the context.
 func MustGetUser(c *gin.Context) ctx.UserContext {
 	user, err := GetUser(c)
 	if err != nil {
@@ -32,7 +33,7 @@ func MustGetUser(c *gin.Context) ctx.UserContext {
 	return user
 }
 
-// GetUserID возвращает ID пользователя
+// GetUserID returns the user ID from the context.
 func GetUserID(c *gin.Context) (int64, error) {
 	user, err := GetUser(c)
 	if err != nil {
@@ -41,7 +42,7 @@ func GetUserID(c *gin.Context) (int64, error) {
 	return user.ID, nil
 }
 
-// GetUserRole возвращает роль пользователя
+// GetUserRole returns the user role from the context.
 func GetUserRole(c *gin.Context) (string, error) {
 	user, err := GetUser(c)
 	if err != nil {
@@ -50,7 +51,7 @@ func GetUserRole(c *gin.Context) (string, error) {
 	return user.Role, nil
 }
 
-// IsAdmin проверяет, является ли пользователь админом
+// IsAdmin verifies if the user is an admin.
 func IsAdmin(c *gin.Context) bool {
 	user, err := GetUser(c)
 	if err != nil {
@@ -59,22 +60,17 @@ func IsAdmin(c *gin.Context) bool {
 	return user.Role == "admin"
 }
 
-// HasRole проверяет наличие роли
+// HasRole verifies if the user has any of the allowed roles.
 func HasRole(c *gin.Context, allowedRoles ...string) bool {
 	user, err := GetUser(c)
 	if err != nil {
 		return false
 	}
 
-	for _, allowed := range allowedRoles {
-		if user.Role == allowed {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(allowedRoles, user.Role)
 }
 
-// GetRequestID получает ID запроса (если есть)
+// GetRequestID returns the request ID from the context.
 func GetRequestID(c *gin.Context) string {
 	val, exists := c.Get("request_id")
 	if !exists {

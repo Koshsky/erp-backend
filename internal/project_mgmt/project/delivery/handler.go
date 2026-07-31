@@ -30,7 +30,7 @@ func NewProjectHandler(logger *slog.Logger, service ProjectService) *ProjectHand
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Success		200	{object}	response.Response{data=[]dto.ProjectResponse}
-//	@Failure		500	{object}	response.Response
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/project [get]
 func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	projects, err := h.service.ListProjects(c.Request.Context())
@@ -50,8 +50,8 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		int	true	"Project ID"
 //	@Success		200	{object}	response.Response{data=dto.ProjectResponse}
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/project/{id} [get]
 func (h *ProjectHandler) FindProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -78,13 +78,13 @@ func (h *ProjectHandler) FindProject(c *gin.Context) {
 //	@Produce		json
 //	@Param			project	body		dto.CreateProjectRequest	true	"Project details"
 //	@Success		201		{object}	response.Response{data=dto.ProjectResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/project [post]
 func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	var project dto.CreateProjectRequest
 	if err := c.ShouldBindJSON(&project); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -106,8 +106,8 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"Project ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/project/{id} [delete]
 func (h *ProjectHandler) DeleteProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -134,8 +134,8 @@ func (h *ProjectHandler) DeleteProject(c *gin.Context) {
 //	@Param			id		path		int							true	"Project ID"
 //	@Param			project	body		dto.UpdateProjectRequest	true	"Project data"
 //	@Success		200		{object}	response.Response{data=dto.ProjectResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/project/{id} [put]
 func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -146,7 +146,7 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 
 	body := dto.UpdateProjectRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 

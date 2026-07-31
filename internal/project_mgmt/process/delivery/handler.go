@@ -30,7 +30,7 @@ func NewProcessHandler(logger *slog.Logger, service ProcessService) *ProcessHand
 //	@Produce		json
 //	@Security		ApiKeyAuth
 //	@Success		200	{object}	response.Response{data=[]dto.ProcessResponse}
-//	@Failure		500	{object}	response.Response
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/process [get]
 func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	processes, err := h.service.ListProcesses(c.Request.Context())
@@ -50,8 +50,8 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Param			id	path		int	true	"Process ID"
 //	@Success		200	{object}	response.Response{data=dto.ProcessResponse}
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/process/{id} [get]
 func (h *ProcessHandler) FindProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -78,13 +78,13 @@ func (h *ProcessHandler) FindProcess(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Param			process	body		dto.CreateProcessRequest	true	"Process data"
 //	@Success		201		{object}	response.Response{data=dto.ProcessResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/process [post]
 func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 	var process dto.CreateProcessRequest
 	if err := c.ShouldBindJSON(&process); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -105,8 +105,8 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Param			id	path	int	true	"Process ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response
-//	@Failure		500	{object}	response.Response
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/process/{id} [delete]
 func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -133,8 +133,8 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 //	@Param			id		path		int							true	"Process ID"
 //	@Param			body	body		dto.UpdateProcessRequest	true	"Process data"
 //	@Success		200		{object}	response.Response{data=dto.ProcessResponse}
-//	@Failure		400		{object}	response.Response
-//	@Failure		500		{object}	response.Response
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/process/{id} [put]
 func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -145,7 +145,7 @@ func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 
 	body := dto.UpdateProcessRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.HandleBindError(c, h.logger, err)
+		response.BadRequest(c, err.Error())
 		return
 	}
 

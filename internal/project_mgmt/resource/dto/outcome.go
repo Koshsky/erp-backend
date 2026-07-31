@@ -1,8 +1,8 @@
 package dto
 
 type ResourceResponse struct {
-	ID       int64  `json:"id"`
-	Code     string `json:"code"`
-	Title    string `json:"title"`
-	Quantity int    `json:"quantity"`
+	ID       int64  `json:"id"       example:"1"`
+	Code     string `json:"code"     example:"М"`
+	Title    string `json:"title"    example:"Монтажник"`
+	Quantity int    `json:"quantity" example:"7"`
 }
