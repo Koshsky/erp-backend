@@ -13,6 +13,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
+	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
@@ -46,7 +47,9 @@ func (a *App) Start() error {
 	if a.cfg.Swagger.Enabled {
 		a.runSwaggerServer(router)
 	}
+
 	// Register middleware
+	router.Use(cors.Development())
 	router.Use(gin.Recovery())
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
