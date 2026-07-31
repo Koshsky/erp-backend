@@ -1,7 +1,6 @@
 INSERT INTO users (username, name, password_hash, role) VALUES
 ('admin', 'Admin Name', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ДП'),  -- директор проектов, админ
-('user1', 'User One', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'РП'),
-('user2', 'User Two', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП');
+('ivanov', 'Ivan Ivanov', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП');  -- Владелец процесса
 
 INSERT INTO resources (title, code, quantity) VALUES
 ('Инженер', 'И', 7),

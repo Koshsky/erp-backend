@@ -7,23 +7,23 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/scheduling/dto"
-	"github.com/Koshsky/erp-backend/internal/scheduling/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/planning/dto"
+	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 )
 
-type SchedulingRepository struct {
+type PlanningRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
 }
 
-func NewSchedulingRepository(logger *slog.Logger, pool *pgxpool.Pool) *SchedulingRepository {
-	return &SchedulingRepository{
+func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRepository {
+	return &PlanningRepository{
 		logger: logger,
 		db:     sqlc.New(pool),
 	}
 }
 
-func (r *SchedulingRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {
+func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
 		UserID: userID,
 		Role:   role,
@@ -47,7 +47,7 @@ func (r *SchedulingRepository) ListProjects(ctx context.Context, userID int64, r
 	return projetcs, nil
 }
 
-func (r *SchedulingRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
+func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
 	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
 		UserID: userID,
 		Role:   role,
@@ -68,7 +68,7 @@ func (r *SchedulingRepository) ListProcesses(ctx context.Context, userID int64, 
 	return processes, nil
 }
 
-func (r *SchedulingRepository) ListProcessesByProjectIDs(
+func (r *PlanningRepository) ListProcessesByProjectIDs(
 	ctx context.Context,
 	projectIDs []int64,
 ) (map[int64][]dto.Process, error) {
@@ -93,7 +93,7 @@ func (r *SchedulingRepository) ListProcessesByProjectIDs(
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListTasksByProcessIDs(
+func (r *PlanningRepository) ListTasksByProcessIDs(
 	ctx context.Context,
 	processIDs []int64,
 ) (map[int64][]dto.Task, error) {
@@ -118,7 +118,7 @@ func (r *SchedulingRepository) ListTasksByProcessIDs(
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListMilestonesByProcessIDs(
+func (r *PlanningRepository) ListMilestonesByProcessIDs(
 	ctx context.Context,
 	processIDs []int64,
 ) (map[int64][]dto.Milestone, error) {
@@ -143,7 +143,7 @@ func (r *SchedulingRepository) ListMilestonesByProcessIDs(
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListAssignmentsByTaskIDs(
+func (r *PlanningRepository) ListAssignmentsByTaskIDs(
 	ctx context.Context,
 	taskIDs []int64,
 ) (map[int64][]dto.Assignment, error) {
@@ -167,7 +167,7 @@ func (r *SchedulingRepository) ListAssignmentsByTaskIDs(
 	return result, nil
 }
 
-func (r *SchedulingRepository) ListResources(ctx context.Context) ([]dto.Resource, error) {
+func (r *PlanningRepository) ListResources(ctx context.Context) ([]dto.Resource, error) {
 	rows, err := r.db.ListResources(ctx)
 	if err != nil {
 		return nil, err

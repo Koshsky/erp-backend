@@ -10,7 +10,7 @@ ORDER BY priority ASC;
 -- name: ListProcesses :many
 SELECT sqlc.embed(p) FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE deleted_at IS NULL
+WHERE p.deleted_at IS NULL
 AND (
     @role::text = 'ДП' OR
     p.owner_id = @user_id::bigint OR

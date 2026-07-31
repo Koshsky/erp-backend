@@ -12,68 +12,62 @@ import (
 )
 
 type Middleware struct {
-	logger        *slog.Logger
-	jwtManager    *jwt.Service
-	DefaultRole   string
-	DefaultUserID int64
+	logger     *slog.Logger
+	jwtManager *jwt.Service
 }
 
 func NewMiddleware(logger *slog.Logger, jwtManager *jwt.Service) *Middleware {
 	return &Middleware{
-		logger:        logger,
-		jwtManager:    jwtManager,
-		DefaultRole:   "unauthenticated",
-		DefaultUserID: 1,
+		logger:     logger,
+		jwtManager: jwtManager,
 	}
 }
 
-func (m *Middleware) Middleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		reqCtx := c.Request.Context()
-
-		role := m.DefaultRole
-		userID := m.DefaultUserID
-
-		if authHeader != "" {
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-			claims, err := m.jwtManager.ValidateAccessToken(tokenString)
-			if err != nil {
-				m.logger.Warn("invalid access token", "error", err)
-			} else {
-				role = claims.Role
-				userID = claims.UserID
-			}
-		}
-
-		reqCtx = ctx.SetRole(reqCtx, role)
-		reqCtx = ctx.SetUserID(reqCtx, userID)
-		c.Request = c.Request.WithContext(reqCtx)
-
-		c.Next()
-	}
-}
-
+// RequireAuth - обязательная аутентификация
 func (m *Middleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 1. Проверяем наличие заголовка
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			response.Unauthorized(c, "authorization header required")
+			c.Abort() // Останавливаем выполнение
 			return
 		}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		// 2. Проверяем формат
+		const bearerPrefix = "Bearer "
+		if !strings.HasPrefix(authHeader, bearerPrefix) {
+			response.Unauthorized(c, "invalid authorization format, expected Bearer token")
+			c.Abort()
+			return
+		}
+
+		// 3. Извлекаем токен
+		tokenString := strings.TrimPrefix(authHeader, bearerPrefix)
+		if tokenString == "" {
+			response.Unauthorized(c, "token is empty")
+			c.Abort()
+			return
+		}
+
+		// 4. Валидируем токен
 		claims, err := m.jwtManager.ValidateAccessToken(tokenString)
 		if err != nil {
+			m.logger.Warn("invalid access token", "error", err)
 			response.Unauthorized(c, "invalid or expired token")
+			c.Abort()
 			return
 		}
 
-		reqCtx := c.Request.Context()
-		reqCtx = ctx.SetUserID(reqCtx, claims.UserID)
-		reqCtx = ctx.SetRole(reqCtx, claims.Role)
-		c.Request = c.Request.WithContext(reqCtx)
+		// 5. Сохраняем пользователя в контексте (одним объектом!)
+		user := ctx.UserContext{
+			ID:    claims.UserID,
+			Role:  claims.Role,
+			Email: claims.Email, // если есть
+		}
+		c.Set("user", user)
 
+		// 6. Пропускаем запрос дальше
 		c.Next()
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
-	"github.com/Koshsky/erp-backend/internal/common/ctx"
+	"github.com/Koshsky/erp-backend/internal/common/helpers"
 	"github.com/Koshsky/erp-backend/internal/common/response"
 )
 
@@ -90,7 +90,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 //	@Failure		400		{object}	response.Response{data=nil}
 //	@Router			/auth/change-password [post]
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
-	userID := ctx.GetUserID(c.Request.Context())
+	userID, _ := helpers.GetUserID(c)
 
 	var req dto.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
