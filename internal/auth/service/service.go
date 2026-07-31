@@ -5,26 +5,25 @@ import (
 	"fmt"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
+	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
 type AuthService struct {
-	users  UserService
-	hasher PasswordHasher
-	jwt    *jwt.Service
+	users UserService
+	jwt   *jwt.Service
 }
 
-func NewAuthService(users UserService, hasher PasswordHasher, jwtService *jwt.Service) *AuthService {
+func NewAuthService(users UserService, jwtService *jwt.Service) *AuthService {
 	return &AuthService{
-		users:  users,
-		hasher: hasher,
-		jwt:    jwtService,
+		users: users,
+		jwt:   jwtService,
 	}
 }
 
 func (s *AuthService) Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error) {
-	hash, err := s.hasher.Hash(password)
+	hash, err := hasher.Hash(password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password")
 	}
@@ -61,7 +60,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	if err = s.hasher.Compare(user.PasswordHash, password); err != nil {
+	if err = hasher.Compare(user.PasswordHash, password); err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
@@ -79,24 +78,6 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		},
 		Tokens: tokens,
 	}, nil
-}
-
-func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
-	user, err := s.users.FindUserByID(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("user not found")
-	}
-
-	if err = s.hasher.Compare(user.PasswordHash, oldPassword); err != nil {
-		return fmt.Errorf("invalid current password")
-	}
-
-	newHash, err := s.hasher.Hash(newPassword)
-	if err != nil {
-		return fmt.Errorf("failed to hash password")
-	}
-
-	return s.users.UpdatePassword(ctx, userID, newHash)
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshResponse, error) {

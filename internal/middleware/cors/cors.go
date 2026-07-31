@@ -1,6 +1,9 @@
 package cors
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +45,13 @@ func New(config Config) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Methods", joinStrings(config.AllowMethods))
 		}
 
-		if len(config.AllowHeaders) > 0 {
+		// Отражаем перечень заголовков, запрошенных клиентом в preflight.
+		// Это надёжнее жёсткого AllowHeaders: браузер сам не формирует произвольные
+		// заголовки, а сервер разрешает ровно то, что клиент реально запросил.
+		// Такой подход (эхо Access-Control-Request-Headers) используют rs/cors и GoCORS.
+		if requestedHeaders := c.Request.Header.Get("Access-Control-Request-Headers"); requestedHeaders != "" {
+			c.Header("Access-Control-Allow-Headers", requestedHeaders)
+		} else if len(config.AllowHeaders) > 0 {
 			c.Header("Access-Control-Allow-Headers", joinStrings(config.AllowHeaders))
 		}
 
@@ -54,8 +63,8 @@ func New(config Config) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Credentials", "true")
 		}
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
@@ -64,14 +73,14 @@ func New(config Config) gin.HandlerFunc {
 }
 
 func joinStrings(strs []string) string {
-	result := ""
+	var result strings.Builder
 	for i, s := range strs {
 		if i > 0 {
-			result += ", "
+			result.WriteString(", ")
 		}
-		result += s
+		result.WriteString(s)
 	}
-	return result
+	return result.String()
 }
 
 func Default() gin.HandlerFunc {

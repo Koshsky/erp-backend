@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
-	"github.com/Koshsky/erp-backend/internal/common/helpers"
 	"github.com/Koshsky/erp-backend/internal/common/response"
 )
 
@@ -76,34 +75,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	response.Created(c, resp)
-}
-
-// ChangePassword handles the change password request.
-//
-//	@Tags			Auth
-//	@Summary		Change Password
-//	@Description	Change password (requires old password)
-//	@Security		ApiKeyAuth
-//	@Accept			json
-//	@Param			request	body		dto.ChangePasswordRequest	true	"Old and new password"
-//	@Success		200		{object}	response.Response{data=dto.ChangePasswordResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Router			/auth/change-password [post]
-func (h *AuthHandler) ChangePassword(c *gin.Context) {
-	userID, _ := helpers.GetUserID(c)
-
-	var req dto.ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid request")
-		return
-	}
-
-	if err := h.service.ChangePassword(c.Request.Context(), userID, req.OldPassword, req.NewPassword); err != nil {
-		response.BadRequest(c, "invalid password")
-		return
-	}
-
-	response.OK(c, dto.ChangePasswordResponse{Message: "password changed"})
 }
 
 // RefreshToken handles the request to refresh access token.

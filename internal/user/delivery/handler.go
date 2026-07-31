@@ -12,6 +12,8 @@ import (
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
+// TODO: разделить на базовый CRUD и работу с профилем (редактирование)
+
 type UserHandler struct {
 	logger  *slog.Logger
 	service UserService
@@ -150,4 +152,32 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 	response.OK(c, updated)
+}
+
+// ChangePassword handles the change password request.
+//
+//	@Tags			Users
+//	@Summary		Change Password
+//	@Description	Change password (requires old password)
+//	@Security		ApiKeyAuth
+//	@Accept			json
+//	@Param			request	body		dto.ChangePasswordRequest	true	"Old and new password"
+//	@Success		200		{object}	response.Response{data=dto.ChangePasswordResponse}
+//	@Failure		400		{object}	response.Response{data=nil}
+//	@Router			/user/change-password [post]
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	userID, _ := helpers.GetUserID(c)
+
+	var req dto.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request")
+		return
+	}
+
+	if err := h.service.ChangePassword(c.Request.Context(), userID, req.OldPassword, req.NewPassword); err != nil {
+		response.BadRequest(c, "invalid password")
+		return
+	}
+
+	response.OK(c, dto.ChangePasswordResponse{Message: "password changed"})
 }
