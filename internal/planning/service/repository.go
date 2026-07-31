@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
-	"github.com/Koshsky/erp-backend/internal/scheduling/dto"
+	"github.com/Koshsky/erp-backend/internal/planning/dto"
 )
 
-type SchedulingRepository interface {
+type PlanningRepository interface {
 	ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error)
 	ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error)
 	ListResources(ctx context.Context) ([]dto.Resource, error)

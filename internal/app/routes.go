@@ -24,9 +24,9 @@ import (
 	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
-	schedulingDelivery "github.com/Koshsky/erp-backend/internal/scheduling/delivery"
-	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
-	schedulingService "github.com/Koshsky/erp-backend/internal/scheduling/service"
+	planningDelivery "github.com/Koshsky/erp-backend/internal/planning/delivery"
+	planningRepo "github.com/Koshsky/erp-backend/internal/planning/repository"
+	planningService "github.com/Koshsky/erp-backend/internal/planning/service"
 	"github.com/Koshsky/erp-backend/internal/security/password"
 	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
@@ -38,7 +38,7 @@ type RouteRegistrar interface {
 }
 
 var (
-	_ RouteRegistrar = (*schedulingDelivery.SchedulingHandler)(nil)
+	_ RouteRegistrar = (*planningDelivery.PlanningHandler)(nil)
 	_ RouteRegistrar = (*userDelivery.UserHandler)(nil)
 	_ RouteRegistrar = (*taskDelivery.TaskHandler)(nil)
 	_ RouteRegistrar = (*resourceDelivery.ResourceHandler)(nil)
@@ -61,10 +61,10 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	authSvc := authService.NewAuthService(userSvc, authHasher, a.jwtManager)
 	authHandler := authDelivery.NewAuthHandler(a.logger, authSvc)
 
-	// --- Scheduling ---
-	schedulingQueries := schedulingRepo.NewSchedulingRepository(a.logger, a.pool)
-	schedulingSvc := schedulingService.NewSchedulingService(a.logger, schedulingQueries)
-	schedulingHandler := schedulingDelivery.NewSchedulingHandler(a.logger, schedulingSvc)
+	// --- Planning ---
+	planningQueries := planningRepo.NewPlanningRepository(a.logger, a.pool)
+	planningSvc := planningService.NewPlanningService(a.logger, planningQueries)
+	planningHandler := planningDelivery.NewPlanningHandler(a.logger, planningSvc)
 
 	// --- Task ---
 	taskQueries := taskRepo.NewTaskRepository(a.logger, a.pool)
@@ -103,7 +103,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	protected := api.Group("")
 	protected.Use(a.authMw.RequireAuth())
 	{
-		schedulingHandler.RegisterRoutes(protected)
+		planningHandler.RegisterRoutes(protected)
 		userHandler.RegisterRoutes(protected)
 		taskHandler.RegisterRoutes(protected)
 		resourceHandler.RegisterRoutes(protected)

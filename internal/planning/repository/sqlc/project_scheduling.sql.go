@@ -81,7 +81,7 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 const listProcesses = `-- name: ListProcesses :many
 SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE deleted_at IS NULL
+WHERE p.deleted_at IS NULL
 AND (
     $1::text = 'ДП' OR
     p.owner_id = $2::bigint OR

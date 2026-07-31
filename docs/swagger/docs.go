@@ -884,6 +884,225 @@ const docTemplate = `{
                 }
             }
         },
+        "/planning/processes": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get process planning",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Planning"
+                ],
+                "summary": "Get process planning",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ProcessPlanning"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/planning/projects": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get project planning (project portfolio)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Planning"
+                ],
+                "summary": "Get project planning",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ProjectPlanning"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/planning/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get task planning",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Planning"
+                ],
+                "summary": "Get task planning",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.TaskPlanning"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/process": {
             "get": {
                 "security": [
@@ -1709,225 +1928,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/scheduling/processes": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get process scheduling",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Scheduling"
-                ],
-                "summary": "Get process scheduling",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.ProcessScheduling"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/scheduling/projects": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get project scheduling (project portfolio)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Scheduling"
-                ],
-                "summary": "Get project scheduling",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.ProjectScheduling"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/scheduling/tasks": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get task scheduling",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Scheduling"
-                ],
-                "summary": "Get task scheduling",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.TaskScheduling"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/task": {
             "get": {
                 "security": [
@@ -2507,27 +2507,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.Assignment": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "quantity": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "resource_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "task_id": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
         "dto.AssignmentResponse": {
             "type": "object",
             "properties": {
@@ -2674,6 +2653,113 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DetailedProcess": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "example": "2026-02-01T00:00:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "milestones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Milestone"
+                    }
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2026-01-01T00:00:00Z"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedTask"
+                    }
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Инсталляция"
+                }
+            }
+        },
+        "dto.DetailedProject": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "example": "2026-02-01T00:00:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "priority": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "processes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Process"
+                    }
+                },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2026-01-01T00:00:00Z"
+                }
+            }
+        },
+        "dto.DetailedTask": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "example": "2026-02-01T00:00:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Resource"
+                    }
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2026-01-01T00:00:00Z"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
+                }
+            }
+        },
         "dto.LoginRequest": {
             "type": "object",
             "properties": {
@@ -2755,7 +2841,19 @@ const docTemplate = `{
                     "example": "2026-01-01T00:00:00Z"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Инсталляция"
+                }
+            }
+        },
+        "dto.ProcessPlanning": {
+            "type": "object",
+            "properties": {
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedProject"
+                    }
                 }
             }
         },
@@ -2782,34 +2880,9 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ProcessScheduling": {
-            "type": "object",
-            "properties": {
-                "processes": {
-                    "description": "key: project_id",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/dto.Process"
-                        }
-                    }
-                },
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Project"
-                    }
-                }
-            }
-        },
         "dto.Project": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "М"
-                },
                 "end_date": {
                     "type": "string",
                     "example": "2026-02-01T00:00:00Z"
@@ -2826,9 +2899,24 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 2
                 },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
                 "start_date": {
                     "type": "string",
                     "example": "2026-01-01T00:00:00Z"
+                }
+            }
+        },
+        "dto.ProjectPlanning": {
+            "type": "object",
+            "properties": {
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Project"
+                    }
                 }
             }
         },
@@ -2852,17 +2940,6 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.ProjectScheduling": {
-            "type": "object",
-            "properties": {
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Project"
-                    }
                 }
             }
         },
@@ -2942,28 +3019,14 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.Task": {
+        "dto.TaskPlanning": {
             "type": "object",
             "properties": {
-                "end_date": {
-                    "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "start_date": {
-                    "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Пуско-наладочные работы"
+                "processes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedProcess"
+                    }
                 }
             }
         },
@@ -2984,74 +3047,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.TaskScheduling": {
-            "type": "object",
-            "properties": {
-                "assignments": {
-                    "description": "key: task_id",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/dto.Assignment"
-                        }
-                    }
-                },
-                "milestones": {
-                    "description": "key: process_id",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/dto.Milestone"
-                        }
-                    }
-                },
-                "processes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Process"
-                    }
-                },
-                "projects": {
-                    "description": "key: project_id",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/dto.Project"
-                    }
-                },
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Resource"
-                    }
-                },
-                "tasks": {
-                    "description": "key: process_id",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/dto.Task"
-                        }
-                    }
-                },
-                "timeline": {
-                    "type": "object",
-                    "properties": {
-                        "end_date": {
-                            "type": "string"
-                        },
-                        "start_date": {
-                            "type": "string"
-                        },
-                        "total_days": {
-                            "type": "integer"
-                        }
-                    }
                 }
             }
         },

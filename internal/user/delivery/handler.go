@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/ctx"
+	"github.com/Koshsky/erp-backend/internal/common/helpers"
 	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
@@ -90,9 +90,12 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	role := ctx.GetRole(c)
-	userID := ctx.GetUserID(c)
-	if role != domain.ProjectDirector && userID != id {
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+	if user.Role != domain.ProjectDirector && user.ID != id {
 		response.BadRequest(c, "you can only delete your own account")
 		return
 	}
@@ -125,9 +128,12 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	role := ctx.GetRole(c)
-	userID := ctx.GetUserID(c)
-	if role != domain.ProjectDirector && userID != id {
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+	if user.Role != domain.ProjectDirector && user.ID != id {
 		response.BadRequest(c, "you can only update your own account")
 		return
 	}

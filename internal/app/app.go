@@ -46,16 +46,15 @@ func (a *App) Start() error {
 	if a.cfg.Swagger.Enabled {
 		a.runSwaggerServer(router)
 	}
-
 	// Register middleware
 	router.Use(gin.Recovery())
-	a.jwtManager = jwt.NewJWTService(a.cfg.JWT)
-	a.authMw = auth.NewMiddleware(a.logger, a.jwtManager)
-	router.Use(a.authMw.Middleware())
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()
 	})
+
+	a.jwtManager = jwt.NewJWTService(a.cfg.JWT)
+	a.authMw = auth.NewMiddleware(a.logger, a.jwtManager)
 
 	// Register routes
 	a.registerRoutes(router)

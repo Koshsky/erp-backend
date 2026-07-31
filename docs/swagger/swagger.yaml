@@ -1,20 +1,5 @@
 basePath: /api/v1
 definitions:
-  dto.Assignment:
-    properties:
-      id:
-        example: 1
-        type: integer
-      quantity:
-        example: 2
-        type: integer
-      resource_id:
-        example: 1
-        type: integer
-      task_id:
-        example: 1
-        type: integer
-    type: object
   dto.AssignmentResponse:
     properties:
       id:
@@ -110,6 +95,82 @@ definitions:
       title:
         type: string
     type: object
+  dto.DetailedProcess:
+    properties:
+      end_date:
+        example: "2026-02-01T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      milestones:
+        items:
+          $ref: '#/definitions/dto.Milestone'
+        type: array
+      owner_id:
+        example: 1
+        type: integer
+      project_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/dto.DetailedTask'
+        type: array
+      title:
+        example: Инсталляция
+        type: string
+    type: object
+  dto.DetailedProject:
+    properties:
+      end_date:
+        example: "2026-02-01T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      owner_id:
+        example: 1
+        type: integer
+      priority:
+        example: 2
+        type: integer
+      processes:
+        items:
+          $ref: '#/definitions/dto.Process'
+        type: array
+      project_code:
+        example: КО_001
+        type: string
+      start_date:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+    type: object
+  dto.DetailedTask:
+    properties:
+      end_date:
+        example: "2026-02-01T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      process_id:
+        example: 1
+        type: integer
+      resources:
+        items:
+          $ref: '#/definitions/dto.Resource'
+        type: array
+      start_date:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+      title:
+        example: Пуско-наладочные работы
+        type: string
+    type: object
   dto.LoginRequest:
     properties:
       password:
@@ -167,7 +228,15 @@ definitions:
         example: "2026-01-01T00:00:00Z"
         type: string
       title:
+        example: Инсталляция
         type: string
+    type: object
+  dto.ProcessPlanning:
+    properties:
+      projects:
+        items:
+          $ref: '#/definitions/dto.DetailedProject'
+        type: array
     type: object
   dto.ProcessResponse:
     properties:
@@ -184,25 +253,8 @@ definitions:
       title:
         type: string
     type: object
-  dto.ProcessScheduling:
-    properties:
-      processes:
-        additionalProperties:
-          items:
-            $ref: '#/definitions/dto.Process'
-          type: array
-        description: 'key: project_id'
-        type: object
-      projects:
-        items:
-          $ref: '#/definitions/dto.Project'
-        type: array
-    type: object
   dto.Project:
     properties:
-      code:
-        example: М
-        type: string
       end_date:
         example: "2026-02-01T00:00:00Z"
         type: string
@@ -215,9 +267,19 @@ definitions:
       priority:
         example: 2
         type: integer
+      project_code:
+        example: КО_001
+        type: string
       start_date:
         example: "2026-01-01T00:00:00Z"
         type: string
+    type: object
+  dto.ProjectPlanning:
+    properties:
+      projects:
+        items:
+          $ref: '#/definitions/dto.Project'
+        type: array
     type: object
   dto.ProjectResponse:
     properties:
@@ -233,13 +295,6 @@ definitions:
         type: integer
       start_date:
         type: string
-    type: object
-  dto.ProjectScheduling:
-    properties:
-      projects:
-        items:
-          $ref: '#/definitions/dto.Project'
-        type: array
     type: object
   dto.RefreshResponse:
     properties:
@@ -293,23 +348,12 @@ definitions:
       title:
         type: string
     type: object
-  dto.Task:
+  dto.TaskPlanning:
     properties:
-      end_date:
-        example: "2026-02-01T00:00:00Z"
-        type: string
-      id:
-        example: 1
-        type: integer
-      process_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01T00:00:00Z"
-        type: string
-      title:
-        example: Пуско-наладочные работы
-        type: string
+      processes:
+        items:
+          $ref: '#/definitions/dto.DetailedProcess'
+        type: array
     type: object
   dto.TaskResponse:
     properties:
@@ -323,52 +367,6 @@ definitions:
         type: string
       title:
         type: string
-    type: object
-  dto.TaskScheduling:
-    properties:
-      assignments:
-        additionalProperties:
-          items:
-            $ref: '#/definitions/dto.Assignment'
-          type: array
-        description: 'key: task_id'
-        type: object
-      milestones:
-        additionalProperties:
-          items:
-            $ref: '#/definitions/dto.Milestone'
-          type: array
-        description: 'key: process_id'
-        type: object
-      processes:
-        items:
-          $ref: '#/definitions/dto.Process'
-        type: array
-      projects:
-        additionalProperties:
-          $ref: '#/definitions/dto.Project'
-        description: 'key: project_id'
-        type: object
-      resources:
-        items:
-          $ref: '#/definitions/dto.Resource'
-        type: array
-      tasks:
-        additionalProperties:
-          items:
-            $ref: '#/definitions/dto.Task'
-          type: array
-        description: 'key: process_id'
-        type: object
-      timeline:
-        properties:
-          end_date:
-            type: string
-          start_date:
-            type: string
-          total_days:
-            type: integer
-        type: object
     type: object
   dto.UpdateAssignmentRequest:
     properties:
@@ -1001,6 +999,120 @@ paths:
       summary: Update milestone
       tags:
       - Milestones
+  /planning/processes:
+    get:
+      description: Get process planning
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProcessPlanning'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get process planning
+      tags:
+      - Planning
+  /planning/projects:
+    get:
+      description: Get project planning (project portfolio)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProjectPlanning'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get project planning
+      tags:
+      - Planning
+  /planning/tasks:
+    get:
+      description: Get task planning
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TaskPlanning'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get task planning
+      tags:
+      - Planning
   /process:
     get:
       description: Get a list of all processes
@@ -1492,120 +1604,6 @@ paths:
       summary: Update resource
       tags:
       - Resources
-  /scheduling/processes:
-    get:
-      description: Get process scheduling
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ProcessScheduling'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get process scheduling
-      tags:
-      - Scheduling
-  /scheduling/projects:
-    get:
-      description: Get project scheduling (project portfolio)
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ProjectScheduling'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get project scheduling
-      tags:
-      - Scheduling
-  /scheduling/tasks:
-    get:
-      description: Get task scheduling
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.TaskScheduling'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get task scheduling
-      tags:
-      - Scheduling
   /task:
     get:
       description: Get a list of all tasks

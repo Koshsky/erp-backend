@@ -13,14 +13,14 @@ import (
 	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
-	schedulingRepo "github.com/Koshsky/erp-backend/internal/scheduling/repository"
-	schedulingService "github.com/Koshsky/erp-backend/internal/scheduling/service"
+	planningRepo "github.com/Koshsky/erp-backend/internal/planning/repository"
+	planningService "github.com/Koshsky/erp-backend/internal/planning/service"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 	userService "github.com/Koshsky/erp-backend/internal/user/service"
 )
 
 type (
-	SchedulingRepository = schedulingService.SchedulingRepository
+	PlanningRepository = planningService.PlanningRepository
 	UserRepository       = userService.UserRepository
 	TaskRepository       = taskService.TaskRepository
 	ResourceRepository   = resourceService.ResourceRepository
@@ -31,7 +31,7 @@ type (
 )
 
 var (
-	_ SchedulingRepository = (*schedulingRepo.SchedulingRepository)(nil)
+	_ PlanningRepository = (*planningRepo.PlanningRepository)(nil)
 	_ UserRepository       = (*userRepo.UserRepository)(nil)
 	_ TaskRepository       = (*taskRepo.TaskRepository)(nil)
 	_ ResourceRepository   = (*resourceRepo.ResourceRepository)(nil)
