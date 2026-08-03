@@ -113,7 +113,7 @@ func (s *PlanningService) buildDetailedProcess(
 	assignments map[int64][]dto.Assignment,
 	resourcesMap map[int64]dto.Resource,
 ) dto.DetailedProcess {
-	// Используем универсальную функцию getSlce
+	// Use the generic getSlice function
 	processTasks := getSlice(tasks, process.ID)
 	processMilestones := getSlice(milestones, process.ID)
 	detailedTasks := s.buildDetailedTasks(processTasks, assignments, resourcesMap)

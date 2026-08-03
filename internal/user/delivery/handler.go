@@ -12,7 +12,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
-// TODO: разделить на базовый CRUD и работу с профилем (редактирование)
+// TODO: split into base CRUD and profile management (editing)
 
 type UserHandler struct {
 	logger  *slog.Logger

@@ -1,7 +1,7 @@
 -- Auto-create processes and template tasks when a project is created
 INSERT INTO users (username, name, password_hash, role) VALUES
--- TODO: заменить на сильный пароль.
-('none', 'NULL', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ДП');  -- пользователь NULL
+-- TODO: replace with a strong password.
+('none', 'NULL', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ДП');  -- NULL user
 
 CREATE OR REPLACE FUNCTION fn_create_project_templates()
 RETURNS trigger

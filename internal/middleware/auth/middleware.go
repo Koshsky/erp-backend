@@ -26,15 +26,15 @@ func NewMiddleware(logger *slog.Logger, jwtManager *jwt.Service) *Middleware {
 // RequireAuth verifies the JWT token and sets the user context.
 func (m *Middleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 1. Проверяем наличие заголовка
+		// 1. Check for the presence of the header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			response.Unauthorized(c, "authorization header required")
-			c.Abort() // Останавливаем выполнение
+			c.Abort() // Stop the execution
 			return
 		}
 
-		// 2. Проверяем формат
+		// 2. Check the format
 		const bearerPrefix = "Bearer "
 		if !strings.HasPrefix(authHeader, bearerPrefix) {
 			response.Unauthorized(c, "invalid authorization format, expected Bearer token")
@@ -42,7 +42,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 3. Извлекаем токен
+		// 3. Extract the token
 		tokenString := strings.TrimPrefix(authHeader, bearerPrefix)
 		if tokenString == "" {
 			response.Unauthorized(c, "token is empty")
@@ -50,7 +50,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 4. Валидируем токен
+		// 4. Validate the token
 		claims, err := m.jwtManager.ValidateAccessToken(tokenString)
 		if err != nil {
 			response.Unauthorized(c, "invalid or expired token")
@@ -58,15 +58,15 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 5. Сохраняем пользователя в контексте (одним объектом!)
+		// 5. Store the user in the context (as a single object!)
 		user := ctx.UserContext{
 			ID:    claims.UserID,
 			Role:  claims.Role,
-			Email: claims.Email, // если есть
+			Email: claims.Email, // if present
 		}
 		c.Set("user", user)
 
-		// 6. Пропускаем запрос дальше
+		// 6. Pass the request through
 		c.Next()
 	}
 }

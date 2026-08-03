@@ -28,9 +28,9 @@ import (
 //	@securityDefinitions.apikey	ApiKeyAuth
 //	@in							header
 //	@name						Authorization
-//	@description				"Введите JWT токен в формате: Bearer {token}"
+//	@description				"Provide JWT token in the format: Bearer {token}"
 
-//	@externalDocs.description	Документация ERP (заглушка)
+//	@externalDocs.description	ERP documentation (placeholder)
 //	@externalDocs.url			https://swagger.io/resources/open-api/
 
 func main() {

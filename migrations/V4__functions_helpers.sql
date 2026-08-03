@@ -1,18 +1,18 @@
 -- =============================================
--- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+-- HELPER FUNCTIONS
 -- =============================================
--- Вычисление длительности в днях
--- Проверка пересечения периодов
--- Проверка, входит ли период в другой
+-- Compute the duration in days
+-- Check if periods overlap
+-- Check whether one period is contained within another
 
--- Проверка, активна ли запись
--- Получить только активные записи (для удобства)
+-- Check whether a record is active
+-- Get only active records (for convenience)
 
--- Получить текущего пользователя (если есть сессия)
+-- Get the current user (if there is a session)
 
--- Проверка, что проект существует и активен
--- Проверка, что процесс существует и активен
--- Проверка, что ресурс существует и активен
+-- Check that the project exists and is active
+-- Check that the process exists and is active
+-- Check that the resource exists and is active
 
--- Получить общее количество ресурсов по задаче
--- Получить количество задач в процессе
+-- Get the total quantity of resources for a task
+-- Get the number of tasks in a process

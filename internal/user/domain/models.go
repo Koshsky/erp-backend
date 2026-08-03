@@ -7,48 +7,48 @@ const (
 )
 
 /*
-ProjectDirector (ДП) просматривает, создает и удаляет проекты;
-Редактирует: code, priority, start_date, end_date,
-назначает РП для проекта (owner_id)
-+просматривает все процессы и задачи
+ProjectDirector (ДП) views, creates and deletes projects;
+Edits: code, priority, start_date, end_date,
+assigns a РП to the project (owner_id)
++views all processes and tasks
 
-ProjectManager (РП) просматривает свои проекты, процессы
-создает и удаляет процессы,
-редактирует процессы: title, start_date, end_date, owner_id
-+ просматривает свои процессы и задачи к ним
+ProjectManager (РП) views their projects, processes
+creates and deletes processes,
+edits processes: title, start_date, end_date, owner_id
++views their processes and their tasks
 
-ProcessOwner (ВП) просматривает свои процессы, задачи, ресурсы (общие)
-Создает и удаляет задачи,
-Редактирует задачи: title, start_date, end_date
-Назначает и изменяет ресурсы для задач (assignment)
+ProcessOwner (ВП) views their processes, tasks, resources (shared)
+Creates and deletes tasks,
+Edits tasks: title, start_date, end_date
+Assigns and changes resources for tasks (assignment)
 
-итого
-ПРОЕКТЫ
-просмотр
+Summary
+PROJECTS
+view
 if role == "ДП" OR project.owner_id == user_id
-создание/изменение/удаление
+create/edit/delete
 if role == 'ДП'
 
-ПРОЦЕССЫ
-просмотр
+PROCESSES
+view
 if role == 'ДП' OR project.owner_id == user_id OR process.owner_id == user_id
-создание/изменение/удаление
+create/edit/delete
 if project.owner_id == user_id
 
-ТАСКИ
-просмотр
+TASKS
+view
 if role == 'ДП' OR project.owner_id == user_id OR process.owner_id == user_id
-создание/изменение/удаление
+create/edit/delete
 if process.owner_id == user_id
 ASSIGNMENTS
-просмотр
+view
 if role == 'ДП' OR project.owner_id == user_id OR process.owner_id == user_id
-создание/изменение/удаление
+create/edit/delete
 if process.owner_id == user_id
 RESOURCES
-просмотр
+view
 if role == 'ДП' OR project.owner_id == user_id OR process.owner_id == user_id
-создание/изменение/удаление // TODO: кто?
+create/edit/delete // TODO: who?
 if process.owner_id == user_id
 */
 

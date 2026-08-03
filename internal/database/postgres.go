@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -13,19 +14,19 @@ import (
 func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger) (*pgxpool.Pool, error) {
 	const op = "initDBPool"
 
-	cfg, err := pgxpool.ParseConfig(pgCfg.DSN)
+	cfg, err := pgxpool.ParseConfig(pgCfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("%s: parse config: %w", op, err)
 	}
 
 	cfg.MaxConns = pgCfg.MaxConns
 	cfg.MinConns = pgCfg.MinConns
-	cfg.MaxConnLifetime = pgCfg.MaxConnLifetime
-	cfg.MaxConnIdleTime = pgCfg.MaxConnIdleTime
-	cfg.HealthCheckPeriod = pgCfg.HealthCheckPeriod
-	cfg.ConnConfig.ConnectTimeout = pgCfg.ConnectTimeout
+	cfg.MaxConnLifetime = time.Duration(pgCfg.MaxConnLifetime)
+	cfg.MaxConnIdleTime = time.Duration(pgCfg.MaxConnIdleTime)
+	cfg.HealthCheckPeriod = time.Duration(pgCfg.HealthCheckPeriod)
+	cfg.ConnConfig.ConnectTimeout = time.Duration(pgCfg.ConnectTimeout)
 
-	ctx, cancel := context.WithTimeout(context.Background(), pgCfg.ConnectTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgCfg.ConnectTimeout))
 	defer cancel()
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)

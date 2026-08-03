@@ -3933,7 +3933,7 @@ const docTemplate = `{
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 },
                 "expires_in": {
-                    "description": "секунды",
+                    "description": "seconds",
                     "type": "integer",
                     "example": 3600
                 },
@@ -3960,14 +3960,14 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "ApiKeyAuth": {
-            "description": "\"Введите JWT токен в формате: Bearer {token}\"",
+            "description": "\"Provide JWT token in the format: Bearer {token}\"",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
         }
     },
     "externalDocs": {
-        "description": "Документация ERP (заглушка)",
+        "description": "ERP documentation (placeholder)",
         "url": "https://swagger.io/resources/open-api/"
     }
 }`
