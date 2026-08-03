@@ -45,10 +45,11 @@ func New(config Config) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Methods", joinStrings(config.AllowMethods))
 		}
 
-		// Отражаем перечень заголовков, запрошенных клиентом в preflight.
-		// Это надёжнее жёсткого AllowHeaders: браузер сам не формирует произвольные
-		// заголовки, а сервер разрешает ровно то, что клиент реально запросил.
-		// Такой подход (эхо Access-Control-Request-Headers) используют rs/cors и GoCORS.
+		// Reflect the set of headers requested by the client in preflight.
+		// This is more reliable than a fixed AllowHeaders: the browser does not
+		// form arbitrary headers by itself, and the server allows exactly what
+		// the client really requested.
+		// This approach (echoing Access-Control-Request-Headers) is used by rs/cors and GoCORS.
 		if requestedHeaders := c.Request.Header.Get("Access-Control-Request-Headers"); requestedHeaders != "" {
 			c.Header("Access-Control-Allow-Headers", requestedHeaders)
 		} else if len(config.AllowHeaders) > 0 {

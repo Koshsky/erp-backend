@@ -555,7 +555,7 @@ definitions:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
       expires_in:
-        description: секунды
+        description: seconds
         example: 3600
         type: integer
       refresh_token:
@@ -573,7 +573,7 @@ definitions:
         type: string
     type: object
 externalDocs:
-  description: Документация ERP (заглушка)
+  description: ERP documentation (placeholder)
   url: https://swagger.io/resources/open-api/
 host: localhost:8080
 info:
@@ -2292,7 +2292,7 @@ paths:
       - Users
 securityDefinitions:
   ApiKeyAuth:
-    description: '"Введите JWT токен в формате: Bearer {token}"'
+    description: '"Provide JWT token in the format: Bearer {token}"'
     in: header
     name: Authorization
     type: apiKey

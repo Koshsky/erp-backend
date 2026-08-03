@@ -1,0 +1,29 @@
+server:
+  port: 8080
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+
+postgres:
+  max_conns: 25
+  min_conns: 5
+  max_conn_lifetime: 30m
+  max_conn_idle_time: 5m
+  health_check_period: 5m
+  connect_timeout: 10s
+
+jwt:
+  access_expiry: 15m
+  refresh_expiry: 168h
+  issuer: mvs-erp
+
+logging:
+  level: debug
+  format: json
+
+swagger:
+  enabled: true
+
+profiling:
+  enabled: false
+  address: "0.0.0.0:6060"

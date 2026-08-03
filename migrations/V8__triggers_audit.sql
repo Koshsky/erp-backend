@@ -1,6 +1,6 @@
--- Для чего нужен аудит
---     Отслеживание изменений - кто и когда менял данные
---     Откат ошибок - можно посмотреть, что было до изменения
---     Безопасность - обнаружение несанкционированных действий
---     Соответствие требованиям (GDPR, ISO, etc.)
---     Анализ - понять историю изменений объекта
+-- Why auditing is needed
+--     Track changes - who changed data and when
+--     Roll back mistakes - you can see what was there before the change
+--     Security - detect unauthorized actions
+--     Compliance with requirements (GDPR, ISO, etc.)
+--     Analysis - understand the change history of an object

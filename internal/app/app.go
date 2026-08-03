@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,7 @@ const (
 	defaultServerStartTimeout = 5 * time.Second
 	defaultDialTimeout        = 1 * time.Second
 	defaultPollInterval       = 100 * time.Millisecond
+	defaultHeaderReadTimeout  = 5 * time.Second
 )
 
 type App struct {
@@ -28,6 +30,7 @@ type App struct {
 	logger     *slog.Logger
 	pool       *pgxpool.Pool
 	httpServer *http.Server
+	profiler   *http.Server
 	jwtManager *jwt.Service
 	authMw     *auth.Middleware
 }
@@ -43,6 +46,10 @@ func New(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) (*App, err
 func (a *App) Start() error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
+
+	if a.cfg.Profiling.Enabled {
+		a.startProfiler()
+	}
 
 	if a.cfg.Swagger.Enabled {
 		a.runSwaggerServer(router)
@@ -67,9 +74,9 @@ func (a *App) Start() error {
 	a.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", srvCfg.Port),
 		Handler:      router,
-		ReadTimeout:  srvCfg.ReadTimeout,
-		WriteTimeout: srvCfg.WriteTimeout,
-		IdleTimeout:  srvCfg.IdleTimeout,
+		ReadTimeout:  time.Duration(srvCfg.ReadTimeout),
+		WriteTimeout: time.Duration(srvCfg.WriteTimeout),
+		IdleTimeout:  time.Duration(srvCfg.IdleTimeout),
 	}
 
 	go func() {
@@ -88,6 +95,29 @@ func (a *App) Start() error {
 		return fmt.Errorf("server failed to start: %w", err)
 	}
 	return nil
+}
+
+// startProfiler runs a separate HTTP server with pprof profiling.
+func (a *App) startProfiler() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	a.profiler = &http.Server{
+		Addr:              a.cfg.Profiling.Address,
+		Handler:           mux,
+		ReadHeaderTimeout: defaultHeaderReadTimeout,
+	}
+
+	go func() {
+		a.logger.Info("starting profiler", "addr", a.profiler.Addr)
+		if err := a.profiler.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			a.logger.Error("profiler server error", "error", err)
+		}
+	}()
 }
 
 func (a *App) waitForServer(timeout time.Duration) error {
@@ -120,6 +150,11 @@ func (a *App) waitForServer(timeout time.Duration) error {
 func (a *App) Stop(ctx context.Context) error {
 	if a.pool != nil {
 		a.pool.Close()
+	}
+	if a.profiler != nil {
+		if err := a.profiler.Shutdown(ctx); err != nil {
+			return err
+		}
 	}
 	if a.httpServer != nil {
 		return a.httpServer.Shutdown(ctx)

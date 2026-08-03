@@ -37,9 +37,9 @@ const defaultShutdownTimeout = 5 * time.Second
 //	@securityDefinitions.apikey	ApiKeyAuth
 //	@in							header
 //	@name						Authorization
-//	@description				"Введите JWT токен в формате: Bearer {token}"
+//	@description				"Provide JWT token in the format: Bearer {token}"
 
-//	@externalDocs.description	Документация ERP (заглушка)
+//	@externalDocs.description	ERP documentation (placeholder)
 //	@externalDocs.url			https://swagger.io/resources/open-api/
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, err := appLogger.New(cfg.LogLevel, cfg.LogFormat)
+	logger, err := appLogger.New(cfg.Logging.Level, cfg.Logging.Format)
 	if err != nil {
 		log.Fatal(err)
 	}

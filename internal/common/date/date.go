@@ -1,9 +1,10 @@
-// Package date — календарная дата в формате YYYY-MM-DD (без времени и часового пояса).
+// Package date — a calendar date in YYYY-MM-DD format (without time or timezone).
 //
-// Единый контракт API для всех «календарных» полей (start_date, end_date, date):
-// в JSON они кодируются строкой YYYY-MM-DD (OpenAPI format: date), что совпадает
-// с типом DATE в БД и дневной сеткой календаря на фронтенде. [time.Time] в этих
-// полях использовал бы RFC3339 с временем и зоной — источник расхождений формата.
+// Single API contract for all "calendar" fields (start_date, end_date, date):
+// in JSON they encode as a YYYY-MM-DD string (OpenAPI format: date), which
+// matches the DATE column type in the database and the calendar grid on the
+// frontend. [time.Time] for these fields would use RFC3339 with time and zone —
+// a source of format mismatches.
 package date
 
 import (
@@ -12,14 +13,14 @@ import (
 	"time"
 )
 
-// Layout — единственный формат дат API.
+// Layout — the only date format used in the API.
 const Layout = "2006-01-02"
 
-// Date — календарная дата без времени, хранится как строка YYYY-MM-DD.
-// Строковое представление позволяет swag (OpenAPI) видеть его как string.
-type Date string //nolint:recvcheck // json.Unmarshaler требует указатель, остальные методы — на значении
+// Date — a calendar date without time, stored as a YYYY-MM-DD string.
+// The string representation lets swag (OpenAPI) treat it as a string.
+type Date string //nolint:recvcheck // json.Unmarshaler needs a pointer, the other methods are on value
 
-// Parse разбирает строку YYYY-MM-DD.
+// Parse parses a YYYY-MM-DD string.
 func Parse(s string) (Date, error) {
 	if _, err := time.Parse(Layout, s); err != nil {
 		return "", fmt.Errorf("invalid date %q: %w", s, err)
@@ -27,24 +28,24 @@ func Parse(s string) (Date, error) {
 	return Date(s), nil
 }
 
-// From возвращает Date по [time.Time], оставляя только календарную часть даты.
+// From returns a Date from [time.Time], keeping only the calendar part of the date.
 func From(t time.Time) Date {
 	return Date(t.Format(Layout))
 }
 
-// Time возвращает полночь в UTC, соответствующую дате.
+// Time returns the midnight in UTC matching the date.
 func (d Date) Time() time.Time {
 	t, _ := time.Parse(Layout, string(d))
 	return t
 }
 
-// String возвращает дату в формате YYYY-MM-DD.
+// String returns the date in YYYY-MM-DD format.
 func (d Date) String() string {
 	return string(d)
 }
 
-// UnmarshalJSON принимает YYYY-MM-DD (основной формат) и, для совместимости,
-// RFC3339; на выходе всегда нормализуется к календарной дате.
+// UnmarshalJSON accepts YYYY-MM-DD (the main format) and, for compatibility,
+// RFC3339; the result is always normalized to a calendar date.
 func (d *Date) UnmarshalJSON(b []byte) error {
 	s := strings.Trim(string(b), `"`)
 	if s == "" || s == "null" {
@@ -63,7 +64,7 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// MarshalJSON кодирует дату строкой YYYY-MM-DD.
+// MarshalJSON encodes the date as a YYYY-MM-DD string.
 func (d Date) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + d + `"`), nil
 }

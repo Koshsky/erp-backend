@@ -22,8 +22,8 @@ func NewJWTService(config config.JWTConfig) *Service {
 	return &Service{
 		secretKey:     []byte(config.SecretKey),
 		refreshKey:    []byte(config.RefreshKey),
-		accessExpiry:  config.AccessExpiry,
-		refreshExpiry: config.RefreshExpiry,
+		accessExpiry:  time.Duration(config.AccessExpiry),
+		refreshExpiry: time.Duration(config.RefreshExpiry),
 		issuer:        config.Issuer,
 	}
 }
@@ -136,13 +136,13 @@ func (s *Service) RefreshAccessToken(refreshTokenString string) (*TokenPair, err
 		return nil, err
 	}
 
-	// Извлекаем userID из Subject
+	// Extract userID from Subject
 	var userID int64
 	if _, err = fmt.Sscanf(claims.Subject, "%d", &userID); err != nil {
 		return nil, fmt.Errorf("invalid user id in token")
 	}
 
-	// Генерируем только новый access token
+	// Generate only a new access token
 	accessToken, err := s.GenerateAccessToken(userID, "", "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
