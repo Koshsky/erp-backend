@@ -59,6 +59,7 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, ro
 	for i, row := range rows {
 		processes[i] = dto.Process{
 			ID:        row.Process.ID,
+			Title:     row.Process.Title,
 			OwnerID:   row.Process.OwnerID,
 			ProjectID: row.Process.ProjectID,
 			StartDate: row.Process.StartDate,
@@ -80,6 +81,7 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 	for _, row := range rows {
 		p := dto.Process{
 			ID:        row.ID,
+			Title:     row.Title,
 			OwnerID:   row.OwnerID,
 			ProjectID: row.ProjectID,
 			StartDate: row.StartDate,
