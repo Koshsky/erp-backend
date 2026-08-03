@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 )
@@ -18,8 +19,8 @@ func (m *TaskMapper) ToDTO(task *domain.Task) *dto.TaskResponse {
 	return &dto.TaskResponse{
 		ID:        task.ID,
 		Title:     task.Title,
-		StartDate: task.StartDate,
-		EndDate:   task.EndDate,
+		StartDate: date.From(task.StartDate),
+		EndDate:   date.From(task.EndDate),
 		ProcessID: task.ProcessID,
 	}
 }
@@ -40,8 +41,8 @@ func (m *TaskMapper) ToDomainFromCreate(req dto.CreateTaskRequest) domain.Task {
 	return domain.Task{
 		Title:     req.Title,
 		ProcessID: req.ProcessID,
-		StartDate: req.StartDate,
-		EndDate:   req.EndDate,
+		StartDate: req.StartDate.Time(),
+		EndDate:   req.EndDate.Time(),
 	}
 }
 
@@ -54,9 +55,9 @@ func (m *TaskMapper) ApplyUpdateToDomain(task *domain.Task, req dto.UpdateTaskRe
 		task.Title = *req.Title
 	}
 	if req.StartDate != nil {
-		task.StartDate = *req.StartDate
+		task.StartDate = req.StartDate.Time()
 	}
 	if req.EndDate != nil {
-		task.EndDate = *req.EndDate
+		task.EndDate = req.EndDate.Time()
 	}
 }

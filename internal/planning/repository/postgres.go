@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 )
@@ -38,8 +39,8 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 			ID:        row.ID,
 			OwnerID:   row.OwnerID,
 			Code:      row.Code,
-			StartDate: row.StartDate,
-			EndDate:   row.EndDate,
+			StartDate: date.From(row.StartDate),
+			EndDate:   date.From(row.EndDate),
 			Priority:  int(row.Priority),
 		}
 	}
@@ -62,8 +63,8 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, ro
 			Title:     row.Process.Title,
 			OwnerID:   row.Process.OwnerID,
 			ProjectID: row.Process.ProjectID,
-			StartDate: row.Process.StartDate,
-			EndDate:   row.Process.EndDate,
+			StartDate: date.From(row.Process.StartDate),
+			EndDate:   date.From(row.Process.EndDate),
 		}
 	}
 	return processes, nil
@@ -84,8 +85,8 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 			Title:     row.Title,
 			OwnerID:   row.OwnerID,
 			ProjectID: row.ProjectID,
-			StartDate: row.StartDate,
-			EndDate:   row.EndDate,
+			StartDate: date.From(row.StartDate),
+			EndDate:   date.From(row.EndDate),
 		}
 		if _, ok := result[row.ProjectID]; !ok {
 			result[row.ProjectID] = make([]dto.Process, 0)
@@ -109,8 +110,8 @@ func (r *PlanningRepository) ListTasksByProcessIDs(
 			ID:        row.ID,
 			ProcessID: row.ProcessID,
 			Title:     row.Title,
-			StartDate: row.StartDate,
-			EndDate:   row.EndDate,
+			StartDate: date.From(row.StartDate),
+			EndDate:   date.From(row.EndDate),
 		}
 		if _, ok := result[row.ProcessID]; !ok {
 			result[row.ProcessID] = make([]dto.Task, 0)
@@ -135,7 +136,7 @@ func (r *PlanningRepository) ListMilestonesByProcessIDs(
 			ProcessID: row.ProcessID,
 			Title:     row.Title,
 			Content:   row.Content,
-			Date:      row.Date,
+			Date:      date.From(row.Date),
 		}
 		if _, ok := result[row.ProcessID]; !ok {
 			result[row.ProcessID] = make([]dto.Milestone, 0)

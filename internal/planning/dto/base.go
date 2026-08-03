@@ -1,12 +1,12 @@
 package dto
 
-import "time"
+import "github.com/Koshsky/erp-backend/internal/common/date"
 
 type Project struct {
 	ID        int64     `json:"id"           example:"1"`
 	Code      string    `json:"project_code" example:"КО_001"`
-	StartDate time.Time `json:"start_date"   example:"2026-01-01T00:00:00Z"`
-	EndDate   time.Time `json:"end_date"     example:"2026-02-01T00:00:00Z"`
+	StartDate date.Date `json:"start_date"   example:"2026-01-01" format:"date"`
+	EndDate   date.Date `json:"end_date"     example:"2026-02-01" format:"date"`
 	OwnerID   int64     `json:"owner_id"     example:"1"`
 	Priority  int       `json:"priority"     example:"2"`
 }
@@ -14,8 +14,8 @@ type Project struct {
 type Process struct {
 	ID        int64     `json:"id"         example:"1"`
 	Title     string    `json:"title"      example:"Инсталляция"`
-	StartDate time.Time `json:"start_date" example:"2026-01-01T00:00:00Z"`
-	EndDate   time.Time `json:"end_date"   example:"2026-02-01T00:00:00Z"`
+	StartDate date.Date `json:"start_date" example:"2026-01-01"  format:"date"`
+	EndDate   date.Date `json:"end_date"   example:"2026-02-01"  format:"date"`
 	OwnerID   int64     `json:"owner_id"   example:"1"`
 	ProjectID int64     `json:"project_id" example:"1"`
 }
@@ -23,8 +23,8 @@ type Process struct {
 type Task struct {
 	ID        int64     `json:"id"         example:"1"`
 	Title     string    `json:"title"      example:"Пуско-наладочные работы"`
-	StartDate time.Time `json:"start_date" example:"2026-01-01T00:00:00Z"`
-	EndDate   time.Time `json:"end_date"   example:"2026-02-01T00:00:00Z"`
+	StartDate date.Date `json:"start_date" example:"2026-01-01"              format:"date"`
+	EndDate   date.Date `json:"end_date"   example:"2026-02-01"              format:"date"`
 	ProcessID int64     `json:"process_id" example:"1"`
 }
 
@@ -37,9 +37,9 @@ type Resource struct {
 
 type Milestone struct {
 	ID        int64     `json:"id"         example:"1"`
-	Title     string    `json:"title"                                        examaple:"Начало работ"`
+	Title     string    `json:"title"      example:"Начало работ"`
 	Content   string    `json:"content"    example:"Начало работ по проекту"`
-	Date      time.Time `json:"date"       example:"2026-01-01T00:00:00Z"`
+	Date      date.Date `json:"date"       example:"2026-01-01"              format:"date"`
 	ProcessID int64     `json:"process_id" example:"1"`
 }
 

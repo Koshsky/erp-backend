@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
 )
@@ -20,8 +21,8 @@ func (m *ProcessMapper) ToDTO(process *domain.Process) *dto.ProcessResponse {
 		OwnerID:   process.OwnerID,
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
-		StartDate: process.StartDate,
-		EndDate:   process.EndDate,
+		StartDate: date.From(process.StartDate),
+		EndDate:   date.From(process.EndDate),
 	}
 }
 
@@ -41,8 +42,8 @@ func (m *ProcessMapper) ToDomainFromCreate(req dto.CreateProcessRequest) domain.
 	return domain.Process{
 		ProjectID: req.ProjectID,
 		Title:     req.Title,
-		StartDate: req.StartDate,
-		EndDate:   req.EndDate,
+		StartDate: req.StartDate.Time(),
+		EndDate:   req.EndDate.Time(),
 	}
 }
 
@@ -55,9 +56,9 @@ func (m *ProcessMapper) ApplyUpdateToDomain(process *domain.Process, req dto.Upd
 		process.Title = *req.Title
 	}
 	if req.StartDate != nil {
-		process.StartDate = *req.StartDate
+		process.StartDate = req.StartDate.Time()
 	}
 	if req.EndDate != nil {
-		process.EndDate = *req.EndDate
+		process.EndDate = req.EndDate.Time()
 	}
 }

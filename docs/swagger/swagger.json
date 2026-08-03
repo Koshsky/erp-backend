@@ -3229,7 +3229,8 @@
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "process_id": {
                     "type": "integer",
@@ -3246,7 +3247,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "project_id": {
                     "type": "integer",
@@ -3254,7 +3256,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3271,7 +3274,8 @@
                 },
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "priority": {
                     "type": "integer",
@@ -3279,7 +3283,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3305,7 +3310,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "process_id": {
                     "type": "integer",
@@ -3313,7 +3319,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3326,7 +3333,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3348,7 +3356,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "tasks": {
                     "type": "array",
@@ -3367,7 +3376,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3393,7 +3403,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3402,7 +3413,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3420,7 +3432,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3450,7 +3463,8 @@
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3461,7 +3475,8 @@
                     "example": 1
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Начало работ"
                 }
             }
         },
@@ -3474,7 +3489,8 @@
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3495,7 +3511,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3511,7 +3528,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3535,7 +3553,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3551,7 +3570,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3564,7 +3584,8 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3584,7 +3605,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3751,7 +3773,8 @@
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3764,11 +3787,13 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3785,7 +3810,8 @@
                 },
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "priority": {
                     "type": "integer",
@@ -3793,7 +3819,8 @@
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3819,11 +3846,13 @@
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
