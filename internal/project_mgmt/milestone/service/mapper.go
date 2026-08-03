@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 )
@@ -19,7 +20,7 @@ func (m *MilestoneMapper) ToDTO(milestone *domain.Milestone) *dto.MilestoneRespo
 		ID:        milestone.ID,
 		Title:     milestone.Title,
 		Content:   milestone.Content,
-		Date:      milestone.Date,
+		Date:      date.From(milestone.Date),
 		ProcessID: milestone.ProcessID,
 	}
 }
@@ -40,7 +41,7 @@ func (m *MilestoneMapper) ToDomainFromCreate(req dto.CreateMilestoneRequest) dom
 	return domain.Milestone{
 		Title:     req.Title,
 		Content:   req.Content,
-		Date:      req.Date,
+		Date:      req.Date.Time(),
 		ProcessID: req.ProcessID,
 	}
 }
@@ -53,6 +54,6 @@ func (m *MilestoneMapper) ApplyUpdateToDomain(milestone *domain.Milestone, req d
 		milestone.Content = *req.Content
 	}
 	if req.Date != nil {
-		milestone.Date = *req.Date
+		milestone.Date = req.Date.Time()
 	}
 }

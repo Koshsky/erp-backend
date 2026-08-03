@@ -3235,7 +3235,8 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "process_id": {
                     "type": "integer",
@@ -3252,7 +3253,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "project_id": {
                     "type": "integer",
@@ -3260,7 +3262,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3277,7 +3280,8 @@ const docTemplate = `{
                 },
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "priority": {
                     "type": "integer",
@@ -3285,7 +3289,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3311,7 +3316,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "process_id": {
                     "type": "integer",
@@ -3319,7 +3325,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3332,7 +3339,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3354,7 +3362,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "tasks": {
                     "type": "array",
@@ -3373,7 +3382,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3399,7 +3409,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3408,7 +3419,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3426,7 +3438,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3456,7 +3469,8 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3467,7 +3481,8 @@ const docTemplate = `{
                     "example": 1
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Начало работ"
                 }
             }
         },
@@ -3480,7 +3495,8 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3501,7 +3517,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3517,7 +3534,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3541,7 +3559,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3557,7 +3576,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3570,7 +3590,8 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "id": {
                     "type": "integer",
@@ -3590,7 +3611,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3757,7 +3779,8 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3770,11 +3793,13 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",
@@ -3791,7 +3816,8 @@ const docTemplate = `{
                 },
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "priority": {
                     "type": "integer",
@@ -3799,7 +3825,8 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 }
             }
         },
@@ -3825,11 +3852,13 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "example": "2026-02-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-02-01"
                 },
                 "start_date": {
                     "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                    "format": "date",
+                    "example": "2026-01-01"
                 },
                 "title": {
                     "type": "string",

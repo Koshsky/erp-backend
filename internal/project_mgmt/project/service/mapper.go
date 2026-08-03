@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
 )
@@ -18,8 +19,8 @@ func (m *ProjectMapper) ToDTO(project *domain.Project) *dto.ProjectResponse {
 	return &dto.ProjectResponse{
 		ID:        project.ID,
 		Code:      project.Code,
-		StartDate: project.StartDate,
-		EndDate:   project.EndDate,
+		StartDate: date.From(project.StartDate),
+		EndDate:   date.From(project.EndDate),
 		Priority:  project.Priority,
 	}
 }
@@ -39,8 +40,8 @@ func (m *ProjectMapper) ToDTOs(projects []domain.Project) []dto.ProjectResponse 
 func (m *ProjectMapper) ToDomainFromCreate(req dto.CreateProjectRequest) domain.Project {
 	return domain.Project{
 		Code:      req.Code,
-		StartDate: req.StartDate,
-		EndDate:   req.EndDate,
+		StartDate: req.StartDate.Time(),
+		EndDate:   req.EndDate.Time(),
 		Priority:  req.Priority,
 	}
 }
@@ -54,10 +55,10 @@ func (m *ProjectMapper) ApplyUpdateToDomain(project *domain.Project, req dto.Upd
 		project.Code = *req.Code
 	}
 	if req.StartDate != nil {
-		project.StartDate = *req.StartDate
+		project.StartDate = req.StartDate.Time()
 	}
 	if req.EndDate != nil {
-		project.EndDate = *req.EndDate
+		project.EndDate = req.EndDate.Time()
 	}
 	if req.Priority != nil {
 		project.Priority = *req.Priority

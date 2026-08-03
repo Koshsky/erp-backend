@@ -55,7 +55,8 @@ definitions:
         example: Приедут с России1
         type: string
       date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       process_id:
         example: 1
@@ -67,13 +68,15 @@ definitions:
   dto.CreateProcessRequest:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       project_id:
         example: 1
         type: integer
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Инсталляция
@@ -85,13 +88,15 @@ definitions:
         example: КО_001
         type: string
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       priority:
         example: 2
         type: integer
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
     type: object
   dto.CreateResourceRequest:
@@ -109,13 +114,15 @@ definitions:
   dto.CreateTaskRequest:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       process_id:
         example: 1
         type: integer
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Пуско-наладочные работы
@@ -124,7 +131,8 @@ definitions:
   dto.DetailedProcess:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       id:
         example: 1
@@ -140,7 +148,8 @@ definitions:
         example: 1
         type: integer
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       tasks:
         items:
@@ -153,7 +162,8 @@ definitions:
   dto.DetailedProject:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       id:
         example: 1
@@ -172,13 +182,15 @@ definitions:
         example: КО_001
         type: string
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
     type: object
   dto.DetailedTask:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       id:
         example: 1
@@ -191,7 +203,8 @@ definitions:
           $ref: '#/definitions/dto.Resource'
         type: array
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Пуско-наладочные работы
@@ -212,7 +225,8 @@ definitions:
         example: Начало работ по проекту
         type: string
       date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       id:
         example: 1
@@ -221,6 +235,7 @@ definitions:
         example: 1
         type: integer
       title:
+        example: Начало работ
         type: string
     type: object
   dto.MilestoneResponse:
@@ -229,7 +244,8 @@ definitions:
         example: Приедут с России1
         type: string
       date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       id:
         example: 1
@@ -244,7 +260,8 @@ definitions:
   dto.Process:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       id:
         example: 1
@@ -256,7 +273,8 @@ definitions:
         example: 1
         type: integer
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Инсталляция
@@ -272,7 +290,8 @@ definitions:
   dto.ProcessResponse:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       id:
         example: 1
@@ -284,7 +303,8 @@ definitions:
         example: 1
         type: integer
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Инсталляция
@@ -293,7 +313,8 @@ definitions:
   dto.Project:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       id:
         example: 1
@@ -308,7 +329,8 @@ definitions:
         example: КО_001
         type: string
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
     type: object
   dto.ProjectPlanning:
@@ -421,7 +443,8 @@ definitions:
         example: Приедут с России1
         type: string
       date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Телевидение
@@ -430,10 +453,12 @@ definitions:
   dto.UpdateProcessRequest:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Инсталляция
@@ -445,13 +470,15 @@ definitions:
         example: "1"
         type: string
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       priority:
         example: 2
         type: integer
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
     type: object
   dto.UpdateResourceRequest:
@@ -469,10 +496,12 @@ definitions:
   dto.UpdateTaskRequest:
     properties:
       end_date:
-        example: "2026-02-01T00:00:00Z"
+        example: "2026-02-01"
+        format: date
         type: string
       start_date:
-        example: "2026-01-01T00:00:00Z"
+        example: "2026-01-01"
+        format: date
         type: string
       title:
         example: Пуско-наладочные работы
