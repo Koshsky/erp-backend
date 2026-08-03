@@ -1,5 +1,5 @@
 -- =============================================
--- Block child date range violations relative to parent boundaries.
+-- Truncate or soft-delete children that violate parent date boundaries.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_processes_validate_within_project_dates()
 RETURNS TRIGGER
@@ -21,16 +21,23 @@ BEGIN
 			NEW.project_id;
 	END IF;
 
-	IF NEW.start_date < parent_start OR NEW.end_date > parent_end THEN
-		RAISE EXCEPTION
-			'Process dates [% - %] must be within project dates [% - %]',
-			NEW.start_date, NEW.end_date, parent_start, parent_end;
+	IF NEW.end_date < parent_start OR NEW.start_date > parent_end THEN
+		NEW.deleted_at := now();
+		RETURN NEW;
+	END IF;
+
+	IF NEW.start_date < parent_start THEN
+		NEW.start_date := parent_start;
+	END IF;
+	IF NEW.end_date > parent_end THEN
+		NEW.end_date := parent_end;
 	END IF;
 
 	RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_processes_validate_within_project_dates ON processes;
 CREATE TRIGGER trg_processes_validate_within_project_dates
 BEFORE INSERT OR UPDATE OF start_date, end_date, project_id ON processes
 FOR EACH ROW
@@ -38,7 +45,7 @@ WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_processes_validate_within_project_dates();
 
 -- =============================================
--- Tasks must stay within Process dates
+-- Truncate or soft-delete tasks that violate process date boundaries.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_tasks_validate_within_process_dates()
 RETURNS TRIGGER
@@ -60,16 +67,23 @@ BEGIN
 			NEW.process_id;
 	END IF;
 
-	IF NEW.start_date < parent_start OR NEW.end_date > parent_end THEN
-		RAISE EXCEPTION
-			'Task dates [% - %] must be within process dates [% - %]',
-			NEW.start_date, NEW.end_date, parent_start, parent_end;
+	IF NEW.end_date < parent_start OR NEW.start_date > parent_end THEN
+		NEW.deleted_at := now();
+		RETURN NEW;
+	END IF;
+
+	IF NEW.start_date < parent_start THEN
+		NEW.start_date := parent_start;
+	END IF;
+	IF NEW.end_date > parent_end THEN
+		NEW.end_date := parent_end;
 	END IF;
 
 	RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_tasks_validate_within_process_dates ON tasks;
 CREATE TRIGGER trg_tasks_validate_within_process_dates
 BEFORE INSERT OR UPDATE OF start_date, end_date, process_id ON tasks
 FOR EACH ROW
