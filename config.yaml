@@ -4,6 +4,32 @@ server:
   write_timeout: 15s
   idle_timeout: 60s
 
+jwt:
+  access_expiry: 15m
+  refresh_expiry: 168h
+  issuer: mvs-erp
+
+cors:
+  allow_origins:
+    - "*"
+  allow_methods:
+    - GET
+    - POST
+    - PUT
+    - PATCH
+    - DELETE
+    - OPTIONS
+  allow_headers:
+    - Origin
+    - Content-Type
+    - Accept
+    - Authorization
+    - X-Requested-With
+  expose_headers:
+    - Content-Length
+  allow_credentials: true
+  max_age: 12h
+
 postgres:
   max_conns: 25
   min_conns: 5
@@ -11,11 +37,6 @@ postgres:
   max_conn_idle_time: 5m
   health_check_period: 5m
   connect_timeout: 10s
-
-jwt:
-  access_expiry: 15m
-  refresh_expiry: 168h
-  issuer: mvs-erp
 
 logging:
   level: debug

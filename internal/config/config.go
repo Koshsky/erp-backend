@@ -34,6 +34,7 @@ type Config struct {
 	JWT        JWTConfig        `yaml:"jwt"`
 	Logging    LoggingConfig    `yaml:"logging"`
 	Swagger    SwaggerConfig    `yaml:"swagger"`
+	CORS       CORSConfig       `yaml:"cors"`
 	Profiling  ProfilingConfig  `yaml:"profiling"`
 }
 
@@ -78,6 +79,16 @@ type LoggingConfig struct {
 // SwaggerConfig is the embedded Swagger UI settings.
 type SwaggerConfig struct {
 	Enabled bool `yaml:"enabled"`
+}
+
+// CORSConfig is the Cross-Origin Resource Sharing settings.
+type CORSConfig struct {
+	AllowOrigins     []string `yaml:"allow_origins"`
+	AllowMethods     []string `yaml:"allow_methods"`
+	AllowHeaders     []string `yaml:"allow_headers"`
+	ExposeHeaders    []string `yaml:"expose_headers"`
+	AllowCredentials bool     `yaml:"allow_credentials"`
+	MaxAge           Duration `yaml:"max_age"`
 }
 
 // ProfilingConfig is the pprof server settings.

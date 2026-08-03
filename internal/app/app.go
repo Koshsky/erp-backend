@@ -56,7 +56,7 @@ func (a *App) Start() error {
 	}
 
 	// Register middleware
-	router.Use(cors.Development())
+	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
