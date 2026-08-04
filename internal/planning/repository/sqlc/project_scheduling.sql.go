@@ -169,7 +169,7 @@ SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_a
 WHERE deleted_at IS NULL
 AND (
     $1::text = 'ДП' OR
-    owner_id::bigint = $2
+    owner_id = $2::bigint
 )
 ORDER BY priority ASC
 `

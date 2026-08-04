@@ -37,6 +37,7 @@ SELECT EXISTS (
 -- name: UpdateTask :one
 UPDATE tasks
 SET
+	process_id = @process_id,
 	title = @title,
 	start_date = @start_date,
 	end_date = @end_date,

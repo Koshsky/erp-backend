@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/common/date"
+	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 )
@@ -37,7 +38,7 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 	for i, row := range rows {
 		projetcs[i] = dto.Project{
 			ID:        row.ID,
-			OwnerID:   row.OwnerID,
+			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Code:      row.Code,
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
@@ -61,7 +62,7 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, ro
 		processes[i] = dto.Process{
 			ID:        row.Process.ID,
 			Title:     row.Process.Title,
-			OwnerID:   row.Process.OwnerID,
+			OwnerID:   nullable.Int64Ptr(row.Process.OwnerID),
 			ProjectID: row.Process.ProjectID,
 			StartDate: date.From(row.Process.StartDate),
 			EndDate:   date.From(row.Process.EndDate),
@@ -83,7 +84,7 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 		p := dto.Process{
 			ID:        row.ID,
 			Title:     row.Title,
-			OwnerID:   row.OwnerID,
+			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			ProjectID: row.ProjectID,
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),

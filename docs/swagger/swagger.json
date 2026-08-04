@@ -3250,6 +3250,10 @@
                     "format": "date",
                     "example": "2026-02-01"
                 },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "project_id": {
                     "type": "integer",
                     "example": 1
@@ -3276,6 +3280,10 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "priority": {
                     "type": "integer",
@@ -3761,6 +3769,14 @@
                 "quantity": {
                     "type": "integer",
                     "example": 10
+                },
+                "resource_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "task_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -3776,6 +3792,10 @@
                     "format": "date",
                     "example": "2026-01-01"
                 },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "title": {
                     "type": "string",
                     "example": "Телевидение"
@@ -3789,6 +3809,14 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "start_date": {
                     "type": "string",
@@ -3812,6 +3840,10 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "priority": {
                     "type": "integer",
@@ -3848,6 +3880,10 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "start_date": {
                     "type": "string",

@@ -44,6 +44,7 @@ func (m *ProcessMapper) ToDomainFromCreate(req dto.CreateProcessRequest) domain.
 		Title:     req.Title,
 		StartDate: req.StartDate.Time(),
 		EndDate:   req.EndDate.Time(),
+		OwnerID:   req.OwnerID,
 	}
 }
 
@@ -60,5 +61,11 @@ func (m *ProcessMapper) ApplyUpdateToDomain(process *domain.Process, req dto.Upd
 	}
 	if req.EndDate != nil {
 		process.EndDate = req.EndDate.Time()
+	}
+	if req.OwnerID != nil {
+		process.OwnerID = req.OwnerID
+	}
+	if req.ProjectID != nil {
+		process.ProjectID = *req.ProjectID
 	}
 }

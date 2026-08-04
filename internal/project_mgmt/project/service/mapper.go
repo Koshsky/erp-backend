@@ -18,6 +18,7 @@ func (m *ProjectMapper) ToDTO(project *domain.Project) *dto.ProjectResponse {
 	}
 	return &dto.ProjectResponse{
 		ID:        project.ID,
+		OwnerID:   project.OwnerID,
 		Code:      project.Code,
 		StartDate: date.From(project.StartDate),
 		EndDate:   date.From(project.EndDate),
@@ -39,6 +40,7 @@ func (m *ProjectMapper) ToDTOs(projects []domain.Project) []dto.ProjectResponse 
 
 func (m *ProjectMapper) ToDomainFromCreate(req dto.CreateProjectRequest) domain.Project {
 	return domain.Project{
+		OwnerID:   req.OwnerID,
 		Code:      req.Code,
 		StartDate: req.StartDate.Time(),
 		EndDate:   req.EndDate.Time(),
@@ -51,6 +53,9 @@ func (m *ProjectMapper) ApplyUpdateToDomain(project *domain.Project, req dto.Upd
 		return
 	}
 
+	if req.OwnerID != nil {
+		project.OwnerID = req.OwnerID
+	}
 	if req.Code != nil {
 		project.Code = *req.Code
 	}

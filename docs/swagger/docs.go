@@ -3256,6 +3256,10 @@ const docTemplate = `{
                     "format": "date",
                     "example": "2026-02-01"
                 },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "project_id": {
                     "type": "integer",
                     "example": 1
@@ -3282,6 +3286,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "priority": {
                     "type": "integer",
@@ -3767,6 +3775,14 @@ const docTemplate = `{
                 "quantity": {
                     "type": "integer",
                     "example": 10
+                },
+                "resource_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "task_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -3782,6 +3798,10 @@ const docTemplate = `{
                     "format": "date",
                     "example": "2026-01-01"
                 },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "title": {
                     "type": "string",
                     "example": "Телевидение"
@@ -3795,6 +3815,14 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "start_date": {
                     "type": "string",
@@ -3818,6 +3846,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "priority": {
                     "type": "integer",
@@ -3854,6 +3886,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "start_date": {
                     "type": "string",

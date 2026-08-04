@@ -3,7 +3,7 @@ SELECT * FROM projects
 WHERE deleted_at IS NULL
 AND (
     @role::text = 'ДП' OR
-    owner_id::bigint = @user_id
+    owner_id = @user_id::bigint
 )
 ORDER BY priority ASC;
 

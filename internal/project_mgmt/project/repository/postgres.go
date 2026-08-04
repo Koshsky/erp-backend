@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 )
@@ -26,7 +27,7 @@ func NewProjectRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProjectRepos
 func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Project) (*domain.Project, error) {
 	created, err := r.db.CreateProject(ctx, sqlc.CreateProjectParams{
 		Code:      project.Code,
-		OwnerID:   project.OwnerID,
+		OwnerID:   nullable.ToInt8(project.OwnerID),
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
 		Priority:  int64(project.Priority),
@@ -52,7 +53,7 @@ func (r *ProjectRepository) FindProject(ctx context.Context, id int64) (*domain.
 func (r *ProjectRepository) UpdateProject(ctx context.Context, project domain.Project) (*domain.Project, error) {
 	updated, err := r.db.UpdateProject(ctx, sqlc.UpdateProjectParams{
 		ProjectID: project.ID,
-		OwnerID:   project.OwnerID,
+		OwnerID:   nullable.ToInt8(project.OwnerID),
 		Code:      project.Code,
 		Priority:  int64(project.Priority),
 		StartDate: project.StartDate,
@@ -85,7 +86,7 @@ func (r *ProjectRepository) ListProjects(ctx context.Context) ([]domain.Project,
 func mapProject(row sqlc.Project) domain.Project {
 	return domain.Project{
 		ID:        row.ID,
-		OwnerID:   row.OwnerID,
+		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		Code:      row.Code,
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,

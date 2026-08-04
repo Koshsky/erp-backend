@@ -54,6 +54,9 @@ func (m *TaskMapper) ApplyUpdateToDomain(task *domain.Task, req dto.UpdateTaskRe
 	if req.Title != nil {
 		task.Title = *req.Title
 	}
+	if req.ProcessID != nil {
+		task.ProcessID = *req.ProcessID
+	}
 	if req.StartDate != nil {
 		task.StartDate = req.StartDate.Time()
 	}

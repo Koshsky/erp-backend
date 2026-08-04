@@ -56,6 +56,8 @@ func (r *AssignmentRepository) UpdateAssignment(
 ) (*domain.Assignment, error) {
 	row, err := r.db.UpdateAssignment(ctx, sqlc.UpdateAssignmentParams{
 		AssignmentID: assignment.ID,
+		TaskID:       assignment.TaskID,
+		ResourceID:   assignment.ResourceID,
 		Quantity:     int64(assignment.Quantity),
 	})
 	if err != nil {

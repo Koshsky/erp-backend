@@ -8,6 +8,8 @@ package sqlc
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const canUserCreateProcess = `-- name: CanUserCreateProcess :one
@@ -82,17 +84,17 @@ VALUES (
 	$2::text,
 	$3::date,
 	$4::date,
-	$5::bigint
+	$5
 )
 RETURNING id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type CreateProcessParams struct {
-	ProjectID int64     `json:"project_id"`
-	Title     string    `json:"title"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-	OwnerID   int64     `json:"owner_id"`
+	ProjectID int64       `json:"project_id"`
+	Title     string      `json:"title"`
+	StartDate time.Time   `json:"start_date"`
+	EndDate   time.Time   `json:"end_date"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
 }
 
 func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (Process, error) {
@@ -199,19 +201,21 @@ SET
 	title = $1,
 	start_date = $2,
 	end_date = $3,
-	owner_id = COALESCE($4, owner_id),
+	project_id = COALESCE($4, project_id),
+	owner_id = COALESCE($5, owner_id),
 	updated_at = NOW()
 WHERE deleted_at IS NULL
-	AND id = $5::bigint
+	AND id = $6::bigint
 RETURNING id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type UpdateProcessParams struct {
-	Title     string    `json:"title"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-	OwnerID   int64     `json:"owner_id"`
-	ProcessID int64     `json:"process_id"`
+	Title     string      `json:"title"`
+	StartDate time.Time   `json:"start_date"`
+	EndDate   time.Time   `json:"end_date"`
+	ProjectID int64       `json:"project_id"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
+	ProcessID int64       `json:"process_id"`
 }
 
 func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (Process, error) {
@@ -219,6 +223,7 @@ func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (P
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
+		arg.ProjectID,
 		arg.OwnerID,
 		arg.ProcessID,
 	)

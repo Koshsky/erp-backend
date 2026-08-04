@@ -37,6 +37,7 @@ SELECT EXISTS(
 -- name: UpdateMilestone :one
 UPDATE milestones
 SET
+	process_id = @process_id,
 	title = @title,
 	content = @content,
 	date = @date,

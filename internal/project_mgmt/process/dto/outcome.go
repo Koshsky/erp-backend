@@ -4,7 +4,7 @@ import "github.com/Koshsky/erp-backend/internal/common/date"
 
 type ProcessResponse struct {
 	ID        int64     `json:"id"         example:"1"`
-	OwnerID   int64     `json:"owner_id"   example:"1"`
+	OwnerID   *int64    `json:"owner_id"   example:"1"`
 	ProjectID int64     `json:"project_id" example:"1"`
 	Title     string    `json:"title"      example:"Инсталляция"`
 	StartDate date.Date `json:"start_date" example:"2026-01-01"  format:"date"`

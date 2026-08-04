@@ -8,6 +8,8 @@ package sqlc
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const canUserCreateProject = `-- name: CanUserCreateProject :one
@@ -85,17 +87,17 @@ VALUES (
   $2::date,
   $3::date,
   $4::bigint,
-  $5::bigint
+  $5
 )
 RETURNING id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 `
 
 type CreateProjectParams struct {
-	Code      string    `json:"code"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-	Priority  int64     `json:"priority"`
-	OwnerID   int64     `json:"owner_id"`
+	Code      string      `json:"code"`
+	StartDate time.Time   `json:"start_date"`
+	EndDate   time.Time   `json:"end_date"`
+	Priority  int64       `json:"priority"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
@@ -203,7 +205,7 @@ SET
 	priority = $2::bigint,
 	start_date = $3,
 	end_date = $4,
-  owner_id = $5::bigint,
+  owner_id = $5,
 	updated_at = NOW()
 WHERE deleted_at IS NULL
 	AND id = $6::bigint
@@ -211,12 +213,12 @@ RETURNING id, owner_id, code, start_date, end_date, priority, created_at, update
 `
 
 type UpdateProjectParams struct {
-	Code      string    `json:"code"`
-	Priority  int64     `json:"priority"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-	OwnerID   int64     `json:"owner_id"`
-	ProjectID int64     `json:"project_id"`
+	Code      string      `json:"code"`
+	Priority  int64       `json:"priority"`
+	StartDate time.Time   `json:"start_date"`
+	EndDate   time.Time   `json:"end_date"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
+	ProjectID int64       `json:"project_id"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {

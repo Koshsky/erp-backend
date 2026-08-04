@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 )
@@ -29,6 +30,7 @@ func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Pr
 		Title:     process.Title,
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
+		OwnerID:   nullable.ToInt8(process.OwnerID),
 	})
 	if err != nil {
 		return nil, err
@@ -51,7 +53,8 @@ func (r *ProcessRepository) FindProcess(ctx context.Context, id int64) (*domain.
 func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Process) (*domain.Process, error) {
 	row, err := r.db.UpdateProcess(ctx, sqlc.UpdateProcessParams{
 		ProcessID: process.ID,
-		OwnerID:   process.OwnerID,
+		OwnerID:   nullable.ToInt8(process.OwnerID),
+		ProjectID: process.ProjectID,
 		Title:     process.Title,
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
@@ -83,7 +86,7 @@ func (r *ProcessRepository) ListProcesss(ctx context.Context) ([]domain.Process,
 func mapProcess(row sqlc.Process) domain.Process {
 	return domain.Process{
 		ID:        row.ID,
-		OwnerID:   row.OwnerID,
+		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		ProjectID: row.ProjectID,
 		Title:     row.Title,
 		StartDate: row.StartDate,

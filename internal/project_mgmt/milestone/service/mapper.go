@@ -56,4 +56,7 @@ func (m *MilestoneMapper) ApplyUpdateToDomain(milestone *domain.Milestone, req d
 	if req.Date != nil {
 		milestone.Date = req.Date.Time()
 	}
+	if req.ProcessID != nil {
+		milestone.ProcessID = *req.ProcessID
+	}
 }

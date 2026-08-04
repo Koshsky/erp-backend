@@ -43,6 +43,12 @@ func (m *AssignmentMapper) ToDomainFromCreate(req dto.CreateAssignmentRequest) d
 }
 
 func (m *AssignmentMapper) ApplyUpdateToDomain(assignment *domain.Assignment, req dto.UpdateAssignmentRequest) {
+	if req.TaskID != nil {
+		assignment.TaskID = *req.TaskID
+	}
+	if req.ResourceID != nil {
+		assignment.ResourceID = *req.ResourceID
+	}
 	if req.Quantity != nil {
 		assignment.Quantity = *req.Quantity
 	}
