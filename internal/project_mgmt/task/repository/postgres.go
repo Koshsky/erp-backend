@@ -51,6 +51,7 @@ func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*domain.Task, 
 func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
 	row, err := r.db.UpdateTask(ctx, sqlc.UpdateTaskParams{
 		TaskID:    task.ID,
+		ProcessID: task.ProcessID,
 		Title:     task.Title,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,

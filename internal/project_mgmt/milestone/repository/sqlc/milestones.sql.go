@@ -185,16 +185,18 @@ func (q *Queries) ListMilestones(ctx context.Context) ([]Milestone, error) {
 const updateMilestone = `-- name: UpdateMilestone :one
 UPDATE milestones
 SET
-	title = $1,
-	content = $2,
-	date = $3,
+	process_id = $1,
+	title = $2,
+	content = $3,
+	date = $4,
 	updated_at = NOW()
-WHERE id = $4
+WHERE id = $5
 	AND deleted_at IS NULL
 RETURNING id, process_id, title, content, date, created_at, updated_at, deleted_at
 `
 
 type UpdateMilestoneParams struct {
+	ProcessID   int64     `json:"process_id"`
 	Title       string    `json:"title"`
 	Content     string    `json:"content"`
 	Date        time.Time `json:"date"`
@@ -203,6 +205,7 @@ type UpdateMilestoneParams struct {
 
 func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams) (Milestone, error) {
 	row := q.db.QueryRow(ctx, updateMilestone,
+		arg.ProcessID,
 		arg.Title,
 		arg.Content,
 		arg.Date,

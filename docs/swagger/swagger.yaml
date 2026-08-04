@@ -71,6 +71,9 @@ definitions:
         example: "2026-02-01"
         format: date
         type: string
+      owner_id:
+        example: 1
+        type: integer
       project_id:
         example: 1
         type: integer
@@ -91,6 +94,9 @@ definitions:
         example: "2026-02-01"
         format: date
         type: string
+      owner_id:
+        example: 1
+        type: integer
       priority:
         example: 2
         type: integer
@@ -436,6 +442,12 @@ definitions:
       quantity:
         example: 10
         type: integer
+      resource_id:
+        example: 1
+        type: integer
+      task_id:
+        example: 1
+        type: integer
     type: object
   dto.UpdateMilestoneRequest:
     properties:
@@ -446,6 +458,9 @@ definitions:
         example: "2026-01-01"
         format: date
         type: string
+      process_id:
+        example: 1
+        type: integer
       title:
         example: Телевидение
         type: string
@@ -456,6 +471,12 @@ definitions:
         example: "2026-02-01"
         format: date
         type: string
+      owner_id:
+        example: 1
+        type: integer
+      project_id:
+        example: 1
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -473,6 +494,9 @@ definitions:
         example: "2026-02-01"
         format: date
         type: string
+      owner_id:
+        example: 1
+        type: integer
       priority:
         example: 2
         type: integer
@@ -499,6 +523,9 @@ definitions:
         example: "2026-02-01"
         format: date
         type: string
+      process_id:
+        example: 1
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date

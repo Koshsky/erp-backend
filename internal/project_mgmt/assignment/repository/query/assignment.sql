@@ -35,6 +35,8 @@ SELECT EXISTS (
 -- name: UpdateAssignment :one
 UPDATE assignments
 SET
+	task_id = @task_id,
+	resource_id = @resource_id,
 	quantity = @quantity::bigint,
 	updated_at = NOW()
 WHERE id = @assignment_id

@@ -15,7 +15,7 @@ VALUES (
   @start_date::date,
   @end_date::date,
   @priority::bigint,
-  @owner_id::bigint
+  @owner_id
 )
 RETURNING *;
 
@@ -53,7 +53,7 @@ SET
 	priority = @priority::bigint,
 	start_date = @start_date,
 	end_date = @end_date,
-  owner_id = @owner_id::bigint,
+  owner_id = @owner_id,
 	updated_at = NOW()
 WHERE deleted_at IS NULL
 	AND id = @project_id::bigint

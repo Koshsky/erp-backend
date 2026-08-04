@@ -13,7 +13,7 @@ VALUES (
 	@title::text,
 	@start_date::date,
 	@end_date::date,
-	@owner_id::bigint
+	@owner_id
 )
 RETURNING *;
 
@@ -47,6 +47,7 @@ SET
 	title = @title,
 	start_date = @start_date,
 	end_date = @end_date,
+	project_id = COALESCE(@project_id, project_id),
 	owner_id = COALESCE(@owner_id, owner_id),
 	updated_at = NOW()
 WHERE deleted_at IS NULL

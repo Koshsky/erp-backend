@@ -177,20 +177,29 @@ func (q *Queries) ListAssigments(ctx context.Context) ([]Assignment, error) {
 const updateAssignment = `-- name: UpdateAssignment :one
 UPDATE assignments
 SET
-	quantity = $1::bigint,
+	task_id = $1,
+	resource_id = $2,
+	quantity = $3::bigint,
 	updated_at = NOW()
-WHERE id = $2
+WHERE id = $4
 	AND deleted_at IS NULL
 RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 `
 
 type UpdateAssignmentParams struct {
+	TaskID       int64 `json:"task_id"`
+	ResourceID   int64 `json:"resource_id"`
 	Quantity     int64 `json:"quantity"`
 	AssignmentID int64 `json:"assignment_id"`
 }
 
 func (q *Queries) UpdateAssignment(ctx context.Context, arg UpdateAssignmentParams) (Assignment, error) {
-	row := q.db.QueryRow(ctx, updateAssignment, arg.Quantity, arg.AssignmentID)
+	row := q.db.QueryRow(ctx, updateAssignment,
+		arg.TaskID,
+		arg.ResourceID,
+		arg.Quantity,
+		arg.AssignmentID,
+	)
 	var i Assignment
 	err := row.Scan(
 		&i.ID,

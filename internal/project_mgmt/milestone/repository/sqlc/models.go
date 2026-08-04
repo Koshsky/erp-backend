@@ -6,6 +6,8 @@ package sqlc
 
 import (
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Assignment struct {
@@ -32,7 +34,7 @@ type Milestone struct {
 type Process struct {
 	ID        int64       `json:"id"`
 	ProjectID int64       `json:"project_id"`
-	OwnerID   int64       `json:"owner_id"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
 	Title     string      `json:"title"`
 	StartDate time.Time   `json:"start_date"`
 	EndDate   time.Time   `json:"end_date"`
@@ -43,7 +45,7 @@ type Process struct {
 
 type Project struct {
 	ID        int64       `json:"id"`
-	OwnerID   int64       `json:"owner_id"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
 	Code      string      `json:"code"`
 	StartDate time.Time   `json:"start_date"`
 	EndDate   time.Time   `json:"end_date"`

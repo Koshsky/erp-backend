@@ -57,6 +57,7 @@ func (r *MilestoneRepository) UpdateMilestone(
 ) (*domain.Milestone, error) {
 	row, err := r.db.UpdateMilestone(ctx, sqlc.UpdateMilestoneParams{
 		MilestoneID: milestone.ID,
+		ProcessID:   milestone.ProcessID,
 		Date:        milestone.Date,
 		Title:       milestone.Title,
 		Content:     milestone.Content,

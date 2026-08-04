@@ -185,16 +185,18 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET
-	title = $1,
-	start_date = $2,
-	end_date = $3,
+	process_id = $1,
+	title = $2,
+	start_date = $3,
+	end_date = $4,
 	updated_at = NOW()
-WHERE id = $4
+WHERE id = $5
 	AND deleted_at IS NULL
 RETURNING id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type UpdateTaskParams struct {
+	ProcessID int64     `json:"process_id"`
 	Title     string    `json:"title"`
 	StartDate time.Time `json:"start_date"`
 	EndDate   time.Time `json:"end_date"`
@@ -203,6 +205,7 @@ type UpdateTaskParams struct {
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, updateTask,
+		arg.ProcessID,
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
