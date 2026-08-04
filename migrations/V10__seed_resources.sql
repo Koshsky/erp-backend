@@ -1,6 +1,12 @@
+-- Пользователи: 1 ДП (директор проектов), 2 РП (руководители проектов), 4 ВП (владельцы процессов)
 INSERT INTO users (username, name, password_hash, role) VALUES
 ('admin', 'Admin Name', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ДП'),  -- project director, admin
-('ivanov', 'Ivan Ivanov', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП');  -- process owner
+('rp1', 'РП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'РП'),
+('rp2', 'РП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'РП'),
+('vp1', 'ВП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП'),
+('vp2', 'ВП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП'),
+('vp3', 'ВП-3', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП'),
+('vp4', 'ВП-4', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП');
 
 INSERT INTO resources (title, code, quantity) VALUES
 ('Инженер', 'И', 7),
@@ -9,24 +15,50 @@ INSERT INTO resources (title, code, quantity) VALUES
 ('Руководитель группы', 'РГ', 4),
 ('Руководитель службы инсталляции', 'РСИ', 1);
 
+-- По 1 проекту на РП; код проекта отражает цепочку владения ДП-РП-ВП.
+-- V5-триггер при вставке автосоздаст по 2 процесса (Инсталляция + Производство) на проект.
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES
-    ('KO-1001', DATE '2026-07-15', DATE '2026-08-30', 1, 1),
-    ('KO-1002', DATE '2026-08-01', DATE '2026-09-20', 2, 1),
-    ('KO-1003', DATE '2026-09-05', DATE '2026-10-25', 3, 1);
+    ('КО-01_РП1_ВП1', DATE '2026-07-15', DATE '2026-08-30', 1, (SELECT id FROM users WHERE username = 'rp1')),
+    ('КО-02_РП2_ВП3', DATE '2026-08-01', DATE '2026-09-20', 2, (SELECT id FROM users WHERE username = 'rp2'));
+
+-- Редактируем автосозданные процессы: проставляем владельца-ВП (имена не меняем)
+UPDATE processes SET
+    owner_id = (SELECT id FROM users WHERE username = 'vp1')
+WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-01_РП1_ВП1')
+  AND title = 'Инсталляция'
+  AND deleted_at IS NULL;
+
+UPDATE processes SET
+    owner_id = (SELECT id FROM users WHERE username = 'vp2')
+WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-01_РП1_ВП1')
+  AND title = 'Производство'
+  AND deleted_at IS NULL;
+
+UPDATE processes SET
+    owner_id = (SELECT id FROM users WHERE username = 'vp3')
+WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-02_РП2_ВП3')
+  AND title = 'Инсталляция'
+  AND deleted_at IS NULL;
+
+UPDATE processes SET
+    owner_id = (SELECT id FROM users WHERE username = 'vp4')
+WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-02_РП2_ВП3')
+  AND title = 'Производство'
+  AND deleted_at IS NULL;
 
 INSERT INTO assignments (task_id, resource_id, quantity)
 SELECT t.id, r.id, x.qty
 FROM (
     VALUES
-    ('KO-1001', 'Осмотр объекта', 'Инженер', 2),
-    ('KO-1001', 'Монтаж кабеленесущих систем и кабельных трасс', 'Монтажник', 4),
-    ('KO-1001', 'Инсталляция оконечного оборудования телемедицины', 'Инженер', 3),
-    ('KO-1001', 'Пуско-наладочные работы', 'Производитель работ', 1),
-    ('KO-1001', 'Проведение инструктажа и передача инструкций мед персоналу', 'Руководитель группы', 1),
-    ('KO-1001', 'Подписание Акта ввода в эксплуатацию', 'Руководитель службы инсталляции', 1),
-    ('KO-1002', 'Осмотр объекта', 'Инженер', 2),
-    ('KO-1002', 'Инсталляция оконечного оборудования телемедицины', 'Монтажник', 3)
+    ('КО-01_РП1_ВП1', 'Осмотр объекта', 'Инженер', 2),
+    ('КО-01_РП1_ВП1', 'Монтаж кабеленесущих систем и кабельных трасс', 'Монтажник', 4),
+    ('КО-01_РП1_ВП1', 'Инсталляция оконечного оборудования телемедицины', 'Инженер', 3),
+    ('КО-01_РП1_ВП1', 'Пуско-наладочные работы', 'Производитель работ', 1),
+    ('КО-01_РП1_ВП1', 'Проведение инструктажа и передача инструкций мед персоналу', 'Руководитель группы', 1),
+    ('КО-01_РП1_ВП1', 'Подписание Акта ввода в эксплуатацию', 'Руководитель службы инсталляции', 1),
+    ('КО-02_РП2_ВП3', 'Осмотр объекта', 'Инженер', 2),
+    ('КО-02_РП2_ВП3', 'Инсталляция оконечного оборудования телемедицины', 'Монтажник', 3)
 ) AS x(project_code, task_title, resource_title, qty)
 JOIN tasks t ON t.title = x.task_title
 JOIN projects p ON p.code = x.project_code AND t.process_id IN (
@@ -41,10 +73,10 @@ FROM processes pr
 JOIN projects p ON p.id = pr.project_id
 JOIN (
     VALUES
-        ('KO-1001', 'Старт проекта', 'Начало работ по объекту KO-1001', DATE '2026-07-15'),
-        ('KO-1001', 'Завершение ПНР', 'Пуско-наладочные работы завершены', DATE '2026-08-12'),
-        ('KO-1001', 'Ввод в эксплуатацию', 'Подписан акт ввода в эксплуатацию', DATE '2026-08-22'),
-        ('KO-1002', 'Старт проекта', 'Начало работ по объекту KO-1002', DATE '2026-08-01')
+        ('КО-01_РП1_ВП1', 'Старт проекта', 'Начало работ по объекту КО-01_РП1_ВП1', DATE '2026-07-15'),
+        ('КО-01_РП1_ВП1', 'Завершение ПНР', 'Пуско-наладочные работы завершены', DATE '2026-08-12'),
+        ('КО-01_РП1_ВП1', 'Ввод в эксплуатацию', 'Подписан акт ввода в эксплуатацию', DATE '2026-08-22'),
+        ('КО-02_РП2_ВП3', 'Старт проекта', 'Начало работ по объекту КО-02_РП2_ВП3', DATE '2026-08-01')
 ) AS m(code, title, content, milestone_date)
     ON m.code = p.code
 WHERE pr.title = 'Инсталляция';
