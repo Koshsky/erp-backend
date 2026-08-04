@@ -389,6 +389,9 @@ definitions:
     type: object
   dto.Resource:
     properties:
+      assignment_id:
+        example: 1
+        type: integer
       code:
         example: М
         type: string
