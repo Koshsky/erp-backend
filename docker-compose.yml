@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: erp
+    container_name: erp-dev
     env_file:
       - ./.env
     volumes:
@@ -18,7 +18,7 @@ services:
 
   db:
     image: postgres:16-alpine
-    container_name: db
+    container_name: db-dev
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
@@ -37,7 +37,7 @@ services:
 
   flyway:
     image: flyway/flyway:9.20.0
-    container_name: migrator
+    container_name: migrator-dev
     volumes:
       - ./migrations:/flyway/sql
     command:

@@ -160,10 +160,11 @@ func (s *PlanningService) buildTaskResources(
 		}
 
 		resources = append(resources, dto.Resource{
-			ID:       assignment.ResourceID,
-			Title:    res.Title,
-			Code:     res.Code,
-			Quantity: assignment.Quantity,
+			ID:           assignment.ResourceID,
+			Title:        res.Title,
+			Code:         res.Code,
+			Quantity:     assignment.Quantity,
+			AssignmentID: assignment.ID,
 		})
 	}
 

@@ -3699,6 +3699,10 @@ const docTemplate = `{
         "dto.Resource": {
             "type": "object",
             "properties": {
+                "assignment_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "code": {
                     "type": "string",
                     "example": "М"

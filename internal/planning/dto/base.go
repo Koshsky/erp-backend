@@ -29,10 +29,11 @@ type Task struct {
 }
 
 type Resource struct {
-	ID       int64  `json:"id"       example:"1"`
-	Title    string `json:"title"    example:"Монтажник"`
-	Code     string `json:"code"     example:"М"`
-	Quantity int    `json:"quantity" example:"7"`
+	ID           int64  `json:"id"            example:"1"`
+	Title        string `json:"title"         example:"Монтажник"`
+	Code         string `json:"code"          example:"М"`
+	Quantity     int    `json:"quantity"      example:"7"`
+	AssignmentID int64  `json:"assignment_id" example:"1"`
 }
 
 type Milestone struct {
