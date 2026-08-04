@@ -113,3 +113,49 @@ WHEN (
 	AND (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
 )
 EXECUTE FUNCTION fn_processes_shift_task_dates();
+
+-- =============================================
+-- Processes -> Milestones
+-- =============================================
+CREATE OR REPLACE FUNCTION fn_processes_shift_milestone_dates()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	shift_days INTEGER := 0;
+BEGIN
+	IF NEW.start_date > OLD.start_date THEN
+		shift_days := shift_days + (NEW.start_date - OLD.start_date);
+	END IF;
+
+	IF NEW.end_date < OLD.end_date THEN
+		shift_days := shift_days + (NEW.end_date - OLD.end_date);
+	END IF;
+
+	IF shift_days <> 0 THEN
+		UPDATE milestones m
+		SET
+			date = CASE
+				WHEN (m.date + shift_days) < NEW.start_date THEN NEW.start_date
+				WHEN (m.date + shift_days) > NEW.end_date THEN NEW.end_date
+				ELSE m.date + shift_days
+			END,
+			updated_at = NOW()
+		WHERE m.process_id = NEW.id
+		  AND m.deleted_at IS NULL;
+	END IF;
+
+	RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_processes_shift_milestone_dates ON processes;
+CREATE TRIGGER trg_processes_shift_milestone_dates
+AFTER UPDATE OF start_date, end_date ON processes
+FOR EACH ROW
+WHEN (
+	OLD.deleted_at IS NULL
+	AND NEW.deleted_at IS NULL
+	AND (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
+)
+EXECUTE FUNCTION fn_processes_shift_milestone_dates();
