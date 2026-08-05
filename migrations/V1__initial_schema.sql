@@ -39,6 +39,7 @@ CREATE TABLE processes (
 CREATE TABLE tasks (
 	id BIGSERIAL PRIMARY KEY,
 	process_id BIGINT NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
+	owner_id BIGINT REFERENCES users(id),
 	title TEXT NOT NULL,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,

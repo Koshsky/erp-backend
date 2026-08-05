@@ -26,6 +26,7 @@ type Task struct {
 	StartDate date.Date `json:"start_date" example:"2026-01-01"              format:"date"`
 	EndDate   date.Date `json:"end_date"   example:"2026-02-01"              format:"date"`
 	ProcessID int64     `json:"process_id" example:"1"`
+	OwnerID   *int64    `json:"owner_id"   example:"1"`
 }
 
 type Resource struct {

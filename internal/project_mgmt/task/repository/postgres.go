@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 )
@@ -26,6 +27,7 @@ func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository 
 func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
 	row, err := r.db.CreateTask(ctx, sqlc.CreateTaskParams{
 		ProcessID: task.ProcessID,
+		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
@@ -52,6 +54,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 	row, err := r.db.UpdateTask(ctx, sqlc.UpdateTaskParams{
 		TaskID:    task.ID,
 		ProcessID: task.ProcessID,
+		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
@@ -84,6 +87,7 @@ func mapTask(row sqlc.Task) domain.Task {
 	return domain.Task{
 		ID:        row.ID,
 		ProcessID: row.ProcessID,
+		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		Title:     row.Title,
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,

@@ -3327,6 +3327,10 @@ const docTemplate = `{
                     "format": "date",
                     "example": "2026-02-01"
                 },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "process_id": {
                     "type": "integer",
                     "example": 1
@@ -3431,6 +3435,10 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
                     "type": "integer",
                     "example": 1
                 },
@@ -3762,6 +3770,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "owner_id": {
+                    "type": "integer"
+                },
                 "process_id": {
                     "type": "integer"
                 },
@@ -3890,6 +3901,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "process_id": {
                     "type": "integer",
