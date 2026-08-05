@@ -7,22 +7,19 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, username, role, password_hash, manager_id)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, role, username, password_hash, manager_id, created_at, updated_at, deleted_at
+INSERT INTO users (name, username, role, password_hash)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, role, username, password_hash, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
-	Name         string      `json:"name"`
-	Username     string      `json:"username"`
-	Role         string      `json:"role"`
-	PasswordHash string      `json:"password_hash"`
-	ManagerID    pgtype.Int8 `json:"manager_id"`
+	Name         string `json:"name"`
+	Username     string `json:"username"`
+	Role         string `json:"role"`
+	PasswordHash string `json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -31,7 +28,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
-		arg.ManagerID,
 	)
 	var i User
 	err := row.Scan(
@@ -40,7 +36,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
-		&i.ManagerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -61,7 +56,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, name, role, username, password_hash, manager_id, created_at, updated_at, deleted_at
+SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
 	AND deleted_at IS NULL
@@ -77,7 +72,6 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
-		&i.ManagerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -86,7 +80,7 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 }
 
 const findUserByUsername = `-- name: FindUserByUsername :one
-SELECT id, name, role, username, password_hash, manager_id, created_at, updated_at, deleted_at
+SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
 WHERE username = $1
 	AND deleted_at IS NULL
@@ -102,7 +96,6 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
-		&i.ManagerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -110,47 +103,9 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 	return i, err
 }
 
-const listSubordinates = `-- name: ListSubordinates :many
-SELECT id, name, role, username, password_hash, manager_id, created_at, updated_at, deleted_at
-FROM users
-WHERE manager_id = $1
-	AND deleted_at IS NULL
-ORDER BY id ASC
-`
-
-func (q *Queries) ListSubordinates(ctx context.Context, managerID pgtype.Int8) ([]User, error) {
-	rows, err := q.db.Query(ctx, listSubordinates, managerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []User{}
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Role,
-			&i.Username,
-			&i.PasswordHash,
-			&i.ManagerID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listUsers = `-- name: ListUsers :many
 
-SELECT id, name, role, username, password_hash, manager_id, created_at, updated_at, deleted_at
+SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
 ORDER BY id ASC
@@ -172,7 +127,6 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Role,
 			&i.Username,
 			&i.PasswordHash,
-			&i.ManagerID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -194,20 +148,18 @@ SET
 	username = $2,
 	role = $3,
 	password_hash = $4,
-	manager_id = $5,
 	updated_at = NOW()
-WHERE id = $6
+WHERE id = $5
 	AND deleted_at IS NULL
-RETURNING id, name, role, username, password_hash, manager_id, created_at, updated_at, deleted_at
+RETURNING id, name, role, username, password_hash, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
-	Name         string      `json:"name"`
-	Username     string      `json:"username"`
-	Role         string      `json:"role"`
-	PasswordHash string      `json:"password_hash"`
-	ManagerID    pgtype.Int8 `json:"manager_id"`
-	UserID       int64       `json:"user_id"`
+	Name         string `json:"name"`
+	Username     string `json:"username"`
+	Role         string `json:"role"`
+	PasswordHash string `json:"password_hash"`
+	UserID       int64  `json:"user_id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -216,7 +168,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
-		arg.ManagerID,
 		arg.UserID,
 	)
 	var i User
@@ -226,7 +177,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
-		&i.ManagerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

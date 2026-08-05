@@ -5,14 +5,6 @@ INSERT INTO users (username, name, password_hash, role) VALUES
 ('w1', 'Работник-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker'),
 ('w2', 'Работник-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker');
 
--- Иерархия подчинённости: admin -> dp -> rp -> vp -> worker.
-UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'admin') WHERE username = 'dp1';
-UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'dp1') WHERE username IN ('rp1', 'rp2');
-UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'rp1') WHERE username IN ('vp1', 'vp2');
-UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'rp2') WHERE username IN ('vp3', 'vp4');
-UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'vp1') WHERE username = 'w1';
-UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'vp3') WHERE username = 'w2';
-
 INSERT INTO resources (title, code, quantity) VALUES
 ('Инженер', 'И', 7),
 ('Монтажник', 'М', 4),

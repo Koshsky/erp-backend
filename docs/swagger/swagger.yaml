@@ -550,9 +550,6 @@ definitions:
     type: object
   dto.UpdateUserRequest:
     properties:
-      manager_id:
-        example: 1
-        type: integer
       name:
         example: Ivan Ivanov
         type: string
@@ -581,9 +578,6 @@ definitions:
   dto.UserResponse:
     properties:
       id:
-        example: 1
-        type: integer
-      manager_id:
         example: 1
         type: integer
       name:
@@ -2299,53 +2293,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update a user
-      tags:
-      - Users
-  /user/{id}/subordinates:
-    get:
-      description: Returns the direct reports (users whose manager_id points to the
-        given user)
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/dto.UserResponse'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: List subordinates
       tags:
       - Users
   /user/change-password:

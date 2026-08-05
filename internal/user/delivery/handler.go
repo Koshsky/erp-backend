@@ -72,33 +72,6 @@ func (h *UserHandler) FindUser(c *gin.Context) {
 	response.OK(c, user)
 }
 
-// ListSubordinates handles the request to list the direct reports of a user.
-//
-//	@Summary		List subordinates
-//	@Description	Returns the direct reports (users whose manager_id points to the given user)
-//	@Tags			Users
-//	@Security		ApiKeyAuth
-//	@Produce		json
-//	@Param			id	path		int	true	"User ID"
-//	@Success		200	{object}	response.Response{data=[]dto.UserResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
-//	@Router			/user/{id}/subordinates [get]
-func (h *UserHandler) ListSubordinates(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "invalid user id")
-		return
-	}
-
-	subordinates, err := h.service.ListSubordinates(c.Request.Context(), id)
-	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
-		return
-	}
-	response.OK(c, subordinates)
-}
-
 // DeleteUser handle deleting a user.
 //
 //	@Tags			Users

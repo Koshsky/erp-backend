@@ -6,11 +6,9 @@ CREATE TABLE users (
 	role TEXT NOT NULL,
 	username TEXT NOT NULL,
 	password_hash TEXT NOT NULL,
-	manager_id BIGINT REFERENCES users(id),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
-	CHECK (manager_id <> id)
+	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE TABLE projects (
