@@ -20,6 +20,7 @@ func (m *UserMapper) ToDTO(user *domain.User) *dto.UserResponse {
 		Name:         user.Name,
 		Username:     user.Username,
 		Role:         user.Role,
+		ManagerID:    user.ManagerID,
 		PasswordHash: user.PasswordHash,
 	}
 }
@@ -40,6 +41,7 @@ func (m *UserMapper) ToDomainFromCreate(req dto.CreateUserRequest) domain.User {
 		Name:         req.Name,
 		Username:     req.Username,
 		Role:         req.Role,
+		ManagerID:    req.ManagerID,
 		PasswordHash: req.PasswordHash,
 	}
 }
@@ -57,5 +59,8 @@ func (m *UserMapper) ApplyUpdateToDomain(user *domain.User, req dto.UpdateUserRe
 	}
 	if req.Role != nil {
 		user.Role = *req.Role
+	}
+	if req.ManagerID != nil {
+		user.ManagerID = req.ManagerID
 	}
 }

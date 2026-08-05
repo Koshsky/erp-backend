@@ -14,4 +14,5 @@ type UserRepository interface {
 	UpdatePassword(ctx context.Context, userID int64, userHash string) error
 	DeleteUser(ctx context.Context, id int64) error
 	ListUsers(ctx context.Context) ([]domain.User, error)
+	ListSubordinates(ctx context.Context, managerID int64) ([]domain.User, error)
 }

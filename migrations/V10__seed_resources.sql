@@ -8,6 +8,11 @@ INSERT INTO users (username, name, password_hash, role) VALUES
 ('vp3', 'ВП-3', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП'),
 ('vp4', 'ВП-4', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП');
 
+-- Иерархия подчинённости: ДП -> РП -> ВП.
+UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'admin') WHERE username IN ('rp1', 'rp2');
+UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'rp1') WHERE username IN ('vp1', 'vp2');
+UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'rp2') WHERE username IN ('vp3', 'vp4');
+
 INSERT INTO resources (title, code, quantity) VALUES
 ('Инженер', 'И', 7),
 ('Монтажник', 'М', 4),

@@ -5,12 +5,14 @@ type CreateUserRequest struct {
 	Username     string `json:"username"`
 	Role         string `json:"role"`
 	PasswordHash string `json:"password_hash"`
+	ManagerID    *int64 `json:"manager_id"    example:"1"`
 }
 
 type UpdateUserRequest struct {
-	Name     *string `json:"name"     example:"Ivan Ivanov"`
-	Username *string `json:"username" example:"ivanov"`
-	Role     *string `json:"role"     example:"ДП"`
+	Name      *string `json:"name"       example:"Ivan Ivanov"`
+	Username  *string `json:"username"   example:"ivanov"`
+	Role      *string `json:"role"       example:"ДП"`
+	ManagerID *int64  `json:"manager_id" example:"1"`
 }
 
 type ChangePasswordRequest struct {
