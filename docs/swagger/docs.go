@@ -4019,7 +4019,7 @@ const docTemplate = `{
                 },
                 "role": {
                     "type": "string",
-                    "example": "ДП"
+                    "example": "dp"
                 },
                 "username": {
                     "type": "string",
@@ -4040,7 +4040,7 @@ const docTemplate = `{
                 },
                 "role": {
                     "type": "string",
-                    "example": "РП"
+                    "example": "rp"
                 },
                 "username": {
                     "type": "string",
@@ -4065,7 +4065,7 @@ const docTemplate = `{
                 },
                 "role": {
                     "type": "string",
-                    "example": "ДП"
+                    "example": "dp"
                 },
                 "username": {
                     "type": "string",

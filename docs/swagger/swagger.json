@@ -4013,7 +4013,7 @@
                 },
                 "role": {
                     "type": "string",
-                    "example": "ДП"
+                    "example": "dp"
                 },
                 "username": {
                     "type": "string",
@@ -4034,7 +4034,7 @@
                 },
                 "role": {
                     "type": "string",
-                    "example": "РП"
+                    "example": "rp"
                 },
                 "username": {
                     "type": "string",
@@ -4059,7 +4059,7 @@
                 },
                 "role": {
                     "type": "string",
-                    "example": "ДП"
+                    "example": "dp"
                 },
                 "username": {
                     "type": "string",

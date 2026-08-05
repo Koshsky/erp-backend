@@ -19,7 +19,7 @@ func (v *UserValidator) ValidateUser(user *domain.User) error {
 		return err
 	}
 	switch user.Role {
-	case domain.ProjectDirector, domain.ProjectManager, domain.ProcessOwner:
+	case domain.Admin, domain.ProjectDirector, domain.ProjectManager, domain.ProcessOwner, domain.Worker:
 	default:
 		return fmt.Errorf("unsupported role: %s", user.Role)
 	}

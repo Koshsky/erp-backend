@@ -124,7 +124,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		response.Unauthorized(c, "authentication required")
 		return
 	}
-	if user.Role != domain.ProjectDirector && user.ID != id {
+	if user.Role != domain.Admin && user.ID != id {
 		response.BadRequest(c, "you can only delete your own account")
 		return
 	}
@@ -162,7 +162,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		response.Unauthorized(c, "authentication required")
 		return
 	}
-	if user.Role != domain.ProjectDirector && user.ID != id {
+	if user.Role != domain.Admin && user.ID != id {
 		response.BadRequest(c, "you can only update your own account")
 		return
 	}

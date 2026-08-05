@@ -7,6 +7,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
+	"github.com/Koshsky/erp-backend/internal/user/domain"
 	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
@@ -31,7 +32,7 @@ func (s *AuthService) Register(ctx context.Context, name, username, password str
 	user, err := s.users.CreateUser(ctx, userDTO.CreateUserRequest{
 		Name:         name,
 		Username:     username,
-		Role:         "ВП",
+		Role:         domain.Worker,
 		PasswordHash: hash,
 	})
 	if err != nil {

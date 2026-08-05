@@ -4,7 +4,7 @@
 
 -- ---------- users ----------
 CREATE UNIQUE INDEX users_username_unique_active ON users (username) WHERE deleted_at IS NULL;
-ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('ДП', 'РП', 'ВП'));
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'dp', 'rp', 'vp', 'worker'));
 
 -- ---------- projects ----------
 CREATE UNIQUE INDEX projects_code_unique_active ON projects (code) WHERE deleted_at IS NULL;

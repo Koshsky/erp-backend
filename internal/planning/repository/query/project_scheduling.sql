@@ -2,7 +2,7 @@
 SELECT * FROM projects
 WHERE deleted_at IS NULL
 AND (
-    @role::text = 'ДП' OR
+    @role::text IN ('admin', 'dp') OR
     owner_id = @user_id::bigint
 )
 ORDER BY priority ASC;
@@ -12,7 +12,7 @@ SELECT sqlc.embed(p) FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    @role::text = 'ДП' OR
+    @role::text IN ('admin', 'dp') OR
     p.owner_id = @user_id::bigint OR
     pr.owner_id = @user_id::bigint
 );
