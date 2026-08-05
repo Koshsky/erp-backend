@@ -16,7 +16,7 @@ const canUserCreateProject = `-- name: CanUserCreateProject :one
 SELECT EXISTS (
     SELECT 1 FROM users 
     WHERE id = $1::bigint 
-      AND role = 'ДП'
+      AND role IN ('admin', 'dp')
       AND deleted_at IS NULL
 ) AS can_create
 `
@@ -36,7 +36,7 @@ SELECT EXISTS (
       AND EXISTS (
           SELECT 1 FROM users u
           WHERE u.id = $2::bigint
-            AND u.role = 'ДП'
+            AND u.role IN ('admin', 'dp')
             AND u.deleted_at IS NULL
       )
 ) AS can_manage
@@ -62,7 +62,7 @@ SELECT EXISTS (
       AND EXISTS (
           SELECT 1 FROM users u
           WHERE u.id = $2::bigint
-            AND u.role = 'ДП'
+            AND u.role IN ('admin', 'dp')
             AND u.deleted_at IS NULL
       )
 ) AS can_manage

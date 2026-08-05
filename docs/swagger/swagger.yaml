@@ -557,7 +557,7 @@ definitions:
         example: Ivan Ivanov
         type: string
       role:
-        example: ДП
+        example: dp
         type: string
       username:
         example: ivanov
@@ -572,7 +572,7 @@ definitions:
         example: Ivan Ivanov
         type: string
       role:
-        example: РП
+        example: rp
         type: string
       username:
         example: ivanov
@@ -590,7 +590,7 @@ definitions:
         example: Ivan Ivanov
         type: string
       role:
-        example: ДП
+        example: dp
         type: string
       username:
         example: ivanov

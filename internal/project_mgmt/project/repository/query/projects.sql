@@ -4,7 +4,7 @@
 SELECT EXISTS (
     SELECT 1 FROM users 
     WHERE id = @user_id::bigint 
-      AND role = 'ДП'
+      AND role IN ('admin', 'dp')
       AND deleted_at IS NULL
 ) AS can_create;
 
@@ -41,7 +41,7 @@ SELECT EXISTS (
       AND EXISTS (
           SELECT 1 FROM users u
           WHERE u.id = @user_id::bigint
-            AND u.role = 'ДП'
+            AND u.role IN ('admin', 'dp')
             AND u.deleted_at IS NULL
       )
 ) AS can_manage;
@@ -67,7 +67,7 @@ SELECT EXISTS (
       AND EXISTS (
           SELECT 1 FROM users u
           WHERE u.id = @user_id::bigint
-            AND u.role = 'ДП'
+            AND u.role IN ('admin', 'dp')
             AND u.deleted_at IS NULL
       )
 ) AS can_manage;

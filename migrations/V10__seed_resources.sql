@@ -1,17 +1,23 @@
--- Пользователи: 1 ДП (директор проектов), 2 РП (руководители проектов), 4 ВП (владельцы процессов)
+-- Пользователи: 1 admin, 1 dp (директор портфеля), 2 rp (руководители проектов), 4 vp (владельцы процессов), 2 worker
 INSERT INTO users (username, name, password_hash, role) VALUES
-('admin', 'Admin Name', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ДП'),  -- project director, admin
-('rp1', 'РП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'РП'),
-('rp2', 'РП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'РП'),
-('vp1', 'ВП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП'),
-('vp2', 'ВП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП'),
-('vp3', 'ВП-3', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП'),
-('vp4', 'ВП-4', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'ВП');
+('admin', 'Admin Name', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'admin'),
+('dp1', 'ДП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'dp'),
+('rp1', 'РП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'rp'),
+('rp2', 'РП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'rp'),
+('vp1', 'ВП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
+('vp2', 'ВП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
+('vp3', 'ВП-3', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
+('vp4', 'ВП-4', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
+('w1', 'Работник-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker'),
+('w2', 'Работник-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker');
 
--- Иерархия подчинённости: ДП -> РП -> ВП.
-UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'admin') WHERE username IN ('rp1', 'rp2');
+-- Иерархия подчинённости: admin -> dp -> rp -> vp -> worker.
+UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'admin') WHERE username = 'dp1';
+UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'dp1') WHERE username IN ('rp1', 'rp2');
 UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'rp1') WHERE username IN ('vp1', 'vp2');
 UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'rp2') WHERE username IN ('vp3', 'vp4');
+UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'vp1') WHERE username = 'w1';
+UPDATE users SET manager_id = (SELECT id FROM users WHERE username = 'vp3') WHERE username = 'w2';
 
 INSERT INTO resources (title, code, quantity) VALUES
 ('Инженер', 'И', 7),

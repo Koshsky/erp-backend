@@ -83,7 +83,7 @@ SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.crea
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    $1::text = 'ДП' OR
+    $1::text IN ('admin', 'dp') OR
     p.owner_id = $2::bigint OR
     pr.owner_id = $2::bigint
 )
@@ -168,7 +168,7 @@ const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
 AND (
-    $1::text = 'ДП' OR
+    $1::text IN ('admin', 'dp') OR
     owner_id = $2::bigint
 )
 ORDER BY priority ASC
