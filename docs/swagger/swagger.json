@@ -3321,6 +3321,10 @@
                     "format": "date",
                     "example": "2026-02-01"
                 },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "process_id": {
                     "type": "integer",
                     "example": 1
@@ -3425,6 +3429,10 @@
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
                     "type": "integer",
                     "example": 1
                 },
@@ -3756,6 +3764,9 @@
                 "id": {
                     "type": "integer"
                 },
+                "owner_id": {
+                    "type": "integer"
+                },
                 "process_id": {
                     "type": "integer"
                 },
@@ -3884,6 +3895,10 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "process_id": {
                     "type": "integer",

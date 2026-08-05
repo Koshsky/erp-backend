@@ -79,9 +79,9 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]dto.Process)
-	for _, row := range rows {
-		p := dto.Process{
+	processes := make([]dto.Process, len(rows))
+	for i, row := range rows {
+		processes[i] = dto.Process{
 			ID:        row.ID,
 			Title:     row.Title,
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
@@ -89,12 +89,8 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
 		}
-		if _, ok := result[row.ProjectID]; !ok {
-			result[row.ProjectID] = make([]dto.Process, 0)
-		}
-		result[row.ProjectID] = append(result[row.ProjectID], p)
 	}
-	return result, nil
+	return groupByKey(processes, func(p dto.Process) int64 { return p.ProjectID }), nil
 }
 
 func (r *PlanningRepository) ListTasksByProcessIDs(
@@ -105,21 +101,18 @@ func (r *PlanningRepository) ListTasksByProcessIDs(
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]dto.Task)
-	for _, row := range rows {
-		t := dto.Task{
+	tasks := make([]dto.Task, len(rows))
+	for i, row := range rows {
+		tasks[i] = dto.Task{
 			ID:        row.ID,
 			ProcessID: row.ProcessID,
+			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Title:     row.Title,
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
 		}
-		if _, ok := result[row.ProcessID]; !ok {
-			result[row.ProcessID] = make([]dto.Task, 0)
-		}
-		result[row.ProcessID] = append(result[row.ProcessID], t)
 	}
-	return result, nil
+	return groupByKey(tasks, func(t dto.Task) int64 { return t.ProcessID }), nil
 }
 
 func (r *PlanningRepository) ListMilestonesByProcessIDs(
@@ -130,21 +123,17 @@ func (r *PlanningRepository) ListMilestonesByProcessIDs(
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]dto.Milestone)
-	for _, row := range rows {
-		m := dto.Milestone{
+	milestones := make([]dto.Milestone, len(rows))
+	for i, row := range rows {
+		milestones[i] = dto.Milestone{
 			ID:        row.ID,
 			ProcessID: row.ProcessID,
 			Title:     row.Title,
 			Content:   row.Content,
 			Date:      date.From(row.Date),
 		}
-		if _, ok := result[row.ProcessID]; !ok {
-			result[row.ProcessID] = make([]dto.Milestone, 0)
-		}
-		result[row.ProcessID] = append(result[row.ProcessID], m)
 	}
-	return result, nil
+	return groupByKey(milestones, func(m dto.Milestone) int64 { return m.ProcessID }), nil
 }
 
 func (r *PlanningRepository) ListAssignmentsByTaskIDs(
@@ -155,20 +144,29 @@ func (r *PlanningRepository) ListAssignmentsByTaskIDs(
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[int64][]dto.Assignment)
-	for _, row := range rows {
-		a := dto.Assignment{
+	assignments := make([]dto.Assignment, len(rows))
+	for i, row := range rows {
+		assignments[i] = dto.Assignment{
 			ID:         row.ID,
 			TaskID:     row.TaskID,
 			ResourceID: row.ResourceID,
 			Quantity:   int(row.Quantity),
 		}
-		if _, ok := result[row.TaskID]; !ok {
-			result[row.TaskID] = make([]dto.Assignment, 0)
-		}
-		result[row.TaskID] = append(result[row.TaskID], a)
 	}
-	return result, nil
+	return groupByKey(assignments, func(a dto.Assignment) int64 { return a.TaskID }), nil
+}
+
+// groupByKey groups items by the key returned by the key function.
+func groupByKey[T any](items []T, key func(T) int64) map[int64][]T {
+	result := make(map[int64][]T)
+	for _, item := range items {
+		k := key(item)
+		if _, ok := result[k]; !ok {
+			result[k] = make([]T, 0)
+		}
+		result[k] = append(result[k], item)
+	}
+	return result
 }
 
 func (r *PlanningRepository) ListResources(ctx context.Context) ([]dto.Resource, error) {

@@ -7,8 +7,8 @@ SELECT EXISTS (
 ) AS can_create;
 
 -- name: CreateTask :one
-INSERT INTO tasks (process_id, title, start_date, end_date)
-VALUES (@process_id, @title, @start_date, @end_date)
+INSERT INTO tasks (process_id, owner_id, title, start_date, end_date)
+VALUES (@process_id, @owner_id, @title, @start_date, @end_date)
 RETURNING *;
 
 -- TODO: write CanUserViewTask
@@ -38,6 +38,7 @@ SELECT EXISTS (
 UPDATE tasks
 SET
 	process_id = @process_id,
+	owner_id = @owner_id,
 	title = @title,
 	start_date = @start_date,
 	end_date = @end_date,

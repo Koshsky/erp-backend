@@ -8,6 +8,8 @@ package sqlc
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const canUserCreateTask = `-- name: CanUserCreateTask :one
@@ -76,21 +78,23 @@ func (q *Queries) CanUserUpdateTask(ctx context.Context, arg CanUserUpdateTaskPa
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (process_id, title, start_date, end_date)
-VALUES ($1, $2, $3, $4)
-RETURNING id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
+INSERT INTO tasks (process_id, owner_id, title, start_date, end_date)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type CreateTaskParams struct {
-	ProcessID int64     `json:"process_id"`
-	Title     string    `json:"title"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	ProcessID int64       `json:"process_id"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
+	Title     string      `json:"title"`
+	StartDate time.Time   `json:"start_date"`
+	EndDate   time.Time   `json:"end_date"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, createTask,
 		arg.ProcessID,
+		arg.OwnerID,
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
@@ -99,6 +103,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
+		&i.OwnerID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
@@ -122,7 +127,7 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
 }
 
 const findTask = `-- name: FindTask :one
-SELECT id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
+SELECT id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM tasks
 WHERE deleted_at IS NULL
 	AND id = $1::bigint
@@ -134,6 +139,7 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
+		&i.OwnerID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,
@@ -146,7 +152,7 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 
 const listTasks = `-- name: ListTasks :many
 
-SELECT id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
+SELECT id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM tasks
 WHERE deleted_at IS NULL
 ORDER BY id ASC
@@ -165,6 +171,7 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProcessID,
+			&i.OwnerID,
 			&i.Title,
 			&i.StartDate,
 			&i.EndDate,
@@ -186,26 +193,29 @@ const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET
 	process_id = $1,
-	title = $2,
-	start_date = $3,
-	end_date = $4,
+	owner_id = $2,
+	title = $3,
+	start_date = $4,
+	end_date = $5,
 	updated_at = NOW()
-WHERE id = $5
+WHERE id = $6
 	AND deleted_at IS NULL
-RETURNING id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at
+RETURNING id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 `
 
 type UpdateTaskParams struct {
-	ProcessID int64     `json:"process_id"`
-	Title     string    `json:"title"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-	TaskID    int64     `json:"task_id"`
+	ProcessID int64       `json:"process_id"`
+	OwnerID   pgtype.Int8 `json:"owner_id"`
+	Title     string      `json:"title"`
+	StartDate time.Time   `json:"start_date"`
+	EndDate   time.Time   `json:"end_date"`
+	TaskID    int64       `json:"task_id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, updateTask,
 		arg.ProcessID,
+		arg.OwnerID,
 		arg.Title,
 		arg.StartDate,
 		arg.EndDate,
@@ -215,6 +225,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
+		&i.OwnerID,
 		&i.Title,
 		&i.StartDate,
 		&i.EndDate,

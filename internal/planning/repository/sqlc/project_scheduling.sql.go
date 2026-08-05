@@ -279,7 +279,7 @@ func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
 }
 
 const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
-SELECT id, process_id, title, start_date, end_date, created_at, updated_at, deleted_at FROM tasks
+SELECT id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at FROM tasks
 WHERE process_id = ANY($1::bigint[])
 AND deleted_at IS NULL
 `
@@ -296,6 +296,7 @@ func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64)
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProcessID,
+			&i.OwnerID,
 			&i.Title,
 			&i.StartDate,
 			&i.EndDate,
