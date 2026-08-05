@@ -15,6 +15,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
+	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
@@ -58,6 +59,7 @@ func (a *App) Start() error {
 	// Register middleware
 	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
+	router.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()
