@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 )
@@ -53,6 +54,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 		Name:         user.Name,
 		Username:     user.Username,
 		Role:         user.Role,
+		ManagerID:    nullable.ToInt8(user.ManagerID),
 		PasswordHash: user.PasswordHash,
 	})
 	if err != nil {
@@ -79,6 +81,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 		Name:         user.Name,
 		Username:     user.Username,
 		Role:         user.Role,
+		ManagerID:    nullable.ToInt8(user.ManagerID),
 		PasswordHash: user.PasswordHash,
 	})
 	if err != nil {
@@ -103,12 +106,27 @@ func (r *UserRepository) ListUsers(ctx context.Context) ([]domain.User, error) {
 	return users, nil
 }
 
+func (r *UserRepository) ListSubordinates(ctx context.Context, managerID int64) ([]domain.User, error) {
+	rows, err := r.db.ListSubordinates(ctx, nullable.ToInt8(&managerID))
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]domain.User, 0, len(rows))
+	for _, row := range rows {
+		users = append(users, mapUser(row))
+	}
+
+	return users, nil
+}
+
 func mapUser(row sqlc.User) domain.User {
 	return domain.User{
 		ID:           row.ID,
 		Name:         row.Name,
 		Role:         row.Role,
 		Username:     row.Username,
+		ManagerID:    nullable.Int64Ptr(row.ManagerID),
 		PasswordHash: row.PasswordHash,
 	}
 }

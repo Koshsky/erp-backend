@@ -23,5 +23,10 @@ func (v *UserValidator) ValidateUser(user *domain.User) error {
 	default:
 		return fmt.Errorf("unsupported role: %s", user.Role)
 	}
+	if user.ManagerID != nil {
+		if err := v.ValidatePositiveID(*user.ManagerID, "manager_id"); err != nil {
+			return err
+		}
+	}
 	return nil
 }

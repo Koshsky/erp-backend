@@ -15,6 +15,7 @@ CREATE INDEX idx_tasks_process_id ON tasks(process_id);
 CREATE INDEX idx_assignments_task_id ON assignments(task_id);
 CREATE INDEX idx_assignments_resource_id ON assignments(resource_id);
 CREATE INDEX idx_milestones_process_id ON milestones(process_id);
+CREATE INDEX idx_users_manager_id ON users(manager_id);
 
 -- =============================================
 -- 3. INDICES FOR soft delete (search for active)
