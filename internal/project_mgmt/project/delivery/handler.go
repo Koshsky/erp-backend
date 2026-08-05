@@ -1,13 +1,16 @@
 package delivery
 
 import (
+	"errors"
 	"log/slog"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/common/helpers"
 	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
 )
 
 type ProjectHandler struct {
@@ -33,9 +36,15 @@ func NewProjectHandler(logger *slog.Logger, service ProjectService) *ProjectHand
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/project [get]
 func (h *ProjectHandler) ListProjects(c *gin.Context) {
-	projects, err := h.service.ListProjects(c.Request.Context())
+	user, err := helpers.GetUser(c)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
+	projects, err := h.service.ListProjects(c.Request.Context(), user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, projects)
@@ -54,15 +63,21 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/project/{id} [get]
 func (h *ProjectHandler) FindProject(c *gin.Context) {
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid project id")
 		return
 	}
 
-	project, err := h.service.FindProject(c.Request.Context(), id)
+	project, err := h.service.FindProject(c.Request.Context(), id, user.ID, user.Role)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, project)
@@ -82,15 +97,21 @@ func (h *ProjectHandler) FindProject(c *gin.Context) {
 //	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/project [post]
 func (h *ProjectHandler) CreateProject(c *gin.Context) {
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
 	var project dto.CreateProjectRequest
 	if err := c.ShouldBindJSON(&project); err != nil {
 		response.BadRequest(c, err.Error())
 		return
 	}
 
-	created, err := h.service.CreateProject(c.Request.Context(), project)
+	created, err := h.service.CreateProject(c.Request.Context(), project, user.ID, user.Role)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		h.handleError(c, err)
 		return
 	}
 	response.Created(c, created)
@@ -110,14 +131,20 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/project/{id} [delete]
 func (h *ProjectHandler) DeleteProject(c *gin.Context) {
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid project id")
 		return
 	}
 
-	if err = h.service.DeleteProject(c.Request.Context(), id); err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+	if err = h.service.DeleteProject(c.Request.Context(), id, user.ID, user.Role); err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.NoContent(c)
@@ -138,6 +165,12 @@ func (h *ProjectHandler) DeleteProject(c *gin.Context) {
 //	@Failure		500		{object}	response.Response{data=nil}
 //	@Router			/project/{id} [put]
 func (h *ProjectHandler) UpdateProject(c *gin.Context) {
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid project id")
@@ -150,10 +183,22 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 		return
 	}
 
-	project, err := h.service.UpdateProject(c.Request.Context(), id, body)
+	project, err := h.service.UpdateProject(c.Request.Context(), id, body, user.ID, user.Role)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, project)
+}
+
+// handleError маппит доменные ошибки сервиса проектов в HTTP-статусы.
+func (h *ProjectHandler) handleError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrForbidden):
+		response.Forbidden(c, "no rights to perform this operation on the project")
+	case errors.Is(err, service.ErrNotFound):
+		response.NotFound(c, "project not found")
+	default:
+		response.InternalError(c, h.logger, err.Error(), err)
+	}
 }
