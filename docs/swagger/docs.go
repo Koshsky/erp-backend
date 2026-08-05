@@ -3368,6 +3368,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
                 "project_id": {
                     "type": "integer",
                     "example": 1
@@ -3543,6 +3547,10 @@ const docTemplate = `{
                 "owner_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
                 },
                 "project_id": {
                     "type": "integer",

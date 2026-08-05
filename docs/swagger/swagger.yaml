@@ -153,6 +153,9 @@ definitions:
       owner_id:
         example: 1
         type: integer
+      project_code:
+        example: КО_001
+        type: string
       project_id:
         example: 1
         type: integer
@@ -281,6 +284,9 @@ definitions:
       owner_id:
         example: 1
         type: integer
+      project_code:
+        example: КО_001
+        type: string
       project_id:
         example: 1
         type: integer

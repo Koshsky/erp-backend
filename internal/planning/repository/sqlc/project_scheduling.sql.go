@@ -79,7 +79,8 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 }
 
 const listProcesses = `-- name: ListProcesses :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at FROM processes p
+SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at, pr.code AS project_code
+FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
@@ -95,7 +96,8 @@ type ListProcessesParams struct {
 }
 
 type ListProcessesRow struct {
-	Process Process `json:"process"`
+	Process     Process `json:"process"`
+	ProjectCode string  `json:"project_code"`
 }
 
 func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([]ListProcessesRow, error) {
@@ -117,6 +119,7 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 			&i.Process.CreatedAt,
 			&i.Process.UpdatedAt,
 			&i.Process.DeletedAt,
+			&i.ProjectCode,
 		); err != nil {
 			return nil, err
 		}

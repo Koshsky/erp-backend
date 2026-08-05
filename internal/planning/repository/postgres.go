@@ -60,12 +60,13 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, ro
 	processes := make([]dto.Process, len(rows))
 	for i, row := range rows {
 		processes[i] = dto.Process{
-			ID:        row.Process.ID,
-			Title:     row.Process.Title,
-			OwnerID:   nullable.Int64Ptr(row.Process.OwnerID),
-			ProjectID: row.Process.ProjectID,
-			StartDate: date.From(row.Process.StartDate),
-			EndDate:   date.From(row.Process.EndDate),
+			ID:          row.Process.ID,
+			Title:       row.Process.Title,
+			OwnerID:     nullable.Int64Ptr(row.Process.OwnerID),
+			ProjectID:   row.Process.ProjectID,
+			ProjectCode: row.ProjectCode,
+			StartDate:   date.From(row.Process.StartDate),
+			EndDate:     date.From(row.Process.EndDate),
 		}
 	}
 	return processes, nil

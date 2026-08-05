@@ -8,7 +8,8 @@ AND (
 ORDER BY priority ASC;
 
 -- name: ListProcesses :many
-SELECT sqlc.embed(p) FROM processes p
+SELECT sqlc.embed(p), pr.code AS project_code
+FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
