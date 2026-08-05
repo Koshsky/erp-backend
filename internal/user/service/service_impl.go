@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
-	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
@@ -53,9 +52,6 @@ func (s *UserService) CreateUser(ctx context.Context, req dto.CreateUserRequest)
 	if err := s.validator.ValidateUser(&user); err != nil {
 		return nil, err
 	}
-	if err := s.validateManager(ctx, &user); err != nil {
-		return nil, err
-	}
 
 	created, err := s.repository.CreateUser(ctx, user)
 	if err != nil {
@@ -94,9 +90,6 @@ func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUs
 	if err = s.validator.ValidateUser(user); err != nil {
 		return nil, err
 	}
-	if err = s.validateManager(ctx, user); err != nil {
-		return nil, err
-	}
 
 	updated, err := s.repository.UpdateUser(ctx, *user)
 	if err != nil {
@@ -116,29 +109,4 @@ func (s *UserService) ListUsers(ctx context.Context) ([]dto.UserResponse, error)
 		return nil, err
 	}
 	return s.mapper.ToDTOs(users), nil
-}
-
-func (s *UserService) ListSubordinates(ctx context.Context, managerID int64) ([]dto.UserResponse, error) {
-	users, err := s.repository.ListSubordinates(ctx, managerID)
-	if err != nil {
-		return nil, err
-	}
-	return s.mapper.ToDTOs(users), nil
-}
-
-// validateManager checks that the manager exists and is not the user themselves.
-func (s *UserService) validateManager(ctx context.Context, user *domain.User) error {
-	if user.ManagerID == nil {
-		return nil
-	}
-
-	if *user.ManagerID == user.ID {
-		return fmt.Errorf("manager cannot be the user themselves")
-	}
-
-	manager, err := s.repository.FindUser(ctx, *user.ManagerID)
-	if err != nil || manager == nil {
-		return fmt.Errorf("manager not found")
-	}
-	return nil
 }

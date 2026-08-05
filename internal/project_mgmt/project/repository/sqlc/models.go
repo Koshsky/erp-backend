@@ -83,7 +83,6 @@ type User struct {
 	Role         string      `json:"role"`
 	Username     string      `json:"username"`
 	PasswordHash string      `json:"password_hash"`
-	ManagerID    pgtype.Int8 `json:"manager_id"`
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
 	DeletedAt    **time.Time `json:"deleted_at"`

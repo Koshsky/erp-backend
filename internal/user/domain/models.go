@@ -70,6 +70,5 @@ type User struct {
 	Name         string `json:"name"`
 	Role         string `json:"role"`
 	Username     string `json:"username"`
-	ManagerID    *int64 `json:"manager_id"`
 	PasswordHash string `json:"-"`
 }

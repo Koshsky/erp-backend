@@ -21,8 +21,8 @@ WHERE username = @username
 LIMIT 1;
 
 -- name: CreateUser :one
-INSERT INTO users (name, username, role, password_hash, manager_id)
-VALUES (@name, @username, @role, @password_hash, @manager_id)
+INSERT INTO users (name, username, role, password_hash)
+VALUES (@name, @username, @role, @password_hash)
 RETURNING *;
 
 -- name: UpdateUser :one
@@ -32,7 +32,6 @@ SET
 	username = @username,
 	role = @role,
 	password_hash = @password_hash,
-	manager_id = @manager_id,
 	updated_at = NOW()
 WHERE id = @user_id
 	AND deleted_at IS NULL
@@ -49,11 +48,4 @@ UPDATE users
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE id = @user_id
 	AND deleted_at IS NULL;
-
--- name: ListSubordinates :many
-SELECT *
-FROM users
-WHERE manager_id = @manager_id
-	AND deleted_at IS NULL
-ORDER BY id ASC;
 
