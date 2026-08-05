@@ -30,6 +30,13 @@ cors:
   allow_credentials: true
   max_age: 12h
 
+rate_limiting:
+  enabled: true
+  requests_per_second: 10
+  burst: 20
+  cleanup_interval: 1m
+  expiration: 10m
+
 postgres:
   max_conns: 25
   min_conns: 5

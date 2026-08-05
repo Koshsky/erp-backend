@@ -60,3 +60,8 @@ func Forbidden(c *gin.Context, msg string) {
 func NotFound(c *gin.Context, msg string) {
 	c.JSON(http.StatusNotFound, Response{Error: msg})
 }
+
+// TooManyRequests sends a 429 error response.
+func TooManyRequests(c *gin.Context, msg string) {
+	c.JSON(http.StatusTooManyRequests, Response{Error: msg})
+}

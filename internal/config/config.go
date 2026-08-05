@@ -35,6 +35,7 @@ type Config struct {
 	Logging    LoggingConfig    `yaml:"logging"`
 	Swagger    SwaggerConfig    `yaml:"swagger"`
 	CORS       CORSConfig       `yaml:"cors"`
+	RateLimit  RateLimitConfig  `yaml:"rate_limiting"`
 	Profiling  ProfilingConfig  `yaml:"profiling"`
 }
 
@@ -95,6 +96,15 @@ type CORSConfig struct {
 type ProfilingConfig struct {
 	Enabled bool   `yaml:"enabled"`
 	Address string `yaml:"address"`
+}
+
+// RateLimitConfig is the per-client rate limiting settings.
+type RateLimitConfig struct {
+	Enabled           bool     `yaml:"enabled"`
+	RequestsPerSecond float64  `yaml:"requests_per_second"`
+	Burst             int      `yaml:"burst"`
+	CleanupInterval   Duration `yaml:"cleanup_interval"`
+	Expiration        Duration `yaml:"expiration"`
 }
 
 // Load loads the configuration: config.yaml plus secrets from environment variables.
