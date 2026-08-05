@@ -1,13 +1,7 @@
 -- Пользователи: 1 admin, 1 dp (директор портфеля), 2 rp (руководители проектов), 4 vp (владельцы процессов), 2 worker
 INSERT INTO users (username, name, password_hash, role) VALUES
-('admin', 'Admin Name', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'admin'),
-('dp1', 'ДП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'dp'),
 ('rp1', 'РП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'rp'),
 ('rp2', 'РП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'rp'),
-('vp1', 'ВП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
-('vp2', 'ВП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
-('vp3', 'ВП-3', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
-('vp4', 'ВП-4', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
 ('w1', 'Работник-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker'),
 ('w2', 'Работник-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker');
 
@@ -32,31 +26,6 @@ INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES
     ('КО-01_РП1_ВП1', DATE '2026-07-15', DATE '2026-08-30', 1, (SELECT id FROM users WHERE username = 'rp1')),
     ('КО-02_РП2_ВП3', DATE '2026-08-01', DATE '2026-09-20', 2, (SELECT id FROM users WHERE username = 'rp2'));
-
--- Редактируем автосозданные процессы: проставляем владельца-ВП (имена не меняем)
-UPDATE processes SET
-    owner_id = (SELECT id FROM users WHERE username = 'vp1')
-WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-01_РП1_ВП1')
-  AND title = 'Инсталляция'
-  AND deleted_at IS NULL;
-
-UPDATE processes SET
-    owner_id = (SELECT id FROM users WHERE username = 'vp2')
-WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-01_РП1_ВП1')
-  AND title = 'Производство'
-  AND deleted_at IS NULL;
-
-UPDATE processes SET
-    owner_id = (SELECT id FROM users WHERE username = 'vp3')
-WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-02_РП2_ВП3')
-  AND title = 'Инсталляция'
-  AND deleted_at IS NULL;
-
-UPDATE processes SET
-    owner_id = (SELECT id FROM users WHERE username = 'vp4')
-WHERE project_id = (SELECT id FROM projects WHERE code = 'КО-02_РП2_ВП3')
-  AND title = 'Производство'
-  AND deleted_at IS NULL;
 
 INSERT INTO assignments (task_id, resource_id, quantity)
 SELECT t.id, r.id, x.qty

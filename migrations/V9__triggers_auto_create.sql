@@ -1,3 +1,9 @@
+INSERT INTO users (username, name, password_hash, role) VALUES
+('admin', 'Admin Name', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'admin'),
+('dp1', 'ДП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'dp'),
+('vp1', 'ВП-Инсталляция', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp'),
+('vp2', 'ВП-Производство', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'vp');
+
 -- Auto-create processes and template tasks when a project is created
 CREATE OR REPLACE FUNCTION fn_create_project_templates()
 RETURNS trigger
@@ -6,12 +12,12 @@ AS $$
 DECLARE
     installation_process_id BIGINT;
 BEGIN
-    INSERT INTO processes (project_id, title, start_date, end_date)
-    VALUES (NEW.id, 'Инсталляция', NEW.start_date, NEW.end_date)
+    INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
+    VALUES (NEW.id, 'Инсталляция', NEW.start_date, NEW.end_date, 3)
     RETURNING id INTO installation_process_id;
 
-    INSERT INTO processes (project_id, title, start_date, end_date)
-    VALUES (NEW.id, 'Производство', NEW.start_date, NEW.end_date);
+    INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
+    VALUES (NEW.id, 'Производство', NEW.start_date, NEW.end_date, 4);
 
     INSERT INTO tasks (process_id, title, start_date, end_date)
     VALUES
