@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/Koshsky/erp-backend/internal/common/date"
@@ -28,8 +29,9 @@ func NewCalendarService(logger *slog.Logger, repository CalendarRepository) *Cal
 	}
 }
 
-// GetCalendar возвращает по-дневную доступность ресурсов (мощность, недоступные, доступные)
-// в заданном диапазоне — данные для бесконечного календаря на фронтенде.
+// GetCalendar возвращает доступность ресурсов диапазонами (сегменты постоянной доступности):
+// мощность (штат), недоступные и доступные. Сложность O((E+S) log(E+S)) — зависит от числа
+// сотрудников и интервалов состояний, а не от числа дней в диапазоне.
 func (s *CalendarService) GetCalendar(
 	ctx context.Context,
 	start, end date.Date,
@@ -46,59 +48,150 @@ func (s *CalendarService) GetCalendar(
 	if err != nil {
 		return nil, err
 	}
-
-	capacityRows, err := s.repository.ListCapacity(ctx, startT, endT)
+	employees, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
 	if err != nil {
 		return nil, err
 	}
-	unavailableRows, err := s.repository.ListUnavailable(ctx, startT, endT)
+	ranges, err := s.repository.ListUnavailableRanges(ctx, startT, endT)
 	if err != nil {
 		return nil, err
 	}
 
-	capacityMap := buildDayCountMap(capacityRows)
-	unavailableMap := buildDayCountMap(unavailableRows)
+	employeesByResource := groupEmployees(employees)
+	rangesByResource := groupRanges(ranges)
 
 	planning := &dto.CalendarPlanning{
 		Resources: make([]dto.ResourceCalendar, 0, len(resources)),
 	}
 	for _, resource := range resources {
-		days := make([]dto.DayAvailability, 0, daysInRange(startT, endT))
-		for d := startT; !d.After(endT); d = d.AddDate(0, 0, 1) {
-			day := date.From(d)
-			capacity := capacityMap[resource.ID][day]
-			unavailable := unavailableMap[resource.ID][day]
-			days = append(days, dto.DayAvailability{
-				Date:        day,
-				Capacity:    capacity,
-				Unavailable: unavailable,
-				Available:   capacity - unavailable,
-			})
-		}
+		periods := buildPeriods(
+			startT,
+			endT,
+			employeesByResource[resource.ID],
+			rangesByResource[resource.ID],
+		)
 		planning.Resources = append(planning.Resources, dto.ResourceCalendar{
 			ResourceID: resource.ID,
 			Title:      resource.Title,
 			Code:       resource.Code,
-			Days:       days,
+			Periods:    periods,
 		})
 	}
 
 	return planning, nil
 }
 
-// buildDayCountMap собирает агрегаты "ресурс -> дата -> количество" в карту.
-func buildDayCountMap(rows []dto.ResourceDayCount) map[int64]map[date.Date]int {
-	result := make(map[int64]map[date.Date]int, len(rows))
-	for _, row := range rows {
-		if result[row.ResourceID] == nil {
-			result[row.ResourceID] = make(map[date.Date]int)
-		}
-		result[row.ResourceID][row.Date] = row.Count
+func groupEmployees(employees []dto.CalendarEmployee) map[int64][]dto.CalendarEmployee {
+	result := make(map[int64][]dto.CalendarEmployee, len(employees))
+	for _, employee := range employees {
+		result[employee.ResourceID] = append(result[employee.ResourceID], employee)
 	}
 	return result
 }
 
-// daysInRange возвращает число дней в закрытом диапазоне [start, end].
-func daysInRange(start, end time.Time) int {
-	return int(end.Sub(start).Hours()/hoursPerDay) + 1
+func groupRanges(ranges []dto.UnavailableRange) map[int64][]dto.UnavailableRange {
+	result := make(map[int64][]dto.UnavailableRange, len(ranges))
+	for _, r := range ranges {
+		result[r.ResourceID] = append(result[r.ResourceID], r)
+	}
+	return result
+}
+
+// availabilityEvent — изменение числа активных и недоступных в конкретный день.
+type availabilityEvent struct {
+	active int
+	absent int
+}
+
+// buildPeriods вычисляет сегменты [start, end] постоянной доступности по событийному sweep:
+// границы сегментов — даты наймов/увольнений и начала/концы интервалов отсутствий.
+func buildPeriods(
+	start, end time.Time,
+	employees []dto.CalendarEmployee,
+	ranges []dto.UnavailableRange,
+) []dto.AvailabilityPeriod {
+	active := countActiveAt(start, employees)
+	absent := countAbsentAt(start, ranges)
+
+	events := make(map[time.Time]availabilityEvent)
+	addEvent := func(day time.Time, deltaActive, deltaAbsent int) {
+		if day.After(start) && !day.After(end) {
+			event := events[day]
+			event.active += deltaActive
+			event.absent += deltaAbsent
+			events[day] = event
+		}
+	}
+	for _, employee := range employees {
+		if employee.HireDate != nil {
+			addEvent(*employee.HireDate, 1, 0)
+		}
+		if employee.TerminationDate != nil {
+			addEvent(employee.TerminationDate.AddDate(0, 0, 1), -1, 0)
+		}
+	}
+	for _, r := range ranges {
+		addEvent(r.StartDate, 0, 1)
+		addEvent(r.EndDate.AddDate(0, 0, 1), 0, -1)
+	}
+
+	days := make([]time.Time, 0, len(events))
+	for day := range events {
+		days = append(days, day)
+	}
+	slices.SortFunc(days, func(a, b time.Time) int { return a.Compare(b) })
+
+	periods := make([]dto.AvailabilityPeriod, 0, len(days)+1)
+	prev := start
+	appendPeriod := func(segStart, segEnd time.Time) {
+		if segStart.After(segEnd) {
+			return
+		}
+		if n := len(periods); n > 0 &&
+			periods[n-1].Capacity == active && periods[n-1].Unavailable == absent {
+			periods[n-1].EndDate = date.From(segEnd)
+			return
+		}
+		periods = append(periods, dto.AvailabilityPeriod{
+			StartDate:   date.From(segStart),
+			EndDate:     date.From(segEnd),
+			Capacity:    active,
+			Unavailable: absent,
+			Available:   active - absent,
+		})
+	}
+
+	for _, day := range days {
+		appendPeriod(prev, day.AddDate(0, 0, -1))
+		event := events[day]
+		active += event.active
+		absent += event.absent
+		prev = day
+	}
+	appendPeriod(prev, end)
+
+	return periods
+}
+
+// countActiveAt считает сотрудников, активных в день day.
+func countActiveAt(day time.Time, employees []dto.CalendarEmployee) int {
+	count := 0
+	for _, employee := range employees {
+		if (employee.HireDate == nil || !employee.HireDate.After(day)) &&
+			(employee.TerminationDate == nil || !employee.TerminationDate.Before(day)) {
+			count++
+		}
+	}
+	return count
+}
+
+// countAbsentAt считает отсутствующих сотрудников в день day.
+func countAbsentAt(day time.Time, ranges []dto.UnavailableRange) int {
+	count := 0
+	for _, r := range ranges {
+		if !r.StartDate.After(day) && !r.EndDate.Before(day) {
+			count++
+		}
+	}
+	return count
 }

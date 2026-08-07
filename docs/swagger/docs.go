@@ -4335,6 +4335,33 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AvailabilityPeriod": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "capacity": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-07-19"
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-07-15"
+                },
+                "unavailable": {
+                    "type": "integer",
+                    "example": 0
+                }
+            }
+        },
         "dto.CalendarPlanning": {
             "type": "object",
             "properties": {
@@ -4538,28 +4565,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Пуско-наладочные работы"
-                }
-            }
-        },
-        "dto.DayAvailability": {
-            "type": "object",
-            "properties": {
-                "available": {
-                    "type": "integer",
-                    "example": 5
-                },
-                "capacity": {
-                    "type": "integer",
-                    "example": 7
-                },
-                "date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-07-15"
-                },
-                "unavailable": {
-                    "type": "integer",
-                    "example": 2
                 }
             }
         },
@@ -5031,10 +5036,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "И"
                 },
-                "days": {
+                "periods": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.DayAvailability"
+                        "$ref": "#/definitions/dto.AvailabilityPeriod"
                     }
                 },
                 "resource_id": {

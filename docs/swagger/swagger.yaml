@@ -22,6 +22,26 @@ definitions:
       user:
         $ref: '#/definitions/dto.UserInfo'
     type: object
+  dto.AvailabilityPeriod:
+    properties:
+      available:
+        example: 7
+        type: integer
+      capacity:
+        example: 7
+        type: integer
+      end_date:
+        example: "2026-07-19"
+        format: date
+        type: string
+      start_date:
+        example: "2026-07-15"
+        format: date
+        type: string
+      unavailable:
+        example: 0
+        type: integer
+    type: object
   dto.CalendarPlanning:
     properties:
       resources:
@@ -169,22 +189,6 @@ definitions:
       title:
         example: Пуско-наладочные работы
         type: string
-    type: object
-  dto.DayAvailability:
-    properties:
-      available:
-        example: 5
-        type: integer
-      capacity:
-        example: 7
-        type: integer
-      date:
-        example: "2026-07-15"
-        format: date
-        type: string
-      unavailable:
-        example: 2
-        type: integer
     type: object
   dto.DetailedProcess:
     properties:
@@ -523,9 +527,9 @@ definitions:
       code:
         example: И
         type: string
-      days:
+      periods:
         items:
-          $ref: '#/definitions/dto.DayAvailability'
+          $ref: '#/definitions/dto.AvailabilityPeriod'
         type: array
       resource_id:
         example: 1
