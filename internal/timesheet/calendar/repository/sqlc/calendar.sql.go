@@ -61,16 +61,17 @@ func (q *Queries) ListEmployeesForCalendar(ctx context.Context, arg ListEmployee
 }
 
 const listResources = `-- name: ListResources :many
-SELECT id, title, code
+SELECT id, title, code, owner_id
 FROM resources
 WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
 type ListResourcesRow struct {
-	ID    int64  `json:"id"`
-	Title string `json:"title"`
-	Code  string `json:"code"`
+	ID      int64  `json:"id"`
+	Title   string `json:"title"`
+	Code    string `json:"code"`
+	OwnerID int64  `json:"owner_id"`
 }
 
 func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error) {
@@ -82,7 +83,12 @@ func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error)
 	items := []ListResourcesRow{}
 	for rows.Next() {
 		var i ListResourcesRow
-		if err := rows.Scan(&i.ID, &i.Title, &i.Code); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Code,
+			&i.OwnerID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

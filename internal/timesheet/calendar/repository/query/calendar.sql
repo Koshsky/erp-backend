@@ -1,5 +1,5 @@
 -- name: ListResources :many
-SELECT id, title, code
+SELECT id, title, code, owner_id
 FROM resources
 WHERE deleted_at IS NULL
 ORDER BY id ASC;

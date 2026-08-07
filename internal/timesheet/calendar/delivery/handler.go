@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/common/date"
+	"github.com/Koshsky/erp-backend/internal/common/helpers"
 	"github.com/Koshsky/erp-backend/internal/common/response"
 )
 
@@ -46,7 +47,13 @@ func (h *CalendarHandler) GetCalendar(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetCalendar(c.Request.Context(), start, end)
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	planning, err := h.service.GetCalendar(c.Request.Context(), start, end, user.ID, user.Role)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

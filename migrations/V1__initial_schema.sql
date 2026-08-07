@@ -53,6 +53,8 @@ CREATE TABLE resources (
 	id BIGSERIAL PRIMARY KEY,
 	title TEXT NOT NULL,
     code TEXT NOT NULL,
+	-- Владелец ресурса (аккаунт пользователя) — обязателен.
+	owner_id BIGINT NOT NULL REFERENCES users(id),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	deleted_at TIMESTAMPTZ DEFAULT NULL

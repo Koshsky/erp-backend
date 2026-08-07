@@ -1,13 +1,16 @@
 package delivery
 
 import (
+	"errors"
 	"log/slog"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/common/helpers"
 	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
 )
 
 type ResourceHandler struct {
@@ -22,6 +25,18 @@ func NewResourceHandler(logger *slog.Logger, service ResourceService) *ResourceH
 	}
 }
 
+// handleError маппит доменные ошибки сервиса ресурсов в HTTP-статусы.
+func (h *ResourceHandler) handleError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrForbidden):
+		response.Forbidden(c, err.Error())
+	case errors.Is(err, service.ErrNotFound):
+		response.NotFound(c, err.Error())
+	default:
+		response.InternalError(c, h.logger, err.Error(), err)
+	}
+}
+
 // ListResources handles the request to list all resources.
 //
 //	@Tags			TimesheetResources
@@ -33,7 +48,13 @@ func NewResourceHandler(logger *slog.Logger, service ResourceService) *ResourceH
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/timesheet/resources [get]
 func (h *ResourceHandler) ListResources(c *gin.Context) {
-	resources, err := h.service.ListResources(c.Request.Context())
+	user, err := helpers.GetUser(c)
+	if err != nil {
+		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	resources, err := h.service.ListResources(c.Request.Context(), user.ID, user.Role)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -60,9 +81,15 @@ func (h *ResourceHandler) FindResource(c *gin.Context) {
 		return
 	}
 
-	resource, err := h.service.FindResource(c.Request.Context(), id)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	resource, err := h.service.FindResource(c.Request.Context(), id, user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, resource)
@@ -88,9 +115,15 @@ func (h *ResourceHandler) CreateResource(c *gin.Context) {
 		return
 	}
 
-	created, err := h.service.CreateResource(c.Request.Context(), resource)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	created, err := h.service.CreateResource(c.Request.Context(), resource, user.ID)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.Created(c, created)
@@ -115,8 +148,14 @@ func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.DeleteResource(c.Request.Context(), id); err != nil {
+	user, err := helpers.GetUser(c)
+	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	if err = h.service.DeleteResource(c.Request.Context(), id, user.ID, user.Role); err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.NoContent(c)
@@ -149,9 +188,15 @@ func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.service.UpdateResource(c.Request.Context(), id, body)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	updated, err := h.service.UpdateResource(c.Request.Context(), id, body, user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, updated)

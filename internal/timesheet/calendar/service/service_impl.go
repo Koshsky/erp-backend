@@ -9,6 +9,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 )
 
 // maxCalendarRange — максимальная ширина диапазона календаря за один запрос (в днях).
@@ -35,6 +36,8 @@ func NewCalendarService(logger *slog.Logger, repository CalendarRepository) *Cal
 func (s *CalendarService) GetCalendar(
 	ctx context.Context,
 	start, end date.Date,
+	userID int64,
+	role string,
 ) (*dto.CalendarPlanning, error) {
 	startT, endT := start.Time(), end.Time()
 	if endT.Before(startT) {
@@ -47,6 +50,10 @@ func (s *CalendarService) GetCalendar(
 	resources, err := s.repository.ListResources(ctx)
 	if err != nil {
 		return nil, err
+	}
+	// vp видит в планировщике только свои ресурсы.
+	if role == userdomain.ProcessOwner {
+		resources = ownedResources(resources, userID)
 	}
 	employees, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
 	if err != nil {
@@ -79,6 +86,17 @@ func (s *CalendarService) GetCalendar(
 	}
 
 	return planning, nil
+}
+
+// ownedResources оставляет только ресурсы, принадлежащие пользователю.
+func ownedResources(resources []dto.ResourceInfo, userID int64) []dto.ResourceInfo {
+	result := resources[:0]
+	for _, resource := range resources {
+		if resource.OwnerID != nil && *resource.OwnerID == userID {
+			result = append(result, resource)
+		}
+	}
+	return result
 }
 
 func groupEmployees(employees []dto.CalendarEmployee) map[int64][]dto.CalendarEmployee {
