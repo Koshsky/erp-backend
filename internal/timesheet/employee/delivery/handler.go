@@ -1,14 +1,17 @@
 package delivery
 
 import (
+	"errors"
 	"log/slog"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/common/date"
+	"github.com/Koshsky/erp-backend/internal/common/helpers"
 	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/employee/service"
 )
 
 type EmployeeHandler struct {
@@ -20,6 +23,18 @@ func NewEmployeeHandler(logger *slog.Logger, service EmployeeService) *EmployeeH
 	return &EmployeeHandler{
 		logger:  logger,
 		service: service,
+	}
+}
+
+// handleError маппит доменные ошибки сервиса сотрудников в HTTP-статусы.
+func (h *EmployeeHandler) handleError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrForbidden):
+		response.Forbidden(c, err.Error())
+	case errors.Is(err, service.ErrNotFound):
+		response.NotFound(c, err.Error())
+	default:
+		response.InternalError(c, h.logger, err.Error(), err)
 	}
 }
 
@@ -73,9 +88,15 @@ func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
 		managerID = &parsedID
 	}
 
-	employees, err := h.service.ListEmployees(c.Request.Context(), managerID)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	employees, err := h.service.ListEmployees(c.Request.Context(), managerID, user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, employees)
@@ -100,9 +121,15 @@ func (h *EmployeeHandler) FindEmployee(c *gin.Context) {
 		return
 	}
 
-	employee, err := h.service.FindEmployee(c.Request.Context(), id)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	employee, err := h.service.FindEmployee(c.Request.Context(), id, user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, employee)
@@ -135,9 +162,15 @@ func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
 		return
 	}
 
-	created, err := h.service.CreateEmployee(c.Request.Context(), id, employee)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	created, err := h.service.CreateEmployee(c.Request.Context(), id, employee, user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.Created(c, created)
@@ -170,9 +203,15 @@ func (h *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.service.UpdateEmployee(c.Request.Context(), id, body)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	updated, err := h.service.UpdateEmployee(c.Request.Context(), id, body, user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, updated)
@@ -197,8 +236,14 @@ func (h *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.DeleteEmployee(c.Request.Context(), id); err != nil {
+	user, err := helpers.GetUser(c)
+	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	if err = h.service.DeleteEmployee(c.Request.Context(), id, user.ID, user.Role); err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.NoContent(c)
@@ -236,9 +281,15 @@ func (h *EmployeeHandler) ListDays(c *gin.Context) {
 		return
 	}
 
-	states, err := h.service.ListStates(c.Request.Context(), id, start, end)
+	user, err := helpers.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	states, err := h.service.ListStates(c.Request.Context(), id, start, end, user.ID, user.Role)
+	if err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.OK(c, states)
@@ -271,8 +322,14 @@ func (h *EmployeeHandler) SetDays(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.SetDays(c.Request.Context(), id, body); err != nil {
+	user, err := helpers.GetUser(c)
+	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	if err = h.service.SetDays(c.Request.Context(), id, body, user.ID, user.Role); err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.NoContent(c)
@@ -321,8 +378,14 @@ func (h *EmployeeHandler) DeleteDays(c *gin.Context) {
 		stateID = &parsedID
 	}
 
-	if err = h.service.DeleteDays(c.Request.Context(), id, start, end, stateID); err != nil {
+	user, err := helpers.GetUser(c)
+	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	if err = h.service.DeleteDays(c.Request.Context(), id, start, end, stateID, user.ID, user.Role); err != nil {
+		h.handleError(c, err)
 		return
 	}
 	response.NoContent(c)
