@@ -161,7 +161,7 @@ definitions:
   dto.CreateStateRequest:
     properties:
       code:
-        example: vacation
+        example: ОТП
         type: string
       is_available:
         example: false
@@ -321,7 +321,7 @@ definitions:
         format: date
         type: string
       state_code:
-        example: vacation
+        example: ОТП
         type: string
       state_id:
         example: 4
@@ -570,7 +570,7 @@ definitions:
   dto.StateResponse:
     properties:
       code:
-        example: vacation
+        example: ОТП
         type: string
       id:
         example: 4
@@ -701,7 +701,7 @@ definitions:
   dto.UpdateStateRequest:
     properties:
       code:
-        example: vacation
+        example: ОТП
         type: string
       is_available:
         example: false
@@ -2155,6 +2155,51 @@ paths:
       summary: Get resource calendar
       tags:
       - TimesheetCalendar
+  /timesheet/employees:
+    get:
+      description: List employees, optionally filtered by manager (user) id
+      parameters:
+      - description: Manager (user) ID filter
+        in: query
+        name: manager_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.EmployeeResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List all employees
+      tags:
+      - TimesheetEmployees
   /timesheet/employees/{id}:
     delete:
       description: Delete an employee by id (soft delete)

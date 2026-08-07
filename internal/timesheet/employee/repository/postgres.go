@@ -47,6 +47,30 @@ func (r *EmployeeRepository) ListEmployeesByResourceID(
 	return employees, nil
 }
 
+func (r *EmployeeRepository) ListEmployees(ctx context.Context) ([]domain.Employee, error) {
+	rows, err := r.db.ListEmployees(ctx)
+	if err != nil {
+		return nil, err
+	}
+	employees := make([]domain.Employee, 0, len(rows))
+	for _, row := range rows {
+		employees = append(employees, mapEmployeeListRow(row))
+	}
+	return employees, nil
+}
+
+func (r *EmployeeRepository) ListEmployeesByManagerID(ctx context.Context, managerID int64) ([]domain.Employee, error) {
+	rows, err := r.db.ListEmployeesByManagerID(ctx, managerID)
+	if err != nil {
+		return nil, err
+	}
+	employees := make([]domain.Employee, 0, len(rows))
+	for _, row := range rows {
+		employees = append(employees, mapEmployeeByManagerRow(row))
+	}
+	return employees, nil
+}
+
 func (r *EmployeeRepository) FindEmployee(ctx context.Context, id int64) (*domain.Employee, error) {
 	row, err := r.db.FindEmployee(ctx, id)
 	if err != nil {
@@ -320,6 +344,30 @@ func mapEmployeeByResourceRow(row sqlc.ListEmployeesByResourceIDRow) domain.Empl
 }
 
 func mapEmployeeRow(row sqlc.FindEmployeeRow) domain.Employee {
+	return domain.Employee{
+		ID:              row.ID,
+		ResourceID:      row.ResourceID,
+		ResourceTitle:   row.ResourceTitle,
+		Name:            row.Name,
+		ManagerID:       nullable.Int64Ptr(row.ManagerID),
+		HireDate:        fromDate(row.HireDate),
+		TerminationDate: fromDate(row.TerminationDate),
+	}
+}
+
+func mapEmployeeListRow(row sqlc.ListEmployeesRow) domain.Employee {
+	return domain.Employee{
+		ID:              row.ID,
+		ResourceID:      row.ResourceID,
+		ResourceTitle:   row.ResourceTitle,
+		Name:            row.Name,
+		ManagerID:       nullable.Int64Ptr(row.ManagerID),
+		HireDate:        fromDate(row.HireDate),
+		TerminationDate: fromDate(row.TerminationDate),
+	}
+}
+
+func mapEmployeeByManagerRow(row sqlc.ListEmployeesByManagerIDRow) domain.Employee {
 	return domain.Employee{
 		ID:              row.ID,
 		ResourceID:      row.ResourceID,

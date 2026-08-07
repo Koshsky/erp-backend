@@ -13,6 +13,14 @@ JOIN resources r ON r.id = e.resource_id
 WHERE e.deleted_at IS NULL
 ORDER BY e.id ASC;
 
+-- name: ListEmployeesByManagerID :many
+SELECT e.*, r.title AS resource_title
+FROM employees e
+JOIN resources r ON r.id = e.resource_id
+WHERE e.deleted_at IS NULL
+AND e.manager_id = @manager_id::bigint
+ORDER BY e.id ASC;
+
 -- name: FindEmployee :one
 SELECT e.*, r.title AS resource_title
 FROM employees e

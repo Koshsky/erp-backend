@@ -168,6 +168,59 @@ func (q *Queries) ListEmployees(ctx context.Context) ([]ListEmployeesRow, error)
 	return items, nil
 }
 
+const listEmployeesByManagerID = `-- name: ListEmployeesByManagerID :many
+SELECT e.id, e.resource_id, e.name, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
+FROM employees e
+JOIN resources r ON r.id = e.resource_id
+WHERE e.deleted_at IS NULL
+AND e.manager_id = $1::bigint
+ORDER BY e.id ASC
+`
+
+type ListEmployeesByManagerIDRow struct {
+	ID              int64       `json:"id"`
+	ResourceID      int64       `json:"resource_id"`
+	Name            string      `json:"name"`
+	ManagerID       pgtype.Int8 `json:"manager_id"`
+	HireDate        pgtype.Date `json:"hire_date"`
+	TerminationDate pgtype.Date `json:"termination_date"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
+	DeletedAt       **time.Time `json:"deleted_at"`
+	ResourceTitle   string      `json:"resource_title"`
+}
+
+func (q *Queries) ListEmployeesByManagerID(ctx context.Context, managerID int64) ([]ListEmployeesByManagerIDRow, error) {
+	rows, err := q.db.Query(ctx, listEmployeesByManagerID, managerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListEmployeesByManagerIDRow{}
+	for rows.Next() {
+		var i ListEmployeesByManagerIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ResourceID,
+			&i.Name,
+			&i.ManagerID,
+			&i.HireDate,
+			&i.TerminationDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.ResourceTitle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEmployeesByResourceID = `-- name: ListEmployeesByResourceID :many
 SELECT e.id, e.resource_id, e.name, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
 FROM employees e

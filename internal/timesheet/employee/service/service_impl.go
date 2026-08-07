@@ -36,6 +36,26 @@ func (s *EmployeeService) ListEmployeesByResource(
 	return s.mapper.ToEmployeeDTOs(employees), nil
 }
 
+// ListEmployees возвращает всех сотрудников или только подчинённых менеджера.
+func (s *EmployeeService) ListEmployees(
+	ctx context.Context,
+	managerID *int64,
+) ([]dto.EmployeeResponse, error) {
+	if managerID == nil {
+		employees, err := s.repository.ListEmployees(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return s.mapper.ToEmployeeDTOs(employees), nil
+	}
+
+	employees, err := s.repository.ListEmployeesByManagerID(ctx, *managerID)
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.ToEmployeeDTOs(employees), nil
+}
+
 func (s *EmployeeService) FindEmployee(ctx context.Context, id int64) (*dto.EmployeeResponse, error) {
 	employee, err := s.repository.FindEmployee(ctx, id)
 	if err != nil {

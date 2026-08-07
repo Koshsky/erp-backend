@@ -50,6 +50,37 @@ func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 	response.OK(c, employees)
 }
 
+// ListEmployees handles the request to list all employees.
+//
+//	@Tags			TimesheetEmployees
+//	@Summary		List all employees
+//	@Description	List employees, optionally filtered by manager (user) id
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Param			manager_id	query		int	false	"Manager (user) ID filter"
+//	@Success		200			{object}	response.Response{data=[]dto.EmployeeResponse}
+//	@Failure		400			{object}	response.Response{data=nil}
+//	@Failure		500			{object}	response.Response{data=nil}
+//	@Router			/timesheet/employees [get]
+func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
+	var managerID *int64
+	if raw := c.Query("manager_id"); raw != "" {
+		parsedID, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			response.BadRequest(c, "invalid manager_id")
+			return
+		}
+		managerID = &parsedID
+	}
+
+	employees, err := h.service.ListEmployees(c.Request.Context(), managerID)
+	if err != nil {
+		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+	response.OK(c, employees)
+}
+
 // FindEmployee handles the request to get an employee by id.
 //
 //	@Tags			TimesheetEmployees

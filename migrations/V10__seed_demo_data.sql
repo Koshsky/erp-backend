@@ -55,11 +55,11 @@ WHERE pr.title = 'Инсталляция';
 
 -- Справочник состояний: доступность задаётся is_available.
 INSERT INTO states (code, name, is_available) VALUES
-('present', 'Явка', TRUE),
-('business_trip', 'Командировка', TRUE),
-('time_off', 'Отгул', FALSE),
-('vacation', 'Отпуск', FALSE),
-('sick_leave', 'Больничный', FALSE);
+('Я', 'Явка', TRUE),
+('К', 'Командировка', TRUE),
+('ОТГ', 'Отгул', FALSE),
+('ОТП', 'Отпуск', FALSE),
+('Б', 'Больничный', FALSE);
 
 -- Конкретные сотрудники (уникальные ресурсы) под категории ресурсов.
 INSERT INTO employees (resource_id, name, hire_date, termination_date)
@@ -97,10 +97,10 @@ INSERT INTO employee_states (employee_id, state_id, start_date, end_date)
 SELECT e.id, s.id, x.start_date, x.end_date
 FROM (
     VALUES
-        ('Иванов Иван Иванович', 'vacation', DATE '2026-07-20', DATE '2026-08-02'),
-        ('Петров Пётр Петрович', 'vacation', DATE '2026-08-10', DATE '2026-08-24'),
-        ('Сидоров Сидор Сидорович', 'sick_leave', DATE '2026-07-27', DATE '2026-08-05'),
-        ('Фёдоров Фёдор Фёдорович', 'business_trip', DATE '2026-08-01', DATE '2026-08-07')
+        ('Иванов Иван Иванович', 'ОТП', DATE '2026-07-20', DATE '2026-08-02'),
+        ('Петров Пётр Петрович', 'ОТП', DATE '2026-08-10', DATE '2026-08-24'),
+        ('Сидоров Сидор Сидорович', 'Б', DATE '2026-07-27', DATE '2026-08-05'),
+        ('Фёдоров Фёдор Фёдорович', 'К', DATE '2026-08-01', DATE '2026-08-07')
 ) AS x(employee_name, state_code, start_date, end_date)
 JOIN employees e ON e.name = x.employee_name
 JOIN states s ON s.code = x.state_code;
