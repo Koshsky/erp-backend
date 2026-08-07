@@ -178,10 +178,9 @@ func (r *PlanningRepository) ListResources(ctx context.Context) ([]dto.Resource,
 	result := make([]dto.Resource, 0, len(rows))
 	for _, row := range rows {
 		r := dto.Resource{
-			ID:       row.ID,
-			Title:    row.Title,
-			Code:     row.Code,
-			Quantity: int(row.Quantity),
+			ID:    row.ID,
+			Title: row.Title,
+			Code:  row.Code,
 		}
 		result = append(result, r)
 	}
