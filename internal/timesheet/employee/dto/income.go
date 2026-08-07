@@ -10,6 +10,7 @@ type CreateEmployeeRequest struct {
 }
 
 type UpdateEmployeeRequest struct {
+	ResourceID      *int64     `json:"resource_id"      example:"2"`
 	Name            *string    `json:"name"             example:"Иванов Иван Иванович"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	HireDate        *date.Date `json:"hire_date"        example:"2025-01-10"           format:"date"`

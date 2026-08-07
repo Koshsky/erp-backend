@@ -5264,6 +5264,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },
+                "resource_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "termination_date": {
                     "type": "string",
                     "format": "date",

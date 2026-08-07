@@ -36,6 +36,7 @@ RETURNING *;
 -- name: UpdateEmployee :one
 UPDATE employees
 SET
+	resource_id = @resource_id,
 	name = @name,
 	manager_id = @manager_id,
 	hire_date = @hire_date,

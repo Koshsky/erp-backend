@@ -55,6 +55,9 @@ func (m *EmployeeMapper) ApplyUpdateToDomain(employee *domain.Employee, req dto.
 		return
 	}
 
+	if req.ResourceID != nil {
+		employee.ResourceID = *req.ResourceID
+	}
 	if req.Name != nil {
 		employee.Name = *req.Name
 	}

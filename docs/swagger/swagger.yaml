@@ -628,6 +628,9 @@ definitions:
       name:
         example: Иванов Иван Иванович
         type: string
+      resource_id:
+        example: 2
+        type: integer
       termination_date:
         example: "2026-12-31"
         format: date
