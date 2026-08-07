@@ -7,6 +7,7 @@ type EmployeeResponse struct {
 	ResourceID      int64      `json:"resource_id"      example:"3"`
 	ResourceTitle   string     `json:"resource_title"   example:"Инженер"`
 	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
+	Position        string     `json:"position"         example:"Ведущий инженер"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	HireDate        *date.Date `json:"hire_date"        example:"2024-01-15"           format:"date"`
 	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`

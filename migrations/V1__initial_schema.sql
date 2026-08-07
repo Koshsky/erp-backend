@@ -74,6 +74,8 @@ CREATE TABLE employees (
 	id BIGSERIAL PRIMARY KEY,
 	resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE RESTRICT,
 	name TEXT NOT NULL,
+	-- Должность — свободный текст (не тип ресурса).
+	position TEXT NOT NULL DEFAULT '',
 	-- Руководитель сотрудника (аккаунт пользователя); NULL — подчинённости нет.
 	manager_id BIGINT REFERENCES users(id),
 	-- NULL означает "в штате с начала времён"; до hire_date ресурс не учитывается.

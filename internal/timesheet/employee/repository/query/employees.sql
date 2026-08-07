@@ -29,8 +29,8 @@ WHERE e.id = @employee_id::bigint
 	AND e.deleted_at IS NULL;
 
 -- name: CreateEmployee :one
-INSERT INTO employees (resource_id, name, manager_id, hire_date, termination_date)
-VALUES (@resource_id, @name, @manager_id, @hire_date, @termination_date)
+INSERT INTO employees (resource_id, name, position, manager_id, hire_date, termination_date)
+VALUES (@resource_id, @name, @position, @manager_id, @hire_date, @termination_date)
 RETURNING *;
 
 -- name: UpdateEmployee :one
@@ -38,6 +38,7 @@ UPDATE employees
 SET
 	resource_id = @resource_id,
 	name = @name,
+	position = @position,
 	manager_id = @manager_id,
 	hire_date = @hire_date,
 	termination_date = @termination_date,

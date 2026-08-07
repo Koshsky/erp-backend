@@ -4506,6 +4506,10 @@
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },
+                "position": {
+                    "type": "string",
+                    "example": "Ведущий инженер"
+                },
                 "termination_date": {
                     "type": "string",
                     "format": "date",
@@ -4786,6 +4790,10 @@
                 "name": {
                     "type": "string",
                     "example": "Иванов Иван Иванович"
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Ведущий инженер"
                 },
                 "resource_id": {
                     "type": "integer",
@@ -5257,6 +5265,10 @@
                 "name": {
                     "type": "string",
                     "example": "Иванов Иван Иванович"
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Ведущий инженер"
                 },
                 "resource_id": {
                     "type": "integer",

@@ -7,6 +7,7 @@ type Employee struct {
 	ResourceID      int64
 	ResourceTitle   string
 	Name            string
+	Position        string
 	ManagerID       *int64
 	HireDate        *time.Time
 	TerminationDate *time.Time

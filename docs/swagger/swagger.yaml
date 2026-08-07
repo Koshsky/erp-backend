@@ -88,6 +88,9 @@ definitions:
       name:
         example: Иванов Иван Иванович
         type: string
+      position:
+        example: Ведущий инженер
+        type: string
       termination_date:
         example: "2026-12-31"
         format: date
@@ -292,6 +295,9 @@ definitions:
         type: integer
       name:
         example: Иванов Иван Иванович
+        type: string
+      position:
+        example: Ведущий инженер
         type: string
       resource_id:
         example: 3
@@ -627,6 +633,9 @@ definitions:
         type: integer
       name:
         example: Иванов Иван Иванович
+        type: string
+      position:
+        example: Ведущий инженер
         type: string
       resource_id:
         example: 2
