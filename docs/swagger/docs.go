@@ -4606,6 +4606,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "М"
                 },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 3
+                },
                 "title": {
                     "type": "string",
                     "example": "Монтажник"
@@ -5159,6 +5163,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 3
+                },
                 "title": {
                     "type": "string",
                     "example": "Монтажник"
@@ -5369,6 +5377,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 3
                 },
                 "title": {
                     "type": "string",

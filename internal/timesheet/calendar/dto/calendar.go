@@ -29,9 +29,10 @@ type AvailabilityPeriod struct {
 
 // ResourceInfo — справочная информация категории для календаря.
 type ResourceInfo struct {
-	ID    int64  `json:"id"    example:"1"`
-	Title string `json:"title" example:"Инженер"`
-	Code  string `json:"code"  example:"И"`
+	ID      int64  `json:"id"       example:"1"`
+	Title   string `json:"title"    example:"Инженер"`
+	Code    string `json:"code"     example:"И"`
+	OwnerID *int64 `json:"owner_id" example:"3"`
 }
 
 // CalendarEmployee — сотрудник (со своим интервалом работы) для расчёта календаря.

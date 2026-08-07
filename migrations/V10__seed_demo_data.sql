@@ -1,3 +1,19 @@
+-- Объединённая миграция V10: колонки для существующих БД + демо-данные.
+-- На свежих БД колонки position/owner_id уже есть из V1 — ALTER-ы отрабатывают как no-op.
+
+-- Должность сотрудника — свободный текст, не тип ресурса.
+ALTER TABLE employees
+	ADD COLUMN IF NOT EXISTS position TEXT NOT NULL DEFAULT '';
+
+-- Владелец ресурса (обязателен): добавляем, подтягиваем владельца, фиксируем NOT NULL.
+ALTER TABLE resources
+	ADD COLUMN IF NOT EXISTS owner_id BIGINT REFERENCES users(id);
+UPDATE resources
+SET owner_id = (SELECT id FROM users WHERE username = 'vp1')
+WHERE owner_id IS NULL;
+ALTER TABLE resources
+	ALTER COLUMN owner_id SET NOT NULL;
+
 -- Пользователи: 1 admin, 1 dp (директор портфеля), 2 rp (руководители проектов), 4 vp (владельцы процессов), 2 worker
 INSERT INTO users (username, name, password_hash, role) VALUES
 ('rp1', 'РП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'rp'),
@@ -5,12 +21,18 @@ INSERT INTO users (username, name, password_hash, role) VALUES
 ('w1', 'Работник-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker'),
 ('w2', 'Работник-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker');
 
-INSERT INTO resources (title, code) VALUES
-('Инженер', 'И'),
-('Монтажник', 'М'),
-('Производитель работ', 'ПР'),
-('Руководитель группы', 'РГ'),
-('Руководитель службы инсталляции', 'РСИ');
+-- Демо-ресурсы принадлежат vp1 (как и все сотрудники).
+INSERT INTO resources (title, code, owner_id)
+SELECT t.title, t.code, u.id
+FROM (
+    VALUES
+        ('Инженер', 'И'),
+        ('Монтажник', 'М'),
+        ('Производитель работ', 'ПР'),
+        ('Руководитель группы', 'РГ'),
+        ('Руководитель службы инсталляции', 'РСИ')
+) AS t(title, code)
+CROSS JOIN (SELECT id FROM users WHERE username = 'vp1') u;
 
 -- По 1 проекту на РП; код проекта отражает цепочку владения ДП-РП-ВП.
 -- V5-триггер при вставке автосоздаст по 2 процесса (Инсталляция + Производство) на проект.

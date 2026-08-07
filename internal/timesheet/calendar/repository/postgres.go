@@ -33,9 +33,10 @@ func (r *CalendarRepository) ListResources(ctx context.Context) ([]dto.ResourceI
 	resources := make([]dto.ResourceInfo, 0, len(rows))
 	for _, row := range rows {
 		resources = append(resources, dto.ResourceInfo{
-			ID:    row.ID,
-			Title: row.Title,
-			Code:  row.Code,
+			ID:      row.ID,
+			Title:   row.Title,
+			Code:    row.Code,
+			OwnerID: &row.OwnerID,
 		})
 	}
 	return resources, nil

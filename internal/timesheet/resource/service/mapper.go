@@ -19,6 +19,7 @@ func (m *ResourceMapper) ToDTO(resource *domain.Resource) *dto.ResourceResponse 
 		ID:             resource.ID,
 		Code:           resource.Code,
 		Title:          resource.Title,
+		OwnerID:        resource.OwnerID,
 		EmployeesCount: resource.EmployeesCount,
 	}
 }
@@ -37,8 +38,9 @@ func (m *ResourceMapper) ToDTOs(resources []domain.Resource) []dto.ResourceRespo
 
 func (m *ResourceMapper) ToDomainFromCreate(req dto.CreateResourceRequest) domain.Resource {
 	return domain.Resource{
-		Code:  req.Code,
-		Title: req.Title,
+		Code:    req.Code,
+		Title:   req.Title,
+		OwnerID: req.OwnerID,
 	}
 }
 
@@ -52,5 +54,8 @@ func (m *ResourceMapper) ApplyUpdateToDomain(resource *domain.Resource, req dto.
 	}
 	if req.Title != nil {
 		resource.Title = *req.Title
+	}
+	if req.OwnerID != nil {
+		resource.OwnerID = req.OwnerID
 	}
 }

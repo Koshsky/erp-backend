@@ -7,9 +7,19 @@ import (
 )
 
 type ResourceService interface {
-	ListResources(ctx context.Context) ([]dto.ResourceResponse, error)
-	FindResource(ctx context.Context, id int64) (*dto.ResourceResponse, error)
-	CreateResource(ctx context.Context, resource dto.CreateResourceRequest) (*dto.ResourceResponse, error)
-	DeleteResource(ctx context.Context, id int64) error
-	UpdateResource(ctx context.Context, id int64, resource dto.UpdateResourceRequest) (*dto.ResourceResponse, error)
+	ListResources(ctx context.Context, userID int64, role string) ([]dto.ResourceResponse, error)
+	FindResource(ctx context.Context, id int64, userID int64, role string) (*dto.ResourceResponse, error)
+	CreateResource(
+		ctx context.Context,
+		resource dto.CreateResourceRequest,
+		userID int64,
+	) (*dto.ResourceResponse, error)
+	DeleteResource(ctx context.Context, id int64, userID int64, role string) error
+	UpdateResource(
+		ctx context.Context,
+		id int64,
+		resource dto.UpdateResourceRequest,
+		userID int64,
+		role string,
+	) (*dto.ResourceResponse, error)
 }

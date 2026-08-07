@@ -25,8 +25,9 @@ func NewResourceRepository(logger *slog.Logger, pool *pgxpool.Pool) *ResourceRep
 
 func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
 	row, err := r.db.CreateResource(ctx, sqlc.CreateResourceParams{
-		Title: resource.Title,
-		Code:  resource.Code,
+		Title:   resource.Title,
+		Code:    resource.Code,
+		OwnerID: ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
 		return nil, err
@@ -45,6 +46,7 @@ func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*domai
 		ID:             row.ID,
 		Title:          row.Title,
 		Code:           row.Code,
+		OwnerID:        &row.OwnerID,
 		EmployeesCount: int(row.EmployeesCount),
 	}, nil
 }
@@ -54,6 +56,7 @@ func (r *ResourceRepository) UpdateResource(ctx context.Context, resource domain
 		ResourceID: resource.ID,
 		Title:      resource.Title,
 		Code:       resource.Code,
+		OwnerID:    ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
 		return nil, err
@@ -78,6 +81,26 @@ func (r *ResourceRepository) ListResources(ctx context.Context) ([]domain.Resour
 			ID:             row.ID,
 			Title:          row.Title,
 			Code:           row.Code,
+			OwnerID:        &row.OwnerID,
+			EmployeesCount: int(row.EmployeesCount),
+		})
+	}
+	return resources, nil
+}
+
+func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error) {
+	rows, err := r.db.ListResourcesByOwnerID(ctx, ownerID)
+	if err != nil {
+		return nil, err
+	}
+
+	resources := make([]domain.Resource, 0, len(rows))
+	for _, row := range rows {
+		resources = append(resources, domain.Resource{
+			ID:             row.ID,
+			Title:          row.Title,
+			Code:           row.Code,
+			OwnerID:        &row.OwnerID,
 			EmployeesCount: int(row.EmployeesCount),
 		})
 	}
@@ -95,6 +118,15 @@ func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Re
 		ID:             row.ID,
 		Title:          row.Title,
 		Code:           row.Code,
+		OwnerID:        &row.OwnerID,
 		EmployeesCount: int(count),
 	}, nil
+}
+
+// ownerIDValue разворачивает nullable-владельца в обязательное значение.
+func ownerIDValue(v *int64) int64 {
+	if v == nil {
+		return 0
+	}
+	return *v
 }

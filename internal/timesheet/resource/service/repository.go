@@ -12,4 +12,5 @@ type ResourceRepository interface {
 	UpdateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error)
 	DeleteResource(ctx context.Context, id int64) error
 	ListResources(ctx context.Context) ([]domain.Resource, error)
+	ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error)
 }
