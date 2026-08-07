@@ -15,7 +15,7 @@ type EmployeeResponse struct {
 type EmployeeStateResponse struct {
 	ID          int64     `json:"id"           example:"1"`
 	StateID     int64     `json:"state_id"     example:"4"`
-	StateCode   string    `json:"state_code"   example:"vacation"`
+	StateCode   string    `json:"state_code"   example:"ОТП"`
 	StateName   string    `json:"state_name"   example:"Отпуск"`
 	IsAvailable bool      `json:"is_available" example:"false"`
 	StartDate   date.Date `json:"start_date"   example:"2026-07-20" format:"date"`

@@ -9,6 +9,7 @@ import (
 
 type EmployeeService interface {
 	ListEmployeesByResource(ctx context.Context, resourceID int64) ([]dto.EmployeeResponse, error)
+	ListEmployees(ctx context.Context, managerID *int64) ([]dto.EmployeeResponse, error)
 	FindEmployee(ctx context.Context, id int64) (*dto.EmployeeResponse, error)
 	CreateEmployee(ctx context.Context, resourceID int64, req dto.CreateEmployeeRequest) (*dto.EmployeeResponse, error)
 	UpdateEmployee(ctx context.Context, id int64, req dto.UpdateEmployeeRequest) (*dto.EmployeeResponse, error)

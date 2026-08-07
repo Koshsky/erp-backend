@@ -2494,6 +2494,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/timesheet/employees": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "List employees, optionally filtered by manager (user) id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TimesheetEmployees"
+                ],
+                "summary": "List all employees",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Manager (user) ID filter",
+                        "name": "manager_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.EmployeeResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/timesheet/employees/{id}": {
             "get": {
                 "security": [
@@ -4529,7 +4613,7 @@ const docTemplate = `{
             "properties": {
                 "code": {
                     "type": "string",
-                    "example": "vacation"
+                    "example": "ОТП"
                 },
                 "is_available": {
                     "type": "boolean",
@@ -4747,7 +4831,7 @@ const docTemplate = `{
                 },
                 "state_code": {
                     "type": "string",
-                    "example": "vacation"
+                    "example": "ОТП"
                 },
                 "state_id": {
                     "type": "integer",
@@ -5097,7 +5181,7 @@ const docTemplate = `{
             "properties": {
                 "code": {
                     "type": "string",
-                    "example": "vacation"
+                    "example": "ОТП"
                 },
                 "id": {
                     "type": "integer",
@@ -5281,7 +5365,7 @@ const docTemplate = `{
             "properties": {
                 "code": {
                     "type": "string",
-                    "example": "vacation"
+                    "example": "ОТП"
                 },
                 "is_available": {
                     "type": "boolean",

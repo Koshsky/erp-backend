@@ -16,6 +16,7 @@ func (h *EmployeeHandler) RegisterRoutes(router *gin.RouterGroup) {
 	e := router.Group("/employees")
 	e.Use(access.DirectorReadOnly())
 	{
+		e.GET("", h.ListEmployees)
 		e.GET("/:id", h.FindEmployee)
 		e.PUT("/:id", h.UpdateEmployee)
 		e.DELETE("/:id", h.DeleteEmployee)
