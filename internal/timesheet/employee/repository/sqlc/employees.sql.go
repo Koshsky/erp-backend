@@ -13,14 +13,15 @@ import (
 )
 
 const createEmployee = `-- name: CreateEmployee :one
-INSERT INTO employees (resource_id, name, manager_id, hire_date, termination_date)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, resource_id, name, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
+INSERT INTO employees (resource_id, name, position, manager_id, hire_date, termination_date)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, resource_id, name, position, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type CreateEmployeeParams struct {
 	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
+	Position        string      `json:"position"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
 	TerminationDate pgtype.Date `json:"termination_date"`
@@ -30,6 +31,7 @@ func (q *Queries) CreateEmployee(ctx context.Context, arg CreateEmployeeParams) 
 	row := q.db.QueryRow(ctx, createEmployee,
 		arg.ResourceID,
 		arg.Name,
+		arg.Position,
 		arg.ManagerID,
 		arg.HireDate,
 		arg.TerminationDate,
@@ -39,6 +41,7 @@ func (q *Queries) CreateEmployee(ctx context.Context, arg CreateEmployeeParams) 
 		&i.ID,
 		&i.ResourceID,
 		&i.Name,
+		&i.Position,
 		&i.ManagerID,
 		&i.HireDate,
 		&i.TerminationDate,
@@ -62,7 +65,7 @@ func (q *Queries) DeleteEmployee(ctx context.Context, employeeID int64) error {
 }
 
 const findEmployee = `-- name: FindEmployee :one
-SELECT e.id, e.resource_id, e.name, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
+SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
 FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.id = $1::bigint
@@ -73,6 +76,7 @@ type FindEmployeeRow struct {
 	ID              int64       `json:"id"`
 	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
+	Position        string      `json:"position"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
 	TerminationDate pgtype.Date `json:"termination_date"`
@@ -89,6 +93,7 @@ func (q *Queries) FindEmployee(ctx context.Context, employeeID int64) (FindEmplo
 		&i.ID,
 		&i.ResourceID,
 		&i.Name,
+		&i.Position,
 		&i.ManagerID,
 		&i.HireDate,
 		&i.TerminationDate,
@@ -117,7 +122,7 @@ func (q *Queries) IsResourceActive(ctx context.Context, resourceID int64) (bool,
 }
 
 const listEmployees = `-- name: ListEmployees :many
-SELECT e.id, e.resource_id, e.name, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
+SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
 FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.deleted_at IS NULL
@@ -128,6 +133,7 @@ type ListEmployeesRow struct {
 	ID              int64       `json:"id"`
 	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
+	Position        string      `json:"position"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
 	TerminationDate pgtype.Date `json:"termination_date"`
@@ -150,6 +156,7 @@ func (q *Queries) ListEmployees(ctx context.Context) ([]ListEmployeesRow, error)
 			&i.ID,
 			&i.ResourceID,
 			&i.Name,
+			&i.Position,
 			&i.ManagerID,
 			&i.HireDate,
 			&i.TerminationDate,
@@ -169,7 +176,7 @@ func (q *Queries) ListEmployees(ctx context.Context) ([]ListEmployeesRow, error)
 }
 
 const listEmployeesByManagerID = `-- name: ListEmployeesByManagerID :many
-SELECT e.id, e.resource_id, e.name, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
+SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
 FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.deleted_at IS NULL
@@ -181,6 +188,7 @@ type ListEmployeesByManagerIDRow struct {
 	ID              int64       `json:"id"`
 	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
+	Position        string      `json:"position"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
 	TerminationDate pgtype.Date `json:"termination_date"`
@@ -203,6 +211,7 @@ func (q *Queries) ListEmployeesByManagerID(ctx context.Context, managerID int64)
 			&i.ID,
 			&i.ResourceID,
 			&i.Name,
+			&i.Position,
 			&i.ManagerID,
 			&i.HireDate,
 			&i.TerminationDate,
@@ -222,7 +231,7 @@ func (q *Queries) ListEmployeesByManagerID(ctx context.Context, managerID int64)
 }
 
 const listEmployeesByResourceID = `-- name: ListEmployeesByResourceID :many
-SELECT e.id, e.resource_id, e.name, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
+SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
 FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.resource_id = $1::bigint
@@ -234,6 +243,7 @@ type ListEmployeesByResourceIDRow struct {
 	ID              int64       `json:"id"`
 	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
+	Position        string      `json:"position"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
 	TerminationDate pgtype.Date `json:"termination_date"`
@@ -256,6 +266,7 @@ func (q *Queries) ListEmployeesByResourceID(ctx context.Context, resourceID int6
 			&i.ID,
 			&i.ResourceID,
 			&i.Name,
+			&i.Position,
 			&i.ManagerID,
 			&i.HireDate,
 			&i.TerminationDate,
@@ -279,18 +290,20 @@ UPDATE employees
 SET
 	resource_id = $1,
 	name = $2,
-	manager_id = $3,
-	hire_date = $4,
-	termination_date = $5,
+	position = $3,
+	manager_id = $4,
+	hire_date = $5,
+	termination_date = $6,
 	updated_at = NOW()
-WHERE id = $6
+WHERE id = $7
 	AND deleted_at IS NULL
-RETURNING id, resource_id, name, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, resource_id, name, position, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type UpdateEmployeeParams struct {
 	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
+	Position        string      `json:"position"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
 	TerminationDate pgtype.Date `json:"termination_date"`
@@ -301,6 +314,7 @@ func (q *Queries) UpdateEmployee(ctx context.Context, arg UpdateEmployeeParams) 
 	row := q.db.QueryRow(ctx, updateEmployee,
 		arg.ResourceID,
 		arg.Name,
+		arg.Position,
 		arg.ManagerID,
 		arg.HireDate,
 		arg.TerminationDate,
@@ -311,6 +325,7 @@ func (q *Queries) UpdateEmployee(ctx context.Context, arg UpdateEmployeeParams) 
 		&i.ID,
 		&i.ResourceID,
 		&i.Name,
+		&i.Position,
 		&i.ManagerID,
 		&i.HireDate,
 		&i.TerminationDate,

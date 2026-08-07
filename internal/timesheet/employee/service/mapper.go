@@ -23,6 +23,7 @@ func (m *EmployeeMapper) ToEmployeeDTO(employee *domain.Employee) *dto.EmployeeR
 		ResourceID:      employee.ResourceID,
 		ResourceTitle:   employee.ResourceTitle,
 		Name:            employee.Name,
+		Position:        employee.Position,
 		ManagerID:       employee.ManagerID,
 		HireDate:        datePtr(employee.HireDate),
 		TerminationDate: datePtr(employee.TerminationDate),
@@ -44,6 +45,7 @@ func (m *EmployeeMapper) ToEmployeeDTOs(employees []domain.Employee) []dto.Emplo
 func (m *EmployeeMapper) ToDomainFromCreate(req dto.CreateEmployeeRequest) domain.Employee {
 	return domain.Employee{
 		Name:            req.Name,
+		Position:        req.Position,
 		ManagerID:       req.ManagerID,
 		HireDate:        timePtr(req.HireDate),
 		TerminationDate: timePtr(req.TerminationDate),
@@ -57,6 +59,9 @@ func (m *EmployeeMapper) ApplyUpdateToDomain(employee *domain.Employee, req dto.
 
 	if req.ResourceID != nil {
 		employee.ResourceID = *req.ResourceID
+	}
+	if req.Position != nil {
+		employee.Position = *req.Position
 	}
 	if req.Name != nil {
 		employee.Name = *req.Name

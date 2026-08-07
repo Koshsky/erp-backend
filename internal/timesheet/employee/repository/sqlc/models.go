@@ -24,6 +24,7 @@ type Employee struct {
 	ID              int64       `json:"id"`
 	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
+	Position        string      `json:"position"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
 	TerminationDate pgtype.Date `json:"termination_date"`

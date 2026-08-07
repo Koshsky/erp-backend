@@ -4512,6 +4512,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },
+                "position": {
+                    "type": "string",
+                    "example": "Ведущий инженер"
+                },
                 "termination_date": {
                     "type": "string",
                     "format": "date",
@@ -4792,6 +4796,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Иванов Иван Иванович"
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Ведущий инженер"
                 },
                 "resource_id": {
                     "type": "integer",
@@ -5263,6 +5271,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Иванов Иван Иванович"
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Ведущий инженер"
                 },
                 "resource_id": {
                     "type": "integer",
