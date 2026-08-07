@@ -98,6 +98,7 @@ func (r *EmployeeRepository) CreateEmployee(ctx context.Context, employee domain
 func (r *EmployeeRepository) UpdateEmployee(ctx context.Context, employee domain.Employee) (*domain.Employee, error) {
 	row, err := r.db.UpdateEmployee(ctx, sqlc.UpdateEmployeeParams{
 		EmployeeID:      employee.ID,
+		ResourceID:      employee.ResourceID,
 		Name:            employee.Name,
 		ManagerID:       nullable.ToInt8(employee.ManagerID),
 		HireDate:        toDate(employee.HireDate),

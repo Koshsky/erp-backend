@@ -160,6 +160,17 @@ func (s *EmployeeService) UpdateEmployee(
 	if !canManageAllEmployees(role) {
 		employee.ManagerID = &userID
 	}
+	// Новая должность должна существовать и не быть удалённой.
+	if req.ResourceID != nil {
+		var active bool
+		active, err = s.repository.IsResourceActive(ctx, *req.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		if !active {
+			return nil, ErrResourceNotFound
+		}
+	}
 	if err = s.validator.ValidateEmployee(employee); err != nil {
 		return nil, err
 	}

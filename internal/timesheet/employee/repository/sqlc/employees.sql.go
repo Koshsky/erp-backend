@@ -277,17 +277,19 @@ func (q *Queries) ListEmployeesByResourceID(ctx context.Context, resourceID int6
 const updateEmployee = `-- name: UpdateEmployee :one
 UPDATE employees
 SET
-	name = $1,
-	manager_id = $2,
-	hire_date = $3,
-	termination_date = $4,
+	resource_id = $1,
+	name = $2,
+	manager_id = $3,
+	hire_date = $4,
+	termination_date = $5,
 	updated_at = NOW()
-WHERE id = $5
+WHERE id = $6
 	AND deleted_at IS NULL
 RETURNING id, resource_id, name, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type UpdateEmployeeParams struct {
+	ResourceID      int64       `json:"resource_id"`
 	Name            string      `json:"name"`
 	ManagerID       pgtype.Int8 `json:"manager_id"`
 	HireDate        pgtype.Date `json:"hire_date"`
@@ -297,6 +299,7 @@ type UpdateEmployeeParams struct {
 
 func (q *Queries) UpdateEmployee(ctx context.Context, arg UpdateEmployeeParams) (Employee, error) {
 	row := q.db.QueryRow(ctx, updateEmployee,
+		arg.ResourceID,
 		arg.Name,
 		arg.ManagerID,
 		arg.HireDate,
