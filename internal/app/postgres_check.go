@@ -11,10 +11,16 @@ import (
 	processService "github.com/Koshsky/erp-backend/internal/project_mgmt/process/service"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	projectService "github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
-	resourceRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/repository"
-	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
+	calendarRepo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
+	calendarService "github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
+	employeeRepo "github.com/Koshsky/erp-backend/internal/timesheet/employee/repository"
+	employeeService "github.com/Koshsky/erp-backend/internal/timesheet/employee/service"
+	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
+	resourceService "github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
+	stateRepo "github.com/Koshsky/erp-backend/internal/timesheet/state/repository"
+	stateService "github.com/Koshsky/erp-backend/internal/timesheet/state/service"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 	userService "github.com/Koshsky/erp-backend/internal/user/service"
 )
@@ -28,6 +34,9 @@ type (
 	ProcessRepository    = processService.ProcessRepository
 	MilestoneRepository  = milestoneService.MilestoneRepository
 	AssignmentRepository = assignmentService.AssignmentRepository
+	StateRepository      = stateService.StateRepository
+	EmployeeRepository   = employeeService.EmployeeRepository
+	CalendarRepository   = calendarService.CalendarRepository
 )
 
 var (
@@ -39,4 +48,7 @@ var (
 	_ ProcessRepository    = (*processRepo.ProcessRepository)(nil)
 	_ MilestoneRepository  = (*milestoneRepoPkg.MilestoneRepository)(nil)
 	_ AssignmentRepository = (*assignmentRepo.AssignmentRepository)(nil)
+	_ StateRepository      = (*stateRepo.StateRepository)(nil)
+	_ EmployeeRepository   = (*employeeRepo.EmployeeRepository)(nil)
+	_ CalendarRepository   = (*calendarRepo.CalendarRepository)(nil)
 )

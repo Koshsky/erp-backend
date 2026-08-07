@@ -22,6 +22,13 @@ definitions:
       user:
         $ref: '#/definitions/dto.UserInfo'
     type: object
+  dto.CalendarPlanning:
+    properties:
+      resources:
+        items:
+          $ref: '#/definitions/dto.ResourceCalendar'
+        type: array
+    type: object
   dto.ChangePasswordRequest:
     properties:
       new_password:
@@ -48,6 +55,23 @@ definitions:
       task_id:
         example: 1
         type: integer
+    type: object
+  dto.CreateEmployeeRequest:
+    properties:
+      hire_date:
+        example: "2025-01-10"
+        format: date
+        type: string
+      manager_id:
+        example: 5
+        type: integer
+      name:
+        example: Иванов Иван Иванович
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
+        type: string
     type: object
   dto.CreateMilestoneRequest:
     properties:
@@ -110,11 +134,20 @@ definitions:
       code:
         example: М
         type: string
-      quantity:
-        example: 7
-        type: integer
       title:
         example: Монтажник
+        type: string
+    type: object
+  dto.CreateStateRequest:
+    properties:
+      code:
+        example: vacation
+        type: string
+      is_available:
+        example: false
+        type: boolean
+      name:
+        example: Отпуск
         type: string
     type: object
   dto.CreateTaskRequest:
@@ -136,6 +169,22 @@ definitions:
       title:
         example: Пуско-наладочные работы
         type: string
+    type: object
+  dto.DayAvailability:
+    properties:
+      available:
+        example: 5
+        type: integer
+      capacity:
+        example: 7
+        type: integer
+      date:
+        example: "2026-07-15"
+        format: date
+        type: string
+      unavailable:
+        example: 2
+        type: integer
     type: object
   dto.DetailedProcess:
     properties:
@@ -223,6 +272,58 @@ definitions:
         type: string
       title:
         example: Пуско-наладочные работы
+        type: string
+    type: object
+  dto.EmployeeResponse:
+    properties:
+      hire_date:
+        example: "2024-01-15"
+        format: date
+        type: string
+      id:
+        example: 1
+        type: integer
+      manager_id:
+        example: 5
+        type: integer
+      name:
+        example: Иванов Иван Иванович
+        type: string
+      resource_id:
+        example: 3
+        type: integer
+      resource_title:
+        example: Инженер
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
+        type: string
+    type: object
+  dto.EmployeeStateResponse:
+    properties:
+      end_date:
+        example: "2026-08-02"
+        format: date
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_available:
+        example: false
+        type: boolean
+      start_date:
+        example: "2026-07-20"
+        format: date
+        type: string
+      state_code:
+        example: vacation
+        type: string
+      state_id:
+        example: 4
+        type: integer
+      state_name:
+        example: Отпуск
         type: string
     type: object
   dto.LoginRequest:
@@ -417,19 +518,64 @@ definitions:
         example: Монтажник
         type: string
     type: object
+  dto.ResourceCalendar:
+    properties:
+      code:
+        example: И
+        type: string
+      days:
+        items:
+          $ref: '#/definitions/dto.DayAvailability'
+        type: array
+      resource_id:
+        example: 1
+        type: integer
+      title:
+        example: Инженер
+        type: string
+    type: object
   dto.ResourceResponse:
     properties:
       code:
         example: М
         type: string
+      employees_count:
+        example: 4
+        type: integer
       id:
         example: 1
         type: integer
-      quantity:
-        example: 7
-        type: integer
       title:
         example: Монтажник
+        type: string
+    type: object
+  dto.SetDaysRequest:
+    properties:
+      end_date:
+        example: "2026-08-02"
+        format: date
+        type: string
+      start_date:
+        example: "2026-07-20"
+        format: date
+        type: string
+      state_id:
+        example: 4
+        type: integer
+    type: object
+  dto.StateResponse:
+    properties:
+      code:
+        example: vacation
+        type: string
+      id:
+        example: 4
+        type: integer
+      is_available:
+        example: false
+        type: boolean
+      name:
+        example: Отпуск
         type: string
     type: object
   dto.TaskPlanning:
@@ -465,6 +611,23 @@ definitions:
       task_id:
         example: 1
         type: integer
+    type: object
+  dto.UpdateEmployeeRequest:
+    properties:
+      hire_date:
+        example: "2025-01-10"
+        format: date
+        type: string
+      manager_id:
+        example: 5
+        type: integer
+      name:
+        example: Иванов Иван Иванович
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
+        type: string
     type: object
   dto.UpdateMilestoneRequest:
     properties:
@@ -527,11 +690,20 @@ definitions:
       code:
         example: М
         type: string
-      quantity:
-        example: 7
-        type: integer
       title:
         example: Монтажник
+        type: string
+    type: object
+  dto.UpdateStateRequest:
+    properties:
+      code:
+        example: vacation
+        type: string
+      is_available:
+        example: false
+        type: boolean
+      name:
+        example: Отпуск
         type: string
     type: object
   dto.UpdateTaskRequest:
@@ -1719,214 +1891,6 @@ paths:
       summary: Update project
       tags:
       - Projects
-  /resource:
-    get:
-      description: List all resources
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/dto.ResourceResponse'
-                  type: array
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: List resources
-      tags:
-      - Resources
-    post:
-      consumes:
-      - application/json
-      description: Create resource
-      parameters:
-      - description: Resource
-        in: body
-        name: resource
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateResourceRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ResourceResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create resource
-      tags:
-      - Resources
-  /resource/{id}:
-    delete:
-      description: Delete resource by id
-      parameters:
-      - description: Resource ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete resource
-      tags:
-      - Resources
-    get:
-      description: Get resource by id
-      parameters:
-      - description: Resource ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ResourceResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get resource
-      tags:
-      - Resources
-    put:
-      consumes:
-      - application/json
-      description: Update resource by id
-      parameters:
-      - description: Resource ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Resource
-        in: body
-        name: resource
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateResourceRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ResourceResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update resource
-      tags:
-      - Resources
   /task:
     get:
       description: Get a list of all tasks
@@ -2137,6 +2101,852 @@ paths:
       summary: Update a task
       tags:
       - Tasks
+  /timesheet/calendar:
+    get:
+      description: Get per-day resource availability (capacity/unavailable/available)
+        for a date range
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CalendarPlanning'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get resource calendar
+      tags:
+      - TimesheetCalendar
+  /timesheet/employees/{id}:
+    delete:
+      description: Delete an employee by id (soft delete)
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete employee
+      tags:
+      - TimesheetEmployees
+    get:
+      description: Get an employee by id
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get employee
+      tags:
+      - TimesheetEmployees
+    put:
+      consumes:
+      - application/json
+      description: Update an employee by id
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee
+        in: body
+        name: employee
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update employee
+      tags:
+      - TimesheetEmployees
+  /timesheet/employees/{id}/days:
+    delete:
+      description: Clear state ranges of an employee overlapping a date range (splits
+        overlaps, optional state filter)
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - description: Optional state filter
+        in: query
+        name: state_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete employee days
+      tags:
+      - TimesheetEmployees
+    get:
+      description: List state ranges of an employee overlapping a date range
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.EmployeeStateResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List employee days
+      tags:
+      - TimesheetEmployees
+    put:
+      consumes:
+      - application/json
+      description: Overwrite a state on a date range of an employee's calendar (splits
+        overlapping ranges)
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Days
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SetDaysRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Set employee days
+      tags:
+      - TimesheetEmployees
+  /timesheet/resources:
+    get:
+      description: List all resources
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.ResourceResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List resources
+      tags:
+      - TimesheetResources
+    post:
+      consumes:
+      - application/json
+      description: Create resource
+      parameters:
+      - description: Resource
+        in: body
+        name: resource
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateResourceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ResourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create resource
+      tags:
+      - TimesheetResources
+  /timesheet/resources/{id}:
+    delete:
+      description: Delete resource by id
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete resource
+      tags:
+      - TimesheetResources
+    get:
+      description: Get resource by id
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ResourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get resource
+      tags:
+      - TimesheetResources
+    put:
+      consumes:
+      - application/json
+      description: Update resource by id
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Resource
+        in: body
+        name: resource
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateResourceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ResourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update resource
+      tags:
+      - TimesheetResources
+  /timesheet/resources/{id}/employees:
+    get:
+      description: List concrete employees of a resource category
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.EmployeeResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List employees
+      tags:
+      - TimesheetEmployees
+    post:
+      consumes:
+      - application/json
+      description: Create a concrete employee for a resource category
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee
+        in: body
+        name: employee
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create employee
+      tags:
+      - TimesheetEmployees
+  /timesheet/states:
+    get:
+      description: List all resource states (reference dictionary)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.StateResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List states
+      tags:
+      - TimesheetStates
+    post:
+      consumes:
+      - application/json
+      description: Create a resource state (reference dictionary)
+      parameters:
+      - description: State
+        in: body
+        name: state
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateStateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.StateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create state
+      tags:
+      - TimesheetStates
+  /timesheet/states/{id}:
+    delete:
+      description: Delete a resource state by id
+      parameters:
+      - description: State ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete state
+      tags:
+      - TimesheetStates
+    get:
+      description: Get a resource state by id
+      parameters:
+      - description: State ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.StateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get state
+      tags:
+      - TimesheetStates
+    put:
+      consumes:
+      - application/json
+      description: Update a resource state by id
+      parameters:
+      - description: State ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: State
+        in: body
+        name: state
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateStateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.StateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update state
+      tags:
+      - TimesheetStates
   /user:
     get:
       description: Returns all users in the system
