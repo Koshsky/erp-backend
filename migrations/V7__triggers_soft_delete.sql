@@ -45,6 +45,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- for resources: мягкое удаление категории мягко удаляет её сотрудников
+CREATE OR REPLACE FUNCTION cascade_soft_delete_employees()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE employees
+    SET deleted_at = NOW()
+    WHERE resource_id = OLD.id
+      AND deleted_at IS NULL;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- for employees: мягкое удаление сотрудника жёстко удаляет его состояния (интервалы)
+CREATE OR REPLACE FUNCTION cascade_delete_employee_states()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM employee_states
+    WHERE employee_id = OLD.id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
 
 -- =============================================
 -- TRIGGER 1: Projects → Processes
@@ -72,6 +94,24 @@ AFTER UPDATE OF deleted_at ON tasks
 FOR EACH ROW
 WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
 EXECUTE FUNCTION cascade_soft_delete_assignments();
+
+-- =============================================
+-- TRIGGER 4: Resources → Employees
+-- =============================================
+CREATE TRIGGER trigger_cascade_soft_delete_employees
+AFTER UPDATE OF deleted_at ON resources
+FOR EACH ROW
+WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
+EXECUTE FUNCTION cascade_soft_delete_employees();
+
+-- =============================================
+-- TRIGGER 5: Employees → Employee States
+-- =============================================
+CREATE TRIGGER trigger_cascade_delete_employee_states
+AFTER UPDATE OF deleted_at ON employees
+FOR EACH ROW
+WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
+EXECUTE FUNCTION cascade_delete_employee_states();
 
 -- =============================================
 -- BLOCK hards DELETE
@@ -116,5 +156,10 @@ EXECUTE FUNCTION block_hard_delete();
 
 CREATE TRIGGER block_hard_delete_on_milestones
 BEFORE DELETE ON milestones
+FOR EACH ROW
+EXECUTE FUNCTION block_hard_delete();
+
+CREATE TRIGGER block_hard_delete_on_employees
+BEFORE DELETE ON employees
 FOR EACH ROW
 EXECUTE FUNCTION block_hard_delete();

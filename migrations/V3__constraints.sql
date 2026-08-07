@@ -20,7 +20,6 @@ ALTER TABLE tasks ADD CONSTRAINT tasks_dates_check CHECK (end_date >= start_date
 -- ---------- resources ----------
 CREATE UNIQUE INDEX resources_title_unique_active ON resources (title) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX resources_code_unique_active ON resources (code) WHERE deleted_at IS NULL;
-ALTER TABLE resources ADD CONSTRAINT resources_quantity_check CHECK (quantity >= 0);
 ALTER TABLE resources ADD CONSTRAINT resources_code_check CHECK (length(trim(code)) > 0);
 
 -- ---------- assignments ----------

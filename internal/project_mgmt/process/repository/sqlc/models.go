@@ -20,6 +20,28 @@ type Assignment struct {
 	DeletedAt  **time.Time `json:"deleted_at"`
 }
 
+type Employee struct {
+	ID              int64       `json:"id"`
+	ResourceID      int64       `json:"resource_id"`
+	Name            string      `json:"name"`
+	ManagerID       pgtype.Int8 `json:"manager_id"`
+	HireDate        pgtype.Date `json:"hire_date"`
+	TerminationDate pgtype.Date `json:"termination_date"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
+	DeletedAt       **time.Time `json:"deleted_at"`
+}
+
+type EmployeeState struct {
+	ID         int64     `json:"id"`
+	EmployeeID int64     `json:"employee_id"`
+	StateID    int64     `json:"state_id"`
+	StartDate  time.Time `json:"start_date"`
+	EndDate    time.Time `json:"end_date"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
 type Milestone struct {
 	ID        int64       `json:"id"`
 	ProcessID int64       `json:"process_id"`
@@ -59,10 +81,19 @@ type Resource struct {
 	ID        int64       `json:"id"`
 	Title     string      `json:"title"`
 	Code      string      `json:"code"`
-	Quantity  int32       `json:"quantity"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
 	DeletedAt **time.Time `json:"deleted_at"`
+}
+
+type State struct {
+	ID          int64       `json:"id"`
+	Code        string      `json:"code"`
+	Name        string      `json:"name"`
+	IsAvailable bool        `json:"is_available"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	DeletedAt   **time.Time `json:"deleted_at"`
 }
 
 type Task struct {

@@ -21,12 +21,21 @@ import (
 	projectDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/project/delivery"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	projectService "github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
-	resourceDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/delivery"
-	resourceRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/repository"
-	resourceService "github.com/Koshsky/erp-backend/internal/project_mgmt/resource/service"
 	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
+	calendarDelivery "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
+	calendarRepo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
+	calendarService "github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
+	employeeDelivery "github.com/Koshsky/erp-backend/internal/timesheet/employee/delivery"
+	employeeRepo "github.com/Koshsky/erp-backend/internal/timesheet/employee/repository"
+	employeeService "github.com/Koshsky/erp-backend/internal/timesheet/employee/service"
+	resourceDelivery "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
+	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
+	resourceService "github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
+	stateDelivery "github.com/Koshsky/erp-backend/internal/timesheet/state/delivery"
+	stateRepo "github.com/Koshsky/erp-backend/internal/timesheet/state/repository"
+	stateService "github.com/Koshsky/erp-backend/internal/timesheet/state/service"
 	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 	userService "github.com/Koshsky/erp-backend/internal/user/service"
@@ -45,6 +54,9 @@ var (
 	_ RouteRegistrar = (*processDelivery.ProcessHandler)(nil)
 	_ RouteRegistrar = (*milestoneDelivery.MilestoneHandler)(nil)
 	_ RouteRegistrar = (*assignmentDelivery.AssignmentHandler)(nil)
+	_ RouteRegistrar = (*stateDelivery.StateHandler)(nil)
+	_ RouteRegistrar = (*employeeDelivery.EmployeeHandler)(nil)
+	_ RouteRegistrar = (*calendarDelivery.CalendarHandler)(nil)
 )
 
 func (a *App) registerRoutes(router *gin.Engine) {
@@ -59,7 +71,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	authSvc := authService.NewAuthService(userSvc, a.jwtManager)
 	authHandler := authDelivery.NewAuthHandler(a.logger, authSvc)
 
-	// --- Planning ---
+	// --- Planning (Gantt: projects/processes/tasks/milestones/assignments) ---
 	planningQueries := planningRepo.NewPlanningRepository(a.logger, a.pool)
 	planningSvc := planningService.NewPlanningService(a.logger, planningQueries)
 	planningHandler := planningDelivery.NewPlanningHandler(a.logger, planningSvc)
@@ -68,11 +80,6 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	taskQueries := taskRepo.NewTaskRepository(a.logger, a.pool)
 	taskSvc := taskService.NewTaskService(a.logger, taskQueries)
 	taskHandler := taskDelivery.NewTaskHandler(a.logger, taskSvc)
-
-	// --- Resource ---
-	resourceQueries := resourceRepo.NewResourceRepository(a.logger, a.pool)
-	resourceSvc := resourceService.NewResourceService(a.logger, resourceQueries)
-	resourceHandler := resourceDelivery.NewResourceHandler(a.logger, resourceSvc)
 
 	// --- Project ---
 	projectQueries := projectRepo.NewProjectRepository(a.logger, a.pool)
@@ -104,10 +111,36 @@ func (a *App) registerRoutes(router *gin.Engine) {
 		planningHandler.RegisterRoutes(protected)
 		userHandler.RegisterRoutes(protected)
 		taskHandler.RegisterRoutes(protected)
-		resourceHandler.RegisterRoutes(protected)
 		projectHandler.RegisterRoutes(protected)
 		processHandler.RegisterRoutes(protected)
 		milestoneHandler.RegisterRoutes(protected)
 		assignmentHandler.RegisterRoutes(protected)
+
+		a.registerTimesheet(protected.Group("/timesheet"))
 	}
+}
+
+// registerTimesheet собирает домены «табеля» (ресурсы, состояния, сотрудники, календарь)
+// и регистрирует их роуты под общим префиксом.
+func (a *App) registerTimesheet(router *gin.RouterGroup) {
+	resourceQueries := resourceRepo.NewResourceRepository(a.logger, a.pool)
+	resourceSvc := resourceService.NewResourceService(a.logger, resourceQueries)
+	resourceHandler := resourceDelivery.NewResourceHandler(a.logger, resourceSvc)
+
+	stateQueries := stateRepo.NewStateRepository(a.logger, a.pool)
+	stateSvc := stateService.NewStateService(a.logger, stateQueries)
+	stateHandler := stateDelivery.NewStateHandler(a.logger, stateSvc)
+
+	employeeQueries := employeeRepo.NewEmployeeRepository(a.logger, a.pool)
+	employeeSvc := employeeService.NewEmployeeService(a.logger, employeeQueries)
+	employeeHandler := employeeDelivery.NewEmployeeHandler(a.logger, employeeSvc)
+
+	calendarQueries := calendarRepo.NewCalendarRepository(a.logger, a.pool)
+	calendarSvc := calendarService.NewCalendarService(a.logger, calendarQueries)
+	calendarHandler := calendarDelivery.NewCalendarHandler(a.logger, calendarSvc)
+
+	resourceHandler.RegisterRoutes(router)
+	stateHandler.RegisterRoutes(router)
+	employeeHandler.RegisterRoutes(router)
+	calendarHandler.RegisterRoutes(router)
 }
