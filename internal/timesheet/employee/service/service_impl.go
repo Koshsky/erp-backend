@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/common/date"
+	"github.com/Koshsky/erp-backend/internal/timesheet/employee/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/dto"
+	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 )
 
 type EmployeeService struct {
@@ -25,6 +26,20 @@ func NewEmployeeService(logger *slog.Logger, repository EmployeeRepository) *Emp
 	}
 }
 
+// canManageAllEmployees возвращает true, если роль управляет всеми сотрудниками.
+func canManageAllEmployees(role string) bool {
+	return role == userdomain.Admin
+}
+
+// managesEmployee проверяет, что пользователь управляет сотрудником:
+// admin — любой, остальные — только подчинённые (manager_id = user.id).
+func managesEmployee(role string, userID int64, employee *domain.Employee) bool {
+	if canManageAllEmployees(role) {
+		return true
+	}
+	return employee.ManagerID != nil && *employee.ManagerID == userID
+}
+
 func (s *EmployeeService) ListEmployeesByResource(
 	ctx context.Context,
 	resourceID int64,
@@ -36,11 +51,19 @@ func (s *EmployeeService) ListEmployeesByResource(
 	return s.mapper.ToEmployeeDTOs(employees), nil
 }
 
-// ListEmployees возвращает всех сотрудников или только подчинённых менеджера.
+// ListEmployees возвращает всех сотрудников (admin) или только подчинённых
+// текущего пользователя. Для не-admin переданный manager_id игнорируется,
+// чтобы нельзя было увидеть чужую команду.
 func (s *EmployeeService) ListEmployees(
 	ctx context.Context,
 	managerID *int64,
+	userID int64,
+	role string,
 ) ([]dto.EmployeeResponse, error) {
+	if !canManageAllEmployees(role) {
+		managerID = &userID
+	}
+
 	if managerID == nil {
 		employees, err := s.repository.ListEmployees(ctx)
 		if err != nil {
@@ -56,13 +79,21 @@ func (s *EmployeeService) ListEmployees(
 	return s.mapper.ToEmployeeDTOs(employees), nil
 }
 
-func (s *EmployeeService) FindEmployee(ctx context.Context, id int64) (*dto.EmployeeResponse, error) {
+func (s *EmployeeService) FindEmployee(
+	ctx context.Context,
+	id int64,
+	userID int64,
+	role string,
+) (*dto.EmployeeResponse, error) {
 	employee, err := s.repository.FindEmployee(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if employee == nil {
-		return nil, fmt.Errorf("employee not found")
+		return nil, ErrNotFound
+	}
+	if !managesEmployee(role, userID, employee) {
+		return nil, ErrForbidden
 	}
 	return s.mapper.ToEmployeeDTO(employee), nil
 }
@@ -71,7 +102,19 @@ func (s *EmployeeService) CreateEmployee(
 	ctx context.Context,
 	resourceID int64,
 	req dto.CreateEmployeeRequest,
+	userID int64,
+	role string,
 ) (*dto.EmployeeResponse, error) {
+	switch {
+	case canManageAllEmployees(role):
+		// admin указывает любого руководителя (или оставляет без руководителя)
+	case role == userdomain.ProcessOwner:
+		// vp создаёт сотрудника себе в подчинение: чужой manager_id из запроса игнорируется
+		req.ManagerID = &userID
+	default:
+		return nil, ErrForbidden
+	}
+
 	employee := s.mapper.ToDomainFromCreate(req)
 	employee.ResourceID = resourceID
 	if err := s.validator.ValidateEmployee(&employee); err != nil {
@@ -83,7 +126,7 @@ func (s *EmployeeService) CreateEmployee(
 		return nil, err
 	}
 	if !active {
-		return nil, fmt.Errorf("resource not found or deleted")
+		return nil, ErrResourceNotFound
 	}
 
 	created, err := s.repository.CreateEmployee(ctx, employee)
@@ -98,16 +141,25 @@ func (s *EmployeeService) UpdateEmployee(
 	ctx context.Context,
 	id int64,
 	req dto.UpdateEmployeeRequest,
+	userID int64,
+	role string,
 ) (*dto.EmployeeResponse, error) {
 	employee, err := s.repository.FindEmployee(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if employee == nil {
-		return nil, fmt.Errorf("employee not found")
+		return nil, ErrNotFound
+	}
+	if !managesEmployee(role, userID, employee) {
+		return nil, ErrForbidden
 	}
 
 	s.mapper.ApplyUpdateToDomain(employee, req)
+	// Не-admin не может переподчинить своего сотрудника другому менеджеру.
+	if !canManageAllEmployees(role) {
+		employee.ManagerID = &userID
+	}
 	if err = s.validator.ValidateEmployee(employee); err != nil {
 		return nil, err
 	}
@@ -120,7 +172,23 @@ func (s *EmployeeService) UpdateEmployee(
 	return s.mapper.ToEmployeeDTO(updated), nil
 }
 
-func (s *EmployeeService) DeleteEmployee(ctx context.Context, id int64) error {
+func (s *EmployeeService) DeleteEmployee(
+	ctx context.Context,
+	id int64,
+	userID int64,
+	role string,
+) error {
+	employee, err := s.repository.FindEmployee(ctx, id)
+	if err != nil {
+		return err
+	}
+	if employee == nil {
+		return ErrNotFound
+	}
+	if !managesEmployee(role, userID, employee) {
+		return ErrForbidden
+	}
+
 	return s.repository.DeleteEmployee(ctx, id)
 }
 
@@ -128,6 +196,8 @@ func (s *EmployeeService) ListStates(
 	ctx context.Context,
 	employeeID int64,
 	start, end date.Date,
+	userID int64,
+	role string,
 ) ([]dto.EmployeeStateResponse, error) {
 	if err := s.validator.ValidatePositiveID(employeeID, "employee_id"); err != nil {
 		return nil, err
@@ -141,7 +211,10 @@ func (s *EmployeeService) ListStates(
 		return nil, err
 	}
 	if employee == nil {
-		return nil, fmt.Errorf("employee not found")
+		return nil, ErrNotFound
+	}
+	if !managesEmployee(role, userID, employee) {
+		return nil, ErrForbidden
 	}
 
 	states, err := s.repository.ListStates(ctx, employeeID, start.Time(), end.Time())
@@ -151,7 +224,13 @@ func (s *EmployeeService) ListStates(
 	return s.mapper.ToStateDTOs(states), nil
 }
 
-func (s *EmployeeService) SetDays(ctx context.Context, employeeID int64, req dto.SetDaysRequest) error {
+func (s *EmployeeService) SetDays(
+	ctx context.Context,
+	employeeID int64,
+	req dto.SetDaysRequest,
+	userID int64,
+	role string,
+) error {
 	if err := s.validator.ValidatePositiveID(employeeID, "employee_id"); err != nil {
 		return err
 	}
@@ -162,6 +241,10 @@ func (s *EmployeeService) SetDays(ctx context.Context, employeeID int64, req dto
 		return err
 	}
 
+	if !s.managesEmployeeID(ctx, employeeID, userID, role) {
+		return ErrForbidden
+	}
+
 	return s.repository.SetStateRange(ctx, employeeID, req.StateID, req.StartDate.Time(), req.EndDate.Time())
 }
 
@@ -170,6 +253,8 @@ func (s *EmployeeService) DeleteDays(
 	employeeID int64,
 	start, end date.Date,
 	stateID *int64,
+	userID int64,
+	role string,
 ) error {
 	if err := s.validator.ValidatePositiveID(employeeID, "employee_id"); err != nil {
 		return err
@@ -183,5 +268,26 @@ func (s *EmployeeService) DeleteDays(
 		return err
 	}
 
+	if !s.managesEmployeeID(ctx, employeeID, userID, role) {
+		return ErrForbidden
+	}
+
 	return s.repository.DeleteStateRange(ctx, employeeID, start.Time(), end.Time(), stateID)
+}
+
+// managesEmployeeID загружает сотрудника и проверяет право управления им.
+func (s *EmployeeService) managesEmployeeID(
+	ctx context.Context,
+	employeeID int64,
+	userID int64,
+	role string,
+) bool {
+	if canManageAllEmployees(role) {
+		return true
+	}
+	employee, err := s.repository.FindEmployee(ctx, employeeID)
+	if err != nil || employee == nil {
+		return false
+	}
+	return employee.ManagerID != nil && *employee.ManagerID == userID
 }
