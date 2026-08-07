@@ -8,98 +8,48 @@ package sqlc
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const listCalendarCapacity = `-- name: ListCalendarCapacity :many
-SELECT r.id AS resource_id,
-    g.date::date,
-    COUNT(e.id)::bigint AS capacity
-FROM resources r
-CROSS JOIN generate_series($1::date, $2::date, INTERVAL '1 day') AS g(date)
-LEFT JOIN employees e
-    ON e.resource_id = r.id
-    AND e.deleted_at IS NULL
-    AND (e.hire_date IS NULL OR e.hire_date <= g.date)
-    AND (e.termination_date IS NULL OR e.termination_date >= g.date)
-WHERE r.deleted_at IS NULL
-GROUP BY r.id, g.date::date
-ORDER BY r.id ASC, g.date::date ASC
+const listEmployeesForCalendar = `-- name: ListEmployeesForCalendar :many
+SELECT e.id, e.resource_id, e.hire_date, e.termination_date
+FROM employees e
+WHERE e.deleted_at IS NULL
+    AND (e.hire_date IS NULL OR e.hire_date <= $1::date)
+    AND (e.termination_date IS NULL OR e.termination_date >= $2::date)
+ORDER BY e.resource_id ASC, e.id ASC
 `
 
-type ListCalendarCapacityParams struct {
-	StartDate time.Time `json:"start_date"`
+type ListEmployeesForCalendarParams struct {
 	EndDate   time.Time `json:"end_date"`
+	StartDate time.Time `json:"start_date"`
 }
 
-type ListCalendarCapacityRow struct {
-	ResourceID int64     `json:"resource_id"`
-	GDate      time.Time `json:"g_date"`
-	Capacity   int64     `json:"capacity"`
+type ListEmployeesForCalendarRow struct {
+	ID              int64       `json:"id"`
+	ResourceID      int64       `json:"resource_id"`
+	HireDate        pgtype.Date `json:"hire_date"`
+	TerminationDate pgtype.Date `json:"termination_date"`
 }
 
-// По-дневная мощность категории: сколько сотрудников активно в каждый день диапазона.
-func (q *Queries) ListCalendarCapacity(ctx context.Context, arg ListCalendarCapacityParams) ([]ListCalendarCapacityRow, error) {
-	rows, err := q.db.Query(ctx, listCalendarCapacity, arg.StartDate, arg.EndDate)
+// Сотрудники, которые могли быть активны в окне [start_date, end_date]
+// (по hire_date/termination_date), без по-дневного разворачивания.
+func (q *Queries) ListEmployeesForCalendar(ctx context.Context, arg ListEmployeesForCalendarParams) ([]ListEmployeesForCalendarRow, error) {
+	rows, err := q.db.Query(ctx, listEmployeesForCalendar, arg.EndDate, arg.StartDate)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListCalendarCapacityRow{}
+	items := []ListEmployeesForCalendarRow{}
 	for rows.Next() {
-		var i ListCalendarCapacityRow
-		if err := rows.Scan(&i.ResourceID, &i.GDate, &i.Capacity); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCalendarUnavailable = `-- name: ListCalendarUnavailable :many
-SELECT em.resource_id,
-    g.date::date,
-    COUNT(*)::bigint AS unavailable
-FROM employee_states es
-JOIN employees em ON em.id = es.employee_id
-JOIN states s ON s.id = es.state_id
-CROSS JOIN LATERAL generate_series(
-    GREATEST(es.start_date, $1::date),
-    LEAST(es.end_date, $2::date),
-    INTERVAL '1 day'
-) AS g(date)
-WHERE s.is_available = FALSE
-    AND em.deleted_at IS NULL
-    AND es.end_date >= $1::date
-    AND es.start_date <= $2::date
-GROUP BY em.resource_id, g.date::date
-`
-
-type ListCalendarUnavailableParams struct {
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-}
-
-type ListCalendarUnavailableRow struct {
-	ResourceID  int64     `json:"resource_id"`
-	GDate       time.Time `json:"g_date"`
-	Unavailable int64     `json:"unavailable"`
-}
-
-// По-дневое количество недоступных сотрудников (состояния с is_available = false):
-// разворачиваются только пересечения интервалов состояний с запрошенным диапазоном.
-func (q *Queries) ListCalendarUnavailable(ctx context.Context, arg ListCalendarUnavailableParams) ([]ListCalendarUnavailableRow, error) {
-	rows, err := q.db.Query(ctx, listCalendarUnavailable, arg.StartDate, arg.EndDate)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListCalendarUnavailableRow{}
-	for rows.Next() {
-		var i ListCalendarUnavailableRow
-		if err := rows.Scan(&i.ResourceID, &i.GDate, &i.Unavailable); err != nil {
+		var i ListEmployeesForCalendarRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ResourceID,
+			&i.HireDate,
+			&i.TerminationDate,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -133,6 +83,50 @@ func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error)
 	for rows.Next() {
 		var i ListResourcesRow
 		if err := rows.Scan(&i.ID, &i.Title, &i.Code); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnavailableRanges = `-- name: ListUnavailableRanges :many
+SELECT em.resource_id, es.start_date, es.end_date
+FROM employee_states es
+JOIN employees em ON em.id = es.employee_id
+JOIN states s ON s.id = es.state_id
+WHERE s.is_available = FALSE
+    AND em.deleted_at IS NULL
+    AND es.end_date >= $1::date
+    AND es.start_date <= $2::date
+ORDER BY em.resource_id ASC, es.start_date ASC
+`
+
+type ListUnavailableRangesParams struct {
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+type ListUnavailableRangesRow struct {
+	ResourceID int64     `json:"resource_id"`
+	StartDate  time.Time `json:"start_date"`
+	EndDate    time.Time `json:"end_date"`
+}
+
+// Интервалы отсутствий (is_available = false), пересекающие окно, без разворачивания.
+func (q *Queries) ListUnavailableRanges(ctx context.Context, arg ListUnavailableRangesParams) ([]ListUnavailableRangesRow, error) {
+	rows, err := q.db.Query(ctx, listUnavailableRanges, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUnavailableRangesRow{}
+	for rows.Next() {
+		var i ListUnavailableRangesRow
+		if err := rows.Scan(&i.ResourceID, &i.StartDate, &i.EndDate); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

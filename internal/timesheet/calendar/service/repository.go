@@ -9,6 +9,6 @@ import (
 
 type CalendarRepository interface {
 	ListResources(ctx context.Context) ([]dto.ResourceInfo, error)
-	ListCapacity(ctx context.Context, start, end time.Time) ([]dto.ResourceDayCount, error)
-	ListUnavailable(ctx context.Context, start, end time.Time) ([]dto.ResourceDayCount, error)
+	ListEmployeesForCalendar(ctx context.Context, start, end time.Time) ([]dto.CalendarEmployee, error)
+	ListUnavailableRanges(ctx context.Context, start, end time.Time) ([]dto.UnavailableRange, error)
 }

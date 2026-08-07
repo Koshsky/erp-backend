@@ -21,6 +21,9 @@ sql:
             go_type: "time.Time"
           - db_type: "date"
             go_type: "time.Time"
+          - db_type: "date"
+            nullable: true
+            go_type: "github.com/jackc/pgx/v5/pgtype.Date"
           - db_type: "uuid"
             go_type: "github.com/google/uuid.UUID"
           - db_type: "jsonb"
