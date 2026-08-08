@@ -45,7 +45,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -53,7 +53,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.AssignmentResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse"
                                             }
                                         }
                                     }
@@ -66,7 +66,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -105,7 +105,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateAssignmentRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.CreateAssignmentRequest"
                         }
                     }
                 ],
@@ -115,13 +115,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.AssignmentResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse"
                                         }
                                     }
                                 }
@@ -133,7 +133,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -151,7 +151,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -197,13 +197,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.AssignmentResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse"
                                         }
                                     }
                                 }
@@ -215,7 +215,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -233,7 +233,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -279,7 +279,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateAssignmentRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.UpdateAssignmentRequest"
                         }
                     }
                 ],
@@ -289,13 +289,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.AssignmentResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse"
                                         }
                                     }
                                 }
@@ -307,7 +307,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -325,7 +325,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -372,7 +372,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -390,7 +390,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -426,7 +426,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.LoginRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.LoginRequest"
                         }
                     }
                 ],
@@ -436,13 +436,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.AuthResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.AuthResponse"
                                         }
                                     }
                                 }
@@ -454,7 +454,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -472,7 +472,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -508,7 +508,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RefreshTokenRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.RefreshTokenRequest"
                         }
                     }
                 ],
@@ -518,13 +518,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.RefreshResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.RefreshResponse"
                                         }
                                     }
                                 }
@@ -536,7 +536,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -554,7 +554,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -590,7 +590,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RegisterRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.RegisterRequest"
                         }
                     }
                 ],
@@ -600,13 +600,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.AuthResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.AuthResponse"
                                         }
                                     }
                                 }
@@ -618,7 +618,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -636,7 +636,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -673,7 +673,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -681,7 +681,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.MilestoneResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse"
                                             }
                                         }
                                     }
@@ -694,7 +694,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -733,7 +733,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateMilestoneRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.CreateMilestoneRequest"
                         }
                     }
                 ],
@@ -743,13 +743,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.MilestoneResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse"
                                         }
                                     }
                                 }
@@ -761,7 +761,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -779,7 +779,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -825,13 +825,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.MilestoneResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse"
                                         }
                                     }
                                 }
@@ -843,7 +843,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -861,7 +861,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -878,6 +878,9 @@ const docTemplate = `{
             },
             "put": {
                 "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
                     {
                         "ApiKeyAuth": []
                     }
@@ -907,7 +910,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateMilestoneRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.UpdateMilestoneRequest"
                         }
                     }
                 ],
@@ -917,13 +920,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.MilestoneResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse"
                                         }
                                     }
                                 }
@@ -935,7 +938,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -953,7 +956,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1000,7 +1003,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1018,7 +1021,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1053,19 +1056,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.ProcessPlanning"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                         }
                     },
                     "400": {
@@ -1073,7 +1064,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1091,7 +1082,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1126,19 +1117,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.ProjectPlanning"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                         }
                     },
                     "400": {
@@ -1146,7 +1125,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1164,7 +1143,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1199,19 +1178,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.TaskPlanning"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                         }
                     },
                     "400": {
@@ -1219,7 +1186,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1237,7 +1204,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1274,7 +1241,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1282,7 +1249,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.ProcessResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse"
                                             }
                                         }
                                     }
@@ -1295,7 +1262,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1334,7 +1301,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateProcessRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.CreateProcessRequest"
                         }
                     }
                 ],
@@ -1344,13 +1311,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProcessResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse"
                                         }
                                     }
                                 }
@@ -1362,7 +1329,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1380,7 +1347,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1404,9 +1371,6 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Get a process by ID",
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "Processes"
                 ],
@@ -1426,13 +1390,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProcessResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse"
                                         }
                                     }
                                 }
@@ -1444,7 +1408,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1462,7 +1426,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1508,7 +1472,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateProcessRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.UpdateProcessRequest"
                         }
                     }
                 ],
@@ -1518,13 +1482,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProcessResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse"
                                         }
                                     }
                                 }
@@ -1536,7 +1500,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1554,7 +1518,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1576,9 +1540,6 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Delete a process by ID",
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "Processes"
                 ],
@@ -1601,7 +1562,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1619,7 +1580,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1649,14 +1610,14 @@ const docTemplate = `{
                 "tags": [
                     "Projects"
                 ],
-                "summary": "List projects",
+                "summary": "List all projects",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1664,7 +1625,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.ProjectResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse"
                                             }
                                         }
                                     }
@@ -1677,7 +1638,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1698,7 +1659,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Create a new project with the provided details",
+                "description": "Create a new project",
                 "consumes": [
                     "application/json"
                 ],
@@ -1708,15 +1669,15 @@ const docTemplate = `{
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Create a new project",
+                "summary": "Create project",
                 "parameters": [
                     {
-                        "description": "Project details",
+                        "description": "Project data",
                         "name": "project",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateProjectRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.CreateProjectRequest"
                         }
                     }
                 ],
@@ -1726,13 +1687,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProjectResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse"
                                         }
                                     }
                                 }
@@ -1744,7 +1705,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1762,7 +1723,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1785,14 +1746,14 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get a project by ID",
+                "description": "Get a project by its ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Get project",
+                "summary": "Get a project by ID",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1808,13 +1769,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProjectResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse"
                                         }
                                     }
                                 }
@@ -1826,7 +1787,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1844,7 +1805,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1865,7 +1826,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Update a project by its ID",
+                "description": "Update code, dates, priority or owner of a project",
                 "consumes": [
                     "application/json"
                 ],
@@ -1886,11 +1847,11 @@ const docTemplate = `{
                     },
                     {
                         "description": "Project data",
-                        "name": "project",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateProjectRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.UpdateProjectRequest"
                         }
                     }
                 ],
@@ -1900,13 +1861,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProjectResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse"
                                         }
                                     }
                                 }
@@ -1918,7 +1879,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1936,7 +1897,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1957,17 +1918,14 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Delete a project by its ID",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Delete a project by ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Delete project",
+                "summary": "Delete a project",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1986,7 +1944,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2004,7 +1962,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2041,7 +1999,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2049,7 +2007,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.TaskResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse"
                                             }
                                         }
                                     }
@@ -2062,7 +2020,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2101,7 +2059,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateTaskRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.CreateTaskRequest"
                         }
                     }
                 ],
@@ -2111,13 +2069,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.TaskResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse"
                                         }
                                     }
                                 }
@@ -2129,7 +2087,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2147,7 +2105,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2193,13 +2151,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.TaskResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse"
                                         }
                                     }
                                 }
@@ -2211,7 +2169,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2229,7 +2187,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2275,7 +2233,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateTaskRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.UpdateTaskRequest"
                         }
                     }
                 ],
@@ -2285,13 +2243,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.TaskResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse"
                                         }
                                     }
                                 }
@@ -2303,7 +2261,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2321,7 +2279,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2371,7 +2329,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2389,7 +2347,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2440,19 +2398,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.CalendarPlanning"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                         }
                     },
                     "400": {
@@ -2460,7 +2406,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2478,7 +2424,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2501,7 +2447,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "List employees, optionally filtered by manager (user) id",
+                "description": "List all employees",
                 "produces": [
                     "application/json"
                 ],
@@ -2509,21 +2455,13 @@ const docTemplate = `{
                     "TimesheetEmployees"
                 ],
                 "summary": "List all employees",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Manager (user) ID filter",
-                        "name": "manager_id",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2531,7 +2469,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.EmployeeResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse"
                                             }
                                         }
                                     }
@@ -2544,7 +2482,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2562,7 +2500,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2608,13 +2546,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.EmployeeResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse"
                                         }
                                     }
                                 }
@@ -2626,7 +2564,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2644,7 +2582,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2690,7 +2628,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateEmployeeRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.UpdateEmployeeRequest"
                         }
                     }
                 ],
@@ -2700,13 +2638,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.EmployeeResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse"
                                         }
                                     }
                                 }
@@ -2718,7 +2656,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2736,7 +2674,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2783,7 +2721,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2801,7 +2739,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2861,7 +2799,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2869,7 +2807,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.EmployeeStateResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeStateResponse"
                                             }
                                         }
                                     }
@@ -2882,7 +2820,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2900,7 +2838,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2946,7 +2884,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SetDaysRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.SetDaysRequest"
                         }
                     }
                 ],
@@ -2959,7 +2897,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2977,7 +2915,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3044,7 +2982,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3062,7 +3000,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3099,7 +3037,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3107,7 +3045,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.ResourceResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse"
                                             }
                                         }
                                     }
@@ -3120,7 +3058,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3159,7 +3097,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateResourceRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.CreateResourceRequest"
                         }
                     }
                 ],
@@ -3169,13 +3107,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ResourceResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse"
                                         }
                                     }
                                 }
@@ -3187,7 +3125,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3205,7 +3143,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3251,13 +3189,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ResourceResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse"
                                         }
                                     }
                                 }
@@ -3269,7 +3207,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3287,7 +3225,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3333,7 +3271,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateResourceRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.UpdateResourceRequest"
                         }
                     }
                 ],
@@ -3343,13 +3281,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ResourceResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse"
                                         }
                                     }
                                 }
@@ -3361,7 +3299,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3379,7 +3317,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3426,7 +3364,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3444,7 +3382,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3490,7 +3428,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3498,7 +3436,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.EmployeeResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse"
                                             }
                                         }
                                     }
@@ -3511,7 +3449,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3529,7 +3467,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3575,7 +3513,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateEmployeeRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.CreateEmployeeRequest"
                         }
                     }
                 ],
@@ -3585,13 +3523,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.EmployeeResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse"
                                         }
                                     }
                                 }
@@ -3603,7 +3541,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3621,7 +3559,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3658,7 +3596,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3666,7 +3604,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.StateResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse"
                                             }
                                         }
                                     }
@@ -3679,7 +3617,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3718,7 +3656,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateStateRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.CreateStateRequest"
                         }
                     }
                 ],
@@ -3728,13 +3666,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.StateResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse"
                                         }
                                     }
                                 }
@@ -3746,7 +3684,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3764,7 +3702,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3810,13 +3748,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.StateResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse"
                                         }
                                     }
                                 }
@@ -3828,7 +3766,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3846,7 +3784,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3892,7 +3830,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateStateRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.UpdateStateRequest"
                         }
                     }
                 ],
@@ -3902,13 +3840,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.StateResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse"
                                         }
                                     }
                                 }
@@ -3920,7 +3858,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3938,7 +3876,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3985,7 +3923,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4003,7 +3941,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4040,7 +3978,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4048,7 +3986,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.UserResponse"
+                                                "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UserResponse"
                                             }
                                         }
                                     }
@@ -4061,7 +3999,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4099,7 +4037,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ChangePasswordRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordRequest"
                         }
                     }
                 ],
@@ -4109,13 +4047,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ChangePasswordResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordResponse"
                                         }
                                     }
                                 }
@@ -4127,7 +4065,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4173,13 +4111,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UserResponse"
                                         }
                                     }
                                 }
@@ -4191,7 +4129,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4209,7 +4147,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4255,7 +4193,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateUserRequest"
+                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UpdateUserRequest"
                         }
                     }
                 ],
@@ -4265,13 +4203,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
+                                            "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UserResponse"
                                         }
                                     }
                                 }
@@ -4283,7 +4221,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4301,7 +4239,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4351,7 +4289,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4369,7 +4307,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4387,7 +4325,100 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.AssignmentResponse": {
+        "github_com_Koshsky_erp-backend_internal_auth_dto.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "tokens": {
+                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_security_jwt.TokenPair"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.UserInfo"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_auth_dto.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "password"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "ivanov"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_auth_dto.RefreshResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Token refreshed successfully"
+                },
+                "tokens": {
+                    "$ref": "#/definitions/github_com_Koshsky_erp-backend_internal_security_jwt.TokenPair"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_auth_dto.RefreshTokenRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6I..."
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_auth_dto.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "Ivan Ivanov"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "ivanov"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_auth_dto.UserInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Ivan Ivanov"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "rp"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "ivanov"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_common_response.Response": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "type": "string",
+                    "example": "error message"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -4408,78 +4439,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.AuthResponse": {
-            "type": "object",
-            "properties": {
-                "tokens": {
-                    "$ref": "#/definitions/jwt.TokenPair"
-                },
-                "user": {
-                    "$ref": "#/definitions/dto.UserInfo"
-                }
-            }
-        },
-        "dto.AvailabilityPeriod": {
-            "type": "object",
-            "properties": {
-                "available": {
-                    "type": "integer",
-                    "example": 7
-                },
-                "capacity": {
-                    "type": "integer",
-                    "example": 7
-                },
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-07-19"
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-07-15"
-                },
-                "unavailable": {
-                    "type": "integer",
-                    "example": 0
-                }
-            }
-        },
-        "dto.CalendarPlanning": {
-            "type": "object",
-            "properties": {
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.ResourceCalendar"
-                    }
-                }
-            }
-        },
-        "dto.ChangePasswordRequest": {
-            "type": "object",
-            "properties": {
-                "new_password": {
-                    "type": "string",
-                    "example": "new_password"
-                },
-                "old_password": {
-                    "type": "string",
-                    "example": "password"
-                }
-            }
-        },
-        "dto.ChangePasswordResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "password changed"
-                }
-            }
-        },
-        "dto.CreateAssignmentRequest": {
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.CreateAssignmentRequest": {
             "type": "object",
             "properties": {
                 "quantity": {
@@ -4496,7 +4456,355 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CreateEmployeeRequest": {
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.UpdateAssignmentRequest": {
+            "type": "object",
+            "properties": {
+                "quantity": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "resource_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "task_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.CreateMilestoneRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Приедут с России1"
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Телевидение"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Приедут с России1"
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Телевидение"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.UpdateMilestoneRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Приедут с России1"
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Телевидение"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.CreateProcessRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Инсталляция"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Инсталляция"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.UpdateProcessRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Инсталляция"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.CreateProjectRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "priority": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.UpdateProjectRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "priority": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.CreateTaskRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "process_id": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.UpdateTaskRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_security_jwt.TokenPair": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "expires_in": {
+                    "description": "seconds",
+                    "type": "integer",
+                    "example": 3600
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "abcdef123456..."
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.CreateEmployeeRequest": {
             "type": "object",
             "properties": {
                 "hire_date": {
@@ -4523,265 +4831,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CreateMilestoneRequest": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "example": "Приедут с России1"
-                },
-                "date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Телевидение"
-                }
-            }
-        },
-        "dto.CreateProcessRequest": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "project_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Инсталляция"
-                }
-            }
-        },
-        "dto.CreateProjectRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "КО_001"
-                },
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "priority": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                }
-            }
-        },
-        "dto.CreateResourceRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "М"
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Монтажник"
-                }
-            }
-        },
-        "dto.CreateStateRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "ОТП"
-                },
-                "is_available": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Отпуск"
-                }
-            }
-        },
-        "dto.CreateTaskRequest": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Пуско-наладочные работы"
-                }
-            }
-        },
-        "dto.DetailedProcess": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "milestones": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Milestone"
-                    }
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "project_code": {
-                    "type": "string",
-                    "example": "КО_001"
-                },
-                "project_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "tasks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.DetailedTask"
-                    }
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Инсталляция"
-                }
-            }
-        },
-        "dto.DetailedProject": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "priority": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "processes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Process"
-                    }
-                },
-                "project_code": {
-                    "type": "string",
-                    "example": "КО_001"
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                }
-            }
-        },
-        "dto.DetailedTask": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Resource"
-                    }
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Пуско-наладочные работы"
-                }
-            }
-        },
-        "dto.EmployeeResponse": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse": {
             "type": "object",
             "properties": {
                 "hire_date": {
@@ -4820,7 +4870,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.EmployeeStateResponse": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeStateResponse": {
             "type": "object",
             "properties": {
                 "end_date": {
@@ -4855,325 +4905,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.LoginRequest": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "example": "password"
-                },
-                "username": {
-                    "type": "string",
-                    "example": "ivanov"
-                }
-            }
-        },
-        "dto.Milestone": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "example": "Начало работ по проекту"
-                },
-                "date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Начало работ"
-                }
-            }
-        },
-        "dto.MilestoneResponse": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "example": "Приедут с России1"
-                },
-                "date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Телевидение"
-                }
-            }
-        },
-        "dto.Process": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "project_code": {
-                    "type": "string",
-                    "example": "КО_001"
-                },
-                "project_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Инсталляция"
-                }
-            }
-        },
-        "dto.ProcessPlanning": {
-            "type": "object",
-            "properties": {
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.DetailedProject"
-                    }
-                }
-            }
-        },
-        "dto.ProcessResponse": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "project_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Инсталляция"
-                }
-            }
-        },
-        "dto.Project": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "priority": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "project_code": {
-                    "type": "string",
-                    "example": "КО_001"
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                }
-            }
-        },
-        "dto.ProjectPlanning": {
-            "type": "object",
-            "properties": {
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Project"
-                    }
-                }
-            }
-        },
-        "dto.ProjectResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "end_date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "owner_id": {
-                    "type": "integer"
-                },
-                "priority": {
-                    "type": "integer"
-                },
-                "start_date": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.RefreshResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Token refreshed successfully"
-                },
-                "tokens": {
-                    "$ref": "#/definitions/jwt.TokenPair"
-                }
-            }
-        },
-        "dto.RefreshTokenRequest": {
-            "type": "object",
-            "properties": {
-                "refresh_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6I..."
-                }
-            }
-        },
-        "dto.RegisterRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "example": "Ivan Ivanov"
-                },
-                "password": {
-                    "type": "string",
-                    "example": "password"
-                },
-                "username": {
-                    "type": "string",
-                    "example": "ivanov"
-                }
-            }
-        },
-        "dto.Resource": {
-            "type": "object",
-            "properties": {
-                "assignment_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "code": {
-                    "type": "string",
-                    "example": "М"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "quantity": {
-                    "type": "integer",
-                    "example": 7
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Монтажник"
-                }
-            }
-        },
-        "dto.ResourceCalendar": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "И"
-                },
-                "periods": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.AvailabilityPeriod"
-                    }
-                },
-                "resource_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Инженер"
-                }
-            }
-        },
-        "dto.ResourceResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "М"
-                },
-                "employees_count": {
-                    "type": "integer",
-                    "example": 4
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Монтажник"
-                }
-            }
-        },
-        "dto.SetDaysRequest": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.SetDaysRequest": {
             "type": "object",
             "properties": {
                 "end_date": {
@@ -5192,79 +4924,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.StateResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "ОТП"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 4
-                },
-                "is_available": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Отпуск"
-                }
-            }
-        },
-        "dto.TaskPlanning": {
-            "type": "object",
-            "properties": {
-                "processes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.DetailedProcess"
-                    }
-                }
-            }
-        },
-        "dto.TaskResponse": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "owner_id": {
-                    "type": "integer"
-                },
-                "process_id": {
-                    "type": "integer"
-                },
-                "start_date": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateAssignmentRequest": {
-            "type": "object",
-            "properties": {
-                "quantity": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "resource_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "task_id": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
-        "dto.UpdateEmployeeRequest": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.UpdateEmployeeRequest": {
             "type": "object",
             "properties": {
                 "hire_date": {
@@ -5295,83 +4955,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateMilestoneRequest": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "example": "Приедут с России1"
-                },
-                "date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Телевидение"
-                }
-            }
-        },
-        "dto.UpdateProcessRequest": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "project_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Инсталляция"
-                }
-            }
-        },
-        "dto.UpdateProjectRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "1"
-                },
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
-                },
-                "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "priority": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                }
-            }
-        },
-        "dto.UpdateResourceRequest": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.CreateResourceRequest": {
             "type": "object",
             "properties": {
                 "code": {
@@ -5388,7 +4972,49 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateStateRequest": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "М"
+                },
+                "employees_count": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Монтажник"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.UpdateResourceRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "М"
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Монтажник"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_timesheet_state_dto.CreateStateRequest": {
             "type": "object",
             "properties": {
                 "code": {
@@ -5405,34 +5031,67 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateTaskRequest": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse": {
             "type": "object",
             "properties": {
-                "end_date": {
+                "code": {
                     "type": "string",
-                    "format": "date",
-                    "example": "2026-02-01"
+                    "example": "ОТП"
                 },
-                "owner_id": {
+                "id": {
                     "type": "integer",
-                    "example": 1
+                    "example": 4
                 },
-                "process_id": {
-                    "type": "integer",
-                    "example": 1
+                "is_available": {
+                    "type": "boolean",
+                    "example": false
                 },
-                "start_date": {
+                "name": {
                     "type": "string",
-                    "format": "date",
-                    "example": "2026-01-01"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Пуско-наладочные работы"
+                    "example": "Отпуск"
                 }
             }
         },
-        "dto.UpdateUserRequest": {
+        "github_com_Koshsky_erp-backend_internal_timesheet_state_dto.UpdateStateRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "ОТП"
+                },
+                "is_available": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Отпуск"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordRequest": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "example": "new_password"
+                },
+                "old_password": {
+                    "type": "string",
+                    "example": "password"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "password changed"
+                }
+            }
+        },
+        "github_com_Koshsky_erp-backend_internal_user_dto.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -5449,28 +5108,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UserInfo": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Ivan Ivanov"
-                },
-                "role": {
-                    "type": "string",
-                    "example": "rp"
-                },
-                "username": {
-                    "type": "string",
-                    "example": "ivanov"
-                }
-            }
-        },
-        "dto.UserResponse": {
+        "github_com_Koshsky_erp-backend_internal_user_dto.UserResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -5488,38 +5126,6 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "example": "ivanov"
-                }
-            }
-        },
-        "jwt.TokenPair": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                },
-                "expires_in": {
-                    "description": "seconds",
-                    "type": "integer",
-                    "example": 3600
-                },
-                "refresh_token": {
-                    "type": "string",
-                    "example": "abcdef123456..."
-                },
-                "token_type": {
-                    "type": "string",
-                    "example": "Bearer"
-                }
-            }
-        },
-        "response.Response": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "error": {
-                    "type": "string",
-                    "example": "error message"
                 }
             }
         }

@@ -1,11 +1,11 @@
--- Объединённая миграция V10: колонки для существующих БД + демо-данные.
--- На свежих БД колонки position/owner_id уже есть из V1 — ALTER-ы отрабатывают как no-op.
+-- Combined migration V10: columns for existing DBs + demo data.
+-- On fresh DBs position/owner_id already exist from V1; the ALTERs are no-ops.
 
--- Должность сотрудника — свободный текст, не тип ресурса.
+-- Employee position is free text, not a resource type.
 ALTER TABLE employees
 	ADD COLUMN IF NOT EXISTS position TEXT NOT NULL DEFAULT '';
 
--- Владелец ресурса (обязателен): добавляем, подтягиваем владельца, фиксируем NOT NULL.
+-- Resource owner (required): add the column, backfill the owner, set NOT NULL.
 ALTER TABLE resources
 	ADD COLUMN IF NOT EXISTS owner_id BIGINT REFERENCES users(id);
 UPDATE resources
@@ -14,14 +14,14 @@ WHERE owner_id IS NULL;
 ALTER TABLE resources
 	ALTER COLUMN owner_id SET NOT NULL;
 
--- Пользователи: 1 admin, 1 dp (директор портфеля), 2 rp (руководители проектов), 4 vp (владельцы процессов), 2 worker
+-- Users: 1 admin, 1 dp (portfolio director), 2 rp (project managers), 4 vp (process owners), 2 worker
 INSERT INTO users (username, name, password_hash, role) VALUES
 ('rp1', 'РП-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'rp'),
 ('rp2', 'РП-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'rp'),
 ('w1', 'Работник-1', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker'),
 ('w2', 'Работник-2', '$2a$10$xrb4V/Iq3ziY8g1xU9/s/u2dE/MdKdPVD4NdiXnHxNztoEW625lIi', 'worker');
 
--- Демо-ресурсы принадлежат vp1 (как и все сотрудники).
+-- Demo resources belong to vp1 (as do all employees).
 INSERT INTO resources (title, code, owner_id)
 SELECT t.title, t.code, u.id
 FROM (
@@ -34,7 +34,7 @@ FROM (
 ) AS t(title, code)
 CROSS JOIN (SELECT id FROM users WHERE username = 'vp1') u;
 
--- По 1 проекту на РП; код проекта отражает цепочку владения ДП-РП-ВП.
+-- One project per RP; the project code reflects the DP-RP-VP ownership chain.
 -- V5-триггер при вставке автосоздаст по 2 процесса (Инсталляция + Производство) на проект.
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES
@@ -75,7 +75,7 @@ JOIN (
     ON m.code = p.code
 WHERE pr.title = 'Инсталляция';
 
--- Справочник состояний: доступность задаётся is_available.
+-- State dictionary: availability is set by is_available.
 INSERT INTO states (code, name, is_available) VALUES
 ('Я', 'Явка', TRUE),
 ('К', 'Командировка', TRUE),
@@ -83,7 +83,7 @@ INSERT INTO states (code, name, is_available) VALUES
 ('ОТП', 'Отпуск', FALSE),
 ('Б', 'Больничный', FALSE);
 
--- Конкретные сотрудники (уникальные ресурсы) под категории ресурсов.
+-- Concrete employees (unique resources) under resource categories.
 INSERT INTO employees (resource_id, name, position, hire_date, termination_date)
 SELECT r.id, e.name, e.position, e.hire_date, e.termination_date
 FROM (
@@ -109,11 +109,11 @@ FROM (
 ) AS e(resource_title, name, position, hire_date, termination_date)
 JOIN resources r ON r.title = e.resource_title;
 
--- Все сотрудники закреплены за vp1 (владелец процесса Инсталляция).
+-- All employees are assigned to vp1 (owner of the Installation process).
 UPDATE employees
 SET manager_id = (SELECT id FROM users WHERE username = 'vp1');
 
--- Демо-состояния (диапазоны) на период проекта КО-01 (2026-07-15..08-30):
+-- Demo state ranges for the КО-01 project period (2026-07-15..08-30):
 -- 2 инженера в отпуске, 1 на больничном, 1 монтажник в командировке (доступен).
 INSERT INTO employee_states (employee_id, state_id, start_date, end_date)
 SELECT e.id, s.id, x.start_date, x.end_date
