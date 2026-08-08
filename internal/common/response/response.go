@@ -1,10 +1,13 @@
 package response
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
 // Response wraps API responses into { "data": ..., "error": ... } format.
@@ -64,4 +67,24 @@ func NotFound(c *gin.Context, msg string) {
 // TooManyRequests sends a 429 error response.
 func TooManyRequests(c *gin.Context, msg string) {
 	c.JSON(http.StatusTooManyRequests, Response{Error: msg})
+}
+
+// HandleError maps a domain error to an HTTP response:
+//   - forbidden → 403
+//   - not found (incl. pgx/sql ErrNoRows and ErrXNotFound) → 404
+//   - validation (FieldError, unique/foreign-key violations) → 400
+//   - everything else → 500 with logging
+//
+// It is the single point for handlers instead of duplicated error switches.
+func HandleError(c *gin.Context, logger *slog.Logger, err error) {
+	switch {
+	case errors.Is(err, validator.ErrForbidden):
+		Forbidden(c, err.Error())
+	case validator.IsNotFoundError(err):
+		NotFound(c, err.Error())
+	case validator.IsValidationError(err):
+		BadRequest(c, err.Error())
+	default:
+		InternalError(c, logger, err.Error(), err)
+	}
 }

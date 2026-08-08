@@ -9,60 +9,45 @@ const (
 )
 
 /*
-Admin (admin) is the system administrator;
-Views, creates and deletes projects,
-Edits: code, priority, start_date, end_date,
-assigns a РП to the project (owner_id),
-Manages all users (create, edit, delete),
-+views all processes and tasks
+Roles:
+Admin (admin) — system administrator: full access to all entities and user management.
+ProjectDirector (dp) — project portfolio director: sees all projects, processes,
+tasks, milestones and assignments; may change only project priorities.
+ProjectManager (rp) — project manager: sees own projects and the processes of own
+projects (and their tasks/milestones/assignments — view only); creates own projects
+and processes in own projects, edits/deletes them; does not change milestones/tasks/assignments.
+ProcessOwner (vp) — process owner: sees own processes and their tasks/milestones/
+assignments; creates, edits and deletes tasks, milestones and assignments in own
+processes. Does not create or edit processes.
+Worker (worker) — no rights yet.
 
-ProjectDirector (dp) manages the project portfolio;
-views, creates and deletes projects,
-Edits: code, priority, start_date, end_date,
-assigns a РП to the project (owner_id)
-+views all processes and tasks
+Permission matrix (admin — everything; worker — nothing):
+Projects:
+  view: dp — all, rp — own
+  create: rp (into own ownership)
+  edit fields (code/dates): rp — own (does not change the owner)
+  edit priority: dp — all
+  delete: rp — own
+Processes:
+  view: dp — all, rp — of own projects, vp — own
+  create/edit/delete: rp — in own projects
+Tasks / Milestones / Assignments:
+  view: dp — all, rp — of own projects, vp — of own processes
+  create/edit/delete: vp — in own processes
 
-ProjectManager (rp) views their projects, processes
-creates and deletes processes,
-edits processes: title, start_date, end_date, owner_id
-+views their processes and their tasks
+Timesheet:
+Resources:
+  view/edit/delete: admin — all, vp — own
+  create: admin, vp (into own ownership)
+Employees:
+  view/edit/delete: admin — all, vp — own subordinates
+  create: admin, vp (into own team)
+States:
+  view: admin and vp (reference for the timesheet)
+  create/edit/delete: admin
 
-ProcessOwner (vp) views their processes, tasks, resources (shared)
-Creates and deletes tasks,
-Edits tasks: title, start_date, end_date
-Assigns and changes resources for tasks (assignment)
-
-Worker (worker) is an executor assigned to tasks.
-Rights are not implemented yet.
-
-Summary
-PROJECTS
-view
-if role IN ('admin', 'dp') OR project.owner_id == user_id
-create/edit/delete
-if role IN ('admin', 'dp')
-
-PROCESSES
-view
-if role IN ('admin', 'dp') OR project.owner_id == user_id OR process.owner_id == user_id
-create/edit/delete
-if project.owner_id == user_id
-
-TASKS
-view
-if role IN ('admin', 'dp') OR project.owner_id == user_id OR process.owner_id == user_id
-create/edit/delete
-if process.owner_id == user_id
-ASSIGNMENTS
-view
-if role IN ('admin', 'dp') OR project.owner_id == user_id OR process.owner_id == user_id
-create/edit/delete
-if process.owner_id == user_id
-RESOURCES
-view
-if role IN ('admin', 'dp') OR project.owner_id == user_id OR process.owner_id == user_id
-create/edit/delete // TODO: who?
-if process.owner_id == user_id
+Implementation: internal/middleware/rbac (single matrix + owner chains) plus
+middleware on the routes.
 */
 
 type User struct {

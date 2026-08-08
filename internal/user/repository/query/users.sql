@@ -1,5 +1,3 @@
--- TODO: CanUser...User
-
 -- name: ListUsers :many
 SELECT *
 FROM users
@@ -48,4 +46,3 @@ UPDATE users
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE id = @user_id
 	AND deleted_at IS NULL;
-

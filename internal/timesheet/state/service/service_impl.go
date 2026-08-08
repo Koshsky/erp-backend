@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/dto"
+	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
 type StateService struct {
@@ -49,10 +49,13 @@ func (s *StateService) CreateState(ctx context.Context, req dto.CreateStateReque
 func (s *StateService) FindState(ctx context.Context, id int64) (*dto.StateResponse, error) {
 	state, err := s.repository.FindState(ctx, id)
 	if err != nil {
+		if validator.IsNotFoundError(err) {
+			return nil, validator.ErrStateNotFound
+		}
 		return nil, err
 	}
 	if state == nil {
-		return nil, fmt.Errorf("state not found")
+		return nil, validator.ErrStateNotFound
 	}
 	return s.mapper.ToDTO(state), nil
 }
@@ -64,7 +67,7 @@ func (s *StateService) UpdateState(
 ) (*dto.StateResponse, error) {
 	state, err := s.repository.FindState(ctx, id)
 	if err != nil || state == nil {
-		return nil, fmt.Errorf("state not found")
+		return nil, validator.ErrStateNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(state, req)
@@ -81,5 +84,10 @@ func (s *StateService) UpdateState(
 }
 
 func (s *StateService) DeleteState(ctx context.Context, id int64) error {
+	state, err := s.repository.FindState(ctx, id)
+	if err != nil || state == nil {
+		return validator.ErrStateNotFound
+	}
+
 	return s.repository.DeleteState(ctx, id)
 }

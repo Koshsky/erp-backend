@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 )
@@ -107,7 +108,7 @@ func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID
 	return resources, nil
 }
 
-// withEmployeesCount дополняет модель ресурса количеством активных сотрудников.
+// withEmployeesCount enriches the resource model with the active employees count.
 func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Resource) (*domain.Resource, error) {
 	count, err := r.db.CountEmployeesByResourceID(ctx, row.ID)
 	if err != nil {
@@ -123,10 +124,19 @@ func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Re
 	}, nil
 }
 
-// ownerIDValue разворачивает nullable-владельца в обязательное значение.
+// ownerIDValue unwraps a nullable owner into a required value.
 func ownerIDValue(v *int64) int64 {
 	if v == nil {
 		return 0
 	}
 	return *v
+}
+
+// OwnerChain returns the owner chain (for RBAC checks in the middleware).
+func (r *ResourceRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
+	owner, err := r.db.OwnerChain(ctx, id)
+	if err != nil {
+		return rbac.Owners{}, err
+	}
+	return rbac.Owners{Owner: owner}, nil
 }

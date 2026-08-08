@@ -56,3 +56,9 @@ UPDATE resources
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE id = @resource_id
     AND deleted_at IS NULL;
+
+-- name: OwnerChain :one
+SELECT COALESCE(owner_id, 0)::bigint AS owner_id
+FROM resources
+WHERE id = @id::bigint
+	AND deleted_at IS NULL;

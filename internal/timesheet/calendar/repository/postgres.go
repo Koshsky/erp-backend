@@ -42,7 +42,7 @@ func (r *CalendarRepository) ListResources(ctx context.Context) ([]dto.ResourceI
 	return resources, nil
 }
 
-// ListEmployeesForCalendar возвращает сотрудников, активных в окне, для расчёта календаря.
+// ListEmployeesForCalendar returns employees active within the window for the calendar.
 func (r *CalendarRepository) ListEmployeesForCalendar(
 	ctx context.Context,
 	start, end time.Time,
@@ -66,7 +66,7 @@ func (r *CalendarRepository) ListEmployeesForCalendar(
 	return employees, nil
 }
 
-// ListUnavailableRanges возвращает интервалы отсутствий, пересекающие окно.
+// ListUnavailableRanges returns absence intervals overlapping the window.
 func (r *CalendarRepository) ListUnavailableRanges(
 	ctx context.Context,
 	start, end time.Time,
@@ -89,7 +89,7 @@ func (r *CalendarRepository) ListUnavailableRanges(
 	return ranges, nil
 }
 
-// fromDate разворачивает nullable-дату (pgtype.Date) в [time.Time].
+// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
 func fromDate(v pgtype.Date) *time.Time {
 	if !v.Valid {
 		return nil

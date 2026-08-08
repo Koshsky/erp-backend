@@ -1,4 +1,4 @@
-//nolint:testpackage // тестируем неэкспортированный buildPeriods напрямую
+//nolint:testpackage // tests the unexported buildPeriods directly
 package service
 
 import (

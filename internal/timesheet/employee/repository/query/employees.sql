@@ -60,3 +60,9 @@ SELECT EXISTS(
 	WHERE id = @resource_id::bigint
 		AND deleted_at IS NULL
 );
+
+-- name: OwnerChain :one
+SELECT COALESCE(manager_id, 0)::bigint AS owner_id
+FROM employees
+WHERE id = @id::bigint
+	AND deleted_at IS NULL;
