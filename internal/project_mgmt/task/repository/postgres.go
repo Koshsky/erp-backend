@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/common/nullable"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 )
@@ -92,4 +93,13 @@ func mapTask(row sqlc.Task) domain.Task {
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
 	}
+}
+
+// OwnerChain returns the owner chain (for RBAC checks in the middleware).
+func (r *TaskRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
+	row, err := r.db.OwnerChain(ctx, id)
+	if err != nil {
+		return rbac.Owners{}, err
+	}
+	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner}, nil
 }

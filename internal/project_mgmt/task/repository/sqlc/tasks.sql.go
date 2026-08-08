@@ -12,71 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const canUserCreateTask = `-- name: CanUserCreateTask :one
-SELECT EXISTS (
-    SELECT 1 FROM processes p
-    WHERE p.id = $1::bigint
-	  AND p.deleted_at is NULL
-      AND p.owner_id = $2::bigint
-) AS can_create
-`
-
-type CanUserCreateTaskParams struct {
-	ProcessID int64 `json:"process_id"`
-	UserID    int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserCreateTask(ctx context.Context, arg CanUserCreateTaskParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserCreateTask, arg.ProcessID, arg.UserID)
-	var can_create bool
-	err := row.Scan(&can_create)
-	return can_create, err
-}
-
-const canUserDeleteTask = `-- name: CanUserDeleteTask :one
-SELECT EXISTS (
-    SELECT 1 FROM tasks t
-    JOIN processes p ON t.process_id = p.id
-    WHERE t.id = $1::bigint
-	  AND t.deleted_at is NULL
-      AND p.owner_id = $2::bigint
-) AS can_manage
-`
-
-type CanUserDeleteTaskParams struct {
-	TaskID int64 `json:"task_id"`
-	UserID int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserDeleteTask(ctx context.Context, arg CanUserDeleteTaskParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserDeleteTask, arg.TaskID, arg.UserID)
-	var can_manage bool
-	err := row.Scan(&can_manage)
-	return can_manage, err
-}
-
-const canUserUpdateTask = `-- name: CanUserUpdateTask :one
-SELECT EXISTS (
-    SELECT 1 FROM tasks t
-    JOIN processes p ON t.process_id = p.id
-    WHERE t.id = $1::bigint
-	  AND t.deleted_at is NULL
-      AND p.owner_id = $2::bigint
-) AS can_manage
-`
-
-type CanUserUpdateTaskParams struct {
-	TaskID int64 `json:"task_id"`
-	UserID int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserUpdateTask(ctx context.Context, arg CanUserUpdateTaskParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserUpdateTask, arg.TaskID, arg.UserID)
-	var can_manage bool
-	err := row.Scan(&can_manage)
-	return can_manage, err
-}
-
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (process_id, owner_id, title, start_date, end_date)
 VALUES ($1, $2, $3, $4, $5)
@@ -151,14 +86,12 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 }
 
 const listTasks = `-- name: ListTasks :many
-
 SELECT id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
 FROM tasks
 WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
-// TODO: write CanUserViewTask
 func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listTasks)
 	if err != nil {
@@ -187,6 +120,30 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const ownerChain = `-- name: OwnerChain :one
+SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+FROM tasks t
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE t.id = $1::bigint
+	AND t.deleted_at IS NULL
+	AND p.deleted_at IS NULL
+	AND pr.deleted_at IS NULL
+`
+
+type OwnerChainRow struct {
+	ProjectOwner int64 `json:"project_owner"`
+	ProcessOwner int64 `json:"process_owner"`
+}
+
+func (q *Queries) OwnerChain(ctx context.Context, id int64) (OwnerChainRow, error) {
+	row := q.db.QueryRow(ctx, ownerChain, id)
+	var i OwnerChainRow
+	err := row.Scan(&i.ProjectOwner, &i.ProcessOwner)
+	return i, err
 }
 
 const updateTask = `-- name: UpdateTask :one

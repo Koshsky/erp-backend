@@ -1,17 +1,7 @@
--- name: CanUserCreateTask :one
-SELECT EXISTS (
-    SELECT 1 FROM processes p
-    WHERE p.id = @process_id::bigint
-	  AND p.deleted_at is NULL
-      AND p.owner_id = @user_id::bigint
-) AS can_create;
-
 -- name: CreateTask :one
 INSERT INTO tasks (process_id, owner_id, title, start_date, end_date)
 VALUES (@process_id, @owner_id, @title, @start_date, @end_date)
 RETURNING *;
-
--- TODO: write CanUserViewTask
 
 -- name: ListTasks :many
 SELECT *
@@ -24,15 +14,6 @@ SELECT *
 FROM tasks
 WHERE deleted_at IS NULL
 	AND id = @resource_id::bigint;
-
--- name: CanUserUpdateTask :one
-SELECT EXISTS (
-    SELECT 1 FROM tasks t
-    JOIN processes p ON t.process_id = p.id
-    WHERE t.id = @task_id::bigint
-	  AND t.deleted_at is NULL
-      AND p.owner_id = @user_id::bigint
-) AS can_manage;
 
 -- name: UpdateTask :one
 UPDATE tasks
@@ -47,17 +28,19 @@ WHERE id = @task_id
 	AND deleted_at IS NULL
 RETURNING *;
 
--- name: CanUserDeleteTask :one
-SELECT EXISTS (
-    SELECT 1 FROM tasks t
-    JOIN processes p ON t.process_id = p.id
-    WHERE t.id = @task_id::bigint
-	  AND t.deleted_at is NULL
-      AND p.owner_id = @user_id::bigint
-) AS can_manage;
-
 -- name: DeleteTask :exec
 UPDATE tasks
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE id = @task_id
 	AND deleted_at IS NULL;
+
+-- name: OwnerChain :one
+SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+FROM tasks t
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE t.id = @id::bigint
+	AND t.deleted_at IS NULL
+	AND p.deleted_at IS NULL
+	AND pr.deleted_at IS NULL;

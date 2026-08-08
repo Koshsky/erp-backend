@@ -9,74 +9,6 @@ import (
 	"context"
 )
 
-const canUserCreateAssignment = `-- name: CanUserCreateAssignment :one
-SELECT EXISTS (
-    SELECT 1 FROM tasks t
-	JOIN processes p ON p.id = t.process_id
-    WHERE t.id = $1::bigint
-	  AND t.deleted_at is NULL
-      AND p.owner_id = $2::bigint
-) AS can_create
-`
-
-type CanUserCreateAssignmentParams struct {
-	TaskID int64 `json:"task_id"`
-	UserID int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserCreateAssignment(ctx context.Context, arg CanUserCreateAssignmentParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserCreateAssignment, arg.TaskID, arg.UserID)
-	var can_create bool
-	err := row.Scan(&can_create)
-	return can_create, err
-}
-
-const canUserDeleteAssignment = `-- name: CanUserDeleteAssignment :one
-SELECT EXISTS (
-    SELECT 1 FROM assignments a
-	JOIN tasks t ON t.id = a.task_id
-	JOIN processes p ON p.id = t.process_id
-    WHERE a.id = $1::bigint
-	  AND a.deleted_at is NULL
-      AND p.owner_id = $2::bigint
-) AS can_manage
-`
-
-type CanUserDeleteAssignmentParams struct {
-	AssignmentID int64 `json:"assignment_id"`
-	UserID       int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserDeleteAssignment(ctx context.Context, arg CanUserDeleteAssignmentParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserDeleteAssignment, arg.AssignmentID, arg.UserID)
-	var can_manage bool
-	err := row.Scan(&can_manage)
-	return can_manage, err
-}
-
-const canUserUpdateAssignment = `-- name: CanUserUpdateAssignment :one
-SELECT EXISTS (
-    SELECT 1 FROM assignments a
-	JOIN tasks t ON t.id = a.task_id
-	JOIN processes p ON p.id = t.process_id
-    WHERE a.id = $1::bigint
-	  AND a.deleted_at is NULL
-      AND p.owner_id = $2::bigint
-) AS can_manage
-`
-
-type CanUserUpdateAssignmentParams struct {
-	AssignmentID int64 `json:"assignment_id"`
-	UserID       int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserUpdateAssignment(ctx context.Context, arg CanUserUpdateAssignmentParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserUpdateAssignment, arg.AssignmentID, arg.UserID)
-	var can_manage bool
-	err := row.Scan(&can_manage)
-	return can_manage, err
-}
-
 const createAssignment = `-- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES ($1, $2, $3::bigint)
@@ -123,7 +55,6 @@ WHERE id = $1
 	AND deleted_at IS NULL
 `
 
-// TODO: write CanUserViewAssignment
 func (q *Queries) FindAssignment(ctx context.Context, assignmentID int64) (Assignment, error) {
 	row := q.db.QueryRow(ctx, findAssignment, assignmentID)
 	var i Assignment
@@ -172,6 +103,32 @@ func (q *Queries) ListAssigments(ctx context.Context) ([]Assignment, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const ownerChain = `-- name: OwnerChain :one
+SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+FROM assignments a
+JOIN tasks t ON t.id = a.task_id
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE a.id = $1::bigint
+	AND a.deleted_at IS NULL
+	AND t.deleted_at IS NULL
+	AND p.deleted_at IS NULL
+	AND pr.deleted_at IS NULL
+`
+
+type OwnerChainRow struct {
+	ProjectOwner int64 `json:"project_owner"`
+	ProcessOwner int64 `json:"process_owner"`
+}
+
+func (q *Queries) OwnerChain(ctx context.Context, id int64) (OwnerChainRow, error) {
+	row := q.db.QueryRow(ctx, ownerChain, id)
+	var i OwnerChainRow
+	err := row.Scan(&i.ProjectOwner, &i.ProcessOwner)
+	return i, err
 }
 
 const updateAssignment = `-- name: UpdateAssignment :one

@@ -12,74 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const canUserCreateProject = `-- name: CanUserCreateProject :one
-SELECT EXISTS (
-    SELECT 1 FROM users 
-    WHERE id = $1::bigint 
-      AND role IN ('admin', 'dp')
-      AND deleted_at IS NULL
-) AS can_create
-`
-
-func (q *Queries) CanUserCreateProject(ctx context.Context, userID int64) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserCreateProject, userID)
-	var can_create bool
-	err := row.Scan(&can_create)
-	return can_create, err
-}
-
-const canUserDeleteProject = `-- name: CanUserDeleteProject :one
-SELECT EXISTS (
-    SELECT 1 FROM projects p
-    WHERE p.id = $1::bigint
-      AND p.deleted_at IS NULL
-      AND EXISTS (
-          SELECT 1 FROM users u
-          WHERE u.id = $2::bigint
-            AND u.role IN ('admin', 'dp')
-            AND u.deleted_at IS NULL
-      )
-) AS can_manage
-`
-
-type CanUserDeleteProjectParams struct {
-	ProjectID int64 `json:"project_id"`
-	UserID    int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserDeleteProject(ctx context.Context, arg CanUserDeleteProjectParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserDeleteProject, arg.ProjectID, arg.UserID)
-	var can_manage bool
-	err := row.Scan(&can_manage)
-	return can_manage, err
-}
-
-const canUserUpdateProject = `-- name: CanUserUpdateProject :one
-SELECT EXISTS (
-    SELECT 1 FROM projects p
-    WHERE p.id = $1::bigint
-      AND p.deleted_at IS NULL
-      AND EXISTS (
-          SELECT 1 FROM users u
-          WHERE u.id = $2::bigint
-            AND u.role IN ('admin', 'dp')
-            AND u.deleted_at IS NULL
-      )
-) AS can_manage
-`
-
-type CanUserUpdateProjectParams struct {
-	ProjectID int64 `json:"project_id"`
-	UserID    int64 `json:"user_id"`
-}
-
-func (q *Queries) CanUserUpdateProject(ctx context.Context, arg CanUserUpdateProjectParams) (bool, error) {
-	row := q.db.QueryRow(ctx, canUserUpdateProject, arg.ProjectID, arg.UserID)
-	var can_manage bool
-	err := row.Scan(&can_manage)
-	return can_manage, err
-}
-
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES (
@@ -160,14 +92,12 @@ func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, er
 }
 
 const listProjects = `-- name: ListProjects :many
-
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
 WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
-// TODO: write CanUserViewProject
 func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listProjects)
 	if err != nil {
@@ -196,6 +126,20 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const ownerChain = `-- name: OwnerChain :one
+SELECT COALESCE(owner_id, 0)::bigint AS owner_id
+FROM projects
+WHERE id = $1::bigint
+	AND deleted_at IS NULL
+`
+
+func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, ownerChain, id)
+	var owner_id int64
+	err := row.Scan(&owner_id)
+	return owner_id, err
 }
 
 const updateProject = `-- name: UpdateProject :one

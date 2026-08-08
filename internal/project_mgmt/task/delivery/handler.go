@@ -7,18 +7,21 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 )
 
 type TaskHandler struct {
 	logger  *slog.Logger
 	service TaskService
+	mw      *rbac.Middleware
 }
 
-func NewTaskHandler(logger *slog.Logger, service TaskService) *TaskHandler {
+func NewTaskHandler(logger *slog.Logger, service TaskService, mw *rbac.Middleware) *TaskHandler {
 	return &TaskHandler{
 		logger:  logger,
 		service: service,
+		mw:      mw,
 	}
 }
 
@@ -62,7 +65,7 @@ func (h *TaskHandler) FindTask(c *gin.Context) {
 
 	task, err := h.service.FindTask(c.Request.Context(), id)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, task)
@@ -90,7 +93,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 
 	created, err := h.service.CreateTask(c.Request.Context(), task)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -117,7 +120,7 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteTask(c.Request.Context(), id); err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -152,7 +155,7 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 
 	updated, err := h.service.UpdateTask(c.Request.Context(), id, body)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, updated)
