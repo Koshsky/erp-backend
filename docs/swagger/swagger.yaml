@@ -1,6 +1,70 @@
 basePath: /api/v1
 definitions:
-  dto.AssignmentResponse:
+  github_com_Koshsky_erp-backend_internal_auth_dto.AuthResponse:
+    properties:
+      tokens:
+        $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_security_jwt.TokenPair'
+      user:
+        $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.UserInfo'
+    type: object
+  github_com_Koshsky_erp-backend_internal_auth_dto.LoginRequest:
+    properties:
+      password:
+        example: password
+        type: string
+      username:
+        example: ivanov
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_auth_dto.RefreshResponse:
+    properties:
+      message:
+        example: Token refreshed successfully
+        type: string
+      tokens:
+        $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_security_jwt.TokenPair'
+    type: object
+  github_com_Koshsky_erp-backend_internal_auth_dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6I...
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_auth_dto.RegisterRequest:
+    properties:
+      name:
+        example: Ivan Ivanov
+        type: string
+      password:
+        example: password
+        type: string
+      username:
+        example: ivanov
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_auth_dto.UserInfo:
+    properties:
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Ivan Ivanov
+        type: string
+      role:
+        example: rp
+        type: string
+      username:
+        example: ivanov
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_common_response.Response:
+    properties:
+      data: {}
+      error:
+        example: error message
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse:
     properties:
       id:
         example: 1
@@ -15,56 +79,7 @@ definitions:
         example: 1
         type: integer
     type: object
-  dto.AuthResponse:
-    properties:
-      tokens:
-        $ref: '#/definitions/jwt.TokenPair'
-      user:
-        $ref: '#/definitions/dto.UserInfo'
-    type: object
-  dto.AvailabilityPeriod:
-    properties:
-      available:
-        example: 7
-        type: integer
-      capacity:
-        example: 7
-        type: integer
-      end_date:
-        example: "2026-07-19"
-        format: date
-        type: string
-      start_date:
-        example: "2026-07-15"
-        format: date
-        type: string
-      unavailable:
-        example: 0
-        type: integer
-    type: object
-  dto.CalendarPlanning:
-    properties:
-      resources:
-        items:
-          $ref: '#/definitions/dto.ResourceCalendar'
-        type: array
-    type: object
-  dto.ChangePasswordRequest:
-    properties:
-      new_password:
-        example: new_password
-        type: string
-      old_password:
-        example: password
-        type: string
-    type: object
-  dto.ChangePasswordResponse:
-    properties:
-      message:
-        example: password changed
-        type: string
-    type: object
-  dto.CreateAssignmentRequest:
+  github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.CreateAssignmentRequest:
     properties:
       quantity:
         example: 5
@@ -76,7 +91,259 @@ definitions:
         example: 1
         type: integer
     type: object
-  dto.CreateEmployeeRequest:
+  github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.UpdateAssignmentRequest:
+    properties:
+      quantity:
+        example: 10
+        type: integer
+      resource_id:
+        example: 1
+        type: integer
+      task_id:
+        example: 1
+        type: integer
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.CreateMilestoneRequest:
+    properties:
+      content:
+        example: Приедут с России1
+        type: string
+      date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      process_id:
+        example: 1
+        type: integer
+      title:
+        example: Телевидение
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse:
+    properties:
+      content:
+        example: Приедут с России1
+        type: string
+      date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      id:
+        example: 1
+        type: integer
+      process_id:
+        example: 1
+        type: integer
+      title:
+        example: Телевидение
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.UpdateMilestoneRequest:
+    properties:
+      content:
+        example: Приедут с России1
+        type: string
+      date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      process_id:
+        example: 1
+        type: integer
+      title:
+        example: Телевидение
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.CreateProcessRequest:
+    properties:
+      end_date:
+        example: "2026-02-01"
+        format: date
+        type: string
+      owner_id:
+        example: 1
+        type: integer
+      project_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      title:
+        example: Инсталляция
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse:
+    properties:
+      end_date:
+        example: "2026-02-01"
+        format: date
+        type: string
+      id:
+        example: 1
+        type: integer
+      owner_id:
+        example: 1
+        type: integer
+      project_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      title:
+        example: Инсталляция
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.UpdateProcessRequest:
+    properties:
+      end_date:
+        example: "2026-02-01"
+        format: date
+        type: string
+      owner_id:
+        example: 1
+        type: integer
+      project_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      title:
+        example: Инсталляция
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.CreateProjectRequest:
+    properties:
+      code:
+        example: КО_001
+        type: string
+      end_date:
+        example: "2026-02-01"
+        format: date
+        type: string
+      owner_id:
+        example: 1
+        type: integer
+      priority:
+        example: 2
+        type: integer
+      start_date:
+        example: "2026-01-01"
+        format: date
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse:
+    properties:
+      code:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        type: integer
+      priority:
+        type: integer
+      start_date:
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.UpdateProjectRequest:
+    properties:
+      code:
+        example: "1"
+        type: string
+      end_date:
+        example: "2026-02-01"
+        format: date
+        type: string
+      owner_id:
+        example: 1
+        type: integer
+      priority:
+        example: 2
+        type: integer
+      start_date:
+        example: "2026-01-01"
+        format: date
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.CreateTaskRequest:
+    properties:
+      end_date:
+        example: "2026-02-01"
+        format: date
+        type: string
+      owner_id:
+        example: 1
+        type: integer
+      process_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      title:
+        example: Пуско-наладочные работы
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse:
+    properties:
+      end_date:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        type: integer
+      process_id:
+        type: integer
+      start_date:
+        type: string
+      title:
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.UpdateTaskRequest:
+    properties:
+      end_date:
+        example: "2026-02-01"
+        format: date
+        type: string
+      owner_id:
+        example: 1
+        type: integer
+      process_id:
+        example: 1
+        type: integer
+      start_date:
+        example: "2026-01-01"
+        format: date
+        type: string
+      title:
+        example: Пуско-наладочные работы
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_security_jwt.TokenPair:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        description: seconds
+        example: 3600
+        type: integer
+      refresh_token:
+        example: abcdef123456...
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.CreateEmployeeRequest:
     properties:
       hire_date:
         example: "2025-01-10"
@@ -96,195 +363,7 @@ definitions:
         format: date
         type: string
     type: object
-  dto.CreateMilestoneRequest:
-    properties:
-      content:
-        example: Приедут с России1
-        type: string
-      date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      process_id:
-        example: 1
-        type: integer
-      title:
-        example: Телевидение
-        type: string
-    type: object
-  dto.CreateProcessRequest:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      owner_id:
-        example: 1
-        type: integer
-      project_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      title:
-        example: Инсталляция
-        type: string
-    type: object
-  dto.CreateProjectRequest:
-    properties:
-      code:
-        example: КО_001
-        type: string
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      owner_id:
-        example: 1
-        type: integer
-      priority:
-        example: 2
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-    type: object
-  dto.CreateResourceRequest:
-    properties:
-      code:
-        example: М
-        type: string
-      owner_id:
-        example: 3
-        type: integer
-      title:
-        example: Монтажник
-        type: string
-    type: object
-  dto.CreateStateRequest:
-    properties:
-      code:
-        example: ОТП
-        type: string
-      is_available:
-        example: false
-        type: boolean
-      name:
-        example: Отпуск
-        type: string
-    type: object
-  dto.CreateTaskRequest:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      owner_id:
-        example: 1
-        type: integer
-      process_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      title:
-        example: Пуско-наладочные работы
-        type: string
-    type: object
-  dto.DetailedProcess:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      milestones:
-        items:
-          $ref: '#/definitions/dto.Milestone'
-        type: array
-      owner_id:
-        example: 1
-        type: integer
-      project_code:
-        example: КО_001
-        type: string
-      project_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      tasks:
-        items:
-          $ref: '#/definitions/dto.DetailedTask'
-        type: array
-      title:
-        example: Инсталляция
-        type: string
-    type: object
-  dto.DetailedProject:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      owner_id:
-        example: 1
-        type: integer
-      priority:
-        example: 2
-        type: integer
-      processes:
-        items:
-          $ref: '#/definitions/dto.Process'
-        type: array
-      project_code:
-        example: КО_001
-        type: string
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-    type: object
-  dto.DetailedTask:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      owner_id:
-        example: 1
-        type: integer
-      process_id:
-        example: 1
-        type: integer
-      resources:
-        items:
-          $ref: '#/definitions/dto.Resource'
-        type: array
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      title:
-        example: Пуско-наладочные работы
-        type: string
-    type: object
-  dto.EmployeeResponse:
+  github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse:
     properties:
       hire_date:
         example: "2024-01-15"
@@ -313,7 +392,7 @@ definitions:
         format: date
         type: string
     type: object
-  dto.EmployeeStateResponse:
+  github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeStateResponse:
     properties:
       end_date:
         example: "2026-08-02"
@@ -339,233 +418,7 @@ definitions:
         example: Отпуск
         type: string
     type: object
-  dto.LoginRequest:
-    properties:
-      password:
-        example: password
-        type: string
-      username:
-        example: ivanov
-        type: string
-    type: object
-  dto.Milestone:
-    properties:
-      content:
-        example: Начало работ по проекту
-        type: string
-      date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      process_id:
-        example: 1
-        type: integer
-      title:
-        example: Начало работ
-        type: string
-    type: object
-  dto.MilestoneResponse:
-    properties:
-      content:
-        example: Приедут с России1
-        type: string
-      date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      process_id:
-        example: 1
-        type: integer
-      title:
-        example: Телевидение
-        type: string
-    type: object
-  dto.Process:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      owner_id:
-        example: 1
-        type: integer
-      project_code:
-        example: КО_001
-        type: string
-      project_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      title:
-        example: Инсталляция
-        type: string
-    type: object
-  dto.ProcessPlanning:
-    properties:
-      projects:
-        items:
-          $ref: '#/definitions/dto.DetailedProject'
-        type: array
-    type: object
-  dto.ProcessResponse:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      owner_id:
-        example: 1
-        type: integer
-      project_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      title:
-        example: Инсталляция
-        type: string
-    type: object
-  dto.Project:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      owner_id:
-        example: 1
-        type: integer
-      priority:
-        example: 2
-        type: integer
-      project_code:
-        example: КО_001
-        type: string
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-    type: object
-  dto.ProjectPlanning:
-    properties:
-      projects:
-        items:
-          $ref: '#/definitions/dto.Project'
-        type: array
-    type: object
-  dto.ProjectResponse:
-    properties:
-      code:
-        type: string
-      end_date:
-        type: string
-      id:
-        type: integer
-      owner_id:
-        type: integer
-      priority:
-        type: integer
-      start_date:
-        type: string
-    type: object
-  dto.RefreshResponse:
-    properties:
-      message:
-        example: Token refreshed successfully
-        type: string
-      tokens:
-        $ref: '#/definitions/jwt.TokenPair'
-    type: object
-  dto.RefreshTokenRequest:
-    properties:
-      refresh_token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6I...
-        type: string
-    type: object
-  dto.RegisterRequest:
-    properties:
-      name:
-        example: Ivan Ivanov
-        type: string
-      password:
-        example: password
-        type: string
-      username:
-        example: ivanov
-        type: string
-    type: object
-  dto.Resource:
-    properties:
-      assignment_id:
-        example: 1
-        type: integer
-      code:
-        example: М
-        type: string
-      id:
-        example: 1
-        type: integer
-      quantity:
-        example: 7
-        type: integer
-      title:
-        example: Монтажник
-        type: string
-    type: object
-  dto.ResourceCalendar:
-    properties:
-      code:
-        example: И
-        type: string
-      periods:
-        items:
-          $ref: '#/definitions/dto.AvailabilityPeriod'
-        type: array
-      resource_id:
-        example: 1
-        type: integer
-      title:
-        example: Инженер
-        type: string
-    type: object
-  dto.ResourceResponse:
-    properties:
-      code:
-        example: М
-        type: string
-      employees_count:
-        example: 4
-        type: integer
-      id:
-        example: 1
-        type: integer
-      owner_id:
-        example: 3
-        type: integer
-      title:
-        example: Монтажник
-        type: string
-    type: object
-  dto.SetDaysRequest:
+  github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.SetDaysRequest:
     properties:
       end_date:
         example: "2026-08-02"
@@ -579,56 +432,7 @@ definitions:
         example: 4
         type: integer
     type: object
-  dto.StateResponse:
-    properties:
-      code:
-        example: ОТП
-        type: string
-      id:
-        example: 4
-        type: integer
-      is_available:
-        example: false
-        type: boolean
-      name:
-        example: Отпуск
-        type: string
-    type: object
-  dto.TaskPlanning:
-    properties:
-      processes:
-        items:
-          $ref: '#/definitions/dto.DetailedProcess'
-        type: array
-    type: object
-  dto.TaskResponse:
-    properties:
-      end_date:
-        type: string
-      id:
-        type: integer
-      owner_id:
-        type: integer
-      process_id:
-        type: integer
-      start_date:
-        type: string
-      title:
-        type: string
-    type: object
-  dto.UpdateAssignmentRequest:
-    properties:
-      quantity:
-        example: 10
-        type: integer
-      resource_id:
-        example: 1
-        type: integer
-      task_id:
-        example: 1
-        type: integer
-    type: object
-  dto.UpdateEmployeeRequest:
+  github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.UpdateEmployeeRequest:
     properties:
       hire_date:
         example: "2025-01-10"
@@ -651,63 +455,7 @@ definitions:
         format: date
         type: string
     type: object
-  dto.UpdateMilestoneRequest:
-    properties:
-      content:
-        example: Приедут с России1
-        type: string
-      date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      process_id:
-        example: 1
-        type: integer
-      title:
-        example: Телевидение
-        type: string
-    type: object
-  dto.UpdateProcessRequest:
-    properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      owner_id:
-        example: 1
-        type: integer
-      project_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      title:
-        example: Инсталляция
-        type: string
-    type: object
-  dto.UpdateProjectRequest:
-    properties:
-      code:
-        example: "1"
-        type: string
-      end_date:
-        example: "2026-02-01"
-        format: date
-        type: string
-      owner_id:
-        example: 1
-        type: integer
-      priority:
-        example: 2
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-    type: object
-  dto.UpdateResourceRequest:
+  github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.CreateResourceRequest:
     properties:
       code:
         example: М
@@ -719,7 +467,37 @@ definitions:
         example: Монтажник
         type: string
     type: object
-  dto.UpdateStateRequest:
+  github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse:
+    properties:
+      code:
+        example: М
+        type: string
+      employees_count:
+        example: 4
+        type: integer
+      id:
+        example: 1
+        type: integer
+      owner_id:
+        example: 3
+        type: integer
+      title:
+        example: Монтажник
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.UpdateResourceRequest:
+    properties:
+      code:
+        example: М
+        type: string
+      owner_id:
+        example: 3
+        type: integer
+      title:
+        example: Монтажник
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_timesheet_state_dto.CreateStateRequest:
     properties:
       code:
         example: ОТП
@@ -731,27 +509,49 @@ definitions:
         example: Отпуск
         type: string
     type: object
-  dto.UpdateTaskRequest:
+  github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse:
     properties:
-      end_date:
-        example: "2026-02-01"
-        format: date
+      code:
+        example: ОТП
         type: string
-      owner_id:
-        example: 1
+      id:
+        example: 4
         type: integer
-      process_id:
-        example: 1
-        type: integer
-      start_date:
-        example: "2026-01-01"
-        format: date
-        type: string
-      title:
-        example: Пуско-наладочные работы
+      is_available:
+        example: false
+        type: boolean
+      name:
+        example: Отпуск
         type: string
     type: object
-  dto.UpdateUserRequest:
+  github_com_Koshsky_erp-backend_internal_timesheet_state_dto.UpdateStateRequest:
+    properties:
+      code:
+        example: ОТП
+        type: string
+      is_available:
+        example: false
+        type: boolean
+      name:
+        example: Отпуск
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordRequest:
+    properties:
+      new_password:
+        example: new_password
+        type: string
+      old_password:
+        example: password
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordResponse:
+    properties:
+      message:
+        example: password changed
+        type: string
+    type: object
+  github_com_Koshsky_erp-backend_internal_user_dto.UpdateUserRequest:
     properties:
       name:
         example: Ivan Ivanov
@@ -763,22 +563,7 @@ definitions:
         example: ivanov
         type: string
     type: object
-  dto.UserInfo:
-    properties:
-      id:
-        example: 1
-        type: integer
-      name:
-        example: Ivan Ivanov
-        type: string
-      role:
-        example: rp
-        type: string
-      username:
-        example: ivanov
-        type: string
-    type: object
-  dto.UserResponse:
+  github_com_Koshsky_erp-backend_internal_user_dto.UserResponse:
     properties:
       id:
         example: 1
@@ -791,29 +576,6 @@ definitions:
         type: string
       username:
         example: ivanov
-        type: string
-    type: object
-  jwt.TokenPair:
-    properties:
-      access_token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        type: string
-      expires_in:
-        description: seconds
-        example: 3600
-        type: integer
-      refresh_token:
-        example: abcdef123456...
-        type: string
-      token_type:
-        example: Bearer
-        type: string
-    type: object
-  response.Response:
-    properties:
-      data: {}
-      error:
-        example: error message
         type: string
     type: object
 externalDocs:
@@ -843,18 +605,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.AssignmentResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -874,7 +636,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateAssignmentRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.CreateAssignmentRequest'
       produces:
       - application/json
       responses:
@@ -882,16 +644,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.AssignmentResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -900,7 +662,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -928,7 +690,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -937,7 +699,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -962,16 +724,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.AssignmentResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -980,7 +742,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1005,7 +767,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateAssignmentRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.UpdateAssignmentRequest'
       produces:
       - application/json
       responses:
@@ -1013,16 +775,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.AssignmentResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_assignment_dto.AssignmentResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1031,7 +793,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1052,7 +814,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.LoginRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.LoginRequest'
       produces:
       - application/json
       responses:
@@ -1060,16 +822,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.AuthResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.AuthResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1078,7 +840,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1097,7 +859,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.RefreshTokenRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.RefreshTokenRequest'
       produces:
       - application/json
       responses:
@@ -1105,16 +867,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.RefreshResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.RefreshResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1123,7 +885,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1142,7 +904,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.RegisterRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -1150,16 +912,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.AuthResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_auth_dto.AuthResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1168,7 +930,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1186,18 +948,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.MilestoneResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1217,7 +979,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateMilestoneRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.CreateMilestoneRequest'
       produces:
       - application/json
       responses:
@@ -1225,16 +987,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.MilestoneResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1243,7 +1005,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1271,7 +1033,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1280,7 +1042,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1305,16 +1067,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.MilestoneResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1323,7 +1085,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1348,7 +1110,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateMilestoneRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.UpdateMilestoneRequest'
       produces:
       - application/json
       responses:
@@ -1356,16 +1118,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.MilestoneResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_milestone_dto.MilestoneResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1374,12 +1136,13 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
               type: object
       security:
+      - ApiKeyAuth: []
       - ApiKeyAuth: []
       summary: Update milestone
       tags:
@@ -1393,17 +1156,12 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ProcessPlanning'
-              type: object
+            $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1412,7 +1170,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1431,17 +1189,12 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ProjectPlanning'
-              type: object
+            $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1450,7 +1203,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1469,17 +1222,12 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.TaskPlanning'
-              type: object
+            $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1488,7 +1236,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1508,18 +1256,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.ProcessResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1539,7 +1287,7 @@ paths:
         name: process
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateProcessRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.CreateProcessRequest'
       produces:
       - application/json
       responses:
@@ -1547,16 +1295,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProcessResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1565,7 +1313,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1584,8 +1332,6 @@ paths:
         name: id
         required: true
         type: integer
-      produces:
-      - application/json
       responses:
         "204":
           description: No Content
@@ -1593,7 +1339,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1602,7 +1348,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1620,23 +1366,21 @@ paths:
         name: id
         required: true
         type: integer
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProcessResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1645,7 +1389,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1670,7 +1414,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateProcessRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.UpdateProcessRequest'
       produces:
       - application/json
       responses:
@@ -1678,16 +1422,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProcessResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_process_dto.ProcessResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1696,7 +1440,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1716,38 +1460,38 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.ProjectResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
               type: object
       security:
       - ApiKeyAuth: []
-      summary: List projects
+      summary: List all projects
       tags:
       - Projects
     post:
       consumes:
       - application/json
-      description: Create a new project with the provided details
+      description: Create a new project
       parameters:
-      - description: Project details
+      - description: Project data
         in: body
         name: project
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateProjectRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.CreateProjectRequest'
       produces:
       - application/json
       responses:
@@ -1755,16 +1499,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProjectResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1773,21 +1517,19 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create a new project
+      summary: Create project
       tags:
       - Projects
   /project/{id}:
     delete:
-      consumes:
-      - application/json
-      description: Delete a project by its ID
+      description: Delete a project by ID
       parameters:
       - description: Project ID
         in: path
@@ -1803,7 +1545,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1812,18 +1554,18 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Delete project
+      summary: Delete a project
       tags:
       - Projects
     get:
-      description: Get a project by ID
+      description: Get a project by its ID
       parameters:
       - description: Project ID
         in: path
@@ -1837,16 +1579,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProjectResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1855,20 +1597,20 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get project
+      summary: Get a project by ID
       tags:
       - Projects
     put:
       consumes:
       - application/json
-      description: Update a project by its ID
+      description: Update code, dates, priority or owner of a project
       parameters:
       - description: Project ID
         in: path
@@ -1877,10 +1619,10 @@ paths:
         type: integer
       - description: Project data
         in: body
-        name: project
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateProjectRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.UpdateProjectRequest'
       produces:
       - application/json
       responses:
@@ -1888,16 +1630,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProjectResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_project_dto.ProjectResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1906,7 +1648,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1926,18 +1668,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.TaskResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1957,7 +1699,7 @@ paths:
         name: task
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateTaskRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.CreateTaskRequest'
       produces:
       - application/json
       responses:
@@ -1965,16 +1707,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.TaskResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -1983,7 +1725,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2013,7 +1755,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2022,7 +1764,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2047,16 +1789,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.TaskResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2065,7 +1807,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2090,7 +1832,7 @@ paths:
         name: task
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateTaskRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.UpdateTaskRequest'
       produces:
       - application/json
       responses:
@@ -2098,16 +1840,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.TaskResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_project_mgmt_task_dto.TaskResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2116,7 +1858,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2147,17 +1889,12 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.CalendarPlanning'
-              type: object
+            $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2166,7 +1903,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2178,12 +1915,7 @@ paths:
       - TimesheetCalendar
   /timesheet/employees:
     get:
-      description: List employees, optionally filtered by manager (user) id
-      parameters:
-      - description: Manager (user) ID filter
-        in: query
-        name: manager_id
-        type: integer
+      description: List all employees
       produces:
       - application/json
       responses:
@@ -2191,18 +1923,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.EmployeeResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2211,7 +1943,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2239,7 +1971,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2248,7 +1980,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2273,16 +2005,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.EmployeeResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2291,7 +2023,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2316,7 +2048,7 @@ paths:
         name: employee
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateEmployeeRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.UpdateEmployeeRequest'
       produces:
       - application/json
       responses:
@@ -2324,16 +2056,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.EmployeeResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2342,7 +2074,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2385,7 +2117,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2394,7 +2126,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2429,18 +2161,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.EmployeeStateResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeStateResponse'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2449,7 +2181,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2475,7 +2207,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SetDaysRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.SetDaysRequest'
       produces:
       - application/json
       responses:
@@ -2485,7 +2217,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2494,7 +2226,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2514,18 +2246,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.ResourceResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2545,7 +2277,7 @@ paths:
         name: resource
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateResourceRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.CreateResourceRequest'
       produces:
       - application/json
       responses:
@@ -2553,16 +2285,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ResourceResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2571,7 +2303,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2599,7 +2331,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2608,7 +2340,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2633,16 +2365,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ResourceResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2651,7 +2383,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2676,7 +2408,7 @@ paths:
         name: resource
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateResourceRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.UpdateResourceRequest'
       produces:
       - application/json
       responses:
@@ -2684,16 +2416,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ResourceResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_resource_dto.ResourceResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2702,7 +2434,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2728,18 +2460,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.EmployeeResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2748,7 +2480,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2773,7 +2505,7 @@ paths:
         name: employee
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateEmployeeRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.CreateEmployeeRequest'
       produces:
       - application/json
       responses:
@@ -2781,16 +2513,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.EmployeeResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_employee_dto.EmployeeResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2799,7 +2531,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2819,18 +2551,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.StateResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2850,7 +2582,7 @@ paths:
         name: state
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateStateRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.CreateStateRequest'
       produces:
       - application/json
       responses:
@@ -2858,16 +2590,16 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.StateResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2876,7 +2608,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2904,7 +2636,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2913,7 +2645,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2938,16 +2670,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.StateResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2956,7 +2688,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -2981,7 +2713,7 @@ paths:
         name: state
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateStateRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.UpdateStateRequest'
       produces:
       - application/json
       responses:
@@ -2989,16 +2721,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.StateResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_timesheet_state_dto.StateResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3007,7 +2739,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3027,18 +2759,18 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.UserResponse'
+                    $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UserResponse'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3068,7 +2800,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3077,7 +2809,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3102,16 +2834,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.UserResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UserResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3120,7 +2852,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3145,7 +2877,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateUserRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UpdateUserRequest'
       produces:
       - application/json
       responses:
@@ -3153,16 +2885,16 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.UserResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.UserResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3171,7 +2903,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object
@@ -3192,22 +2924,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.ChangePasswordRequest'
+          $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordRequest'
       responses:
         "200":
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ChangePasswordResponse'
+                  $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_user_dto.ChangePasswordResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/github_com_Koshsky_erp-backend_internal_common_response.Response'
             - properties:
                 data:
                   type: object

@@ -48,19 +48,19 @@ CREATE TABLE tasks (
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- Справочник категорий ресурсов (специализаций).
+-- Resource category dictionary (specializations).
 CREATE TABLE resources (
 	id BIGSERIAL PRIMARY KEY,
 	title TEXT NOT NULL,
     code TEXT NOT NULL,
-	-- Владелец ресурса (аккаунт пользователя) — обязателен.
+	-- Resource owner (user account) is required.
 	owner_id BIGINT NOT NULL REFERENCES users(id),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- Справочник состояний сотрудника: доступность задаётся флагом is_available.
+-- Employee state dictionary: availability is set by the is_available flag.
 CREATE TABLE states (
 	id BIGSERIAL PRIMARY KEY,
 	code TEXT NOT NULL UNIQUE,
@@ -71,14 +71,14 @@ CREATE TABLE states (
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- Конкретный сотрудник (уникальный ресурс) категории resources.
+-- A concrete employee (unique resource) of the resources category.
 CREATE TABLE employees (
 	id BIGSERIAL PRIMARY KEY,
 	resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE RESTRICT,
 	name TEXT NOT NULL,
-	-- Должность — свободный текст (не тип ресурса).
+	-- Position is free text (not a resource type).
 	position TEXT NOT NULL DEFAULT '',
-	-- Руководитель сотрудника (аккаунт пользователя); NULL — подчинённости нет.
+	-- Employee manager (user account); NULL means no subordination.
 	manager_id BIGINT REFERENCES users(id),
 	-- NULL означает "в штате с начала времён"; до hire_date ресурс не учитывается.
 	hire_date DATE DEFAULT NULL,
@@ -90,8 +90,8 @@ CREATE TABLE employees (
 	CHECK (termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date)
 );
 
--- Диапазоны состояний сотрудника (только не-явка): одна строка = интервал [start_date, end_date].
--- Отсутствие записей = явка (present). Удаляются жёстко (журнал).
+-- Employee state ranges (non-presence only): one row = an interval [start_date, end_date].
+-- Missing rows mean presence. They are hard-deleted (journal).
 -- EXCLUDE запрещает пересечение состояний одного сотрудника (одно состояние в день).
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
