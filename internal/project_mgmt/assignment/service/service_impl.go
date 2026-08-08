@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
+	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
 type AssignmentService struct {
@@ -33,7 +33,7 @@ func (s *AssignmentService) CreateAssignment(
 		return nil, err
 	}
 
-	created, err := s.repository.CreateAssignment(ctx, s.mapper.ToDomainFromCreate(req))
+	created, err := s.repository.CreateAssignment(ctx, assignment)
 	if err != nil {
 		return nil, err
 	}
@@ -44,10 +44,13 @@ func (s *AssignmentService) CreateAssignment(
 func (s *AssignmentService) FindAssignment(ctx context.Context, id int64) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
+		if validator.IsNotFoundError(err) {
+			return nil, validator.ErrAssignmentNotFound
+		}
 		return nil, err
 	}
 	if assignment == nil {
-		return nil, fmt.Errorf("assignment not found")
+		return nil, validator.ErrAssignmentNotFound
 	}
 	return s.mapper.ToDTO(assignment), nil
 }
@@ -59,7 +62,7 @@ func (s *AssignmentService) UpdateAssignment(
 ) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil || assignment == nil {
-		return nil, fmt.Errorf("assignment not found")
+		return nil, validator.ErrAssignmentNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(assignment, req)
@@ -76,6 +79,11 @@ func (s *AssignmentService) UpdateAssignment(
 }
 
 func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) error {
+	assignment, err := s.repository.FindAssignment(ctx, id)
+	if err != nil || assignment == nil {
+		return validator.ErrAssignmentNotFound
+	}
+
 	return s.repository.DeleteAssignment(ctx, id)
 }
 

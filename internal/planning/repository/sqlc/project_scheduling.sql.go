@@ -249,7 +249,7 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project
 }
 
 const listResources = `-- name: ListResources :many
-SELECT id, title, code, created_at, updated_at, deleted_at FROM resources
+SELECT id, title, code, owner_id, created_at, updated_at, deleted_at FROM resources
 WHERE deleted_at IS NULL
 `
 
@@ -266,6 +266,7 @@ func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
 			&i.ID,
 			&i.Title,
 			&i.Code,
+			&i.OwnerID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,

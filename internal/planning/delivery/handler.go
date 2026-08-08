@@ -28,7 +28,7 @@ func NewPlanningHandler(logger *slog.Logger, service MilestoneService) *Planning
 //	@Description	Get project planning (project portfolio)
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=dto.ProjectPlanning}
+//	@Success		200	{object}	response.Response
 //	@Failure		400	{object}	response.Response{data=nil}
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/planning/projects [get]
@@ -54,7 +54,7 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 //	@Description	Get process planning
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=dto.ProcessPlanning}
+//	@Success		200	{object}	response.Response
 //	@Failure		400	{object}	response.Response{data=nil}
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/planning/processes [get]
@@ -80,7 +80,7 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 //	@Description	Get task planning
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=dto.TaskPlanning}
+//	@Success		200	{object}	response.Response
 //	@Failure		400	{object}	response.Response{data=nil}
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/planning/tasks [get]

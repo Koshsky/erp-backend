@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
+	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
 type MilestoneService struct {
@@ -44,12 +44,14 @@ func (s *MilestoneService) CreateMilestone(
 func (s *MilestoneService) FindMilestone(ctx context.Context, id int64) (*dto.MilestoneResponse, error) {
 	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil {
+		if validator.IsNotFoundError(err) {
+			return nil, validator.ErrMilestoneNotFound
+		}
 		return nil, err
 	}
 	if milestone == nil {
-		return nil, fmt.Errorf("milestone not found")
+		return nil, validator.ErrMilestoneNotFound
 	}
-
 	return s.mapper.ToDTO(milestone), nil
 }
 
@@ -60,7 +62,7 @@ func (s *MilestoneService) UpdateMilestone(
 ) (*dto.MilestoneResponse, error) {
 	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil || milestone == nil {
-		return nil, fmt.Errorf("milestone not found")
+		return nil, validator.ErrMilestoneNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(milestone, req)
@@ -77,6 +79,11 @@ func (s *MilestoneService) UpdateMilestone(
 }
 
 func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error {
+	milestone, err := s.repository.FindMilestone(ctx, id)
+	if err != nil || milestone == nil {
+		return validator.ErrMilestoneNotFound
+	}
+
 	return s.repository.DeleteMilestone(ctx, id)
 }
 

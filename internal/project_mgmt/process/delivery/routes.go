@@ -2,18 +2,15 @@ package delivery
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"github.com/Koshsky/erp-backend/internal/middleware/access"
 )
 
 func (h *ProcessHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/process")
-	r.Use(access.DirectorReadOnly())
 	{
 		r.GET("", h.ListProcesses)
-		r.GET("/:id", h.FindProcess)
-		r.POST("", h.CreateProcess)
-		r.PUT("/:id", h.UpdateProcess)
-		r.DELETE("/:id", h.DeleteProcess)
+		r.GET("/:id", h.mw.Check("process.view"), h.FindProcess)
+		r.POST("", h.mw.Check("process.create"), h.CreateProcess)
+		r.PUT("/:id", h.mw.Check("process.update"), h.UpdateProcess)
+		r.DELETE("/:id", h.mw.Check("process.delete"), h.DeleteProcess)
 	}
 }

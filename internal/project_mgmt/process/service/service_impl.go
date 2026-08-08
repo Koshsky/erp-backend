@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
+	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
 type ProcessService struct {
@@ -44,10 +44,13 @@ func (s *ProcessService) CreateProcess(
 func (s *ProcessService) FindProcess(ctx context.Context, id int64) (*dto.ProcessResponse, error) {
 	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil {
+		if validator.IsNotFoundError(err) {
+			return nil, validator.ErrProcessNotFound
+		}
 		return nil, err
 	}
 	if process == nil {
-		return nil, fmt.Errorf("process not found")
+		return nil, validator.ErrProcessNotFound
 	}
 	return s.mapper.ToDTO(process), nil
 }
@@ -59,7 +62,7 @@ func (s *ProcessService) UpdateProcess(
 ) (*dto.ProcessResponse, error) {
 	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil || process == nil {
-		return nil, fmt.Errorf("process not found")
+		return nil, validator.ErrProcessNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(process, req)
@@ -76,6 +79,11 @@ func (s *ProcessService) UpdateProcess(
 }
 
 func (s *ProcessService) DeleteProcess(ctx context.Context, id int64) error {
+	process, err := s.repository.FindProcess(ctx, id)
+	if err != nil || process == nil {
+		return validator.ErrProcessNotFound
+	}
+
 	return s.repository.DeleteProcess(ctx, id)
 }
 

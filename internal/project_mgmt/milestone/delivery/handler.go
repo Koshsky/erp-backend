@@ -7,18 +7,21 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 )
 
 type MilestoneHandler struct {
 	logger  *slog.Logger
 	service MilestoneService
+	mw      *rbac.Middleware
 }
 
-func NewMilestoneHandler(logger *slog.Logger, service MilestoneService) *MilestoneHandler {
+func NewMilestoneHandler(logger *slog.Logger, service MilestoneService, mw *rbac.Middleware) *MilestoneHandler {
 	return &MilestoneHandler{
 		logger:  logger,
 		service: service,
+		mw:      mw,
 	}
 }
 
@@ -62,7 +65,7 @@ func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 
 	milestone, err := h.service.FindMilestone(c.Request.Context(), id)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, milestone)
@@ -73,9 +76,9 @@ func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 //	@Tags			Milestones
 //	@Summary		Create milestone
 //	@Description	Create milestone with the input payload
+//	@Security		ApiKeyAuth
 //	@Accept			json
 //	@Produce		json
-//	@Security		ApiKeyAuth
 //	@Param			request	body		dto.CreateMilestoneRequest	true	"Milestone data"
 //	@Success		201		{object}	response.Response{data=dto.MilestoneResponse}
 //	@Failure		400		{object}	response.Response{data=nil}
@@ -90,7 +93,7 @@ func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 
 	created, err := h.service.CreateMilestone(c.Request.Context(), milestone)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -101,8 +104,8 @@ func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 //	@Tags			Milestones
 //	@Summary		Delete milestone
 //	@Description	Delete milestone by ID
-//	@Produce		json
 //	@Security		ApiKeyAuth
+//	@Produce		json
 //	@Param			id	path	int	true	"Milestone ID"
 //	@Success		204
 //	@Failure		400	{object}	response.Response{data=nil}
@@ -116,7 +119,7 @@ func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteMilestone(c.Request.Context(), id); err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -127,6 +130,7 @@ func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 //	@Tags			Milestones
 //	@Summary		Update milestone
 //	@Description	Update milestone by ID
+//	@Security		ApiKeyAuth
 //	@Accept			json
 //	@Produce		json
 //	@Security		ApiKeyAuth
@@ -151,7 +155,7 @@ func (h *MilestoneHandler) UpdateMilestone(c *gin.Context) {
 
 	updated, err := h.service.UpdateMilestone(c.Request.Context(), id, body)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, updated)

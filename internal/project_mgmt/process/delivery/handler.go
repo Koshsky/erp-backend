@@ -7,18 +7,21 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
 )
 
 type ProcessHandler struct {
 	logger  *slog.Logger
 	service ProcessService
+	mw      *rbac.Middleware
 }
 
-func NewProcessHandler(logger *slog.Logger, service ProcessService) *ProcessHandler {
+func NewProcessHandler(logger *slog.Logger, service ProcessService, mw *rbac.Middleware) *ProcessHandler {
 	return &ProcessHandler{
 		logger:  logger,
 		service: service,
+		mw:      mw,
 	}
 }
 
@@ -27,8 +30,8 @@ func NewProcessHandler(logger *slog.Logger, service ProcessService) *ProcessHand
 //	@Tags			Processes
 //	@Summary		List processes
 //	@Description	Get a list of all processes
-//	@Produce		json
 //	@Security		ApiKeyAuth
+//	@Produce		json
 //	@Success		200	{object}	response.Response{data=[]dto.ProcessResponse}
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/process [get]
@@ -46,7 +49,6 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 //	@Tags			Processes
 //	@Summary		Get process
 //	@Description	Get a process by ID
-//	@Produce		json
 //	@Security		ApiKeyAuth
 //	@Param			id	path		int	true	"Process ID"
 //	@Success		200	{object}	response.Response{data=dto.ProcessResponse}
@@ -60,9 +62,9 @@ func (h *ProcessHandler) FindProcess(c *gin.Context) {
 		return
 	}
 
-	process, err := h.service.FindProcess(c, id)
+	process, err := h.service.FindProcess(c.Request.Context(), id)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, process)
@@ -73,9 +75,9 @@ func (h *ProcessHandler) FindProcess(c *gin.Context) {
 //	@Tags			Processes
 //	@Summary		Create process
 //	@Description	Create a new process
+//	@Security		ApiKeyAuth
 //	@Accept			json
 //	@Produce		json
-//	@Security		ApiKeyAuth
 //	@Param			process	body		dto.CreateProcessRequest	true	"Process data"
 //	@Success		201		{object}	response.Response{data=dto.ProcessResponse}
 //	@Failure		400		{object}	response.Response{data=nil}
@@ -88,9 +90,9 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 		return
 	}
 
-	created, err := h.service.CreateProcess(c, process)
+	created, err := h.service.CreateProcess(c.Request.Context(), process)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -101,7 +103,6 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 //	@Tags			Processes
 //	@Summary		Delete process
 //	@Description	Delete a process by ID
-//	@Produce		json
 //	@Security		ApiKeyAuth
 //	@Param			id	path	int	true	"Process ID"
 //	@Success		204
@@ -115,8 +116,8 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.DeleteProcess(c, id); err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+	if err = h.service.DeleteProcess(c.Request.Context(), id); err != nil {
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -127,9 +128,9 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 //	@Tags			Processes
 //	@Summary		Update process
 //	@Description	Update a process by ID
+//	@Security		ApiKeyAuth
 //	@Accept			json
 //	@Produce		json
-//	@Security		ApiKeyAuth
 //	@Param			id		path		int							true	"Process ID"
 //	@Param			body	body		dto.UpdateProcessRequest	true	"Process data"
 //	@Success		200		{object}	response.Response{data=dto.ProcessResponse}
@@ -149,9 +150,9 @@ func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 		return
 	}
 
-	process, err := h.service.UpdateProcess(c, id, body)
+	process, err := h.service.UpdateProcess(c.Request.Context(), id, body)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, process)
