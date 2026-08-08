@@ -2,18 +2,15 @@ package delivery
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"github.com/Koshsky/erp-backend/internal/middleware/access"
 )
 
 func (h *ResourceHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/resources")
-	r.Use(access.DirectorReadOnly())
 	{
 		r.GET("", h.ListResources)
-		r.GET("/:id", h.FindResource)
-		r.POST("", h.CreateResource)
-		r.PUT("/:id", h.UpdateResource)
-		r.DELETE("/:id", h.DeleteResource)
+		r.GET("/:id", h.mw.Check("resource.view"), h.FindResource)
+		r.POST("", h.mw.Check("resource.create"), h.CreateResource)
+		r.PUT("/:id", h.mw.Check("resource.update"), h.UpdateResource)
+		r.DELETE("/:id", h.mw.Check("resource.delete"), h.DeleteResource)
 	}
 }

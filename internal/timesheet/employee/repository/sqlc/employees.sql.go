@@ -285,6 +285,20 @@ func (q *Queries) ListEmployeesByResourceID(ctx context.Context, resourceID int6
 	return items, nil
 }
 
+const ownerChain = `-- name: OwnerChain :one
+SELECT COALESCE(manager_id, 0)::bigint AS owner_id
+FROM employees
+WHERE id = $1::bigint
+	AND deleted_at IS NULL
+`
+
+func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, ownerChain, id)
+	var owner_id int64
+	err := row.Scan(&owner_id)
+	return owner_id, err
+}
+
 const updateEmployee = `-- name: UpdateEmployee :one
 UPDATE employees
 SET

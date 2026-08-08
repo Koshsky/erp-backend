@@ -13,7 +13,7 @@ type Employee struct {
 	TerminationDate *time.Time
 }
 
-// EmployeeState — диапазон состояния сотрудника (только не-явка), [StartDate, EndDate].
+// EmployeeState is an employee state range (non-presence only), [StartDate, EndDate].
 type EmployeeState struct {
 	ID          int64
 	EmployeeID  int64

@@ -19,7 +19,7 @@ type UpdateEmployeeRequest struct {
 	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`
 }
 
-// SetDaysRequest задаёт состояние на диапазон дат (разворачивается в ячейки календаря).
+// SetDaysRequest sets a state for a date range (expands into calendar cells).
 type SetDaysRequest struct {
 	StateID   int64     `json:"state_id"   example:"4"`
 	StartDate date.Date `json:"start_date" example:"2026-07-20" format:"date"`

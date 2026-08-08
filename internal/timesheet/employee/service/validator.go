@@ -8,7 +8,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/validator"
 )
 
-// maxDayRange — максимальная ширина диапазона календаря за один запрос (в днях).
+// maxDayRange is the maximum calendar range width per request (in days).
 const (
 	maxDayRange = 730
 	hoursPerDay = 24

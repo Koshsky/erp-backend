@@ -17,8 +17,8 @@ type ResourceCalendar struct {
 	Periods    []AvailabilityPeriod `json:"periods"`
 }
 
-// AvailabilityPeriod — диапазон постоянной доступности категории: между границами
-// (наймы/увольнения/интервалы состояний) наборы активных и недоступных не меняются.
+// AvailabilityPeriod is a constant-availability range of a category: between
+// bounds (hires/terminations/state intervals) active and unavailable sets do not change.
 type AvailabilityPeriod struct {
 	StartDate   date.Date `json:"start_date"  example:"2026-07-15" format:"date"`
 	EndDate     date.Date `json:"end_date"    example:"2026-07-19" format:"date"`
@@ -27,7 +27,7 @@ type AvailabilityPeriod struct {
 	Available   int       `json:"available"   example:"7"`
 }
 
-// ResourceInfo — справочная информация категории для календаря.
+// ResourceInfo is reference info about a category for the calendar.
 type ResourceInfo struct {
 	ID      int64  `json:"id"       example:"1"`
 	Title   string `json:"title"    example:"Инженер"`
@@ -35,7 +35,7 @@ type ResourceInfo struct {
 	OwnerID *int64 `json:"owner_id" example:"3"`
 }
 
-// CalendarEmployee — сотрудник (со своим интервалом работы) для расчёта календаря.
+// CalendarEmployee is an employee (with their work interval) for the calendar.
 type CalendarEmployee struct {
 	EmployeeID      int64
 	ResourceID      int64
@@ -43,7 +43,7 @@ type CalendarEmployee struct {
 	TerminationDate *time.Time
 }
 
-// UnavailableRange — интервал отсутствия (is_available = false) для расчёта календаря.
+// UnavailableRange is an absence interval (is_available = false) for the calendar.
 type UnavailableRange struct {
 	ResourceID int64
 	StartDate  time.Time

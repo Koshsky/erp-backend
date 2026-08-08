@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrNotFound   = errors.New("not found")
+	ErrForbidden  = errors.New("forbidden")
 	ErrValidation = errors.New("validation failed")
 
 	ErrProjectNotFound    = fmt.Errorf("%w: project", ErrNotFound)
@@ -20,6 +21,8 @@ var (
 	ErrResourceNotFound   = fmt.Errorf("%w: resource", ErrNotFound)
 	ErrAssignmentNotFound = fmt.Errorf("%w: assignment", ErrNotFound)
 	ErrUserNotFound       = fmt.Errorf("%w: user", ErrNotFound)
+	ErrStateNotFound      = fmt.Errorf("%w: state", ErrNotFound)
+	ErrEmployeeNotFound   = fmt.Errorf("%w: employee", ErrNotFound)
 
 	ErrInvalidAssignmentQuantity = NewFieldError("quantity", codeMinValue, msgAtLeast("quantity", 1))
 )

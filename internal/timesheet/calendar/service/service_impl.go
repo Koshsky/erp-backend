@@ -9,10 +9,9 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
-	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 )
 
-// maxCalendarRange — максимальная ширина диапазона календаря за один запрос (в днях).
+// maxCalendarRange is the maximum calendar range width per request (in days).
 const (
 	maxCalendarRange = 730
 	hoursPerDay      = 24
@@ -30,14 +29,12 @@ func NewCalendarService(logger *slog.Logger, repository CalendarRepository) *Cal
 	}
 }
 
-// GetCalendar возвращает доступность ресурсов диапазонами (сегменты постоянной доступности):
-// мощность (штат), недоступные и доступные. Сложность O((E+S) log(E+S)) — зависит от числа
-// сотрудников и интервалов состояний, а не от числа дней в диапазоне.
+// GetCalendar returns resource availability as ranges (constant-availability
+// segments): capacity, unavailable and available. Complexity O((E+S) log(E+S))
+// depends on employees and state intervals, not the number of days.
 func (s *CalendarService) GetCalendar(
 	ctx context.Context,
 	start, end date.Date,
-	userID int64,
-	role string,
 ) (*dto.CalendarPlanning, error) {
 	startT, endT := start.Time(), end.Time()
 	if endT.Before(startT) {
@@ -50,10 +47,6 @@ func (s *CalendarService) GetCalendar(
 	resources, err := s.repository.ListResources(ctx)
 	if err != nil {
 		return nil, err
-	}
-	// vp видит в планировщике только свои ресурсы.
-	if role == userdomain.ProcessOwner {
-		resources = ownedResources(resources, userID)
 	}
 	employees, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
 	if err != nil {
@@ -88,17 +81,6 @@ func (s *CalendarService) GetCalendar(
 	return planning, nil
 }
 
-// ownedResources оставляет только ресурсы, принадлежащие пользователю.
-func ownedResources(resources []dto.ResourceInfo, userID int64) []dto.ResourceInfo {
-	result := resources[:0]
-	for _, resource := range resources {
-		if resource.OwnerID != nil && *resource.OwnerID == userID {
-			result = append(result, resource)
-		}
-	}
-	return result
-}
-
 func groupEmployees(employees []dto.CalendarEmployee) map[int64][]dto.CalendarEmployee {
 	result := make(map[int64][]dto.CalendarEmployee, len(employees))
 	for _, employee := range employees {
@@ -115,14 +97,14 @@ func groupRanges(ranges []dto.UnavailableRange) map[int64][]dto.UnavailableRange
 	return result
 }
 
-// availabilityEvent — изменение числа активных и недоступных в конкретный день.
+// availabilityEvent is a change in the number of active/unavailable on a day.
 type availabilityEvent struct {
 	active int
 	absent int
 }
 
-// buildPeriods вычисляет сегменты [start, end] постоянной доступности по событийному sweep:
-// границы сегментов — даты наймов/увольнений и начала/концы интервалов отсутствий.
+// buildPeriods computes [start, end] constant-availability segments via an event
+// sweep: segment bounds are hire/termination dates and absence interval edges.
 func buildPeriods(
 	start, end time.Time,
 	employees []dto.CalendarEmployee,
@@ -191,7 +173,7 @@ func buildPeriods(
 	return periods
 }
 
-// countActiveAt считает сотрудников, активных в день day.
+// countActiveAt counts employees active on day.
 func countActiveAt(day time.Time, employees []dto.CalendarEmployee) int {
 	count := 0
 	for _, employee := range employees {
@@ -203,7 +185,7 @@ func countActiveAt(day time.Time, employees []dto.CalendarEmployee) int {
 	return count
 }
 
-// countAbsentAt считает отсутствующих сотрудников в день day.
+// countAbsentAt counts employees absent on day.
 func countAbsentAt(day time.Time, ranges []dto.UnavailableRange) int {
 	count := 0
 	for _, r := range ranges {

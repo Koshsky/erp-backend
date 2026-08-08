@@ -7,18 +7,21 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/dto"
 )
 
 type StateHandler struct {
 	logger  *slog.Logger
 	service StateService
+	mw      *rbac.Middleware
 }
 
-func NewStateHandler(logger *slog.Logger, service StateService) *StateHandler {
+func NewStateHandler(logger *slog.Logger, service StateService, mw *rbac.Middleware) *StateHandler {
 	return &StateHandler{
 		logger:  logger,
 		service: service,
+		mw:      mw,
 	}
 }
 
@@ -62,7 +65,7 @@ func (h *StateHandler) FindState(c *gin.Context) {
 
 	state, err := h.service.FindState(c.Request.Context(), id)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, state)
@@ -90,7 +93,7 @@ func (h *StateHandler) CreateState(c *gin.Context) {
 
 	created, err := h.service.CreateState(c.Request.Context(), state)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -116,7 +119,7 @@ func (h *StateHandler) DeleteState(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteState(c.Request.Context(), id); err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -151,7 +154,7 @@ func (h *StateHandler) UpdateState(c *gin.Context) {
 
 	updated, err := h.service.UpdateState(c.Request.Context(), id, body)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.HandleError(c, h.logger, err)
 		return
 	}
 	response.OK(c, updated)

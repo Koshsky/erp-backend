@@ -33,8 +33,8 @@ type ListEmployeesForCalendarRow struct {
 	TerminationDate pgtype.Date `json:"termination_date"`
 }
 
-// Сотрудники, которые могли быть активны в окне [start_date, end_date]
-// (по hire_date/termination_date), без по-дневного разворачивания.
+// Employees that could be active within the [start_date, end_date] window
+// (by hire_date/termination_date), without per-day expansion.
 func (q *Queries) ListEmployeesForCalendar(ctx context.Context, arg ListEmployeesForCalendarParams) ([]ListEmployeesForCalendarRow, error) {
 	rows, err := q.db.Query(ctx, listEmployeesForCalendar, arg.EndDate, arg.StartDate)
 	if err != nil {
@@ -122,7 +122,7 @@ type ListUnavailableRangesRow struct {
 	EndDate    time.Time `json:"end_date"`
 }
 
-// Интервалы отсутствий (is_available = false), пересекающие окно, без разворачивания.
+// Absence intervals (is_available = false) overlapping the window, without expansion.
 func (q *Queries) ListUnavailableRanges(ctx context.Context, arg ListUnavailableRangesParams) ([]ListUnavailableRangesRow, error) {
 	rows, err := q.db.Query(ctx, listUnavailableRanges, arg.StartDate, arg.EndDate)
 	if err != nil {

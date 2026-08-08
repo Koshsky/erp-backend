@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/common/nullable"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/repository/sqlc"
 )
@@ -137,16 +138,16 @@ func (r *EmployeeRepository) ListStates(
 	return states, nil
 }
 
-// overlapState — перекрывающий интервал с его состоянием.
+// overlapState is an overlapping interval with its state.
 type overlapState struct {
 	StateID   int64
 	StartDate time.Time
 	EndDate   time.Time
 }
 
-// SetStateRange перезаписывает диапазон [start, end] заданным состоянием:
-// вычитает [start, end] из пересекающихся интервалов (сохраняя их остатки),
-// удаляет покрытые и вставляет новый.
+// SetStateRange overwrites the [start, end] range with the given state:
+// subtracts [start, end] from overlapping intervals (keeping their residues),
+// deletes covered ones and inserts the new one.
 func (r *EmployeeRepository) SetStateRange(
 	ctx context.Context,
 	employeeID, stateID int64,
@@ -189,8 +190,8 @@ func (r *EmployeeRepository) SetStateRange(
 	return tx.Commit(ctx)
 }
 
-// DeleteStateRange очищает диапазон [start, end] (сохраняя остатки пересекающихся интервалов);
-// при stateID != nil — только состояния этого типа.
+// DeleteStateRange clears the [start, end] range (keeping residues of
+// overlapping intervals); with stateID != nil, only states of that type.
 func (r *EmployeeRepository) DeleteStateRange(
 	ctx context.Context,
 	employeeID int64,
@@ -220,7 +221,7 @@ func (r *EmployeeRepository) DeleteStateRange(
 	return tx.Commit(ctx)
 }
 
-// loadAndDeleteAll загружает и удаляет все интервалы, пересекающие [start, end].
+// loadAndDeleteAll loads and deletes all intervals overlapping [start, end].
 func loadAndDeleteAll(
 	ctx context.Context,
 	q *sqlc.Queries,
@@ -242,7 +243,7 @@ func loadAndDeleteAll(
 	})
 }
 
-// loadAndDeleteByState загружает и удаляет интервалы заданного состояния, пересекающие [start, end].
+// loadAndDeleteByState loads and deletes intervals of the given state overlapping [start, end].
 func loadAndDeleteByState(
 	ctx context.Context,
 	q *sqlc.Queries,
@@ -266,8 +267,8 @@ func loadAndDeleteByState(
 	})
 }
 
-// insertResidues вставляет части пересекающихся интервалов, не входящие в [start, end]
-// (левые/правые остатки), сохраняя их исходное состояние.
+// insertResidues inserts the parts of overlapping intervals outside [start, end]
+// (left/right residues), keeping their original state.
 func insertResidues(
 	ctx context.Context,
 	q *sqlc.Queries,
@@ -324,7 +325,7 @@ func toOverlapStatesByState(rows []sqlc.ListOverlappingStatesByStateRow) []overl
 	return result
 }
 
-// findFull возвращает сотрудника с названием категории по id.
+// findFull returns an employee with the category title by id.
 func (r *EmployeeRepository) findFull(ctx context.Context, id int64) (*domain.Employee, error) {
 	row, err := r.db.FindEmployee(ctx, id)
 	if err != nil {
@@ -399,7 +400,7 @@ func mapStateRow(row sqlc.ListStatesByEmployeeRangeRow) domain.EmployeeState {
 	}
 }
 
-// fromDate разворачивает nullable-дату (pgtype.Date) в [time.Time].
+// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
 func fromDate(v pgtype.Date) *time.Time {
 	if !v.Valid {
 		return nil
@@ -408,10 +409,19 @@ func fromDate(v pgtype.Date) *time.Time {
 	return &t
 }
 
-// toDate упаковывает [time.Time] в nullable-дату (pgtype.Date).
+// toDate wraps [time.Time] into a nullable date (pgtype.Date).
 func toDate(v *time.Time) pgtype.Date {
 	if v == nil {
 		return pgtype.Date{}
 	}
 	return pgtype.Date{Time: *v, Valid: true}
+}
+
+// OwnerChain returns the owner chain (for RBAC checks in the middleware).
+func (r *EmployeeRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
+	owner, err := r.db.OwnerChain(ctx, id)
+	if err != nil {
+		return rbac.Owners{}, err
+	}
+	return rbac.Owners{Owner: owner}, nil
 }
