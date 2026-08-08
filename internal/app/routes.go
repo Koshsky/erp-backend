@@ -1,3 +1,27 @@
+// @title			Enterprise Resource Planning
+// @version		1.0
+// @description	For managing the enterprise's universal resources
+// @termsOfService	http://swagger.io/terms/
+
+// @contact.name	Shmonov Matvey
+// @contact.url	https://t.me/Koshsky
+// @contact.email	shmonov.mv@gmail.com
+
+// @license.name	Apache 2.0
+// @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host		localhost:8080
+// @BasePath	/api/v1
+
+// @securityDefinitions.apikey	ApiKeyAuth
+// @in							header
+// @name						Authorization
+// @description				"Provide JWT token in the format: Bearer {token}"
+
+// @externalDocs.description	ERP documentation (placeholder)
+// @externalDocs.url			https://swagger.io/resources/open-api/
+
+// Package app wires the HTTP routes.
 package app
 
 import (
@@ -6,6 +30,8 @@ import (
 	authDelivery "github.com/Koshsky/erp-backend/internal/auth/delivery"
 	authService "github.com/Koshsky/erp-backend/internal/auth/service"
 
+	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac/policies"
 	planningDelivery "github.com/Koshsky/erp-backend/internal/planning/delivery"
 	planningRepo "github.com/Koshsky/erp-backend/internal/planning/repository"
 	planningService "github.com/Koshsky/erp-backend/internal/planning/service"
@@ -76,30 +102,45 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	planningSvc := planningService.NewPlanningService(a.logger, planningQueries)
 	planningHandler := planningDelivery.NewPlanningHandler(a.logger, planningSvc)
 
-	// --- Task ---
+	// --- Repositories (services + RBAC resolvers) ---
+	projectQueries := projectRepo.NewProjectRepository(a.logger, a.pool)
+	processQueries := processRepo.NewProcessRepository(a.logger, a.pool)
 	taskQueries := taskRepo.NewTaskRepository(a.logger, a.pool)
+	milestoneQueries := milestoneRepo.NewMilestoneRepository(a.logger, a.pool)
+	assignmentQueries := assignmentRepo.NewAssignmentRepository(a.logger, a.pool)
+	resourceQueries := resourceRepo.NewResourceRepository(a.logger, a.pool)
+	employeeQueries := employeeRepo.NewEmployeeRepository(a.logger, a.pool)
+
+	// --- RBAC: policy engine (Data — owner resolvers from repositories) ---
+	rbacMiddleware := rbacMW.New(a.logger, rbacMW.Data{
+		ProjectOwners:    projectQueries.OwnerChain,
+		ProcessOwners:    processQueries.OwnerChain,
+		TaskOwners:       taskQueries.OwnerChain,
+		MilestoneOwners:  milestoneQueries.OwnerChain,
+		AssignmentOwners: assignmentQueries.OwnerChain,
+		ResourceOwners:   resourceQueries.OwnerChain,
+		EmployeeOwners:   employeeQueries.OwnerChain,
+	}, policies.All())
+
+	// --- Task ---
 	taskSvc := taskService.NewTaskService(a.logger, taskQueries)
-	taskHandler := taskDelivery.NewTaskHandler(a.logger, taskSvc)
+	taskHandler := taskDelivery.NewTaskHandler(a.logger, taskSvc, rbacMiddleware)
 
 	// --- Project ---
-	projectQueries := projectRepo.NewProjectRepository(a.logger, a.pool)
 	projectSvc := projectService.NewProjectService(a.logger, projectQueries)
-	projectHandler := projectDelivery.NewProjectHandler(a.logger, projectSvc)
+	projectHandler := projectDelivery.NewProjectHandler(a.logger, projectSvc, rbacMiddleware)
 
 	// --- Process ---
-	processQueries := processRepo.NewProcessRepository(a.logger, a.pool)
 	processSvc := processService.NewProcessService(a.logger, processQueries)
-	processHandler := processDelivery.NewProcessHandler(a.logger, processSvc)
+	processHandler := processDelivery.NewProcessHandler(a.logger, processSvc, rbacMiddleware)
 
 	// --- Milestone ---
-	milestoneQueries := milestoneRepo.NewMilestoneRepository(a.logger, a.pool)
 	milestoneSvc := milestoneService.NewMilestoneService(a.logger, milestoneQueries)
-	milestoneHandler := milestoneDelivery.NewMilestoneHandler(a.logger, milestoneSvc)
+	milestoneHandler := milestoneDelivery.NewMilestoneHandler(a.logger, milestoneSvc, rbacMiddleware)
 
 	// --- Assignment ---
-	assignmentQueries := assignmentRepo.NewAssignmentRepository(a.logger, a.pool)
 	assignmentSvc := assignmentService.NewAssignmentService(a.logger, assignmentQueries)
-	assignmentHandler := assignmentDelivery.NewAssignmentHandler(a.logger, assignmentSvc)
+	assignmentHandler := assignmentDelivery.NewAssignmentHandler(a.logger, assignmentSvc, rbacMiddleware)
 
 	api := router.Group("/api/v1")
 
@@ -116,28 +157,31 @@ func (a *App) registerRoutes(router *gin.Engine) {
 		milestoneHandler.RegisterRoutes(protected)
 		assignmentHandler.RegisterRoutes(protected)
 
-		a.registerTimesheet(protected.Group("/timesheet"))
+		a.registerTimesheet(protected.Group("/timesheet"), rbacMiddleware, resourceQueries, employeeQueries)
 	}
 }
 
-// registerTimesheet собирает домены «табеля» (ресурсы, состояния, сотрудники, календарь)
-// и регистрирует их роуты под общим префиксом.
-func (a *App) registerTimesheet(router *gin.RouterGroup) {
-	resourceQueries := resourceRepo.NewResourceRepository(a.logger, a.pool)
+// registerTimesheet wires the timesheet domains (resources, states, employees,
+// calendar) and registers their routes under a common prefix.
+func (a *App) registerTimesheet(
+	router *gin.RouterGroup,
+	rbacMiddleware *rbacMW.Middleware,
+	resourceQueries *resourceRepo.ResourceRepository,
+	employeeQueries *employeeRepo.EmployeeRepository,
+) {
 	resourceSvc := resourceService.NewResourceService(a.logger, resourceQueries)
-	resourceHandler := resourceDelivery.NewResourceHandler(a.logger, resourceSvc)
+	resourceHandler := resourceDelivery.NewResourceHandler(a.logger, resourceSvc, rbacMiddleware)
 
 	stateQueries := stateRepo.NewStateRepository(a.logger, a.pool)
 	stateSvc := stateService.NewStateService(a.logger, stateQueries)
-	stateHandler := stateDelivery.NewStateHandler(a.logger, stateSvc)
+	stateHandler := stateDelivery.NewStateHandler(a.logger, stateSvc, rbacMiddleware)
 
-	employeeQueries := employeeRepo.NewEmployeeRepository(a.logger, a.pool)
 	employeeSvc := employeeService.NewEmployeeService(a.logger, employeeQueries)
-	employeeHandler := employeeDelivery.NewEmployeeHandler(a.logger, employeeSvc)
+	employeeHandler := employeeDelivery.NewEmployeeHandler(a.logger, employeeSvc, rbacMiddleware)
 
 	calendarQueries := calendarRepo.NewCalendarRepository(a.logger, a.pool)
 	calendarSvc := calendarService.NewCalendarService(a.logger, calendarQueries)
-	calendarHandler := calendarDelivery.NewCalendarHandler(a.logger, calendarSvc)
+	calendarHandler := calendarDelivery.NewCalendarHandler(a.logger, calendarSvc, rbacMiddleware)
 
 	resourceHandler.RegisterRoutes(router)
 	stateHandler.RegisterRoutes(router)
