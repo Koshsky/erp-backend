@@ -3,9 +3,9 @@ package service
 import (
 	"time"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type EmployeeMapper struct{}

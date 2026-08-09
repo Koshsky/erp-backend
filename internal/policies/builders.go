@@ -1,6 +1,9 @@
 package policies
 
-import "github.com/Koshsky/erp-backend/internal/middleware/rbac"
+import (
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/pkg/errors"
+)
 
 // parentByID resolves the parent owner from the body by key (for CreateCheck).
 func parentByID(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) (rbac.Owners, error) {
@@ -27,9 +30,9 @@ func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 		}
 		if !Authorize(rc.User.Role, rsrc, act, owners, rc.User.ID) {
 			if act == ActionView {
-				return rbac.ErrNotFound
+				return errors.ErrNotFound
 			}
-			return rbac.ErrForbidden
+			return errors.ErrForbidden
 		}
 		return nil
 	}
@@ -43,7 +46,7 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 			return err
 		}
 		if !Authorize(rc.User.Role, rsrc, ActionCreate, owners, rc.User.ID) {
-			return rbac.ErrForbidden
+			return errors.ErrForbidden
 		}
 		return nil
 	}

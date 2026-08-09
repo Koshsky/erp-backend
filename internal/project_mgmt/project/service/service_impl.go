@@ -6,7 +6,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type ProjectService struct {
@@ -14,15 +14,6 @@ type ProjectService struct {
 	repository ProjectRepository
 	mapper     *ProjectMapper
 	validator  *ProjectValidator
-}
-
-func NewProjectService(logger *slog.Logger, repository ProjectRepository) *ProjectService {
-	return &ProjectService{
-		logger:     logger,
-		repository: repository,
-		mapper:     NewProjectMapper(),
-		validator:  &ProjectValidator{},
-	}
 }
 
 // CreateProject creates a project. The middleware checked permissions; here
@@ -57,7 +48,7 @@ func (s *ProjectService) FindProject(ctx context.Context, id int64) (*dto.Projec
 		return nil, err
 	}
 	if project == nil {
-		return nil, validator.ErrProjectNotFound
+		return nil, errors.ErrProjectNotFound
 	}
 	return s.mapper.ToDTO(project), nil
 }
@@ -72,7 +63,7 @@ func (s *ProjectService) UpdateProject(
 ) (*dto.ProjectResponse, error) {
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil || project == nil {
-		return nil, validator.ErrProjectNotFound
+		return nil, errors.ErrProjectNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(project, req)
@@ -91,7 +82,7 @@ func (s *ProjectService) UpdateProject(
 func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil || project == nil {
-		return validator.ErrProjectNotFound
+		return errors.ErrProjectNotFound
 	}
 
 	return s.repository.DeleteProject(ctx, id)

@@ -20,10 +20,6 @@ func msgGreaterThan(field string, minVal int) string {
 	return fmt.Sprintf("%s must be greater than %d", field, minVal)
 }
 
-func msgAtLeast(field string, minVal int) string {
-	return fmt.Sprintf("%s must be at least %d", field, minVal)
-}
-
 func msgDateRange(entity string) string {
 	return fmt.Sprintf("%s end_date must be greater than or equal to start_date", entity)
 }

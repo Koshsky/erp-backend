@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/dto"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/date"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type EmployeeService struct {
@@ -15,15 +15,6 @@ type EmployeeService struct {
 	repository EmployeeRepository
 	mapper     *EmployeeMapper
 	validator  *EmployeeValidator
-}
-
-func NewEmployeeService(logger *slog.Logger, repository EmployeeRepository) *EmployeeService {
-	return &EmployeeService{
-		logger:     logger,
-		repository: repository,
-		mapper:     NewEmployeeMapper(),
-		validator:  &EmployeeValidator{},
-	}
 }
 
 func (s *EmployeeService) ListEmployeesByResource(
@@ -50,13 +41,13 @@ func (s *EmployeeService) ListEmployees(ctx context.Context) ([]dto.EmployeeResp
 func (s *EmployeeService) FindEmployee(ctx context.Context, id int64) (*dto.EmployeeResponse, error) {
 	employee, err := s.repository.FindEmployee(ctx, id)
 	if err != nil {
-		if validator.IsNotFoundError(err) {
-			return nil, validator.ErrEmployeeNotFound
+		if errors.IsNotFoundError(err) {
+			return nil, errors.ErrEmployeeNotFound
 		}
 		return nil, err
 	}
 	if employee == nil {
-		return nil, validator.ErrEmployeeNotFound
+		return nil, errors.ErrEmployeeNotFound
 	}
 	return s.mapper.ToEmployeeDTO(employee), nil
 }
@@ -86,7 +77,7 @@ func (s *EmployeeService) CreateEmployee(
 		return nil, err
 	}
 	if !active {
-		return nil, validator.ErrResourceNotFound
+		return nil, errors.ErrResourceNotFound
 	}
 
 	created, err := s.repository.CreateEmployee(ctx, employee)
@@ -104,13 +95,13 @@ func (s *EmployeeService) UpdateEmployee(
 ) (*dto.EmployeeResponse, error) {
 	employee, err := s.repository.FindEmployee(ctx, id)
 	if err != nil {
-		if validator.IsNotFoundError(err) {
-			return nil, validator.ErrEmployeeNotFound
+		if errors.IsNotFoundError(err) {
+			return nil, errors.ErrEmployeeNotFound
 		}
 		return nil, err
 	}
 	if employee == nil {
-		return nil, validator.ErrEmployeeNotFound
+		return nil, errors.ErrEmployeeNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(employee, req)
@@ -122,7 +113,7 @@ func (s *EmployeeService) UpdateEmployee(
 			return nil, err
 		}
 		if !active {
-			return nil, validator.ErrResourceNotFound
+			return nil, errors.ErrResourceNotFound
 		}
 	}
 	if err = s.validator.ValidateEmployee(employee); err != nil {
@@ -140,13 +131,13 @@ func (s *EmployeeService) UpdateEmployee(
 func (s *EmployeeService) DeleteEmployee(ctx context.Context, id int64) error {
 	employee, err := s.repository.FindEmployee(ctx, id)
 	if err != nil {
-		if validator.IsNotFoundError(err) {
-			return validator.ErrEmployeeNotFound
+		if errors.IsNotFoundError(err) {
+			return errors.ErrEmployeeNotFound
 		}
 		return err
 	}
 	if employee == nil {
-		return validator.ErrEmployeeNotFound
+		return errors.ErrEmployeeNotFound
 	}
 
 	return s.repository.DeleteEmployee(ctx, id)
@@ -226,13 +217,13 @@ func (s *EmployeeService) DeleteDays(
 func (s *EmployeeService) ensureEmployeeExists(ctx context.Context, employeeID int64) error {
 	employee, err := s.repository.FindEmployee(ctx, employeeID)
 	if err != nil {
-		if validator.IsNotFoundError(err) {
-			return validator.ErrEmployeeNotFound
+		if errors.IsNotFoundError(err) {
+			return errors.ErrEmployeeNotFound
 		}
 		return err
 	}
 	if employee == nil {
-		return validator.ErrEmployeeNotFound
+		return errors.ErrEmployeeNotFound
 	}
 	return nil
 }

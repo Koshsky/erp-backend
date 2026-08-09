@@ -7,8 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 // maxCalendarRange is the maximum calendar range width per request (in days).
@@ -20,13 +20,6 @@ const (
 type CalendarService struct {
 	logger     *slog.Logger
 	repository CalendarRepository
-}
-
-func NewCalendarService(logger *slog.Logger, repository CalendarRepository) *CalendarService {
-	return &CalendarService{
-		logger:     logger,
-		repository: repository,
-	}
 }
 
 // GetCalendar returns resource availability as ranges (constant-availability

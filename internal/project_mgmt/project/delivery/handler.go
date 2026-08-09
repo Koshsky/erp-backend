@@ -6,24 +6,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/helpers"
-	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
+	"github.com/Koshsky/erp-backend/internal/response"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
 type ProjectHandler struct {
 	logger  *slog.Logger
 	service ProjectService
 	mw      *rbac.Middleware
-}
-
-func NewProjectHandler(logger *slog.Logger, service ProjectService, mw *rbac.Middleware) *ProjectHandler {
-	return &ProjectHandler{
-		logger:  logger,
-		service: service,
-		mw:      mw,
-	}
 }
 
 // ListProjects handles the request to list all projects.
@@ -66,7 +58,7 @@ func (h *ProjectHandler) FindProject(c *gin.Context) {
 
 	project, err := h.service.FindProject(c.Request.Context(), id)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, project)
@@ -92,7 +84,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		return
 	}
 
-	user, err := helpers.GetUser(c)
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -100,7 +92,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 
 	created, err := h.service.CreateProject(c.Request.Context(), project, user.ID, user.Role)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -135,7 +127,7 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 
 	updated, err := h.service.UpdateProject(c.Request.Context(), id, body)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, updated)
@@ -161,7 +153,7 @@ func (h *ProjectHandler) DeleteProject(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteProject(c.Request.Context(), id); err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)

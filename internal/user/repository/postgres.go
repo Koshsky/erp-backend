@@ -5,8 +5,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 )
@@ -14,13 +12,6 @@ import (
 type UserRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
-}
-
-func NewUserRepository(logger *slog.Logger, pool *pgxpool.Pool) *UserRepository {
-	return &UserRepository{
-		logger: logger,
-		db:     sqlc.New(pool),
-	}
 }
 
 func (r *UserRepository) FindUserByUsername(ctx context.Context, username string) (*domain.User, error) {

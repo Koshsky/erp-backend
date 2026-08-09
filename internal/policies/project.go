@@ -1,6 +1,9 @@
 package policies
 
-import "github.com/Koshsky/erp-backend/internal/middleware/rbac"
+import (
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/pkg/errors"
+)
 
 //nolint:gochecknoglobals // rule registry
 var projectPolicies = []rbac.Policy{
@@ -19,7 +22,7 @@ func createProject(rc *rbac.CheckCtx) error {
 	}
 	owners := rbac.Owners{ProjectOwner: ownerID}
 	if !Authorize(rc.User.Role, rbac.ResourceProject, ActionCreate, owners, rc.User.ID) {
-		return rbac.ErrForbidden
+		return errors.ErrForbidden
 	}
 	return nil
 }

@@ -9,24 +9,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type EmployeeRepository struct {
 	logger *slog.Logger
 	pool   *pgxpool.Pool
 	db     *sqlc.Queries
-}
-
-func NewEmployeeRepository(logger *slog.Logger, pool *pgxpool.Pool) *EmployeeRepository {
-	return &EmployeeRepository{
-		logger: logger,
-		pool:   pool,
-		db:     sqlc.New(pool),
-	}
 }
 
 func (r *EmployeeRepository) IsResourceActive(ctx context.Context, resourceID int64) (bool, error) {

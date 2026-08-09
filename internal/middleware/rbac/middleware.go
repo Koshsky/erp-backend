@@ -4,29 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/ctx"
-	"github.com/Koshsky/erp-backend/internal/common/helpers"
-	"github.com/Koshsky/erp-backend/internal/common/response"
-	"github.com/Koshsky/erp-backend/internal/validator"
-)
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
-// ErrInvalidBody indicates the request body cannot be parsed (no parent id).
-var ErrInvalidBody = errors.New("invalid request body")
-
-// ErrBadRequest indicates invalid request parameters (the id from the URL).
-var ErrBadRequest = errors.New("invalid request")
-
-// ErrForbidden and ErrNotFound are denial sentinels (adapted from validator).
-var (
-	ErrForbidden = validator.ErrForbidden
-	ErrNotFound  = validator.ErrNotFound
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 // ResolveByID returns the owner chain of an entity by its id.
@@ -79,7 +66,7 @@ type Policy struct {
 // CheckCtx is the policy evaluation context.
 type CheckCtx struct {
 	C    *gin.Context
-	User ctx.UserContext
+	User userctx.UserContext
 	Data Data
 	body []byte
 }
@@ -93,7 +80,7 @@ func (rc *CheckCtx) Body() []byte {
 func (rc *CheckCtx) ParamID() (int64, error) {
 	id, err := strconv.ParseInt(rc.C.Param("id"), 10, 64)
 	if err != nil {
-		return 0, ErrBadRequest
+		return 0, errors.BadRequest("invalid id")
 	}
 	return id, nil
 }
@@ -102,7 +89,7 @@ func (rc *CheckCtx) ParamID() (int64, error) {
 func (rc *CheckCtx) BodyID(key string) (int64, error) {
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal(rc.body, &obj); err != nil {
-		return 0, ErrInvalidBody
+		return 0, errors.BadRequest("invalid request body")
 	}
 	raw, ok := obj[key]
 	if !ok || len(raw) == 0 || string(raw) == "null" {
@@ -110,18 +97,26 @@ func (rc *CheckCtx) BodyID(key string) (int64, error) {
 	}
 	var v int64
 	if err := json.Unmarshal(raw, &v); err != nil {
-		return 0, ErrInvalidBody
+		return 0, errors.BadRequest("invalid request body")
 	}
 	return v, nil
 }
 
 // Owners returns the owner chain of an entity (via the resolver from Data).
+// Missing entities are normalized to a clean "not found" error.
 func (rc *CheckCtx) Owners(rsrc Resource, id int64) (Owners, error) {
 	resolve := rc.Data.resolve(rsrc)
 	if resolve == nil {
-		return Owners{}, validator.ErrNotFound
+		return Owners{}, errors.NotFound("not found")
 	}
-	return resolve(rc.C.Request.Context(), id)
+	owners, err := resolve(rc.C.Request.Context(), id)
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return Owners{}, errors.NotFound("not found")
+		}
+		return Owners{}, err
+	}
+	return owners, nil
 }
 
 // Middleware is the policy engine.
@@ -129,14 +124,6 @@ type Middleware struct {
 	logger *slog.Logger
 	data   Data
 	byName map[string]Policy
-}
-
-func New(logger *slog.Logger, data Data, policies []Policy) *Middleware {
-	byName := make(map[string]Policy, len(policies))
-	for _, p := range policies {
-		byName[p.Name] = p
-	}
-	return &Middleware{logger: logger, data: data, byName: byName}
 }
 
 // Check runs the policy by name.
@@ -165,20 +152,9 @@ func (m *Middleware) Check(name string) gin.HandlerFunc {
 	}
 }
 
-// abortError writes the HTTP response according to the policy error type.
+// abort writes the policy error as an HTTP response.
 func (m *Middleware) abort(c *gin.Context, err error) {
-	switch {
-	case errors.Is(err, ErrInvalidBody):
-		response.BadRequest(c, "invalid request body")
-	case errors.Is(err, ErrBadRequest):
-		response.BadRequest(c, "invalid request")
-	case errors.Is(err, ErrForbidden):
-		response.Forbidden(c, "forbidden")
-	case validator.IsNotFoundError(err):
-		response.NotFound(c, "not found")
-	default:
-		response.InternalError(c, m.logger, err.Error(), err)
-	}
+	response.Error(c, m.logger, err)
 	c.Abort()
 }
 
@@ -193,12 +169,12 @@ func readBody(c *gin.Context) ([]byte, error) {
 }
 
 // getUser takes the user from the context (set by AuthMiddleware).
-func getUser(c *gin.Context) (ctx.UserContext, bool) {
-	user, err := helpers.GetUser(c)
+func getUser(c *gin.Context) (userctx.UserContext, bool) {
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.Unauthorized(c, "authentication required")
 		c.Abort()
-		return ctx.UserContext{}, false
+		return userctx.UserContext{}, false
 	}
 	return user, true
 }

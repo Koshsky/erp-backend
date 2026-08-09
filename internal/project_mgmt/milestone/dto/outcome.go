@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/Koshsky/erp-backend/internal/common/date"
+import "github.com/Koshsky/erp-backend/pkg/date"
 
 type MilestoneResponse struct {
 	ID        int64     `json:"id"         example:"1"`

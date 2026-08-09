@@ -9,10 +9,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/ctx"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 //nolint:gochecknoinits // gin test mode
@@ -29,7 +29,7 @@ const (
 // setUser mimics AuthMiddleware: puts the user into the gin context.
 func setUser(role string, id int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set(ctx.KeyUser, ctx.UserContext{ID: id, Role: role})
+		c.Set(userctx.KeyUser, userctx.UserContext{ID: id, Role: role})
 		c.Next()
 	}
 }
@@ -37,7 +37,7 @@ func setUser(role string, id int64) gin.HandlerFunc {
 // chainOwners is a "chain" resolver: task/process → {Project:1, Process:2}.
 func chainOwners(_ context.Context, id int64) (rbac.Owners, error) {
 	if id%10 == 0 {
-		return rbac.Owners{}, validator.ErrNotFound
+		return rbac.Owners{}, errors.ErrNotFound
 	}
 	return rbac.Owners{ProjectOwner: 1, ProcessOwner: 2}, nil
 }
@@ -45,7 +45,7 @@ func chainOwners(_ context.Context, id int64) (rbac.Owners, error) {
 // rowOwner is a "row owner" resolver: resource/employee → owner=id.
 func rowOwner(_ context.Context, id int64) (rbac.Owners, error) {
 	if id%10 == 0 {
-		return rbac.Owners{}, validator.ErrNotFound
+		return rbac.Owners{}, errors.ErrNotFound
 	}
 	return rbac.Owners{Owner: id}, nil
 }
@@ -64,7 +64,7 @@ func testData() rbac.Data {
 
 func TestCheckEntity(t *testing.T) {
 	t.Parallel()
-	mw := rbac.New(nil, testData(), []rbac.Policy{
+	mw := rbac.ProvideMiddleware(nil, testData(), []rbac.Policy{
 		{Name: "task.view", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionView)},
 		{Name: "task.update", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionUpdate)},
 	})
@@ -109,7 +109,7 @@ func TestCheckEntity(t *testing.T) {
 
 func TestCheckAssignmentCreate(t *testing.T) {
 	t.Parallel()
-	mw := rbac.New(nil, testData(), []rbac.Policy{
+	mw := rbac.ProvideMiddleware(nil, testData(), []rbac.Policy{
 		{Name: "assignment.create", Check: createAssignmentForTest},
 	})
 
@@ -159,7 +159,7 @@ func createAssignmentForTest(rc *rbac.CheckCtx) error {
 		return err
 	}
 	if !policies.Authorize(rc.User.Role, rbac.ResourceAssignment, policies.ActionCreate, taskOwners, rc.User.ID) {
-		return rbac.ErrForbidden
+		return errors.ErrForbidden
 	}
 
 	resourceOwners, err := rc.Owners(rbac.ResourceResource, resourceID)
@@ -167,7 +167,7 @@ func createAssignmentForTest(rc *rbac.CheckCtx) error {
 		return err
 	}
 	if !taskOwners.SharesOwner(resourceOwners) {
-		return rbac.ErrForbidden
+		return errors.ErrForbidden
 	}
 	return nil
 }

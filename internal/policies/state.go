@@ -1,6 +1,9 @@
 package policies
 
-import "github.com/Koshsky/erp-backend/internal/middleware/rbac"
+import (
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/pkg/errors"
+)
 
 //nolint:gochecknoglobals // rule registry
 var statePolicies = []rbac.Policy{
@@ -15,9 +18,9 @@ func stateCheck(act Action) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
 		if !Authorize(rc.User.Role, rbac.ResourceState, act, rbac.Owners{}, rc.User.ID) {
 			if act == ActionView {
-				return rbac.ErrNotFound
+				return errors.ErrNotFound
 			}
-			return rbac.ErrForbidden
+			return errors.ErrForbidden
 		}
 		return nil
 	}

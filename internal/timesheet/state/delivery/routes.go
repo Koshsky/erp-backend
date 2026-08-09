@@ -5,7 +5,7 @@ import (
 )
 
 func (h *StateHandler) RegisterRoutes(router *gin.RouterGroup) {
-	r := router.Group("/states")
+	r := router.Group("/timesheet/states")
 	{
 		r.GET("", h.ListStates)
 		r.GET("/:id", h.mw.Check("state.view"), h.FindState)

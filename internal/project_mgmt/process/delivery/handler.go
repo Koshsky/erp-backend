@@ -6,23 +6,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 type ProcessHandler struct {
 	logger  *slog.Logger
 	service ProcessService
 	mw      *rbac.Middleware
-}
-
-func NewProcessHandler(logger *slog.Logger, service ProcessService, mw *rbac.Middleware) *ProcessHandler {
-	return &ProcessHandler{
-		logger:  logger,
-		service: service,
-		mw:      mw,
-	}
 }
 
 // ListProcesses handles the request to list all processes.
@@ -64,7 +56,7 @@ func (h *ProcessHandler) FindProcess(c *gin.Context) {
 
 	process, err := h.service.FindProcess(c.Request.Context(), id)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, process)
@@ -92,7 +84,7 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 
 	created, err := h.service.CreateProcess(c.Request.Context(), process)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -117,7 +109,7 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteProcess(c.Request.Context(), id); err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -152,7 +144,7 @@ func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 
 	process, err := h.service.UpdateProcess(c.Request.Context(), id, body)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, process)

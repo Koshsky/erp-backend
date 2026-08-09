@@ -6,21 +6,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/ctx"
-	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/response"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
 type Middleware struct {
 	logger     *slog.Logger
 	jwtManager *jwt.Service
-}
-
-func NewMiddleware(logger *slog.Logger, jwtManager *jwt.Service) *Middleware {
-	return &Middleware{
-		logger:     logger,
-		jwtManager: jwtManager,
-	}
 }
 
 // RequireAuth verifies the JWT token and sets the user context.
@@ -59,7 +52,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		}
 
 		// 5. Store the user in the context (as a single object!)
-		user := ctx.UserContext{
+		user := userctx.UserContext{
 			ID:    claims.UserID,
 			Role:  claims.Role,
 			Email: claims.Email, // if present

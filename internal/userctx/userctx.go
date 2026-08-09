@@ -1,31 +1,43 @@
-package helpers
+// Package userctx holds the authenticated user context and accessors to read it
+// from the Gin request context.
+package userctx
 
 import (
 	"errors"
 	"slices"
 
-	"github.com/Koshsky/erp-backend/internal/common/ctx"
-
 	"github.com/gin-gonic/gin"
 )
 
+// UserContext is the authenticated user carried through the request.
+type UserContext struct {
+	ID       int64  `json:"id"`
+	Role     string `json:"role"`
+	Email    string `json:"email,omitempty"`
+	FullName string `json:"full_name,omitempty"`
+	TenantID int64  `json:"tenant_id,omitempty"`
+}
+
+// KeyUser is the Gin context key under which the UserContext is stored.
+const KeyUser = "user"
+
 // GetUser extracts the user context from the Gin context.
-func GetUser(c *gin.Context) (ctx.UserContext, error) {
-	val, exists := c.Get(ctx.KeyUser)
+func GetUser(c *gin.Context) (UserContext, error) {
+	val, exists := c.Get(KeyUser)
 	if !exists {
-		return ctx.UserContext{}, errors.New("user not found in context")
+		return UserContext{}, errors.New("user not found in context")
 	}
 
-	user, ok := val.(ctx.UserContext)
+	user, ok := val.(UserContext)
 	if !ok {
-		return ctx.UserContext{}, errors.New("invalid user context type")
+		return UserContext{}, errors.New("invalid user context type")
 	}
 
 	return user, nil
 }
 
 // MustGetUser panics if the user is not found in the context.
-func MustGetUser(c *gin.Context) ctx.UserContext {
+func MustGetUser(c *gin.Context) UserContext {
 	user, err := GetUser(c)
 	if err != nil {
 		panic(err)
@@ -68,17 +80,4 @@ func HasRole(c *gin.Context, allowedRoles ...string) bool {
 	}
 
 	return slices.Contains(allowedRoles, user.Role)
-}
-
-// GetRequestID returns the request ID from the context.
-func GetRequestID(c *gin.Context) string {
-	val, exists := c.Get("request_id")
-	if !exists {
-		return ""
-	}
-	requestID, ok := val.(string)
-	if !ok {
-		return ""
-	}
-	return requestID
 }

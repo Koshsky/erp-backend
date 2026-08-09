@@ -16,7 +16,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
-	"github.com/Koshsky/erp-backend/internal/security/jwt"
 )
 
 const (
@@ -27,21 +26,38 @@ const (
 )
 
 type App struct {
-	cfg        *config.Config
-	logger     *slog.Logger
-	pool       *pgxpool.Pool
-	httpServer *http.Server
-	profiler   *http.Server
-	jwtManager *jwt.Service
-	authMw     *auth.Middleware
+	cfg               *config.Config
+	logger            *slog.Logger
+	pool              *pgxpool.Pool
+	httpServer        *http.Server
+	profiler          *http.Server
+	authMw            *auth.Middleware
+	authHandler       RouteRegistrar
+	protectedHandlers ProtectedHandlers
 }
 
-func New(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) (*App, error) {
+// New wires the application with its injected dependencies.
+func New(
+	cfg *config.Config,
+	logger *slog.Logger,
+	pool *pgxpool.Pool,
+	authMw *auth.Middleware,
+	authHandler RouteRegistrar,
+	protectedHandlers ProtectedHandlers,
+) (*App, error) {
 	return &App{
-		cfg:    cfg,
-		logger: logger,
-		pool:   pool,
+		cfg:               cfg,
+		logger:            logger,
+		pool:              pool,
+		authMw:            authMw,
+		authHandler:       authHandler,
+		protectedHandlers: protectedHandlers,
 	}, nil
+}
+
+// Logger returns the application logger.
+func (a *App) Logger() *slog.Logger {
+	return a.logger
 }
 
 func (a *App) Start() error {
@@ -64,9 +80,6 @@ func (a *App) Start() error {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()
 	})
-
-	a.jwtManager = jwt.NewJWTService(a.cfg.JWT)
-	a.authMw = auth.NewMiddleware(a.logger, a.jwtManager)
 
 	// Register routes
 	a.registerRoutes(router)

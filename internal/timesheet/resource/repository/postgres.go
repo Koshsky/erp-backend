@@ -5,8 +5,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
@@ -15,13 +13,6 @@ import (
 type ResourceRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
-}
-
-func NewResourceRepository(logger *slog.Logger, pool *pgxpool.Pool) *ResourceRepository {
-	return &ResourceRepository{
-		logger: logger,
-		db:     sqlc.New(pool),
-	}
 }
 
 func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {

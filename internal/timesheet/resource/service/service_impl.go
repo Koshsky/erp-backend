@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type ResourceService struct {
@@ -13,15 +13,6 @@ type ResourceService struct {
 	repository ResourceRepository
 	mapper     *ResourceMapper
 	validator  *ResourceValidator
-}
-
-func NewResourceService(logger *slog.Logger, repository ResourceRepository) *ResourceService {
-	return &ResourceService{
-		logger:     logger,
-		repository: repository,
-		mapper:     NewResourceMapper(),
-		validator:  &ResourceValidator{},
-	}
 }
 
 func (s *ResourceService) ListResources(ctx context.Context) ([]dto.ResourceResponse, error) {
@@ -60,13 +51,13 @@ func (s *ResourceService) CreateResource(
 func (s *ResourceService) FindResource(ctx context.Context, id int64) (*dto.ResourceResponse, error) {
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil {
-		if validator.IsNotFoundError(err) {
-			return nil, validator.ErrResourceNotFound
+		if errors.IsNotFoundError(err) {
+			return nil, errors.ErrResourceNotFound
 		}
 		return nil, err
 	}
 	if resource == nil {
-		return nil, validator.ErrResourceNotFound
+		return nil, errors.ErrResourceNotFound
 	}
 	return s.mapper.ToDTO(resource), nil
 }
@@ -78,7 +69,7 @@ func (s *ResourceService) UpdateResource(
 ) (*dto.ResourceResponse, error) {
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil || resource == nil {
-		return nil, validator.ErrResourceNotFound
+		return nil, errors.ErrResourceNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(resource, req)
@@ -97,7 +88,7 @@ func (s *ResourceService) UpdateResource(
 func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil || resource == nil {
-		return validator.ErrResourceNotFound
+		return errors.ErrResourceNotFound
 	}
 
 	return s.repository.DeleteResource(ctx, id)

@@ -6,10 +6,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
-	"github.com/Koshsky/erp-backend/internal/common/helpers"
-	"github.com/Koshsky/erp-backend/internal/common/response"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	"github.com/Koshsky/erp-backend/pkg/date"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/response"
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/dto"
 )
 
@@ -17,14 +18,6 @@ type EmployeeHandler struct {
 	logger  *slog.Logger
 	service EmployeeService
 	mw      *rbac.Middleware
-}
-
-func NewEmployeeHandler(logger *slog.Logger, service EmployeeService, mw *rbac.Middleware) *EmployeeHandler {
-	return &EmployeeHandler{
-		logger:  logger,
-		service: service,
-		mw:      mw,
-	}
 }
 
 // ListEmployeesByResource handles the request to list employees of a resource.
@@ -48,7 +41,7 @@ func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 
 	employees, err := h.service.ListEmployeesByResource(c.Request.Context(), id)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, employees)
@@ -68,7 +61,7 @@ func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
 	employees, err := h.service.ListEmployees(c.Request.Context())
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, employees)
@@ -95,7 +88,7 @@ func (h *EmployeeHandler) FindEmployee(c *gin.Context) {
 
 	employee, err := h.service.FindEmployee(c.Request.Context(), id)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, employee)
@@ -128,7 +121,7 @@ func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
 		return
 	}
 
-	user, err := helpers.GetUser(c)
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -136,7 +129,7 @@ func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
 
 	created, err := h.service.CreateEmployee(c.Request.Context(), id, employee, user.ID, user.Role)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -171,7 +164,7 @@ func (h *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 
 	updated, err := h.service.UpdateEmployee(c.Request.Context(), id, body)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, updated)
@@ -197,7 +190,7 @@ func (h *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteEmployee(c.Request.Context(), id); err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -237,7 +230,7 @@ func (h *EmployeeHandler) ListDays(c *gin.Context) {
 
 	states, err := h.service.ListStates(c.Request.Context(), id, start, end)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, states)
@@ -271,7 +264,7 @@ func (h *EmployeeHandler) SetDays(c *gin.Context) {
 	}
 
 	if err = h.service.SetDays(c.Request.Context(), id, body); err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -321,7 +314,7 @@ func (h *EmployeeHandler) DeleteDays(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteDays(c.Request.Context(), id, start, end, stateID); err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)

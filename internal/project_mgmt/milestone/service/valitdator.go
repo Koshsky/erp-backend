@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/domain"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
 type MilestoneValidator struct {

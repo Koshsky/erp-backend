@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
@@ -16,13 +15,6 @@ import (
 type CalendarRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
-}
-
-func NewCalendarRepository(logger *slog.Logger, pool *pgxpool.Pool) *CalendarRepository {
-	return &CalendarRepository{
-		logger: logger,
-		db:     sqlc.New(pool),
-	}
 }
 
 func (r *CalendarRepository) ListResources(ctx context.Context) ([]dto.ResourceInfo, error) {

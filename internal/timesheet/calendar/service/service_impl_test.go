@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 func dt(s string) time.Time {

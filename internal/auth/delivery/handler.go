@@ -6,19 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
-	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 type AuthHandler struct {
 	service AuthService
 	logger  *slog.Logger
-}
-
-func NewAuthHandler(logger *slog.Logger, service AuthService) *AuthHandler {
-	return &AuthHandler{
-		logger:  logger,
-		service: service,
-	}
 }
 
 // Login handles the login request.

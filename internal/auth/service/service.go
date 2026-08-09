@@ -16,13 +16,6 @@ type AuthService struct {
 	jwt   *jwt.Service
 }
 
-func NewAuthService(users UserService, jwtService *jwt.Service) *AuthService {
-	return &AuthService{
-		users: users,
-		jwt:   jwtService,
-	}
-}
-
 func (s *AuthService) Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error) {
 	hash, err := hasher.Hash(password)
 	if err != nil {
