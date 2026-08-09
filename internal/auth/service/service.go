@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	userservice "github.com/Koshsky/erp-backend/internal/user/service"
+
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
@@ -14,6 +16,14 @@ import (
 type AuthService struct {
 	users UserService
 	jwt   *jwt.Service
+}
+
+// NewAuthService builds the auth service.
+func NewAuthService(users *userservice.UserService, jwtService *jwt.Service) *AuthService {
+	return &AuthService{
+		users: users,
+		jwt:   jwtService,
+	}
 }
 
 func (s *AuthService) Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error) {

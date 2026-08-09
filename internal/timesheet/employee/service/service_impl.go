@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/timesheet/employee/repository"
+
 	"github.com/Koshsky/erp-backend/internal/timesheet/employee/dto"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/date"
@@ -15,6 +17,16 @@ type EmployeeService struct {
 	repository EmployeeRepository
 	mapper     *EmployeeMapper
 	validator  *EmployeeValidator
+}
+
+// NewEmployeeService builds the EmployeeService service.
+func NewEmployeeService(logger *slog.Logger, r *repo.EmployeeRepository) *EmployeeService {
+	return &EmployeeService{
+		logger:     logger,
+		repository: r,
+		mapper:     NewEmployeeMapper(),
+		validator:  &EmployeeValidator{},
+	}
 }
 
 func (s *EmployeeService) ListEmployeesByResource(

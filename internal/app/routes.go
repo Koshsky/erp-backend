@@ -26,50 +26,20 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
-
-	authDelivery "github.com/Koshsky/erp-backend/internal/auth/delivery"
-	planningDelivery "github.com/Koshsky/erp-backend/internal/planning/delivery"
-	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
-	milestoneDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
-	processDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
-	projectDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/project/delivery"
-	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
-	calendarDelivery "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
-	employeeDelivery "github.com/Koshsky/erp-backend/internal/timesheet/employee/delivery"
-	resourceDelivery "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
-	stateDelivery "github.com/Koshsky/erp-backend/internal/timesheet/state/delivery"
-	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
 )
 
-type RouteRegistrar interface {
-	RegisterRoutes(router *gin.RouterGroup)
-}
-
-var (
-	_ RouteRegistrar = (*authDelivery.AuthHandler)(nil)
-	_ RouteRegistrar = (*planningDelivery.PlanningHandler)(nil)
-	_ RouteRegistrar = (*userDelivery.UserHandler)(nil)
-	_ RouteRegistrar = (*taskDelivery.TaskHandler)(nil)
-	_ RouteRegistrar = (*resourceDelivery.ResourceHandler)(nil)
-	_ RouteRegistrar = (*projectDelivery.ProjectHandler)(nil)
-	_ RouteRegistrar = (*processDelivery.ProcessHandler)(nil)
-	_ RouteRegistrar = (*milestoneDelivery.MilestoneHandler)(nil)
-	_ RouteRegistrar = (*assignmentDelivery.AssignmentHandler)(nil)
-	_ RouteRegistrar = (*stateDelivery.StateHandler)(nil)
-	_ RouteRegistrar = (*employeeDelivery.EmployeeHandler)(nil)
-	_ RouteRegistrar = (*calendarDelivery.CalendarHandler)(nil)
-)
-
-// registerRoutes registers the injected handlers: auth on the public group,
-// the rest behind RequireAuth.
+// registerRoutes registers every module's routes: public ones on the api
+// group, protected ones behind RequireAuth.
 func (a *App) registerRoutes(router *gin.Engine) {
 	api := router.Group("/api/v1")
 
-	a.authHandler.RegisterRoutes(api)
+	for _, m := range a.modules {
+		m.RegisterPublicRoutes(api)
+	}
 
 	protected := api.Group("")
 	protected.Use(a.authMw.RequireAuth())
-	for _, h := range a.protectedHandlers {
-		h.RegisterRoutes(protected)
+	for _, m := range a.modules {
+		m.RegisterProtectedRoutes(protected)
 	}
 }

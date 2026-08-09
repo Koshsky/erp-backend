@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -14,6 +16,16 @@ type ProjectService struct {
 	repository ProjectRepository
 	mapper     *ProjectMapper
 	validator  *ProjectValidator
+}
+
+// NewProjectService builds the ProjectService service.
+func NewProjectService(logger *slog.Logger, r *repo.ProjectRepository) *ProjectService {
+	return &ProjectService{
+		logger:     logger,
+		repository: r,
+		mapper:     NewProjectMapper(),
+		validator:  &ProjectValidator{},
+	}
 }
 
 // CreateProject creates a project. The middleware checked permissions; here

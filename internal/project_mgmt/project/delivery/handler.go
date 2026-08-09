@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -16,6 +18,15 @@ type ProjectHandler struct {
 	logger  *slog.Logger
 	service ProjectService
 	mw      *rbac.Middleware
+}
+
+// NewProjectHandler builds the ProjectHandler handler.
+func NewProjectHandler(logger *slog.Logger, svc *service.ProjectService, mw *rbac.Middleware) *ProjectHandler {
+	return &ProjectHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListProjects handles the request to list all projects.

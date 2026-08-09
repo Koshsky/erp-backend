@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/user/repository"
+
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
@@ -14,6 +16,16 @@ type UserService struct {
 	repository UserRepository
 	mapper     *UserMapper
 	validator  *UserValidator
+}
+
+// NewUserService builds the UserService service.
+func NewUserService(logger *slog.Logger, r *repo.UserRepository) *UserService {
+	return &UserService{
+		logger:     logger,
+		repository: r,
+		mapper:     &UserMapper{},
+		validator:  &UserValidator{},
+	}
 }
 
 func (s *UserService) FindUserByID(ctx context.Context, id int64) (*dto.UserResponse, error) {

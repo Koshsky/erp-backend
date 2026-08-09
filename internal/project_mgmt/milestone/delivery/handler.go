@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -15,6 +17,15 @@ type MilestoneHandler struct {
 	logger  *slog.Logger
 	service MilestoneService
 	mw      *rbac.Middleware
+}
+
+// NewMilestoneHandler builds the MilestoneHandler handler.
+func NewMilestoneHandler(logger *slog.Logger, svc *service.MilestoneService, mw *rbac.Middleware) *MilestoneHandler {
+	return &MilestoneHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListMilestones handles the request to list all milestones.

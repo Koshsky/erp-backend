@@ -5,6 +5,8 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -14,6 +16,14 @@ import (
 type PlanningRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
+}
+
+// NewPlanningRepository builds the PlanningRepository repository.
+func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRepository {
+	return &PlanningRepository{
+		logger: logger,
+		db:     sqlc.New(pool),
+	}
 }
 
 func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {

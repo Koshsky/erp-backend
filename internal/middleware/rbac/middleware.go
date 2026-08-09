@@ -19,6 +19,12 @@ import (
 // ResolveByID returns the owner chain of an entity by its id.
 type ResolveByID func(ctx context.Context, id int64) (Owners, error)
 
+// OwnerResolver is implemented by entity repositories that can resolve the
+// owner chain of one of their rows by id.
+type OwnerResolver interface {
+	OwnerChain(ctx context.Context, id int64) (Owners, error)
+}
+
 // Data holds the owner resolver functions (OwnerChain implementations in the
 // entity repositories). They are injected into the engine at startup.
 type Data struct {

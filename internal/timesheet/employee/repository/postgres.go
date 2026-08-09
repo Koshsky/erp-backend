@@ -21,6 +21,15 @@ type EmployeeRepository struct {
 	db     *sqlc.Queries
 }
 
+// NewEmployeeRepository builds the EmployeeRepository repository.
+func NewEmployeeRepository(logger *slog.Logger, pool *pgxpool.Pool) *EmployeeRepository {
+	return &EmployeeRepository{
+		logger: logger,
+		pool:   pool,
+		db:     sqlc.New(pool),
+	}
+}
+
 func (r *EmployeeRepository) IsResourceActive(ctx context.Context, resourceID int64) (bool, error) {
 	return r.db.IsResourceActive(ctx, resourceID)
 }

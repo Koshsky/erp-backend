@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -15,6 +17,15 @@ type TaskHandler struct {
 	logger  *slog.Logger
 	service TaskService
 	mw      *rbac.Middleware
+}
+
+// NewTaskHandler builds the TaskHandler handler.
+func NewTaskHandler(logger *slog.Logger, svc *service.TaskService, mw *rbac.Middleware) *TaskHandler {
+	return &TaskHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListTasks handles the request to list all tasks.

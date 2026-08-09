@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -15,6 +17,15 @@ type ProcessHandler struct {
 	logger  *slog.Logger
 	service ProcessService
 	mw      *rbac.Middleware
+}
+
+// NewProcessHandler builds the ProcessHandler handler.
+func NewProcessHandler(logger *slog.Logger, svc *service.ProcessService, mw *rbac.Middleware) *ProcessHandler {
+	return &ProcessHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListProcesses handles the request to list all processes.

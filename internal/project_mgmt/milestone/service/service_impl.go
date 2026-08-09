@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -13,6 +15,16 @@ type MilestoneService struct {
 	repository MilestoneRepository
 	mapper     *MilestoneMapper
 	validator  *MilestoneValidator
+}
+
+// NewMilestoneService builds the MilestoneService service.
+func NewMilestoneService(logger *slog.Logger, r *repo.MilestoneRepository) *MilestoneService {
+	return &MilestoneService{
+		logger:     logger,
+		repository: r,
+		mapper:     NewMilestoneMapper(),
+		validator:  &MilestoneValidator{},
+	}
 }
 
 func (s *MilestoneService) CreateMilestone(

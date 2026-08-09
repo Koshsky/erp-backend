@@ -26,14 +26,13 @@ const (
 )
 
 type App struct {
-	cfg               *config.Config
-	logger            *slog.Logger
-	pool              *pgxpool.Pool
-	httpServer        *http.Server
-	profiler          *http.Server
-	authMw            *auth.Middleware
-	authHandler       RouteRegistrar
-	protectedHandlers ProtectedHandlers
+	cfg        *config.Config
+	logger     *slog.Logger
+	pool       *pgxpool.Pool
+	httpServer *http.Server
+	profiler   *http.Server
+	authMw     *auth.Middleware
+	modules    []Module
 }
 
 // New wires the application with its injected dependencies.
@@ -42,16 +41,14 @@ func New(
 	logger *slog.Logger,
 	pool *pgxpool.Pool,
 	authMw *auth.Middleware,
-	authHandler RouteRegistrar,
-	protectedHandlers ProtectedHandlers,
+	modules []Module,
 ) (*App, error) {
 	return &App{
-		cfg:               cfg,
-		logger:            logger,
-		pool:              pool,
-		authMw:            authMw,
-		authHandler:       authHandler,
-		protectedHandlers: protectedHandlers,
+		cfg:     cfg,
+		logger:  logger,
+		pool:    pool,
+		authMw:  authMw,
+		modules: modules,
 	}, nil
 }
 

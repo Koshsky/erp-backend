@@ -5,6 +5,8 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
@@ -13,6 +15,14 @@ import (
 type MilestoneRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
+}
+
+// NewMilestoneRepository builds the MilestoneRepository repository.
+func NewMilestoneRepository(logger *slog.Logger, pool *pgxpool.Pool) *MilestoneRepository {
+	return &MilestoneRepository{
+		logger: logger,
+		db:     sqlc.New(pool),
+	}
 }
 
 func (r *MilestoneRepository) CreateMilestone(

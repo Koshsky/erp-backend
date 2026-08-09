@@ -5,6 +5,8 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
@@ -14,6 +16,14 @@ import (
 type ProjectRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
+}
+
+// NewProjectRepository builds the ProjectRepository repository.
+func NewProjectRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProjectRepository {
+	return &ProjectRepository{
+		logger: logger,
+		db:     sqlc.New(pool),
+	}
 }
 
 func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Project) (*domain.Project, error) {

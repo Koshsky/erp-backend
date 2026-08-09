@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -13,6 +15,16 @@ type AssignmentService struct {
 	repository AssignmentRepository
 	mapper     *AssignmentMapper
 	validator  *AssignmentValidator
+}
+
+// NewAssignmentService builds the AssignmentService service.
+func NewAssignmentService(logger *slog.Logger, r *repo.AssignmentRepository) *AssignmentService {
+	return &AssignmentService{
+		logger:     logger,
+		repository: r,
+		mapper:     NewAssignmentMapper(),
+		validator:  &AssignmentValidator{},
+	}
 }
 
 func (s *AssignmentService) CreateAssignment(
