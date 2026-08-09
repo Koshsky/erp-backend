@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type CalendarPlanning struct {

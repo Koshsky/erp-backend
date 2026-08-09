@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 
-	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/config"
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 // retryAfterSeconds is the Retry-After value sent with a 429 response.

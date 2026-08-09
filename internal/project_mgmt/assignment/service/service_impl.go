@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type AssignmentService struct {
@@ -13,15 +13,6 @@ type AssignmentService struct {
 	repository AssignmentRepository
 	mapper     *AssignmentMapper
 	validator  *AssignmentValidator
-}
-
-func NewAssignmentService(logger *slog.Logger, repository AssignmentRepository) *AssignmentService {
-	return &AssignmentService{
-		logger:     logger,
-		repository: repository,
-		mapper:     NewAssignmentMapper(),
-		validator:  &AssignmentValidator{},
-	}
 }
 
 func (s *AssignmentService) CreateAssignment(
@@ -44,13 +35,13 @@ func (s *AssignmentService) CreateAssignment(
 func (s *AssignmentService) FindAssignment(ctx context.Context, id int64) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
-		if validator.IsNotFoundError(err) {
-			return nil, validator.ErrAssignmentNotFound
+		if errors.IsNotFoundError(err) {
+			return nil, errors.ErrAssignmentNotFound
 		}
 		return nil, err
 	}
 	if assignment == nil {
-		return nil, validator.ErrAssignmentNotFound
+		return nil, errors.ErrAssignmentNotFound
 	}
 	return s.mapper.ToDTO(assignment), nil
 }
@@ -62,7 +53,7 @@ func (s *AssignmentService) UpdateAssignment(
 ) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil || assignment == nil {
-		return nil, validator.ErrAssignmentNotFound
+		return nil, errors.ErrAssignmentNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(assignment, req)
@@ -81,7 +72,7 @@ func (s *AssignmentService) UpdateAssignment(
 func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) error {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil || assignment == nil {
-		return validator.ErrAssignmentNotFound
+		return errors.ErrAssignmentNotFound
 	}
 
 	return s.repository.DeleteAssignment(ctx, id)

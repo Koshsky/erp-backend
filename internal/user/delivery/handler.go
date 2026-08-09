@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/helpers"
-	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/response"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
 // TODO: split into base CRUD and profile management (editing)
@@ -17,13 +17,6 @@ import (
 type UserHandler struct {
 	logger  *slog.Logger
 	service UserService
-}
-
-func NewUserHandler(logger *slog.Logger, service UserService) *UserHandler {
-	return &UserHandler{
-		logger:  logger,
-		service: service,
-	}
 }
 
 // ListUsers handles the request to list all users.
@@ -92,7 +85,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	user, err := helpers.GetUser(c)
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.Unauthorized(c, "authentication required")
 		return
@@ -130,7 +123,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	user, err := helpers.GetUser(c)
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.Unauthorized(c, "authentication required")
 		return
@@ -166,7 +159,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 //	@Failure		400		{object}	response.Response{data=nil}
 //	@Router			/user/change-password [post]
 func (h *UserHandler) ChangePassword(c *gin.Context) {
-	userID, _ := helpers.GetUserID(c)
+	userID, _ := userctx.GetUserID(c)
 
 	var req dto.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

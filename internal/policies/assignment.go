@@ -1,6 +1,9 @@
 package policies
 
-import "github.com/Koshsky/erp-backend/internal/middleware/rbac"
+import (
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/pkg/errors"
+)
 
 //nolint:gochecknoglobals // rule registry
 var assignmentPolicies = []rbac.Policy{
@@ -28,7 +31,7 @@ func createAssignment(rc *rbac.CheckCtx) error {
 		return err
 	}
 	if !Authorize(rc.User.Role, rbac.ResourceAssignment, ActionCreate, taskOwners, rc.User.ID) {
-		return rbac.ErrForbidden
+		return errors.ErrForbidden
 	}
 
 	resourceOwners, err := rc.Owners(rbac.ResourceResource, resourceID)
@@ -36,7 +39,7 @@ func createAssignment(rc *rbac.CheckCtx) error {
 		return err
 	}
 	if !taskOwners.SharesOwner(resourceOwners) {
-		return rbac.ErrForbidden
+		return errors.ErrForbidden
 	}
 	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Koshsky/erp-backend/internal/user/domain"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
 type UserValidator struct {

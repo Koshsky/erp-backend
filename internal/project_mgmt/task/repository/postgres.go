@@ -5,24 +5,15 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type TaskRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
-}
-
-func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository {
-	return &TaskRepository{
-		logger: logger,
-		db:     sqlc.New(pool),
-	}
 }
 
 func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {

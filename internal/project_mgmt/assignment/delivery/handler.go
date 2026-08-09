@@ -6,23 +6,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 type AssignmentHandler struct {
 	logger  *slog.Logger
 	service AssignmentService
 	mw      *rbac.Middleware
-}
-
-func NewAssignmentHandler(logger *slog.Logger, service AssignmentService, mw *rbac.Middleware) *AssignmentHandler {
-	return &AssignmentHandler{
-		logger:  logger,
-		service: service,
-		mw:      mw,
-	}
 }
 
 // ListAssignments handles the request to list all assignments.
@@ -65,7 +57,7 @@ func (h *AssignmentHandler) FindAssignment(c *gin.Context) {
 
 	assignment, err := h.service.FindAssignment(c.Request.Context(), id)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, assignment)
@@ -93,7 +85,7 @@ func (h *AssignmentHandler) CreateAssignment(c *gin.Context) {
 
 	created, err := h.service.CreateAssignment(c.Request.Context(), assignment)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -119,7 +111,7 @@ func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteAssignment(c.Request.Context(), id); err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -154,7 +146,7 @@ func (h *AssignmentHandler) UpdateAssignment(c *gin.Context) {
 
 	assignment, err := h.service.UpdateAssignment(c.Request.Context(), id, body)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, assignment)

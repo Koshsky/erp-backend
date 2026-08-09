@@ -12,13 +12,6 @@ type PlanningService struct {
 	repository PlanningRepository
 }
 
-func NewPlanningService(logger *slog.Logger, repository PlanningRepository) *PlanningService {
-	return &PlanningService{
-		logger:     logger,
-		repository: repository,
-	}
-}
-
 func (s *PlanningService) GetProjectPlanning(
 	ctx context.Context,
 	userID int64,

@@ -5,20 +5,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/helpers"
-	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/response"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
 type PlanningHandler struct {
 	logger  *slog.Logger
 	service MilestoneService
-}
-
-func NewPlanningHandler(logger *slog.Logger, service MilestoneService) *PlanningHandler {
-	return &PlanningHandler{
-		logger:  logger,
-		service: service,
-	}
 }
 
 // GetProjectPlanning handles the request to get project planning (project portfolio).
@@ -33,7 +26,7 @@ func NewPlanningHandler(logger *slog.Logger, service MilestoneService) *Planning
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/planning/projects [get]
 func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
-	user, err := helpers.GetUser(c)
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.Unauthorized(c, "authentication required")
 		return
@@ -59,7 +52,7 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/planning/processes [get]
 func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
-	user, err := helpers.GetUser(c)
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.Unauthorized(c, "authentication required")
 		return
@@ -85,7 +78,7 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 //	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/planning/tasks [get]
 func (h *PlanningHandler) GetTaskPlanning(c *gin.Context) {
-	user, err := helpers.GetUser(c)
+	user, err := userctx.GetUser(c)
 	if err != nil {
 		response.Unauthorized(c, "authentication required")
 		return

@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/domain"
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
 type StateValidator struct {

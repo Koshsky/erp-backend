@@ -16,15 +16,6 @@ type UserService struct {
 	validator  *UserValidator
 }
 
-func NewUserService(logger *slog.Logger, repository UserRepository) *UserService {
-	return &UserService{
-		logger:     logger,
-		repository: repository,
-		mapper:     &UserMapper{},
-		validator:  &UserValidator{},
-	}
-}
-
 func (s *UserService) FindUserByID(ctx context.Context, id int64) (*dto.UserResponse, error) {
 	return s.FindUser(ctx, id)
 }

@@ -5,23 +5,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
-	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/response"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type CalendarHandler struct {
 	logger  *slog.Logger
 	service CalendarService
 	mw      *rbac.Middleware
-}
-
-func NewCalendarHandler(logger *slog.Logger, service CalendarService, mw *rbac.Middleware) *CalendarHandler {
-	return &CalendarHandler{
-		logger:  logger,
-		service: service,
-		mw:      mw,
-	}
 }
 
 // GetCalendar handles the request to get the resource availability calendar.

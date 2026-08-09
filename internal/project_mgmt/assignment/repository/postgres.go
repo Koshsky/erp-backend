@@ -5,8 +5,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
@@ -15,13 +13,6 @@ import (
 type AssignmentRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
-}
-
-func NewAssignmentRepository(logger *slog.Logger, pool *pgxpool.Pool) *AssignmentRepository {
-	return &AssignmentRepository{
-		logger: logger,
-		db:     sqlc.New(pool),
-	}
 }
 
 func (r *AssignmentRepository) CreateAssignment(

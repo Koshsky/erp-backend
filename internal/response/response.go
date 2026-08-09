@@ -1,13 +1,12 @@
 package response
 
 import (
-	"errors"
 	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/validator"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 // Response wraps API responses into { "data": ..., "error": ... } format.
@@ -31,11 +30,6 @@ func Created(c *gin.Context, data any) {
 // NoContent sends a 204 response with no body.
 func NoContent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
-}
-
-// Error sends a JSON error response with the given status code and message.
-func Error(c *gin.Context, status int, msg string) {
-	c.JSON(status, Response{Error: msg})
 }
 
 // BadRequest sends a 400 error response.
@@ -69,22 +63,14 @@ func TooManyRequests(c *gin.Context, msg string) {
 	c.JSON(http.StatusTooManyRequests, Response{Error: msg})
 }
 
-// HandleError maps a domain error to an HTTP response:
-//   - forbidden → 403
-//   - not found (incl. pgx/sql ErrNoRows and ErrXNotFound) → 404
-//   - validation (FieldError, unique/foreign-key violations) → 400
-//   - everything else → 500 with logging
-//
-// It is the single point for handlers instead of duplicated error switches.
-func HandleError(c *gin.Context, logger *slog.Logger, err error) {
-	switch {
-	case errors.Is(err, validator.ErrForbidden):
-		Forbidden(c, err.Error())
-	case validator.IsNotFoundError(err):
-		NotFound(c, err.Error())
-	case validator.IsValidationError(err):
-		BadRequest(c, err.Error())
-	default:
-		InternalError(c, logger, err.Error(), err)
+// Error maps a domain error to an HTTP response using its status: errors that
+// carry StatusCode (forbidden → 403, not found → 404, validation → 400) are
+// honored, otherwise the error is classified by cause. Internal errors (500)
+// are logged.
+func Error(c *gin.Context, logger *slog.Logger, err error) {
+	status := errors.StatusCode(err)
+	if status == http.StatusInternalServerError {
+		logger.Error("internal error", "error", err)
 	}
+	c.JSON(status, Response{Error: err.Error()})
 }

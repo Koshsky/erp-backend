@@ -6,23 +6,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/common/response"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 type MilestoneHandler struct {
 	logger  *slog.Logger
 	service MilestoneService
 	mw      *rbac.Middleware
-}
-
-func NewMilestoneHandler(logger *slog.Logger, service MilestoneService, mw *rbac.Middleware) *MilestoneHandler {
-	return &MilestoneHandler{
-		logger:  logger,
-		service: service,
-		mw:      mw,
-	}
 }
 
 // ListMilestones handles the request to list all milestones.
@@ -65,7 +57,7 @@ func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 
 	milestone, err := h.service.FindMilestone(c.Request.Context(), id)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, milestone)
@@ -93,7 +85,7 @@ func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 
 	created, err := h.service.CreateMilestone(c.Request.Context(), milestone)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.Created(c, created)
@@ -119,7 +111,7 @@ func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteMilestone(c.Request.Context(), id); err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
@@ -155,7 +147,7 @@ func (h *MilestoneHandler) UpdateMilestone(c *gin.Context) {
 
 	updated, err := h.service.UpdateMilestone(c.Request.Context(), id, body)
 	if err != nil {
-		response.HandleError(c, h.logger, err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, updated)
