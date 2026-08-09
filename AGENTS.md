@@ -3,7 +3,8 @@
 Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-backend`). Sibling `../frontend` (Vue) consumes the OpenAPI contract in `docs/swagger/swagger.yaml`. Code comments in this repo are often in Russian — keep that style.
 
 ## Commands
-- `go run ./cmd/service` — run the API server (config comes from env vars, see below).
+- `make dev` — dev stack: `docker compose up -d db flyway` + the API served locally by `air` (auto-reload on change; binary in `build/`, ignored). `make infra` only starts db+flyway, `make reset` wipes the DB volume (`docker compose down -v`), `make stop` stops the containers. `Makefile` includes `backend/.env` (symlink to the repo-root `.env`).
+- `go run ./cmd/service` — run the API server directly (config comes from env vars, see below).
 - `golangci-lint run` — lint (v2 golden config, requires golangci-lint ≥ 2.12). `--fix` also runs the formatters (`goimports` + `golines`, max line 120). Import groups must keep local `github.com/Koshsky/erp-backend` last.
 - `go test ./...` — tests (currently minimal).
 - `swag fmt` then `swag init -g cmd/service/main.go -o docs/swagger` — regenerate swagger after touching handler annotations or global docs.
@@ -28,7 +29,8 @@ Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 
 ## Running the stack
 - Full stack (nginx → erp + frontend + postgres + flyway) lives in the repo-root `../../docker-compose.yml`.
-- Standalone backend (db + flyway + api on :8080): `docker-compose.yml` in this dir.
+- Standalone backend dev: `make dev` — db + flyway in docker (port 5432 exposed), API via `air` locally on :8080 with `DATABASE_URL` pointing at `localhost` (`Makefile` overrides the `db` host from `.env`). Requires `air` v1.65.3 (Go 1.25-compatible): `GOTOOLCHAIN=go1.25.0 go install github.com/air-verse/air@v1.65.3`.
+- `docker-compose.yml` in this dir also keeps an `erp` service (build from Dockerfile) for an all-in-docker dev run: `docker compose up erp`.
 - `cmd/swagger/main.go` is a dev-only standalone Swagger UI server on :8080 (conflicts with the main service). The global swagger annotations are duplicated in `cmd/service/main.go` and `cmd/swagger/main.go` — keep both in sync.
 
 ## Style / process
