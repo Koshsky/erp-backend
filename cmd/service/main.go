@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Koshsky/erp-backend/internal/app"
+	"github.com/Koshsky/erp-backend/internal/server"
 
 	_ "github.com/Koshsky/erp-backend/docs/swagger"
 )
@@ -40,7 +40,7 @@ const defaultShutdownTimeout = 5 * time.Second
 
 func main() {
 	// build the application dependency graph
-	application, err := app.InitializeApp()
+	application, err := server.InitializeApp()
 	if err != nil {
 		log.Fatal(err)
 	}

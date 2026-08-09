@@ -1,4 +1,4 @@
-package app
+package server
 
 import (
 	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
