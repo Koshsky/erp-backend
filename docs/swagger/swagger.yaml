@@ -17,8 +17,18 @@ definitions:
     type: object
   dto.AuthResponse:
     properties:
-      tokens:
-        $ref: '#/definitions/jwt.TokenPair'
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 3600
+        type: integer
+      refresh_token:
+        example: abcdef123456...
+        type: string
+      token_type:
+        example: Bearer
+        type: string
       user:
         $ref: '#/definitions/dto.UserInfo'
     type: object

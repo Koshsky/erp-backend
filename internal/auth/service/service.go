@@ -47,15 +47,7 @@ func (s *AuthService) Register(ctx context.Context, name, username, password str
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
-	return &dto.AuthResponse{
-		User: dto.UserInfo{
-			ID:       user.ID,
-			Name:     user.Name,
-			Username: user.Username,
-			Role:     user.Role,
-		},
-		Tokens: tokens,
-	}, nil
+	return newAuthResponse(user, tokens), nil
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.AuthResponse, error) {
@@ -73,15 +65,23 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
+	return newAuthResponse(user, tokens), nil
+}
+
+// newAuthResponse builds the flattened login/register payload.
+func newAuthResponse(user *userDTO.UserResponse, tokens *jwt.TokenPair) *dto.AuthResponse {
 	return &dto.AuthResponse{
+		AccessToken:  tokens.AccessToken,
+		TokenType:    tokens.TokenType,
+		ExpiresIn:    tokens.ExpiresIn,
+		RefreshToken: tokens.RefreshToken,
 		User: dto.UserInfo{
 			ID:       user.ID,
 			Name:     user.Name,
 			Username: user.Username,
 			Role:     user.Role,
 		},
-		Tokens: tokens,
-	}, nil
+	}
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshResponse, error) {
