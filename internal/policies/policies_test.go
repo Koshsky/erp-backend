@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/middleware/rbac/policies"
+	"github.com/Koshsky/erp-backend/internal/policies"
 )
 
 const (
