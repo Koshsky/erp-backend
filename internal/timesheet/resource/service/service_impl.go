@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
+
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -13,6 +15,16 @@ type ResourceService struct {
 	repository ResourceRepository
 	mapper     *ResourceMapper
 	validator  *ResourceValidator
+}
+
+// NewResourceService builds the ResourceService service.
+func NewResourceService(logger *slog.Logger, r *repo.ResourceRepository) *ResourceService {
+	return &ResourceService{
+		logger:     logger,
+		repository: r,
+		mapper:     NewResourceMapper(),
+		validator:  &ResourceValidator{},
+	}
 }
 
 func (s *ResourceService) ListResources(ctx context.Context) ([]dto.ResourceResponse, error) {

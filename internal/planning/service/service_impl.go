@@ -4,12 +4,22 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/planning/repository"
+
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 )
 
 type PlanningService struct {
 	logger     *slog.Logger
 	repository PlanningRepository
+}
+
+// NewPlanningService builds the PlanningService service.
+func NewPlanningService(logger *slog.Logger, r *repo.PlanningRepository) *PlanningService {
+	return &PlanningService{
+		logger:     logger,
+		repository: r,
+	}
 }
 
 func (s *PlanningService) GetProjectPlanning(

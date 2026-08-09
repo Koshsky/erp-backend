@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -13,6 +15,16 @@ type ProcessService struct {
 	repository ProcessRepository
 	mapper     *ProcessMapper
 	validator  *ProcessValidator
+}
+
+// NewProcessService builds the ProcessService service.
+func NewProcessService(logger *slog.Logger, r *repo.ProcessRepository) *ProcessService {
+	return &ProcessService{
+		logger:     logger,
+		repository: r,
+		mapper:     NewProcessMapper(),
+		validator:  &ProcessValidator{},
+	}
 }
 
 func (s *ProcessService) CreateProcess(

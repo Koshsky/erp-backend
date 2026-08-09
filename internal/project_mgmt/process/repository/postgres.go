@@ -5,6 +5,8 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
@@ -14,6 +16,14 @@ import (
 type ProcessRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
+}
+
+// NewProcessRepository builds the ProcessRepository repository.
+func NewProcessRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProcessRepository {
+	return &ProcessRepository{
+		logger: logger,
+		db:     sqlc.New(pool),
+	}
 }
 
 func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Process) (*domain.Process, error) {

@@ -3,6 +3,8 @@ package delivery
 import (
 	"log/slog"
 
+	authservice "github.com/Koshsky/erp-backend/internal/auth/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
@@ -12,6 +14,14 @@ import (
 type AuthHandler struct {
 	service AuthService
 	logger  *slog.Logger
+}
+
+// NewAuthHandler builds the auth handler.
+func NewAuthHandler(logger *slog.Logger, svc *authservice.AuthService) *AuthHandler {
+	return &AuthHandler{
+		logger:  logger,
+		service: svc,
+	}
 }
 
 // Login handles the login request.

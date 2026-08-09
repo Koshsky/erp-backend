@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	userservice "github.com/Koshsky/erp-backend/internal/user/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/response"
@@ -17,6 +19,14 @@ import (
 type UserHandler struct {
 	logger  *slog.Logger
 	service UserService
+}
+
+// NewUserHandler builds the user handler.
+func NewUserHandler(logger *slog.Logger, svc *userservice.UserService) *UserHandler {
+	return &UserHandler{
+		logger:  logger,
+		service: svc,
+	}
 }
 
 // ListUsers handles the request to list all users.

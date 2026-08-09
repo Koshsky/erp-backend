@@ -3,6 +3,8 @@ package delivery
 import (
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -14,6 +16,15 @@ type CalendarHandler struct {
 	logger  *slog.Logger
 	service CalendarService
 	mw      *rbac.Middleware
+}
+
+// NewCalendarHandler builds the CalendarHandler handler.
+func NewCalendarHandler(logger *slog.Logger, svc *service.CalendarService, mw *rbac.Middleware) *CalendarHandler {
+	return &CalendarHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // GetCalendar handles the request to get the resource availability calendar.

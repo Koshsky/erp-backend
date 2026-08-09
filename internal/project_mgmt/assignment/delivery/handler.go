@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -15,6 +17,15 @@ type AssignmentHandler struct {
 	logger  *slog.Logger
 	service AssignmentService
 	mw      *rbac.Middleware
+}
+
+// NewAssignmentHandler builds the AssignmentHandler handler.
+func NewAssignmentHandler(logger *slog.Logger, svc *service.AssignmentService, mw *rbac.Middleware) *AssignmentHandler {
+	return &AssignmentHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListAssignments handles the request to list all assignments.

@@ -5,6 +5,8 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/repository/sqlc"
 )
@@ -12,6 +14,14 @@ import (
 type StateRepository struct {
 	logger *slog.Logger
 	db     *sqlc.Queries
+}
+
+// NewStateRepository builds the StateRepository repository.
+func NewStateRepository(logger *slog.Logger, pool *pgxpool.Pool) *StateRepository {
+	return &StateRepository{
+		logger: logger,
+		db:     sqlc.New(pool),
+	}
 }
 
 func (r *StateRepository) CreateState(ctx context.Context, state domain.State) (*domain.State, error) {

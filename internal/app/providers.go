@@ -1,34 +1,23 @@
 package app
 
 import (
-	authDelivery "github.com/Koshsky/erp-backend/internal/auth/delivery"
+	"github.com/Koshsky/erp-backend/internal/auth"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	planningDelivery "github.com/Koshsky/erp-backend/internal/planning/delivery"
-	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
+	"github.com/Koshsky/erp-backend/internal/planning"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
-	milestoneDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
 	milestoneRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
-	processDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
 	processRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
-	projectDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/project/delivery"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
-	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
-	calendarDelivery "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
-	employeeDelivery "github.com/Koshsky/erp-backend/internal/timesheet/employee/delivery"
+	"github.com/Koshsky/erp-backend/internal/timesheet"
 	employeeRepo "github.com/Koshsky/erp-backend/internal/timesheet/employee/repository"
-	resourceDelivery "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
-	stateDelivery "github.com/Koshsky/erp-backend/internal/timesheet/state/delivery"
-	userDelivery "github.com/Koshsky/erp-backend/internal/user/delivery"
+	"github.com/Koshsky/erp-backend/internal/user"
 )
 
-// ProvideAuthHandler exposes the auth handler as a route registrar.
-func ProvideAuthHandler(h *authDelivery.AuthHandler) RouteRegistrar {
-	return h
-}
-
-// ProvideRBACData assembles the owner resolvers for the policy engine.
+// ProvideRBACData assembles the owner resolvers for the policy engine. The
+// repositories satisfy rbac.OwnerResolver (asserted in each repository).
 func ProvideRBACData(
 	project *projectRepo.ProjectRepository,
 	process *processRepo.ProcessRepository,
@@ -49,22 +38,13 @@ func ProvideRBACData(
 	}
 }
 
-// ProtectedHandlers collects the handlers registered behind RequireAuth.
-type ProtectedHandlers []RouteRegistrar
-
-// ProvideProtectedHandlers collects the handlers registered behind RequireAuth.
-func ProvideProtectedHandlers(
-	planning *planningDelivery.PlanningHandler,
-	user *userDelivery.UserHandler,
-	task *taskDelivery.TaskHandler,
-	project *projectDelivery.ProjectHandler,
-	process *processDelivery.ProcessHandler,
-	milestone *milestoneDelivery.MilestoneHandler,
-	assignment *assignmentDelivery.AssignmentHandler,
-	resource *resourceDelivery.ResourceHandler,
-	state *stateDelivery.StateHandler,
-	employee *employeeDelivery.EmployeeHandler,
-	calendar *calendarDelivery.CalendarHandler,
-) ProtectedHandlers {
-	return ProtectedHandlers{planning, user, task, project, process, milestone, assignment, resource, state, employee, calendar}
+// ProvideModules collects the domain modules of the application.
+func ProvideModules(
+	auth auth.Module,
+	user user.Module,
+	planning planning.Module,
+	project project_mgmt.Module,
+	timesheet timesheet.Module,
+) []Module {
+	return []Module{auth, user, planning, project, timesheet}
 }

@@ -3,6 +3,8 @@ package delivery
 import (
 	"log/slog"
 
+	planningservice "github.com/Koshsky/erp-backend/internal/planning/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/response"
@@ -12,6 +14,14 @@ import (
 type PlanningHandler struct {
 	logger  *slog.Logger
 	service MilestoneService
+}
+
+// NewPlanningHandler builds the planning handler.
+func NewPlanningHandler(logger *slog.Logger, svc *planningservice.PlanningService) *PlanningHandler {
+	return &PlanningHandler{
+		logger:  logger,
+		service: svc,
+	}
 }
 
 // GetProjectPlanning handles the request to get project planning (project portfolio).

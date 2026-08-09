@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -16,6 +18,15 @@ type ResourceHandler struct {
 	logger  *slog.Logger
 	service ResourceService
 	mw      *rbac.Middleware
+}
+
+// NewResourceHandler builds the ResourceHandler handler.
+func NewResourceHandler(logger *slog.Logger, svc *service.ResourceService, mw *rbac.Middleware) *ResourceHandler {
+	return &ResourceHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListResources handles the request to list all resources.

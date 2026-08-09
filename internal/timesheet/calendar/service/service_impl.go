@@ -7,6 +7,8 @@ import (
 	"slices"
 	"time"
 
+	repo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
+
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
@@ -20,6 +22,14 @@ const (
 type CalendarService struct {
 	logger     *slog.Logger
 	repository CalendarRepository
+}
+
+// NewCalendarService builds the CalendarService service.
+func NewCalendarService(logger *slog.Logger, r *repo.CalendarRepository) *CalendarService {
+	return &CalendarService{
+		logger:     logger,
+		repository: r,
+	}
 }
 
 // GetCalendar returns resource availability as ranges (constant-availability

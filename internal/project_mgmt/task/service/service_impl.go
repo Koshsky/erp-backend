@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -13,6 +15,16 @@ type TaskService struct {
 	repository TaskRepository
 	mapper     *TaskMapper
 	validator  *TaskValidator
+}
+
+// NewTaskService builds the TaskService service.
+func NewTaskService(logger *slog.Logger, r *repo.TaskRepository) *TaskService {
+	return &TaskService{
+		logger:     logger,
+		repository: r,
+		mapper:     &TaskMapper{},
+		validator:  &TaskValidator{},
+	}
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest) (*dto.TaskResponse, error) {

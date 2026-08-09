@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/timesheet/state/service"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -15,6 +17,15 @@ type StateHandler struct {
 	logger  *slog.Logger
 	service StateService
 	mw      *rbac.Middleware
+}
+
+// NewStateHandler builds the StateHandler handler.
+func NewStateHandler(logger *slog.Logger, svc *service.StateService, mw *rbac.Middleware) *StateHandler {
+	return &StateHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListStates handles the request to list all states.

@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/timesheet/state/repository"
+
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -13,6 +15,16 @@ type StateService struct {
 	repository StateRepository
 	mapper     *StateMapper
 	validator  *StateValidator
+}
+
+// NewStateService builds the StateService service.
+func NewStateService(logger *slog.Logger, r *repo.StateRepository) *StateService {
+	return &StateService{
+		logger:     logger,
+		repository: r,
+		mapper:     NewStateMapper(),
+		validator:  &StateValidator{},
+	}
 }
 
 func (s *StateService) ListStates(ctx context.Context) ([]dto.StateResponse, error) {

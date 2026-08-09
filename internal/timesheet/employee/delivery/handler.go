@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/timesheet/employee/service"
+
 	"github.com/gin-gonic/gin"
 
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -18,6 +20,15 @@ type EmployeeHandler struct {
 	logger  *slog.Logger
 	service EmployeeService
 	mw      *rbac.Middleware
+}
+
+// NewEmployeeHandler builds the EmployeeHandler handler.
+func NewEmployeeHandler(logger *slog.Logger, svc *service.EmployeeService, mw *rbac.Middleware) *EmployeeHandler {
+	return &EmployeeHandler{
+		logger:  logger,
+		service: svc,
+		mw:      mw,
+	}
 }
 
 // ListEmployeesByResource handles the request to list employees of a resource.
