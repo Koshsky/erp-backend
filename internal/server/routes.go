@@ -22,7 +22,7 @@
 // @externalDocs.url			https://swagger.io/resources/open-api/
 
 // Package app wires the HTTP routes.
-package app
+package server
 
 import (
 	"github.com/gin-gonic/gin"

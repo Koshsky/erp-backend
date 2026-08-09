@@ -1,4 +1,5 @@
-package app
+// Package swagger registers the embedded Swagger UI on the gin router.
+package swagger
 
 import (
 	"github.com/gin-gonic/gin"
@@ -6,6 +7,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func (a *App) runSwaggerServer(router *gin.Engine) {
+// Register mounts the Swagger UI at /swagger/*any.
+func Register(router *gin.Engine) {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

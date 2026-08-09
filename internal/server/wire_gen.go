@@ -4,7 +4,7 @@
 //go:build !wireinject
 // +build !wireinject
 
-package app
+package server
 
 import (
 	auth2 "github.com/Koshsky/erp-backend/internal/auth"
@@ -37,6 +37,7 @@ import (
 	repository3 "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	service4 "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
+	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
 	delivery12 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
 	repository10 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
@@ -76,6 +77,8 @@ func InitializeApp() (*App, error) {
 	jwtConfig := config.ProvideJWTConfig(configConfig)
 	jwtService := jwt.ProvideJWTService(jwtConfig)
 	middleware := auth.ProvideAuthMiddleware(slogLogger, jwtService)
+	profilingConfig := config.ProvideProfilingConfig(configConfig)
+	profilerProfiler := profiler.ProvideProfiler(profilingConfig, slogLogger)
 	userRepository := repository.NewUserRepository(slogLogger, pool)
 	userService := service.NewUserService(slogLogger, userRepository)
 	authService := service2.NewAuthService(userService, jwtService)
@@ -120,7 +123,7 @@ func InitializeApp() (*App, error) {
 	calendarHandler := delivery12.NewCalendarHandler(slogLogger, calendarService, rbacMiddleware)
 	timesheetModule := timesheet.ProvideModule(resourceHandler, stateHandler, employeeHandler, calendarHandler)
 	v2 := ProvideModules(module, userModule, planningModule, project_mgmtModule, timesheetModule)
-	app, err := New(configConfig, slogLogger, pool, middleware, v2)
+	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, v2)
 	if err != nil {
 		return nil, err
 	}

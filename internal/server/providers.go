@@ -1,4 +1,4 @@
-package app
+package server
 
 import (
 	"github.com/Koshsky/erp-backend/internal/auth"

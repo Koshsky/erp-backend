@@ -1,7 +1,7 @@
 //go:build wireinject
 // +build wireinject
 
-package app
+package server
 
 import (
 	"github.com/google/wire"
@@ -16,6 +16,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
+	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
 	"github.com/Koshsky/erp-backend/internal/user"
 )
@@ -28,10 +29,12 @@ func InitializeApp() (*App, error) {
 		database.ProvidePostgresDB,
 		config.ProvidePostgresConfig,
 		config.ProvideJWTConfig,
+		config.ProvideProfilingConfig,
 		jwt.ProvideJWTService,
 		authMw.ProvideAuthMiddleware,
 		rbacMW.ProvideMiddleware,
 		policies.ProvideAll,
+		profiler.ProvideProfiler,
 		ProvideRBACData,
 
 		user.ProviderSet,

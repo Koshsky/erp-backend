@@ -1,4 +1,4 @@
-package app
+package server
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"net/http/pprof"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,13 +15,14 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
+	"github.com/Koshsky/erp-backend/internal/server/profiler"
+	"github.com/Koshsky/erp-backend/internal/server/swagger"
 )
 
 const (
 	defaultServerStartTimeout = 5 * time.Second
 	defaultDialTimeout        = 1 * time.Second
 	defaultPollInterval       = 100 * time.Millisecond
-	defaultHeaderReadTimeout  = 5 * time.Second
 )
 
 type App struct {
@@ -30,7 +30,7 @@ type App struct {
 	logger     *slog.Logger
 	pool       *pgxpool.Pool
 	httpServer *http.Server
-	profiler   *http.Server
+	profiler   *profiler.Profiler
 	authMw     *auth.Middleware
 	modules    []Module
 }
@@ -41,14 +41,16 @@ func New(
 	logger *slog.Logger,
 	pool *pgxpool.Pool,
 	authMw *auth.Middleware,
+	profiler *profiler.Profiler,
 	modules []Module,
 ) (*App, error) {
 	return &App{
-		cfg:     cfg,
-		logger:  logger,
-		pool:    pool,
-		authMw:  authMw,
-		modules: modules,
+		cfg:      cfg,
+		logger:   logger,
+		pool:     pool,
+		authMw:   authMw,
+		profiler: profiler,
+		modules:  modules,
 	}, nil
 }
 
@@ -61,12 +63,10 @@ func (a *App) Start() error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	if a.cfg.Profiling.Enabled {
-		a.startProfiler()
-	}
+	a.profiler.Start()
 
 	if a.cfg.Swagger.Enabled {
-		a.runSwaggerServer(router)
+		swagger.Register(router)
 	}
 
 	// Register middleware
@@ -109,29 +109,6 @@ func (a *App) Start() error {
 	return nil
 }
 
-// startProfiler runs a separate HTTP server with pprof profiling.
-func (a *App) startProfiler() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-
-	a.profiler = &http.Server{
-		Addr:              a.cfg.Profiling.Address,
-		Handler:           mux,
-		ReadHeaderTimeout: defaultHeaderReadTimeout,
-	}
-
-	go func() {
-		a.logger.Info("starting profiler", "addr", a.profiler.Addr)
-		if err := a.profiler.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.logger.Error("profiler server error", "error", err)
-		}
-	}()
-}
-
 func (a *App) waitForServer(timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -163,10 +140,8 @@ func (a *App) Stop(ctx context.Context) error {
 	if a.pool != nil {
 		a.pool.Close()
 	}
-	if a.profiler != nil {
-		if err := a.profiler.Shutdown(ctx); err != nil {
-			return err
-		}
+	if err := a.profiler.Stop(ctx); err != nil {
+		return err
 	}
 	if a.httpServer != nil {
 		return a.httpServer.Shutdown(ctx)

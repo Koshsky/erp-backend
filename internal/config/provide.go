@@ -8,3 +8,6 @@ func ProvidePostgresConfig(cfg *Config) PostgresConfig { return cfg.Postgres }
 
 // ProvideJWTConfig extracts the JWT settings.
 func ProvideJWTConfig(cfg *Config) JWTConfig { return cfg.JWT }
+
+// ProvideProfilingConfig extracts the profiling settings.
+func ProvideProfilingConfig(cfg *Config) ProfilingConfig { return cfg.Profiling }
