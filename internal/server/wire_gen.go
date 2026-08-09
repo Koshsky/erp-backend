@@ -25,7 +25,7 @@ import (
 	repository6 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	service8 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
 	delivery7 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
+	postgres "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	service7 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
 	delivery6 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
 	repository5 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"

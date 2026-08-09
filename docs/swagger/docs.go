@@ -1056,7 +1056,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ProcessPlanning"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1117,7 +1129,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ProjectPlanning"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1178,7 +1202,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.TaskPlanning"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2398,7 +2434,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.CalendarPlanning"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -4357,6 +4405,44 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AvailabilityPeriod": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "capacity": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-07-19"
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-07-15"
+                },
+                "unavailable": {
+                    "type": "integer",
+                    "example": 0
+                }
+            }
+        },
+        "dto.CalendarPlanning": {
+            "type": "object",
+            "properties": {
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ResourceCalendar"
+                    }
+                }
+            }
+        },
         "dto.ChangePasswordRequest": {
             "type": "object",
             "properties": {
@@ -4560,6 +4646,127 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DetailedProcess": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "milestones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Milestone"
+                    }
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedTask"
+                    }
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Инсталляция"
+                }
+            }
+        },
+        "dto.DetailedProject": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "priority": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "processes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Process"
+                    }
+                },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                }
+            }
+        },
+        "dto.DetailedTask": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Resource"
+                    }
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
+                }
+            }
+        },
         "dto.EmployeeResponse": {
             "type": "object",
             "properties": {
@@ -4647,6 +4854,32 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Milestone": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Начало работ по проекту"
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Начало работ"
+                }
+            }
+        },
         "dto.MilestoneResponse": {
             "type": "object",
             "properties": {
@@ -4670,6 +4903,52 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Телевидение"
+                }
+            }
+        },
+        "dto.Process": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Инсталляция"
+                }
+            }
+        },
+        "dto.ProcessPlanning": {
+            "type": "object",
+            "properties": {
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedProject"
+                    }
                 }
             }
         },
@@ -4701,6 +4980,48 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Инсталляция"
+                }
+            }
+        },
+        "dto.Project": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "priority": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "project_code": {
+                    "type": "string",
+                    "example": "КО_001"
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-01-01"
+                }
+            }
+        },
+        "dto.ProjectPlanning": {
+            "type": "object",
+            "properties": {
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Project"
+                    }
                 }
             }
         },
@@ -4762,6 +5083,54 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "example": "ivanov"
+                }
+            }
+        },
+        "dto.Resource": {
+            "type": "object",
+            "properties": {
+                "assignment_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "code": {
+                    "type": "string",
+                    "example": "М"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Монтажник"
+                }
+            }
+        },
+        "dto.ResourceCalendar": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "И"
+                },
+                "periods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AvailabilityPeriod"
+                    }
+                },
+                "resource_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Инженер"
                 }
             }
         },
@@ -4827,6 +5196,17 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Отпуск"
+                }
+            }
+        },
+        "dto.TaskPlanning": {
+            "type": "object",
+            "properties": {
+                "processes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedProcess"
+                    }
                 }
             }
         },

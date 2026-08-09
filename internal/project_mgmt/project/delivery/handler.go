@@ -55,7 +55,7 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 //	@Description	Get a project by its ID
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Param			id	path	int	true	"Project ID"
+//	@Param			id	path		int	true	"Project ID"
 //	@Success		200	{object}	response.Response{data=dto.ProjectResponse}
 //	@Failure		400	{object}	response.Response{data=nil}
 //	@Failure		500	{object}	response.Response{data=nil}

@@ -36,7 +36,7 @@ func NewCalendarHandler(logger *slog.Logger, svc *service.CalendarService, mw *r
 //	@Produce		json
 //	@Param			start_date	query		string	true	"Start date (YYYY-MM-DD)"
 //	@Param			end_date	query		string	true	"End date (YYYY-MM-DD)"
-//	@Success		200			{object}	response.Response
+//	@Success		200			{object}	response.Response{data=dto.CalendarPlanning}
 //	@Failure		400			{object}	response.Response{data=nil}
 //	@Failure		500			{object}	response.Response{data=nil}
 //	@Router			/timesheet/calendar [get]

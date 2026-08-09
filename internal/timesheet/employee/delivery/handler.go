@@ -65,9 +65,9 @@ func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 //	@Description	List all employees
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200			{object}	response.Response{data=[]dto.EmployeeResponse}
-//	@Failure		400			{object}	response.Response{data=nil}
-//	@Failure		500			{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.Response{data=[]dto.EmployeeResponse}
+//	@Failure		400	{object}	response.Response{data=nil}
+//	@Failure		500	{object}	response.Response{data=nil}
 //	@Router			/timesheet/employees [get]
 func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
 	employees, err := h.service.ListEmployees(c.Request.Context())
