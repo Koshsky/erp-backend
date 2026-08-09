@@ -31,10 +31,10 @@ import (
 	authService "github.com/Koshsky/erp-backend/internal/auth/service"
 
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/middleware/rbac/policies"
 	planningDelivery "github.com/Koshsky/erp-backend/internal/planning/delivery"
 	planningRepo "github.com/Koshsky/erp-backend/internal/planning/repository"
 	planningService "github.com/Koshsky/erp-backend/internal/planning/service"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	assignmentService "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
