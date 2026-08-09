@@ -83,7 +83,7 @@ func InitializeApp() (*App, error) {
 	userService := service.NewUserService(slogLogger, userRepository)
 	authService := service2.NewAuthService(userService, jwtService)
 	authHandler := delivery.NewAuthHandler(slogLogger, authService)
-	module := auth2.ProvideModule(authHandler)
+	module := auth2.ProvideModule(authHandler, slogLogger)
 	userHandler := delivery2.NewUserHandler(slogLogger, userService)
 	userModule := user.ProvideModule(userHandler)
 	planningRepository := repository2.NewPlanningRepository(slogLogger, pool)
