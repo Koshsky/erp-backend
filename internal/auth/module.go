@@ -20,6 +20,9 @@ const (
 	loginBurst          = 5
 	loginCleanupEvery   = time.Minute
 	loginLimitExpiresIn = 10 * time.Minute
+	// loginResponseDelay uniformly slows every /auth/login response so that
+	// timing does not reveal whether a username exists.
+	loginResponseDelay = 500 * time.Millisecond
 )
 
 // ProviderSet aggregates the auth module's dependencies.
@@ -42,13 +45,20 @@ func ProvideModule(handler *delivery.AuthHandler, logger *slog.Logger) Module {
 }
 
 // loginGuard returns a per-IP rate limiter applied to the login endpoint.
+// The uniform loginResponseDelay is applied before the limiter so that timing
+// does not reveal whether a username exists.
 func (m Module) loginGuard() gin.HandlerFunc {
-	return ratelimit.New(ratelimit.Config{
+	limiter := ratelimit.New(ratelimit.Config{
 		RequestsPerSecond: loginRatePerSecond,
 		Burst:             loginBurst,
 		CleanupInterval:   loginCleanupEvery,
 		Expiration:        loginLimitExpiresIn,
 	}, m.logger)
+
+	return func(c *gin.Context) {
+		time.Sleep(loginResponseDelay)
+		limiter(c)
+	}
 }
 
 // RegisterPublicRoutes registers the auth routes without authentication.
