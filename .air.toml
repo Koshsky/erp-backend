@@ -1,0 +1,16 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o build/server ./cmd/service"
+  entrypoint = ["./build/server"]
+  include_ext = ["go", "yaml", "mod", "sum"]
+  exclude_dir = ["docs", "migrations", "vendor", "build", "tmp"]
+  send_interrupt = true
+  kill_delay = 3
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true
