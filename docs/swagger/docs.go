@@ -4397,8 +4397,21 @@ const docTemplate = `{
         "dto.AuthResponse": {
             "type": "object",
             "properties": {
-                "tokens": {
-                    "$ref": "#/definitions/jwt.TokenPair"
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "expires_in": {
+                    "type": "integer",
+                    "example": 3600
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "abcdef123456..."
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
                 },
                 "user": {
                     "$ref": "#/definitions/dto.UserInfo"
