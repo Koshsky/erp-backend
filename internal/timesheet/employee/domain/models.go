@@ -5,7 +5,6 @@ import "time"
 type Employee struct {
 	ID              int64
 	ResourceID      int64
-	ResourceTitle   string
 	Name            string
 	Position        string
 	ManagerID       *int64

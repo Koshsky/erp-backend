@@ -5167,10 +5167,6 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 3
                 },
-                "resource_title": {
-                    "type": "string",
-                    "example": "Инженер"
-                },
                 "termination_date": {
                     "type": "string",
                     "format": "date",

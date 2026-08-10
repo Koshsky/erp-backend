@@ -5,7 +5,6 @@ import "github.com/Koshsky/erp-backend/pkg/date"
 type EmployeeResponse struct {
 	ID              int64      `json:"id"               example:"1"`
 	ResourceID      int64      `json:"resource_id"      example:"3"`
-	ResourceTitle   string     `json:"resource_title"   example:"Инженер"`
 	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
 	Position        string     `json:"position"         example:"Ведущий инженер"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`

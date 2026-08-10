@@ -44,7 +44,7 @@ func (r *EmployeeRepository) ListEmployeesByResourceID(
 	}
 	employees := make([]domain.Employee, 0, len(rows))
 	for _, row := range rows {
-		employees = append(employees, mapEmployeeByResourceRow(row))
+		employees = append(employees, mapEmployee(row))
 	}
 	return employees, nil
 }
@@ -68,7 +68,7 @@ func (r *EmployeeRepository) ListEmployees(
 	}
 	employees := make([]domain.Employee, 0, len(rows))
 	for _, row := range rows {
-		employees = append(employees, mapEmployeeListRow(row))
+		employees = append(employees, mapEmployee(row))
 	}
 	return employees, nil
 }
@@ -82,24 +82,12 @@ func (r *EmployeeRepository) CountEmployees(
 	return r.db.CountEmployees(ctx, sqlc.CountEmployeesParams{Role: role, UserID: userID, ManagerID: ownerID})
 }
 
-func (r *EmployeeRepository) ListEmployeesByManagerID(ctx context.Context, managerID int64) ([]domain.Employee, error) {
-	rows, err := r.db.ListEmployeesByManagerID(ctx, managerID)
-	if err != nil {
-		return nil, err
-	}
-	employees := make([]domain.Employee, 0, len(rows))
-	for _, row := range rows {
-		employees = append(employees, mapEmployeeByManagerRow(row))
-	}
-	return employees, nil
-}
-
 func (r *EmployeeRepository) FindEmployee(ctx context.Context, id int64) (*domain.Employee, error) {
 	row, err := r.db.FindEmployee(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	mapped := mapEmployeeRow(row)
+	mapped := mapEmployee(row)
 	return &mapped, nil
 }
 
@@ -116,7 +104,8 @@ func (r *EmployeeRepository) CreateEmployee(ctx context.Context, employee domain
 		return nil, err
 	}
 
-	return r.findFull(ctx, row.ID)
+	mapped := mapEmployee(row)
+	return &mapped, nil
 }
 
 func (r *EmployeeRepository) UpdateEmployee(ctx context.Context, employee domain.Employee) (*domain.Employee, error) {
@@ -133,7 +122,8 @@ func (r *EmployeeRepository) UpdateEmployee(ctx context.Context, employee domain
 		return nil, err
 	}
 
-	return r.findFull(ctx, row.ID)
+	mapped := mapEmployee(row)
+	return &mapped, nil
 }
 
 func (r *EmployeeRepository) DeleteEmployee(ctx context.Context, id int64) error {
@@ -348,59 +338,10 @@ func toOverlapStatesByState(rows []sqlc.ListOverlappingStatesByStateRow) []overl
 }
 
 // findFull returns an employee with the category title by id.
-func (r *EmployeeRepository) findFull(ctx context.Context, id int64) (*domain.Employee, error) {
-	row, err := r.db.FindEmployee(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	mapped := mapEmployeeRow(row)
-	return &mapped, nil
-}
-
-func mapEmployeeByResourceRow(row sqlc.ListEmployeesByResourceIDRow) domain.Employee {
+func mapEmployee(row sqlc.Employee) domain.Employee {
 	return domain.Employee{
 		ID:              row.ID,
 		ResourceID:      row.ResourceID,
-		ResourceTitle:   row.ResourceTitle,
-		Name:            row.Name,
-		Position:        row.Position,
-		ManagerID:       nullable.Int64Ptr(row.ManagerID),
-		HireDate:        fromDate(row.HireDate),
-		TerminationDate: fromDate(row.TerminationDate),
-	}
-}
-
-func mapEmployeeRow(row sqlc.FindEmployeeRow) domain.Employee {
-	return domain.Employee{
-		ID:              row.ID,
-		ResourceID:      row.ResourceID,
-		ResourceTitle:   row.ResourceTitle,
-		Name:            row.Name,
-		Position:        row.Position,
-		ManagerID:       nullable.Int64Ptr(row.ManagerID),
-		HireDate:        fromDate(row.HireDate),
-		TerminationDate: fromDate(row.TerminationDate),
-	}
-}
-
-func mapEmployeeListRow(row sqlc.ListEmployeesRow) domain.Employee {
-	return domain.Employee{
-		ID:              row.ID,
-		ResourceID:      row.ResourceID,
-		ResourceTitle:   row.ResourceTitle,
-		Name:            row.Name,
-		Position:        row.Position,
-		ManagerID:       nullable.Int64Ptr(row.ManagerID),
-		HireDate:        fromDate(row.HireDate),
-		TerminationDate: fromDate(row.TerminationDate),
-	}
-}
-
-func mapEmployeeByManagerRow(row sqlc.ListEmployeesByManagerIDRow) domain.Employee {
-	return domain.Employee{
-		ID:              row.ID,
-		ResourceID:      row.ResourceID,
-		ResourceTitle:   row.ResourceTitle,
 		Name:            row.Name,
 		Position:        row.Position,
 		ManagerID:       nullable.Int64Ptr(row.ManagerID),

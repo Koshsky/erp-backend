@@ -21,7 +21,6 @@ func (m *EmployeeMapper) ToEmployeeDTO(employee *domain.Employee) *dto.EmployeeR
 	return &dto.EmployeeResponse{
 		ID:              employee.ID,
 		ResourceID:      employee.ResourceID,
-		ResourceTitle:   employee.ResourceTitle,
 		Name:            employee.Name,
 		Position:        employee.Position,
 		ManagerID:       employee.ManagerID,

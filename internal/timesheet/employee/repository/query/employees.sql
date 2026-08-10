@@ -1,42 +1,31 @@
 -- name: ListEmployeesByResourceID :many
-SELECT e.*, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.resource_id = @resource_id::bigint
-	AND e.deleted_at IS NULL
-ORDER BY e.id ASC;
+SELECT *
+FROM employees
+WHERE resource_id = @resource_id::bigint
+	AND deleted_at IS NULL
+ORDER BY id ASC;
 
 -- name: ListEmployees :many
-SELECT e.*, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.deleted_at IS NULL
-  AND (@role::text = 'admin' OR e.manager_id = @user_id::bigint)
-  AND (@manager_id::bigint = 0 OR e.manager_id = @manager_id::bigint)
-ORDER BY e.id ASC
+SELECT *
+FROM employees
+WHERE deleted_at IS NULL
+  AND (@role::text = 'admin' OR manager_id = @user_id::bigint)
+  AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
+ORDER BY id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 
 -- name: CountEmployees :one
 SELECT COUNT(*)
-FROM employees e
-WHERE e.deleted_at IS NULL
-  AND (@role::text = 'admin' OR e.manager_id = @user_id::bigint)
-  AND (@manager_id::bigint = 0 OR e.manager_id = @manager_id::bigint);
-
--- name: ListEmployeesByManagerID :many
-SELECT e.*, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.deleted_at IS NULL
-AND e.manager_id = @manager_id::bigint
-ORDER BY e.id ASC;
+FROM employees
+WHERE deleted_at IS NULL
+  AND (@role::text = 'admin' OR manager_id = @user_id::bigint)
+  AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint);
 
 -- name: FindEmployee :one
-SELECT e.*, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.id = @employee_id::bigint
-	AND e.deleted_at IS NULL;
+SELECT *
+FROM employees
+WHERE id = @employee_id::bigint
+	AND deleted_at IS NULL;
 
 -- name: CreateEmployee :one
 INSERT INTO employees (resource_id, name, position, manager_id, hire_date, termination_date)

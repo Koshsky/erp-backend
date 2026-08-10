@@ -315,9 +315,6 @@ definitions:
       resource_id:
         example: 3
         type: integer
-      resource_title:
-        example: Инженер
-        type: string
       termination_date:
         example: "2026-12-31"
         format: date

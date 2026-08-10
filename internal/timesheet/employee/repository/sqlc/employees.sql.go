@@ -7,17 +7,16 @@ package sqlc
 
 import (
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countEmployees = `-- name: CountEmployees :one
 SELECT COUNT(*)
-FROM employees e
-WHERE e.deleted_at IS NULL
-  AND ($1::text = 'admin' OR e.manager_id = $2::bigint)
-  AND ($3::bigint = 0 OR e.manager_id = $3::bigint)
+FROM employees
+WHERE deleted_at IS NULL
+  AND ($1::text = 'admin' OR manager_id = $2::bigint)
+  AND ($3::bigint = 0 OR manager_id = $3::bigint)
 `
 
 type CountEmployeesParams struct {
@@ -86,30 +85,15 @@ func (q *Queries) DeleteEmployee(ctx context.Context, employeeID int64) error {
 }
 
 const findEmployee = `-- name: FindEmployee :one
-SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.id = $1::bigint
-	AND e.deleted_at IS NULL
+SELECT id, resource_id, name, position, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
+FROM employees
+WHERE id = $1::bigint
+	AND deleted_at IS NULL
 `
 
-type FindEmployeeRow struct {
-	ID              int64       `json:"id"`
-	ResourceID      int64       `json:"resource_id"`
-	Name            string      `json:"name"`
-	Position        string      `json:"position"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	DeletedAt       **time.Time `json:"deleted_at"`
-	ResourceTitle   string      `json:"resource_title"`
-}
-
-func (q *Queries) FindEmployee(ctx context.Context, employeeID int64) (FindEmployeeRow, error) {
+func (q *Queries) FindEmployee(ctx context.Context, employeeID int64) (Employee, error) {
 	row := q.db.QueryRow(ctx, findEmployee, employeeID)
-	var i FindEmployeeRow
+	var i Employee
 	err := row.Scan(
 		&i.ID,
 		&i.ResourceID,
@@ -121,7 +105,6 @@ func (q *Queries) FindEmployee(ctx context.Context, employeeID int64) (FindEmplo
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-		&i.ResourceTitle,
 	)
 	return i, err
 }
@@ -143,13 +126,12 @@ func (q *Queries) IsResourceActive(ctx context.Context, resourceID int64) (bool,
 }
 
 const listEmployees = `-- name: ListEmployees :many
-SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.deleted_at IS NULL
-  AND ($1::text = 'admin' OR e.manager_id = $2::bigint)
-  AND ($3::bigint = 0 OR e.manager_id = $3::bigint)
-ORDER BY e.id ASC
+SELECT id, resource_id, name, position, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
+FROM employees
+WHERE deleted_at IS NULL
+  AND ($1::text = 'admin' OR manager_id = $2::bigint)
+  AND ($3::bigint = 0 OR manager_id = $3::bigint)
+ORDER BY id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
 
@@ -161,21 +143,7 @@ type ListEmployeesParams struct {
 	PageLimit  int64  `json:"page_limit"`
 }
 
-type ListEmployeesRow struct {
-	ID              int64       `json:"id"`
-	ResourceID      int64       `json:"resource_id"`
-	Name            string      `json:"name"`
-	Position        string      `json:"position"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	DeletedAt       **time.Time `json:"deleted_at"`
-	ResourceTitle   string      `json:"resource_title"`
-}
-
-func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([]ListEmployeesRow, error) {
+func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([]Employee, error) {
 	rows, err := q.db.Query(ctx, listEmployees,
 		arg.Role,
 		arg.UserID,
@@ -187,9 +155,9 @@ func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListEmployeesRow{}
+	items := []Employee{}
 	for rows.Next() {
-		var i ListEmployeesRow
+		var i Employee
 		if err := rows.Scan(
 			&i.ID,
 			&i.ResourceID,
@@ -201,62 +169,6 @@ func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
-			&i.ResourceTitle,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listEmployeesByManagerID = `-- name: ListEmployeesByManagerID :many
-SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.deleted_at IS NULL
-AND e.manager_id = $1::bigint
-ORDER BY e.id ASC
-`
-
-type ListEmployeesByManagerIDRow struct {
-	ID              int64       `json:"id"`
-	ResourceID      int64       `json:"resource_id"`
-	Name            string      `json:"name"`
-	Position        string      `json:"position"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	DeletedAt       **time.Time `json:"deleted_at"`
-	ResourceTitle   string      `json:"resource_title"`
-}
-
-func (q *Queries) ListEmployeesByManagerID(ctx context.Context, managerID int64) ([]ListEmployeesByManagerIDRow, error) {
-	rows, err := q.db.Query(ctx, listEmployeesByManagerID, managerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListEmployeesByManagerIDRow{}
-	for rows.Next() {
-		var i ListEmployeesByManagerIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ResourceID,
-			&i.Name,
-			&i.Position,
-			&i.ManagerID,
-			&i.HireDate,
-			&i.TerminationDate,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.ResourceTitle,
 		); err != nil {
 			return nil, err
 		}
@@ -269,37 +181,22 @@ func (q *Queries) ListEmployeesByManagerID(ctx context.Context, managerID int64)
 }
 
 const listEmployeesByResourceID = `-- name: ListEmployeesByResourceID :many
-SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.termination_date, e.created_at, e.updated_at, e.deleted_at, r.title AS resource_title
-FROM employees e
-JOIN resources r ON r.id = e.resource_id
-WHERE e.resource_id = $1::bigint
-	AND e.deleted_at IS NULL
-ORDER BY e.id ASC
+SELECT id, resource_id, name, position, manager_id, hire_date, termination_date, created_at, updated_at, deleted_at
+FROM employees
+WHERE resource_id = $1::bigint
+	AND deleted_at IS NULL
+ORDER BY id ASC
 `
 
-type ListEmployeesByResourceIDRow struct {
-	ID              int64       `json:"id"`
-	ResourceID      int64       `json:"resource_id"`
-	Name            string      `json:"name"`
-	Position        string      `json:"position"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	DeletedAt       **time.Time `json:"deleted_at"`
-	ResourceTitle   string      `json:"resource_title"`
-}
-
-func (q *Queries) ListEmployeesByResourceID(ctx context.Context, resourceID int64) ([]ListEmployeesByResourceIDRow, error) {
+func (q *Queries) ListEmployeesByResourceID(ctx context.Context, resourceID int64) ([]Employee, error) {
 	rows, err := q.db.Query(ctx, listEmployeesByResourceID, resourceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListEmployeesByResourceIDRow{}
+	items := []Employee{}
 	for rows.Next() {
-		var i ListEmployeesByResourceIDRow
+		var i Employee
 		if err := rows.Scan(
 			&i.ID,
 			&i.ResourceID,
@@ -311,7 +208,6 @@ func (q *Queries) ListEmployeesByResourceID(ctx context.Context, resourceID int6
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
-			&i.ResourceTitle,
 		); err != nil {
 			return nil, err
 		}
