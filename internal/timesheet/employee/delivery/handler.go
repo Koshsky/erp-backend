@@ -43,7 +43,7 @@ func NewEmployeeHandler(logger *slog.Logger, svc *service.EmployeeService, mw *r
 //	@Success		200	{object}	response.SuccessResponse{data=[]dto.EmployeeResponse,error=nil}
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/resources/{id}/employees [get]
+//	@Router			/resources/{id}/employees [get]
 func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -72,7 +72,7 @@ func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 //	@Success		200			{object}	response.SuccessResponse{data=response.Page{items=[]dto.EmployeeResponse},error=nil}
 //	@Failure		400			{object}	response.ErrorResponse{data=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/employees [get]
+//	@Router			/employees [get]
 func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
 	limit, offset, perr := response.ParsePagination(c)
 	if perr != nil {
@@ -110,7 +110,7 @@ func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
 //	@Success		200	{object}	response.SuccessResponse{data=dto.EmployeeResponse,error=nil}
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/employees/{id} [get]
+//	@Router			/employees/{id} [get]
 func (h *EmployeeHandler) FindEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -139,7 +139,7 @@ func (h *EmployeeHandler) FindEmployee(c *gin.Context) {
 //	@Success		201			{object}	response.SuccessResponse{data=dto.EmployeeResponse,error=nil}
 //	@Failure		400			{object}	response.ErrorResponse{data=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/resources/{id}/employees [post]
+//	@Router			/resources/{id}/employees [post]
 func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -180,7 +180,7 @@ func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
 //	@Success		200			{object}	response.SuccessResponse{data=dto.EmployeeResponse,error=nil}
 //	@Failure		400			{object}	response.ErrorResponse{data=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/employees/{id} [put]
+//	@Router			/employees/{id} [put]
 func (h *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -213,7 +213,7 @@ func (h *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/employees/{id} [delete]
+//	@Router			/employees/{id} [delete]
 func (h *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -241,7 +241,7 @@ func (h *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 //	@Success		200			{object}	response.SuccessResponse{data=[]dto.EmployeeStateResponse,error=nil}
 //	@Failure		400			{object}	response.ErrorResponse{data=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/employees/{id}/days [get]
+//	@Router			/employees/{id}/days [get]
 func (h *EmployeeHandler) ListDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -281,7 +281,7 @@ func (h *EmployeeHandler) ListDays(c *gin.Context) {
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/employees/{id}/days [put]
+//	@Router			/employees/{id}/days [put]
 func (h *EmployeeHandler) SetDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -316,7 +316,7 @@ func (h *EmployeeHandler) SetDays(c *gin.Context) {
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/employees/{id}/days [delete]
+//	@Router			/employees/{id}/days [delete]
 func (h *EmployeeHandler) DeleteDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

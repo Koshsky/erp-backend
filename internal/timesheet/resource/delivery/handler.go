@@ -42,7 +42,7 @@ func NewResourceHandler(logger *slog.Logger, svc *service.ResourceService, mw *r
 //	@Param			offset		query		int	false	"Page offset"
 //	@Success		200			{object}	response.SuccessResponse{data=response.Page{items=[]dto.ResourceResponse},error=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/resources [get]
+//	@Router			/resources [get]
 func (h *ResourceHandler) ListResources(c *gin.Context) {
 	limit, offset, perr := response.ParsePagination(c)
 	if perr != nil {
@@ -80,7 +80,7 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 //	@Success		200	{object}	response.SuccessResponse{data=dto.ResourceResponse,error=nil}
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/resources/{id} [get]
+//	@Router			/resources/{id} [get]
 func (h *ResourceHandler) FindResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -108,7 +108,7 @@ func (h *ResourceHandler) FindResource(c *gin.Context) {
 //	@Success		201			{object}	response.SuccessResponse{data=dto.ResourceResponse,error=nil}
 //	@Failure		400			{object}	response.ErrorResponse{data=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/resources [post]
+//	@Router			/resources [post]
 func (h *ResourceHandler) CreateResource(c *gin.Context) {
 	var resource dto.CreateResourceRequest
 	if err := c.ShouldBindJSON(&resource); err != nil {
@@ -141,7 +141,7 @@ func (h *ResourceHandler) CreateResource(c *gin.Context) {
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/resources/{id} [delete]
+//	@Router			/resources/{id} [delete]
 func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -169,7 +169,7 @@ func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 //	@Success		200			{object}	response.SuccessResponse{data=dto.ResourceResponse,error=nil}
 //	@Failure		400			{object}	response.ErrorResponse{data=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/timesheet/resources/{id} [put]
+//	@Router			/resources/{id} [put]
 func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

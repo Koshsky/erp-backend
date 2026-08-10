@@ -5,12 +5,12 @@ import (
 )
 
 func (h *EmployeeHandler) RegisterRoutes(router *gin.RouterGroup) {
-	r := router.Group("/timesheet")
+	r := router.Group("/resources")
 	{
-		r.GET("/resources/:id/employees", h.ListEmployeesByResource)
-		r.POST("/resources/:id/employees", h.mw.Check("employee.create"), h.CreateEmployee)
+		r.GET("/:id/employees", h.ListEmployeesByResource)
+		r.POST("/:id/employees", h.mw.Check("employee.create"), h.CreateEmployee)
 	}
-	e := router.Group("/timesheet/employees")
+	e := router.Group("/employees")
 	{
 		e.GET("", h.mw.Check("employee.list"), h.ListEmployees)
 		e.GET("/:id", h.mw.Check("employee.view"), h.FindEmployee)
