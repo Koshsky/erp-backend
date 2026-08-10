@@ -27,6 +27,8 @@ const (
 // String returns the wire representation of the code.
 func (c Code) String() string {
 	switch c {
+	case CodeInternal:
+		return "INTERNAL_ERROR"
 	case CodeBadRequest:
 		return "BAD_REQUEST"
 	case CodeUnauthorized:

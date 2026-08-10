@@ -5619,41 +5619,12 @@
                 }
             }
         },
-        "errors.Code": {
-            "type": "integer",
-            "enum": [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7,
-                8
-            ],
-            "x-enum-varnames": [
-                "CodeInternal",
-                "CodeBadRequest",
-                "CodeUnauthorized",
-                "CodeForbidden",
-                "CodeNotFound",
-                "CodeTooManyRequests",
-                "CodeInvalidCredentials",
-                "CodeInvalidToken",
-                "CodeValidation"
-            ]
-        },
         "errors.DomainError": {
             "type": "object",
             "properties": {
                 "code": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/errors.Code"
-                        }
-                    ],
-                    "example": 1
+                    "type": "string",
+                    "example": "BAD_REQUEST"
                 },
                 "message": {
                     "type": "string",
