@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	repo "github.com/Koshsky/erp-backend/internal/user/repository"
 
@@ -51,6 +52,7 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req dto.CreateUserRequest) (*dto.UserResponse, error) {
+	req.Username = strings.TrimSpace(req.Username)
 	user := s.mapper.ToDomainFromCreate(req)
 	if err := s.validator.ValidateUser(&user); err != nil {
 		return nil, err
@@ -90,6 +92,7 @@ func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUs
 	}
 
 	s.mapper.ApplyUpdateToDomain(user, req)
+	user.Username = strings.TrimSpace(user.Username)
 	if err = s.validator.ValidateUser(user); err != nil {
 		return nil, err
 	}

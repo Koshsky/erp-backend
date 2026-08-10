@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 
@@ -27,6 +28,8 @@ func NewAuthService(users *userservice.UserService, jwtService *jwt.Service) *Au
 }
 
 func (s *AuthService) Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error) {
+	username = strings.TrimSpace(username)
+
 	hash, err := hasher.Hash(password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password")
@@ -51,6 +54,8 @@ func (s *AuthService) Register(ctx context.Context, name, username, password str
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.AuthResponse, error) {
+	username = strings.TrimSpace(username)
+
 	user, err := s.users.FindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
