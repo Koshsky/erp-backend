@@ -16,7 +16,7 @@ import (
 // and may wrap a cause. It is also the API error body: only Code, Message and
 // Timestamp are serialized.
 type DomainError struct {
-	Code      Code   `json:"code" example:"1"`
+	Code      Code   `json:"code" example:"BAD_REQUEST"`
 	Message   string `json:"message"   example:"Some error message"`
 	Timestamp string `json:"timestamp" example:"2026-08-09T10:30:00Z"`
 

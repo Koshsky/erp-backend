@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	planningservice "github.com/Koshsky/erp-backend/internal/planning/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
@@ -31,14 +32,14 @@ func NewPlanningHandler(logger *slog.Logger, svc *planningservice.PlanningServic
 //	@Description	Get project planning (project portfolio)
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=dto.ProjectPlanning}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.ProjectPlanning,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/planning/projects [get]
 func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 	user, err := userctx.GetUser(c)
 	if err != nil {
-		response.Unauthorized(c, "authentication required")
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
 		return
 	}
 
@@ -57,14 +58,14 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 //	@Description	Get process planning
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=dto.ProcessPlanning}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.ProcessPlanning,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/planning/processes [get]
 func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 	user, err := userctx.GetUser(c)
 	if err != nil {
-		response.Unauthorized(c, "authentication required")
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
 		return
 	}
 
@@ -83,14 +84,14 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 //	@Description	Get task planning
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=dto.TaskPlanning}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.TaskPlanning,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/planning/tasks [get]
 func (h *PlanningHandler) GetTaskPlanning(c *gin.Context) {
 	user, err := userctx.GetUser(c)
 	if err != nil {
-		response.Unauthorized(c, "authentication required")
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
 		return
 	}
 

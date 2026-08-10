@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
@@ -35,8 +36,8 @@ func NewProcessHandler(logger *slog.Logger, svc *service.ProcessService, mw *rba
 //	@Description	Get a list of all processes
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=[]dto.ProcessResponse}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.ProcessResponse,error=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/process [get]
 func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	processes, err := h.service.ListProcesses(c.Request.Context())
@@ -54,14 +55,14 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 //	@Description	Get a process by ID
 //	@Security		ApiKeyAuth
 //	@Param			id	path		int	true	"Process ID"
-//	@Success		200	{object}	response.Response{data=dto.ProcessResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.ProcessResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/process/{id} [get]
 func (h *ProcessHandler) FindProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid process id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid process id")
 		return
 	}
 
@@ -82,14 +83,14 @@ func (h *ProcessHandler) FindProcess(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			process	body		dto.CreateProcessRequest	true	"Process data"
-//	@Success		201		{object}	response.Response{data=dto.ProcessResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		201		{object}	response.SuccessResponse{data=dto.ProcessResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/process [post]
 func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 	var process dto.CreateProcessRequest
 	if err := c.ShouldBindJSON(&process); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -109,13 +110,13 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Param			id	path	int	true	"Process ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/process/{id} [delete]
 func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid process id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid process id")
 		return
 	}
 
@@ -136,20 +137,20 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 //	@Produce		json
 //	@Param			id		path		int							true	"Process ID"
 //	@Param			body	body		dto.UpdateProcessRequest	true	"Process data"
-//	@Success		200		{object}	response.Response{data=dto.ProcessResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.ProcessResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/process/{id} [put]
 func (h *ProcessHandler) UpdateProcess(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid process id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid process id")
 		return
 	}
 
 	body := dto.UpdateProcessRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
