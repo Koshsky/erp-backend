@@ -31,6 +31,10 @@ func (e *FieldError) StatusCode() int {
 	return http.StatusBadRequest
 }
 
+func (e *FieldError) ErrorCode() Code {
+	return CodeValidation
+}
+
 // NewValidationError is a generic fallback for validation errors that are not
 // tied to a single field. Prefer NewFieldError with a field-scoped message.
 func NewValidationError(message string) error {

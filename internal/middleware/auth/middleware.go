@@ -9,6 +9,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/response"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type Middleware struct {
@@ -22,7 +23,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		// 1. Check for the presence of the header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			response.Unauthorized(c, "authorization header required")
+			response.Unauthorized(c, errors.CodeUnauthorized, "authorization header required")
 			c.Abort() // Stop the execution
 			return
 		}
@@ -30,7 +31,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		// 2. Check the format
 		const bearerPrefix = "Bearer "
 		if !strings.HasPrefix(authHeader, bearerPrefix) {
-			response.Unauthorized(c, "invalid authorization format, expected Bearer token")
+			response.Unauthorized(c, errors.CodeInvalidToken, "invalid authorization format, expected Bearer token")
 			c.Abort()
 			return
 		}
@@ -38,7 +39,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		// 3. Extract the token
 		tokenString := strings.TrimPrefix(authHeader, bearerPrefix)
 		if tokenString == "" {
-			response.Unauthorized(c, "token is empty")
+			response.Unauthorized(c, errors.CodeInvalidToken, "token is empty")
 			c.Abort()
 			return
 		}
@@ -46,7 +47,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		// 4. Validate the token
 		claims, err := m.jwtManager.ValidateAccessToken(tokenString)
 		if err != nil {
-			response.Unauthorized(c, "invalid or expired token")
+			response.Unauthorized(c, errors.CodeInvalidToken, "invalid or expired token")
 			c.Abort()
 			return
 		}

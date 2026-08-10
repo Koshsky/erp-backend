@@ -145,7 +145,7 @@ func (m *Middleware) Check(name string) gin.HandlerFunc {
 		}
 		body, err := readBody(c)
 		if err != nil {
-			response.BadRequest(c, "invalid request body")
+			response.BadRequest(c, errors.CodeBadRequest, "invalid request body")
 			c.Abort()
 			return
 		}
@@ -178,7 +178,7 @@ func readBody(c *gin.Context) ([]byte, error) {
 func getUser(c *gin.Context) (userctx.UserContext, bool) {
 	user, err := userctx.GetUser(c)
 	if err != nil {
-		response.Unauthorized(c, "authentication required")
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
 		c.Abort()
 		return userctx.UserContext{}, false
 	}
