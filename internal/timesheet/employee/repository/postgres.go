@@ -49,8 +49,17 @@ func (r *EmployeeRepository) ListEmployeesByResourceID(
 	return employees, nil
 }
 
-func (r *EmployeeRepository) ListEmployees(ctx context.Context, limit, offset int) ([]domain.Employee, error) {
+func (r *EmployeeRepository) ListEmployees(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]domain.Employee, error) {
 	rows, err := r.db.ListEmployees(ctx, sqlc.ListEmployeesParams{
+		Role:       role,
+		UserID:     userID,
+		ManagerID:  ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
@@ -64,8 +73,13 @@ func (r *EmployeeRepository) ListEmployees(ctx context.Context, limit, offset in
 	return employees, nil
 }
 
-func (r *EmployeeRepository) CountEmployees(ctx context.Context) (int64, error) {
-	return r.db.CountEmployees(ctx)
+func (r *EmployeeRepository) CountEmployees(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+) (int64, error) {
+	return r.db.CountEmployees(ctx, sqlc.CountEmployeesParams{Role: role, UserID: userID, ManagerID: ownerID})
 }
 
 func (r *EmployeeRepository) ListEmployeesByManagerID(ctx context.Context, managerID int64) ([]domain.Employee, error) {

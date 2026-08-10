@@ -25,6 +25,20 @@ type Page struct {
 	Offset int   `json:"offset"`
 }
 
+// QueryID returns the query param as int64, or 0 when missing or invalid
+// (the RBAC list policy has already validated the format).
+func QueryID(c *gin.Context, key string) int64 {
+	raw := c.Query(key)
+	if raw == "" {
+		return 0
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || v < 0 {
+		return 0
+	}
+	return v
+}
+
 // ParsePagination reads limit/offset query params with sane defaults:
 // limit defaults to DefaultLimit and is capped at MaxLimit; offset defaults to 0.
 func ParsePagination(c *gin.Context) (int, int, error) {

@@ -27,12 +27,18 @@ func NewResourceService(logger *slog.Logger, r *repo.ResourceRepository) *Resour
 	}
 }
 
-func (s *ResourceService) ListResources(ctx context.Context, limit, offset int) ([]dto.ResourceResponse, int64, error) {
-	rows, err := s.repository.ListResources(ctx, limit, offset)
+func (s *ResourceService) ListResources(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]dto.ResourceResponse, int64, error) {
+	rows, err := s.repository.ListResources(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountResources(ctx)
+	total, err := s.repository.CountResources(ctx, userID, role, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

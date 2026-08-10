@@ -12,7 +12,7 @@ func (h *EmployeeHandler) RegisterRoutes(router *gin.RouterGroup) {
 	}
 	e := router.Group("/timesheet/employees")
 	{
-		e.GET("", h.ListEmployees)
+		e.GET("", h.mw.Check("employee.list"), h.ListEmployees)
 		e.GET("/:id", h.mw.Check("employee.view"), h.FindEmployee)
 		e.PUT("/:id", h.mw.Check("employee.update"), h.UpdateEmployee)
 		e.DELETE("/:id", h.mw.Check("employee.delete"), h.DeleteEmployee)

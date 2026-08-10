@@ -12,6 +12,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
 type TaskHandler struct {
@@ -36,10 +37,11 @@ func NewTaskHandler(logger *slog.Logger, svc *service.TaskService, mw *rbac.Midd
 //	@Description	Get a list of all tasks
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Param			limit	query		int	false	"Page size (default 50, max 500)"
-//	@Param			offset	query		int	false	"Page offset"
-//	@Success		200		{object}	response.SuccessResponse{data=response.Page{items=[]dto.TaskResponse},error=nil}
-//	@Failure		500		{object}	response.ErrorResponse{data=nil}
+//	@Param			limit		query		int	false	"Page size (default 50, max 500)"
+//	@Param			owner_id	query		int	false	"Filter by task owner (admin/dp)"
+//	@Param			offset		query		int	false	"Page offset"
+//	@Success		200			{object}	response.SuccessResponse{data=response.Page{items=[]dto.TaskResponse},error=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/task [get]
 func (h *TaskHandler) ListTasks(c *gin.Context) {
 	limit, offset, perr := response.ParsePagination(c)
@@ -47,7 +49,19 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 		response.Error(c, h.logger, perr)
 		return
 	}
-	items, total, err := h.service.ListTasks(c.Request.Context(), limit, offset)
+	user, err := userctx.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
+		return
+	}
+	items, total, err := h.service.ListTasks(
+		c.Request.Context(),
+		user.ID,
+		user.Role,
+		response.QueryID(c, "owner_id"),
+		limit,
+		offset,
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

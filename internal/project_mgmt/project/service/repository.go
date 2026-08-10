@@ -11,6 +11,12 @@ type ProjectRepository interface {
 	FindProject(ctx context.Context, id int64) (*domain.Project, error)
 	UpdateProject(ctx context.Context, project domain.Project) (*domain.Project, error)
 	DeleteProject(ctx context.Context, id int64) error
-	ListProjects(ctx context.Context, limit, offset int) ([]domain.Project, error)
-	CountProjects(ctx context.Context) (int64, error)
+	ListProjects(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]domain.Project, error)
+	CountProjects(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
 }

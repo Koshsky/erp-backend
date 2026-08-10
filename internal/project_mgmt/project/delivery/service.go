@@ -7,7 +7,13 @@ import (
 )
 
 type ProjectService interface {
-	ListProjects(ctx context.Context, limit, offset int) ([]dto.ProjectResponse, int64, error)
+	ListProjects(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]dto.ProjectResponse, int64, error)
 	FindProject(ctx context.Context, id int64) (*dto.ProjectResponse, error)
 	CreateProject(
 		ctx context.Context,

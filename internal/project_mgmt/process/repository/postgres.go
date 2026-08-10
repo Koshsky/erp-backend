@@ -73,8 +73,17 @@ func (r *ProcessRepository) DeleteProcess(ctx context.Context, id int64) error {
 	return r.db.DeleteProcess(ctx, id)
 }
 
-func (r *ProcessRepository) ListProcesss(ctx context.Context, limit, offset int) ([]domain.Process, error) {
+func (r *ProcessRepository) ListProcesss(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]domain.Process, error) {
 	rows, err := r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
+		Role:       role,
+		UserID:     userID,
+		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
@@ -88,8 +97,13 @@ func (r *ProcessRepository) ListProcesss(ctx context.Context, limit, offset int)
 	return processes, nil
 }
 
-func (r *ProcessRepository) CountProcesses(ctx context.Context) (int64, error) {
-	return r.db.CountProcesses(ctx)
+func (r *ProcessRepository) CountProcesses(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+) (int64, error) {
+	return r.db.CountProcesses(ctx, sqlc.CountProcessesParams{Role: role, UserID: userID, OwnerID: ownerID})
 }
 
 func mapProcess(row sqlc.Process) domain.Process {

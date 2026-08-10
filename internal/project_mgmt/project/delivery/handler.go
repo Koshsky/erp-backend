@@ -37,10 +37,11 @@ func NewProjectHandler(logger *slog.Logger, svc *service.ProjectService, mw *rba
 //	@Description	Get a list of all projects
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Param			limit	query		int	false	"Page size (default 50, max 500)"
-//	@Param			offset	query		int	false	"Page offset"
-//	@Success		200		{object}	response.SuccessResponse{data=response.Page{items=[]dto.ProjectResponse},error=nil}
-//	@Failure		500		{object}	response.ErrorResponse{data=nil}
+//	@Param			limit		query		int	false	"Page size (default 50, max 500)"
+//	@Param			owner_id	query		int	false	"Filter by project owner (admin/dp)"
+//	@Param			offset		query		int	false	"Page offset"
+//	@Success		200			{object}	response.SuccessResponse{data=response.Page{items=[]dto.ProjectResponse},error=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/project [get]
 func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	limit, offset, perr := response.ParsePagination(c)
@@ -48,7 +49,19 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 		response.Error(c, h.logger, perr)
 		return
 	}
-	items, total, err := h.service.ListProjects(c.Request.Context(), limit, offset)
+	user, err := userctx.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
+		return
+	}
+	items, total, err := h.service.ListProjects(
+		c.Request.Context(),
+		user.ID,
+		user.Role,
+		response.QueryID(c, "owner_id"),
+		limit,
+		offset,
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

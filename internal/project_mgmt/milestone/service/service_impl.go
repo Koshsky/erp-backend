@@ -92,13 +92,16 @@ func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error 
 
 func (s *MilestoneService) ListMilestones(
 	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
 	limit, offset int,
 ) ([]dto.MilestoneResponse, int64, error) {
-	rows, err := s.repository.ListMilestones(ctx, limit, offset)
+	rows, err := s.repository.ListMilestones(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountMilestones(ctx)
+	total, err := s.repository.CountMilestones(ctx, userID, role, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

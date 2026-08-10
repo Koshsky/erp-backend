@@ -83,12 +83,18 @@ func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 	return s.repository.DeleteTask(ctx, id)
 }
 
-func (s *TaskService) ListTasks(ctx context.Context, limit, offset int) ([]dto.TaskResponse, int64, error) {
-	rows, err := s.repository.ListTasks(ctx, limit, offset)
+func (s *TaskService) ListTasks(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]dto.TaskResponse, int64, error) {
+	rows, err := s.repository.ListTasks(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountTasks(ctx)
+	total, err := s.repository.CountTasks(ctx, userID, role, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -7,7 +7,7 @@ import (
 func (h *ProcessHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/process")
 	{
-		r.GET("", h.ListProcesses)
+		r.GET("", h.mw.Check("process.list"), h.ListProcesses)
 		r.GET("/:id", h.mw.Check("process.view"), h.FindProcess)
 		r.POST("", h.mw.Check("process.create"), h.CreateProcess)
 		r.PUT("/:id", h.mw.Check("process.update"), h.UpdateProcess)

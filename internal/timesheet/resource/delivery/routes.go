@@ -7,7 +7,7 @@ import (
 func (h *ResourceHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/timesheet/resources")
 	{
-		r.GET("", h.ListResources)
+		r.GET("", h.mw.Check("resource.list"), h.ListResources)
 		r.GET("/:id", h.mw.Check("resource.view"), h.FindResource)
 		r.POST("", h.mw.Check("resource.create"), h.CreateResource)
 		r.PUT("/:id", h.mw.Check("resource.update"), h.UpdateResource)

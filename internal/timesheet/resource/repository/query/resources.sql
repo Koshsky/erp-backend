@@ -5,6 +5,8 @@ SELECT r.id, r.code, r.title, r.owner_id,
 FROM resources r
 LEFT JOIN employees e ON e.resource_id = r.id
 WHERE r.deleted_at IS NULL
+  AND (@role::text = 'admin' OR r.owner_id = @user_id::bigint)
+  AND (@owner_id::bigint = 0 OR r.owner_id = @owner_id::bigint)
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
@@ -12,7 +14,9 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 -- name: CountResources :one
 SELECT COUNT(*)
 FROM resources
-WHERE deleted_at IS NULL;
+WHERE deleted_at IS NULL
+  AND (@role::text = 'admin' OR owner_id = @user_id::bigint)
+  AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint);
 
 -- name: ListResourcesByOwnerID :many
 SELECT r.id, r.code, r.title, r.owner_id,

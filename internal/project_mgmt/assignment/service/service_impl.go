@@ -92,13 +92,16 @@ func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) erro
 
 func (s *AssignmentService) ListAssignments(
 	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
 	limit, offset int,
 ) ([]dto.AssignmentResponse, int64, error) {
-	rows, err := s.repository.ListAssignments(ctx, limit, offset)
+	rows, err := s.repository.ListAssignments(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountAssignments(ctx)
+	total, err := s.repository.CountAssignments(ctx, userID, role, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

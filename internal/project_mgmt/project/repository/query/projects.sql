@@ -13,13 +13,17 @@ RETURNING *;
 SELECT *
 FROM projects
 WHERE deleted_at IS NULL
+  AND (@role::text IN ('admin', 'dp') OR owner_id = @user_id::bigint)
+  AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint)
 ORDER BY id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 
 -- name: CountProjects :one
 SELECT COUNT(*)
 FROM projects
-WHERE deleted_at IS NULL;
+WHERE deleted_at IS NULL
+  AND (@role::text IN ('admin', 'dp') OR owner_id = @user_id::bigint)
+  AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint);
 
 -- name: FindProject :one
 SELECT *

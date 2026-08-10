@@ -48,6 +48,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "description": "Filter by project/process owner (admin/dp)",
+                        "name": "owner_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Page offset",
                         "name": "offset",
                         "in": "query"
@@ -723,6 +729,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "description": "Filter by process/project owner (admin/dp)",
+                        "name": "owner_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Page offset",
                         "name": "offset",
                         "in": "query"
@@ -1374,6 +1386,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "description": "Filter by process owner (admin/dp)",
+                        "name": "owner_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Page offset",
                         "name": "offset",
                         "in": "query"
@@ -1784,6 +1802,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Page size (default 50, max 500)",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by project owner (admin/dp)",
+                        "name": "owner_id",
                         "in": "query"
                     },
                     {
@@ -2204,6 +2228,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Page size (default 50, max 500)",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by task owner (admin/dp)",
+                        "name": "owner_id",
                         "in": "query"
                     },
                     {
@@ -2719,6 +2749,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Page size (default 50, max 500)",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by manager (admin)",
+                        "name": "manager_id",
                         "in": "query"
                     },
                     {
@@ -3333,6 +3369,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Page size (default 50, max 500)",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by resource owner (admin)",
+                        "name": "owner_id",
                         "in": "query"
                     },
                     {

@@ -90,12 +90,18 @@ func (s *ProcessService) DeleteProcess(ctx context.Context, id int64) error {
 	return s.repository.DeleteProcess(ctx, id)
 }
 
-func (s *ProcessService) ListProcesses(ctx context.Context, limit, offset int) ([]dto.ProcessResponse, int64, error) {
-	rows, err := s.repository.ListProcesss(ctx, limit, offset)
+func (s *ProcessService) ListProcesses(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]dto.ProcessResponse, int64, error) {
+	rows, err := s.repository.ListProcesss(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountProcesses(ctx)
+	total, err := s.repository.CountProcesses(ctx, userID, role, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

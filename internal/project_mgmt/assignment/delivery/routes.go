@@ -7,7 +7,7 @@ import (
 func (h *AssignmentHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/assignment")
 	{
-		r.GET("", h.ListAssignments)
+		r.GET("", h.mw.Check("assignment.list"), h.ListAssignments)
 		r.GET("/:id", h.mw.Check("assignment.view"), h.FindAssignment)
 		r.POST("", h.mw.Check("assignment.create"), h.CreateAssignment)
 		r.PUT("/:id", h.mw.Check("assignment.update"), h.UpdateAssignment)

@@ -11,13 +11,17 @@ SELECT e.*, r.title AS resource_title
 FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.deleted_at IS NULL
+  AND (@role::text = 'admin' OR e.manager_id = @user_id::bigint)
+  AND (@manager_id::bigint = 0 OR e.manager_id = @manager_id::bigint)
 ORDER BY e.id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 
 -- name: CountEmployees :one
 SELECT COUNT(*)
-FROM employees
-WHERE deleted_at IS NULL;
+FROM employees e
+WHERE e.deleted_at IS NULL
+  AND (@role::text = 'admin' OR e.manager_id = @user_id::bigint)
+  AND (@manager_id::bigint = 0 OR e.manager_id = @manager_id::bigint);
 
 -- name: ListEmployeesByManagerID :many
 SELECT e.*, r.title AS resource_title

@@ -14,12 +14,20 @@ import (
 
 const countEmployees = `-- name: CountEmployees :one
 SELECT COUNT(*)
-FROM employees
-WHERE deleted_at IS NULL
+FROM employees e
+WHERE e.deleted_at IS NULL
+  AND ($1::text = 'admin' OR e.manager_id = $2::bigint)
+  AND ($3::bigint = 0 OR e.manager_id = $3::bigint)
 `
 
-func (q *Queries) CountEmployees(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countEmployees)
+type CountEmployeesParams struct {
+	Role      string `json:"role"`
+	UserID    int64  `json:"user_id"`
+	ManagerID int64  `json:"manager_id"`
+}
+
+func (q *Queries) CountEmployees(ctx context.Context, arg CountEmployeesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countEmployees, arg.Role, arg.UserID, arg.ManagerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -139,13 +147,18 @@ SELECT e.id, e.resource_id, e.name, e.position, e.manager_id, e.hire_date, e.ter
 FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.deleted_at IS NULL
+  AND ($1::text = 'admin' OR e.manager_id = $2::bigint)
+  AND ($3::bigint = 0 OR e.manager_id = $3::bigint)
 ORDER BY e.id ASC
-LIMIT $2::bigint OFFSET $1::bigint
+LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListEmployeesParams struct {
-	PageOffset int64 `json:"page_offset"`
-	PageLimit  int64 `json:"page_limit"`
+	Role       string `json:"role"`
+	UserID     int64  `json:"user_id"`
+	ManagerID  int64  `json:"manager_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
 }
 
 type ListEmployeesRow struct {
@@ -163,7 +176,13 @@ type ListEmployeesRow struct {
 }
 
 func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([]ListEmployeesRow, error) {
-	rows, err := q.db.Query(ctx, listEmployees, arg.PageOffset, arg.PageLimit)
+	rows, err := q.db.Query(ctx, listEmployees,
+		arg.Role,
+		arg.UserID,
+		arg.ManagerID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

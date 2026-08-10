@@ -7,6 +7,7 @@ import (
 
 //nolint:gochecknoglobals // rule registry
 var assignmentPolicies = []rbac.Policy{
+	{Name: "assignment.list", Check: ListCheck(rbac.ResourceAssignment, "owner_id")},
 	{Name: "assignment.view", Check: EntityCheck(rbac.ResourceAssignment, ActionView)},
 	{Name: "assignment.update", Check: EntityCheck(rbac.ResourceAssignment, ActionUpdate)},
 	{Name: "assignment.delete", Check: EntityCheck(rbac.ResourceAssignment, ActionDelete)},

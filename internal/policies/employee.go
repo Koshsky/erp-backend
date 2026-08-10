@@ -7,6 +7,7 @@ import (
 
 //nolint:gochecknoglobals // rule registry
 var employeePolicies = []rbac.Policy{
+	{Name: "employee.list", Check: ListCheck(rbac.ResourceEmployee, "manager_id")},
 	{Name: "employee.view", Check: EntityCheck(rbac.ResourceEmployee, ActionView)},
 	{Name: "employee.update", Check: EntityCheck(rbac.ResourceEmployee, ActionUpdate)},
 	{Name: "employee.delete", Check: EntityCheck(rbac.ResourceEmployee, ActionDelete)},

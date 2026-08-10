@@ -7,6 +7,7 @@ import (
 
 //nolint:gochecknoglobals // rule registry
 var projectPolicies = []rbac.Policy{
+	{Name: "project.list", Check: ListCheck(rbac.ResourceProject, "owner_id")},
 	{Name: "project.view", Check: EntityCheck(rbac.ResourceProject, ActionView)},
 	{Name: "project.update", Check: EntityCheck(rbac.ResourceProject, ActionUpdate)},
 	{Name: "project.delete", Check: EntityCheck(rbac.ResourceProject, ActionDelete)},

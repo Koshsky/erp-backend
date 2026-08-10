@@ -7,7 +7,13 @@ import (
 )
 
 type ResourceService interface {
-	ListResources(ctx context.Context, limit, offset int) ([]dto.ResourceResponse, int64, error)
+	ListResources(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]dto.ResourceResponse, int64, error)
 	FindResource(ctx context.Context, id int64) (*dto.ResourceResponse, error)
 	CreateResource(
 		ctx context.Context,

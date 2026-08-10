@@ -11,7 +11,13 @@ type ResourceRepository interface {
 	FindResource(ctx context.Context, id int64) (*domain.Resource, error)
 	UpdateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error)
 	DeleteResource(ctx context.Context, id int64) error
-	ListResources(ctx context.Context, limit, offset int) ([]domain.Resource, error)
-	CountResources(ctx context.Context) (int64, error)
+	ListResources(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]domain.Resource, error)
+	CountResources(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
 	ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error)
 }

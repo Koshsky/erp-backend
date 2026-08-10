@@ -877,6 +877,10 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Filter by project/process owner (admin/dp)
+        in: query
+        name: owner_id
+        type: integer
       - description: Page offset
         in: query
         name: offset
@@ -1248,6 +1252,10 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Filter by process/project owner (admin/dp)
+        in: query
+        name: owner_id
+        type: integer
       - description: Page offset
         in: query
         name: offset
@@ -1599,6 +1607,10 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Filter by process owner (admin/dp)
+        in: query
+        name: owner_id
+        type: integer
       - description: Page offset
         in: query
         name: offset
@@ -1824,6 +1836,10 @@ paths:
       - description: Page size (default 50, max 500)
         in: query
         name: limit
+        type: integer
+      - description: Filter by project owner (admin/dp)
+        in: query
+        name: owner_id
         type: integer
       - description: Page offset
         in: query
@@ -2054,6 +2070,10 @@ paths:
       - description: Page size (default 50, max 500)
         in: query
         name: limit
+        type: integer
+      - description: Filter by task owner (admin/dp)
+        in: query
+        name: owner_id
         type: integer
       - description: Page offset
         in: query
@@ -2338,6 +2358,10 @@ paths:
       - description: Page size (default 50, max 500)
         in: query
         name: limit
+        type: integer
+      - description: Filter by manager (admin)
+        in: query
+        name: manager_id
         type: integer
       - description: Page offset
         in: query
@@ -2683,6 +2707,10 @@ paths:
       - description: Page size (default 50, max 500)
         in: query
         name: limit
+        type: integer
+      - description: Filter by resource owner (admin)
+        in: query
+        name: owner_id
         type: integer
       - description: Page offset
         in: query

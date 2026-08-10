@@ -71,8 +71,17 @@ func (r *ResourceRepository) DeleteResource(ctx context.Context, id int64) error
 	return r.db.DeleteResource(ctx, id)
 }
 
-func (r *ResourceRepository) ListResources(ctx context.Context, limit, offset int) ([]domain.Resource, error) {
+func (r *ResourceRepository) ListResources(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]domain.Resource, error) {
 	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
+		Role:       role,
+		UserID:     userID,
+		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
@@ -93,8 +102,13 @@ func (r *ResourceRepository) ListResources(ctx context.Context, limit, offset in
 	return resources, nil
 }
 
-func (r *ResourceRepository) CountResources(ctx context.Context) (int64, error) {
-	return r.db.CountResources(ctx)
+func (r *ResourceRepository) CountResources(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+) (int64, error) {
+	return r.db.CountResources(ctx, sqlc.CountResourcesParams{Role: role, UserID: userID, OwnerID: ownerID})
 }
 
 func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error) {

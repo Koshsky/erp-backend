@@ -14,12 +14,21 @@ import (
 
 const countProcesses = `-- name: CountProcesses :one
 SELECT COUNT(*)
-FROM processes
-WHERE deleted_at IS NULL
+FROM processes p
+JOIN projects pr ON pr.id = p.project_id
+WHERE p.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
 
-func (q *Queries) CountProcesses(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countProcesses)
+type CountProcessesParams struct {
+	Role    string `json:"role"`
+	UserID  int64  `json:"user_id"`
+	OwnerID int64  `json:"owner_id"`
+}
+
+func (q *Queries) CountProcesses(ctx context.Context, arg CountProcessesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countProcesses, arg.Role, arg.UserID, arg.OwnerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -105,20 +114,32 @@ func (q *Queries) FindProcess(ctx context.Context, id int64) (Process, error) {
 }
 
 const listProcesss = `-- name: ListProcesss :many
-SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
-FROM processes
-WHERE deleted_at IS NULL
-ORDER BY id ASC
-LIMIT $2::bigint OFFSET $1::bigint
+SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at
+FROM processes p
+JOIN projects pr ON pr.id = p.project_id
+WHERE p.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+ORDER BY p.id ASC
+LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListProcesssParams struct {
-	PageOffset int64 `json:"page_offset"`
-	PageLimit  int64 `json:"page_limit"`
+	Role       string `json:"role"`
+	UserID     int64  `json:"user_id"`
+	OwnerID    int64  `json:"owner_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
 }
 
 func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]Process, error) {
-	rows, err := q.db.Query(ctx, listProcesss, arg.PageOffset, arg.PageLimit)
+	rows, err := q.db.Query(ctx, listProcesss,
+		arg.Role,
+		arg.UserID,
+		arg.OwnerID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
