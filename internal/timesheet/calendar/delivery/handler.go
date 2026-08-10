@@ -10,6 +10,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/response"
 	"github.com/Koshsky/erp-backend/pkg/date"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type CalendarHandler struct {
@@ -36,19 +37,19 @@ func NewCalendarHandler(logger *slog.Logger, svc *service.CalendarService, mw *r
 //	@Produce		json
 //	@Param			start_date	query		string	true	"Start date (YYYY-MM-DD)"
 //	@Param			end_date	query		string	true	"End date (YYYY-MM-DD)"
-//	@Success		200			{object}	response.Response{data=dto.CalendarPlanning}
-//	@Failure		400			{object}	response.Response{data=nil}
-//	@Failure		500			{object}	response.Response{data=nil}
+//	@Success		200			{object}	response.SuccessResponse{data=dto.CalendarPlanning,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/calendar [get]
 func (h *CalendarHandler) GetCalendar(c *gin.Context) {
 	start, err := date.Parse(c.Query("start_date"))
 	if err != nil {
-		response.BadRequest(c, "invalid start_date")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid start_date")
 		return
 	}
 	end, err := date.Parse(c.Query("end_date"))
 	if err != nil {
-		response.BadRequest(c, "invalid end_date")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid end_date")
 		return
 	}
 

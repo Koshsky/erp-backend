@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
@@ -35,8 +36,8 @@ func NewMilestoneHandler(logger *slog.Logger, svc *service.MilestoneService, mw 
 //	@Description	List all milestones
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=[]dto.MilestoneResponse}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.MilestoneResponse,error=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/milestone [get]
 func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 	milestones, err := h.service.ListMilestones(c.Request.Context())
@@ -55,14 +56,14 @@ func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path		int	true	"Milestone ID"
-//	@Success		200	{object}	response.Response{data=dto.MilestoneResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.MilestoneResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/milestone/{id} [get]
 func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid milestone id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid milestone id")
 		return
 	}
 
@@ -83,14 +84,14 @@ func (h *MilestoneHandler) FindMilestone(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.CreateMilestoneRequest	true	"Milestone data"
-//	@Success		201		{object}	response.Response{data=dto.MilestoneResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		201		{object}	response.SuccessResponse{data=dto.MilestoneResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/milestone [post]
 func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 	var milestone dto.CreateMilestoneRequest
 	if err := c.ShouldBindJSON(&milestone); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -111,13 +112,13 @@ func (h *MilestoneHandler) CreateMilestone(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"Milestone ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/milestone/{id} [delete]
 func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid milestone id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid milestone id")
 		return
 	}
 
@@ -139,20 +140,20 @@ func (h *MilestoneHandler) DeleteMilestone(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Param			id		path		int							true	"Milestone ID"
 //	@Param			body	body		dto.UpdateMilestoneRequest	true	"Milestone data"
-//	@Success		200		{object}	response.Response{data=dto.MilestoneResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.MilestoneResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/milestone/{id} [put]
 func (h *MilestoneHandler) UpdateMilestone(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid milestone id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid milestone id")
 		return
 	}
 
 	body := dto.UpdateMilestoneRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 

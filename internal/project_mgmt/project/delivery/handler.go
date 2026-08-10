@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
@@ -36,8 +37,8 @@ func NewProjectHandler(logger *slog.Logger, svc *service.ProjectService, mw *rba
 //	@Description	Get a list of all projects
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=[]dto.ProjectResponse}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.ProjectResponse,error=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/project [get]
 func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	projects, err := h.service.ListProjects(c.Request.Context())
@@ -56,14 +57,14 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path		int	true	"Project ID"
-//	@Success		200	{object}	response.Response{data=dto.ProjectResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.ProjectResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/project/{id} [get]
 func (h *ProjectHandler) FindProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid project id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid project id")
 		return
 	}
 
@@ -84,14 +85,14 @@ func (h *ProjectHandler) FindProject(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			project	body		dto.CreateProjectRequest	true	"Project data"
-//	@Success		201		{object}	response.Response{data=dto.ProjectResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		201		{object}	response.SuccessResponse{data=dto.ProjectResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/project [post]
 func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	var project dto.CreateProjectRequest
 	if err := c.ShouldBindJSON(&project); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -119,20 +120,20 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 //	@Produce		json
 //	@Param			id		path		int							true	"Project ID"
 //	@Param			body	body		dto.UpdateProjectRequest	true	"Project data"
-//	@Success		200		{object}	response.Response{data=dto.ProjectResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.ProjectResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/project/{id} [put]
 func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid project id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid project id")
 		return
 	}
 
 	body := dto.UpdateProjectRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -153,13 +154,13 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"Project ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/project/{id} [delete]
 func (h *ProjectHandler) DeleteProject(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid project id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid project id")
 		return
 	}
 
