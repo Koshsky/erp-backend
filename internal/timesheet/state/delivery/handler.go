@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
@@ -35,8 +36,8 @@ func NewStateHandler(logger *slog.Logger, svc *service.StateService, mw *rbac.Mi
 //	@Description	List all resource states (reference dictionary)
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=[]dto.StateResponse}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.StateResponse,error=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/states [get]
 func (h *StateHandler) ListStates(c *gin.Context) {
 	states, err := h.service.ListStates(c.Request.Context())
@@ -55,14 +56,14 @@ func (h *StateHandler) ListStates(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path		int	true	"State ID"
-//	@Success		200	{object}	response.Response{data=dto.StateResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.StateResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/states/{id} [get]
 func (h *StateHandler) FindState(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid state id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid state id")
 		return
 	}
 
@@ -83,14 +84,14 @@ func (h *StateHandler) FindState(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			state	body		dto.CreateStateRequest	true	"State"
-//	@Success		201		{object}	response.Response{data=dto.StateResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		201		{object}	response.SuccessResponse{data=dto.StateResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/states [post]
 func (h *StateHandler) CreateState(c *gin.Context) {
 	var state dto.CreateStateRequest
 	if err := c.ShouldBindJSON(&state); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -111,13 +112,13 @@ func (h *StateHandler) CreateState(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"State ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/states/{id} [delete]
 func (h *StateHandler) DeleteState(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid state id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid state id")
 		return
 	}
 
@@ -138,20 +139,20 @@ func (h *StateHandler) DeleteState(c *gin.Context) {
 //	@Produce		json
 //	@Param			id		path		int						true	"State ID"
 //	@Param			state	body		dto.UpdateStateRequest	true	"State"
-//	@Success		200		{object}	response.Response{data=dto.StateResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.StateResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/states/{id} [put]
 func (h *StateHandler) UpdateState(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid state id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid state id")
 		return
 	}
 
 	body := dto.UpdateStateRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 

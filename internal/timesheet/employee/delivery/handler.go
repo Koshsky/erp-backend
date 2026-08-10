@@ -10,6 +10,7 @@ import (
 
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/date"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/response"
@@ -39,14 +40,14 @@ func NewEmployeeHandler(logger *slog.Logger, svc *service.EmployeeService, mw *r
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path		int	true	"Resource ID"
-//	@Success		200	{object}	response.Response{data=[]dto.EmployeeResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.EmployeeResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources/{id}/employees [get]
 func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid resource id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
 		return
 	}
 
@@ -65,9 +66,9 @@ func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 //	@Description	List all employees
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=[]dto.EmployeeResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.EmployeeResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees [get]
 func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
 	employees, err := h.service.ListEmployees(c.Request.Context())
@@ -86,14 +87,14 @@ func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path		int	true	"Employee ID"
-//	@Success		200	{object}	response.Response{data=dto.EmployeeResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.EmployeeResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees/{id} [get]
 func (h *EmployeeHandler) FindEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid employee id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid employee id")
 		return
 	}
 
@@ -115,20 +116,20 @@ func (h *EmployeeHandler) FindEmployee(c *gin.Context) {
 //	@Produce		json
 //	@Param			id			path		int							true	"Resource ID"
 //	@Param			employee	body		dto.CreateEmployeeRequest	true	"Employee"
-//	@Success		201			{object}	response.Response{data=dto.EmployeeResponse}
-//	@Failure		400			{object}	response.Response{data=nil}
-//	@Failure		500			{object}	response.Response{data=nil}
+//	@Success		201			{object}	response.SuccessResponse{data=dto.EmployeeResponse,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources/{id}/employees [post]
 func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid resource id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
 		return
 	}
 
 	var employee dto.CreateEmployeeRequest
 	if err = c.ShouldBindJSON(&employee); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -156,20 +157,20 @@ func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
 //	@Produce		json
 //	@Param			id			path		int							true	"Employee ID"
 //	@Param			employee	body		dto.UpdateEmployeeRequest	true	"Employee"
-//	@Success		200			{object}	response.Response{data=dto.EmployeeResponse}
-//	@Failure		400			{object}	response.Response{data=nil}
-//	@Failure		500			{object}	response.Response{data=nil}
+//	@Success		200			{object}	response.SuccessResponse{data=dto.EmployeeResponse,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees/{id} [put]
 func (h *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid employee id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid employee id")
 		return
 	}
 
 	body := dto.UpdateEmployeeRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -190,13 +191,13 @@ func (h *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"Employee ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees/{id} [delete]
 func (h *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid employee id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid employee id")
 		return
 	}
 
@@ -217,25 +218,25 @@ func (h *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 //	@Param			id			path		int		true	"Employee ID"
 //	@Param			start_date	query		string	true	"Start date (YYYY-MM-DD)"
 //	@Param			end_date	query		string	true	"End date (YYYY-MM-DD)"
-//	@Success		200			{object}	response.Response{data=[]dto.EmployeeStateResponse}
-//	@Failure		400			{object}	response.Response{data=nil}
-//	@Failure		500			{object}	response.Response{data=nil}
+//	@Success		200			{object}	response.SuccessResponse{data=[]dto.EmployeeStateResponse,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees/{id}/days [get]
 func (h *EmployeeHandler) ListDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid employee id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid employee id")
 		return
 	}
 
 	start, err := date.Parse(c.Query("start_date"))
 	if err != nil {
-		response.BadRequest(c, "invalid start_date")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid start_date")
 		return
 	}
 	end, err := date.Parse(c.Query("end_date"))
 	if err != nil {
-		response.BadRequest(c, "invalid end_date")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid end_date")
 		return
 	}
 
@@ -258,19 +259,19 @@ func (h *EmployeeHandler) ListDays(c *gin.Context) {
 //	@Param			id		path	int					true	"Employee ID"
 //	@Param			body	body	dto.SetDaysRequest	true	"Days"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees/{id}/days [put]
 func (h *EmployeeHandler) SetDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid employee id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid employee id")
 		return
 	}
 
 	body := dto.SetDaysRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -293,24 +294,24 @@ func (h *EmployeeHandler) SetDays(c *gin.Context) {
 //	@Param			end_date	query	string	true	"End date (YYYY-MM-DD)"
 //	@Param			state_id	query	int		false	"Optional state filter"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees/{id}/days [delete]
 func (h *EmployeeHandler) DeleteDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid employee id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid employee id")
 		return
 	}
 
 	start, err := date.Parse(c.Query("start_date"))
 	if err != nil {
-		response.BadRequest(c, "invalid start_date")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid start_date")
 		return
 	}
 	end, err := date.Parse(c.Query("end_date"))
 	if err != nil {
-		response.BadRequest(c, "invalid end_date")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid end_date")
 		return
 	}
 
@@ -318,7 +319,7 @@ func (h *EmployeeHandler) DeleteDays(c *gin.Context) {
 	if raw := c.Query("state_id"); raw != "" {
 		parsedID, parseErr := strconv.ParseInt(raw, 10, 64)
 		if parseErr != nil {
-			response.BadRequest(c, "invalid state_id")
+			response.BadRequest(c, errors.CodeBadRequest, "invalid state_id")
 			return
 		}
 		stateID = &parsedID
