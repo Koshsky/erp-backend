@@ -37,6 +37,8 @@ BEGIN
     VALUES
         (production_process_id, 'Закупка материалов', NEW.start_date, NEW.end_date),
         (production_process_id, 'Производство блоков телемедицины', NEW.start_date, NEW.end_date),
+        (production_process_id, 'Контроль качества продукции', NEW.start_date, NEW.end_date),
+        (production_process_id, 'Закупка материалов', NEW.start_date, NEW.end_date),
         (production_process_id, 'Контроль качества продукции', NEW.start_date, NEW.end_date);
 
     RETURN NEW;
