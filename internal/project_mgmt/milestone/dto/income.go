@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/Koshsky/erp-backend/internal/common/date"
+import "github.com/Koshsky/erp-backend/pkg/date"
 
 type UpdateMilestoneRequest struct {
 	Title     *string    `json:"title"      example:"Телевидение"`

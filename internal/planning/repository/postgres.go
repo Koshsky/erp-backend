@@ -7,10 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/common/date"
-	"github.com/Koshsky/erp-backend/internal/common/nullable"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type PlanningRepository struct {
@@ -18,6 +18,7 @@ type PlanningRepository struct {
 	db     *sqlc.Queries
 }
 
+// NewPlanningRepository builds the PlanningRepository repository.
 func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRepository {
 	return &PlanningRepository{
 		logger: logger,
@@ -178,10 +179,9 @@ func (r *PlanningRepository) ListResources(ctx context.Context) ([]dto.Resource,
 	result := make([]dto.Resource, 0, len(rows))
 	for _, row := range rows {
 		r := dto.Resource{
-			ID:       row.ID,
-			Title:    row.Title,
-			Code:     row.Code,
-			Quantity: int(row.Quantity),
+			ID:    row.ID,
+			Title: row.Title,
+			Code:  row.Code,
 		}
 		result = append(result, r)
 	}

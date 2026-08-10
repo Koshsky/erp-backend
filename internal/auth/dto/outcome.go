@@ -7,9 +7,14 @@ type RefreshResponse struct {
 	Message string         `json:"message" example:"Token refreshed successfully"`
 }
 
+// AuthResponse is the login/register payload: token fields are flattened to
+// the top level (access_token, token_type, expires_in, refresh_token) plus user.
 type AuthResponse struct {
-	User   UserInfo       `json:"user"`
-	Tokens *jwt.TokenPair `json:"tokens"`
+	AccessToken  string   `json:"access_token"  example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	TokenType    string   `json:"token_type"    example:"Bearer"`
+	ExpiresIn    int      `json:"expires_in"    example:"3600"`
+	RefreshToken string   `json:"refresh_token" example:"abcdef123456..."`
+	User         UserInfo `json:"user"`
 }
 
 type UserInfo struct {

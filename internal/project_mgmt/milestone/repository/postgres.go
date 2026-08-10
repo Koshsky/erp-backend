@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
 )
@@ -16,6 +17,7 @@ type MilestoneRepository struct {
 	db     *sqlc.Queries
 }
 
+// NewMilestoneRepository builds the MilestoneRepository repository.
 func NewMilestoneRepository(logger *slog.Logger, pool *pgxpool.Pool) *MilestoneRepository {
 	return &MilestoneRepository{
 		logger: logger,
@@ -94,4 +96,13 @@ func mapMilestone(row sqlc.Milestone) domain.Milestone {
 		Content:   row.Content,
 		Date:      row.Date,
 	}
+}
+
+// OwnerChain returns the owner chain (for RBAC checks in the middleware).
+func (r *MilestoneRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
+	row, err := r.db.OwnerChain(ctx, id)
+	if err != nil {
+		return rbac.Owners{}, err
+	}
+	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner}, nil
 }

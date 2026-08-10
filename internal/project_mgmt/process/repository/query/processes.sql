@@ -1,11 +1,3 @@
--- name: CanUserCreateProcess :one
-SELECT EXISTS(
-	SELECT 1 FROM projects
-	WHERE id = @project_id::bigint
-		AND deleted_at IS NULL
-		AND owner_id = @user_id::bigint
-) AS can_create;
-
 -- name: CreateProcess :one
 INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
 VALUES (
@@ -16,8 +8,6 @@ VALUES (
 	@owner_id
 )
 RETURNING *;
-
--- TODO: write CanUserViewProcess
 
 -- name: ListProcesss :many
 SELECT *
@@ -32,15 +22,6 @@ WHERE id = @id::bigint
 	AND deleted_at IS NULL;
     
 
--- name: CanUserUpdateProcess :one
-SELECT EXISTS (
-    SELECT 1 FROM processes p
-    JOIN projects pr ON pr.id = p.project_id
-    WHERE p.id = @process_id::bigint
-      AND p.deleted_at IS NULL
-      AND pr.owner_id = @user_id::bigint
-) AS can_manage;
-
 -- name: UpdateProcess :one
 UPDATE processes
 SET
@@ -54,17 +35,17 @@ WHERE deleted_at IS NULL
 	AND id = @process_id::bigint
 RETURNING *;
 
--- name: CanUserDeleteProcess :one
-SELECT EXISTS (
-    SELECT 1 FROM processes p
-    JOIN projects pr ON pr.id = p.project_id
-    WHERE p.id = @process_id::bigint
-      AND p.deleted_at IS NULL
-      AND pr.owner_id = @user_id::bigint
-) AS can_manage;
-
 -- name: DeleteProcess :exec
 UPDATE processes
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE deleted_at IS NULL
 	AND id = @process_id::bigint;
+
+-- name: OwnerChain :one
+SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+FROM processes p
+JOIN projects pr ON pr.id = p.project_id
+WHERE p.id = @id::bigint
+	AND p.deleted_at IS NULL
+	AND pr.deleted_at IS NULL;

@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type TaskService struct {
@@ -15,10 +17,11 @@ type TaskService struct {
 	validator  *TaskValidator
 }
 
-func NewTaskService(logger *slog.Logger, repository TaskRepository) *TaskService {
+// NewTaskService builds the TaskService service.
+func NewTaskService(logger *slog.Logger, r *repo.TaskRepository) *TaskService {
 	return &TaskService{
 		logger:     logger,
-		repository: repository,
+		repository: r,
 		mapper:     &TaskMapper{},
 		validator:  &TaskValidator{},
 	}
@@ -41,10 +44,13 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse, error) {
 	task, err := s.repository.FindTask(ctx, id)
 	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return nil, errors.ErrTaskNotFound
+		}
 		return nil, err
 	}
 	if task == nil {
-		return nil, fmt.Errorf("task not found")
+		return nil, errors.ErrTaskNotFound
 	}
 	return s.mapper.ToDTO(task), nil
 }
@@ -52,7 +58,7 @@ func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse
 func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTaskRequest) (*dto.TaskResponse, error) {
 	task, err := s.repository.FindTask(ctx, id)
 	if err != nil || task == nil {
-		return nil, fmt.Errorf("task not found")
+		return nil, errors.ErrTaskNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(task, req)
@@ -69,6 +75,11 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 }
 
 func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
+	task, err := s.repository.FindTask(ctx, id)
+	if err != nil || task == nil {
+		return errors.ErrTaskNotFound
+	}
+
 	return s.repository.DeleteTask(ctx, id)
 }
 

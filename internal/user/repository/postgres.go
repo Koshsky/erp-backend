@@ -16,6 +16,7 @@ type UserRepository struct {
 	db     *sqlc.Queries
 }
 
+// NewUserRepository builds the UserRepository repository.
 func NewUserRepository(logger *slog.Logger, pool *pgxpool.Pool) *UserRepository {
 	return &UserRepository{
 		logger: logger,

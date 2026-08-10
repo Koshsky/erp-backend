@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type ProcessService struct {
@@ -15,10 +17,11 @@ type ProcessService struct {
 	validator  *ProcessValidator
 }
 
-func NewProcessService(logger *slog.Logger, repository ProcessRepository) *ProcessService {
+// NewProcessService builds the ProcessService service.
+func NewProcessService(logger *slog.Logger, r *repo.ProcessRepository) *ProcessService {
 	return &ProcessService{
 		logger:     logger,
-		repository: repository,
+		repository: r,
 		mapper:     NewProcessMapper(),
 		validator:  &ProcessValidator{},
 	}
@@ -44,10 +47,13 @@ func (s *ProcessService) CreateProcess(
 func (s *ProcessService) FindProcess(ctx context.Context, id int64) (*dto.ProcessResponse, error) {
 	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return nil, errors.ErrProcessNotFound
+		}
 		return nil, err
 	}
 	if process == nil {
-		return nil, fmt.Errorf("process not found")
+		return nil, errors.ErrProcessNotFound
 	}
 	return s.mapper.ToDTO(process), nil
 }
@@ -59,7 +65,7 @@ func (s *ProcessService) UpdateProcess(
 ) (*dto.ProcessResponse, error) {
 	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil || process == nil {
-		return nil, fmt.Errorf("process not found")
+		return nil, errors.ErrProcessNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(process, req)
@@ -76,6 +82,11 @@ func (s *ProcessService) UpdateProcess(
 }
 
 func (s *ProcessService) DeleteProcess(ctx context.Context, id int64) error {
+	process, err := s.repository.FindProcess(ctx, id)
+	if err != nil || process == nil {
+		return errors.ErrProcessNotFound
+	}
+
 	return s.repository.DeleteProcess(ctx, id)
 }
 

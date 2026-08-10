@@ -3,10 +3,13 @@ package delivery
 import (
 	"log/slog"
 
+	authservice "github.com/Koshsky/erp-backend/internal/auth/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
-	"github.com/Koshsky/erp-backend/internal/common/response"
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 type AuthHandler struct {
@@ -14,10 +17,11 @@ type AuthHandler struct {
 	logger  *slog.Logger
 }
 
-func NewAuthHandler(logger *slog.Logger, service AuthService) *AuthHandler {
+// NewAuthHandler builds the auth handler.
+func NewAuthHandler(logger *slog.Logger, svc *authservice.AuthService) *AuthHandler {
 	return &AuthHandler{
 		logger:  logger,
-		service: service,
+		service: svc,
 	}
 }
 
@@ -29,20 +33,20 @@ func NewAuthHandler(logger *slog.Logger, service AuthService) *AuthHandler {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.LoginRequest	true	"Login credentials"
-//	@Success		200		{object}	response.Response{data=dto.AuthResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		401		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.AuthResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		401		{object}	response.ErrorResponse{data=nil}
 //	@Router			/auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid request")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid request")
 		return
 	}
 
 	resp, err := h.service.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
-		response.Unauthorized(c, "invalid credentials")
+		response.Unauthorized(c, errors.CodeInvalidCredentials, "invalid credentials")
 		return
 	}
 
@@ -57,14 +61,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.RegisterRequest	true	"Register credentials"
-//	@Success		201		{object}	response.Response{data=dto.AuthResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		201		{object}	response.SuccessResponse{data=dto.AuthResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid request")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid request")
 		return
 	}
 
@@ -85,20 +89,20 @@ func (h *AuthHandler) Register(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.RefreshTokenRequest	true	"Refresh token"
-//	@Success		200		{object}	response.Response{data=dto.RefreshResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		401		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.RefreshResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		401		{object}	response.ErrorResponse{data=nil}
 //	@Router			/auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "refresh_token required")
+		response.BadRequest(c, errors.CodeBadRequest, "refresh_token required")
 		return
 	}
 
 	resp, err := h.service.RefreshToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		response.Unauthorized(c, "invalid refresh token")
+		response.Unauthorized(c, errors.CodeInvalidToken, "invalid refresh token")
 		return
 	}
 

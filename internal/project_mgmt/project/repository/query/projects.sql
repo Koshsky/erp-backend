@@ -1,13 +1,3 @@
-
-
--- name: CanUserCreateProject :one
-SELECT EXISTS (
-    SELECT 1 FROM users 
-    WHERE id = @user_id::bigint 
-      AND role IN ('admin', 'dp')
-      AND deleted_at IS NULL
-) AS can_create;
-
 -- name: CreateProject :one
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES (
@@ -18,8 +8,6 @@ VALUES (
   @owner_id
 )
 RETURNING *;
-
--- TODO: write CanUserViewProject
 
 -- name: ListProjects :many
 SELECT *
@@ -32,19 +20,6 @@ SELECT *
 FROM projects
 WHERE deleted_at IS NULL
   AND id = @project_id::bigint;
-
--- name: CanUserUpdateProject :one
-SELECT EXISTS (
-    SELECT 1 FROM projects p
-    WHERE p.id = @project_id::bigint
-      AND p.deleted_at IS NULL
-      AND EXISTS (
-          SELECT 1 FROM users u
-          WHERE u.id = @user_id::bigint
-            AND u.role IN ('admin', 'dp')
-            AND u.deleted_at IS NULL
-      )
-) AS can_manage;
 
 -- name: UpdateProject :one
 UPDATE projects
@@ -59,22 +34,14 @@ WHERE deleted_at IS NULL
 	AND id = @project_id::bigint
 RETURNING *;
 
--- name: CanUserDeleteProject :one
-SELECT EXISTS (
-    SELECT 1 FROM projects p
-    WHERE p.id = @project_id::bigint
-      AND p.deleted_at IS NULL
-      AND EXISTS (
-          SELECT 1 FROM users u
-          WHERE u.id = @user_id::bigint
-            AND u.role IN ('admin', 'dp')
-            AND u.deleted_at IS NULL
-      )
-) AS can_manage;
-
-
 -- name: DeleteProject :exec
 UPDATE projects
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE deleted_at IS NULL
 	AND id = @project_id::bigint;
+
+-- name: OwnerChain :one
+SELECT COALESCE(owner_id, 0)::bigint AS owner_id
+FROM projects
+WHERE id = @id::bigint
+	AND deleted_at IS NULL;

@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-
-	"github.com/Koshsky/erp-backend/internal/config"
 )
 
 type Service struct {
@@ -16,16 +14,6 @@ type Service struct {
 	accessExpiry  time.Duration
 	refreshExpiry time.Duration
 	issuer        string
-}
-
-func NewJWTService(config config.JWTConfig) *Service {
-	return &Service{
-		secretKey:     []byte(config.SecretKey),
-		refreshKey:    []byte(config.RefreshKey),
-		accessExpiry:  time.Duration(config.AccessExpiry),
-		refreshExpiry: time.Duration(config.RefreshExpiry),
-		issuer:        config.Issuer,
-	}
 }
 
 // GenerateAccessToken generates a new JWT access token for the given user ID and role.

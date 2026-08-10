@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/user/repository"
+
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 )
@@ -16,10 +18,11 @@ type UserService struct {
 	validator  *UserValidator
 }
 
-func NewUserService(logger *slog.Logger, repository UserRepository) *UserService {
+// NewUserService builds the UserService service.
+func NewUserService(logger *slog.Logger, r *repo.UserRepository) *UserService {
 	return &UserService{
 		logger:     logger,
-		repository: repository,
+		repository: r,
 		mapper:     &UserMapper{},
 		validator:  &UserValidator{},
 	}

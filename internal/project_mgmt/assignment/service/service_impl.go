@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
+	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type AssignmentService struct {
@@ -15,10 +17,11 @@ type AssignmentService struct {
 	validator  *AssignmentValidator
 }
 
-func NewAssignmentService(logger *slog.Logger, repository AssignmentRepository) *AssignmentService {
+// NewAssignmentService builds the AssignmentService service.
+func NewAssignmentService(logger *slog.Logger, r *repo.AssignmentRepository) *AssignmentService {
 	return &AssignmentService{
 		logger:     logger,
-		repository: repository,
+		repository: r,
 		mapper:     NewAssignmentMapper(),
 		validator:  &AssignmentValidator{},
 	}
@@ -33,7 +36,7 @@ func (s *AssignmentService) CreateAssignment(
 		return nil, err
 	}
 
-	created, err := s.repository.CreateAssignment(ctx, s.mapper.ToDomainFromCreate(req))
+	created, err := s.repository.CreateAssignment(ctx, assignment)
 	if err != nil {
 		return nil, err
 	}
@@ -44,10 +47,13 @@ func (s *AssignmentService) CreateAssignment(
 func (s *AssignmentService) FindAssignment(ctx context.Context, id int64) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return nil, errors.ErrAssignmentNotFound
+		}
 		return nil, err
 	}
 	if assignment == nil {
-		return nil, fmt.Errorf("assignment not found")
+		return nil, errors.ErrAssignmentNotFound
 	}
 	return s.mapper.ToDTO(assignment), nil
 }
@@ -59,7 +65,7 @@ func (s *AssignmentService) UpdateAssignment(
 ) (*dto.AssignmentResponse, error) {
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil || assignment == nil {
-		return nil, fmt.Errorf("assignment not found")
+		return nil, errors.ErrAssignmentNotFound
 	}
 
 	s.mapper.ApplyUpdateToDomain(assignment, req)
@@ -76,6 +82,11 @@ func (s *AssignmentService) UpdateAssignment(
 }
 
 func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) error {
+	assignment, err := s.repository.FindAssignment(ctx, id)
+	if err != nil || assignment == nil {
+		return errors.ErrAssignmentNotFound
+	}
+
 	return s.repository.DeleteAssignment(ctx, id)
 }
 

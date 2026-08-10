@@ -104,14 +104,12 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 }
 
 const listUsers = `-- name: ListUsers :many
-
 SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
-// TODO: CanUser...User
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	rows, err := q.db.Query(ctx, listUsers)
 	if err != nil {

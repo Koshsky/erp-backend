@@ -7,9 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/common/nullable"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type ProjectRepository struct {
@@ -17,6 +18,7 @@ type ProjectRepository struct {
 	db     *sqlc.Queries
 }
 
+// NewProjectRepository builds the ProjectRepository repository.
 func NewProjectRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProjectRepository {
 	return &ProjectRepository{
 		logger: logger,
@@ -92,4 +94,13 @@ func mapProject(row sqlc.Project) domain.Project {
 		EndDate:   row.EndDate,
 		Priority:  int(row.Priority),
 	}
+}
+
+// OwnerChain returns the owner chain (for RBAC checks in the middleware).
+func (r *ProjectRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
+	owner, err := r.db.OwnerChain(ctx, id)
+	if err != nil {
+		return rbac.Owners{}, err
+	}
+	return rbac.Owners{ProjectOwner: owner}, nil
 }

@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/Koshsky/erp-backend/internal/common/date"
+import "github.com/Koshsky/erp-backend/pkg/date"
 
 type CreateProjectRequest struct {
 	OwnerID   *int64    `json:"owner_id"   example:"1"`

@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ProjectMapper struct{}

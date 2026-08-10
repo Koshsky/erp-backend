@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/common/date"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ProcessMapper struct{}

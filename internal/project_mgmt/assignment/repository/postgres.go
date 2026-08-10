@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
@@ -16,6 +17,7 @@ type AssignmentRepository struct {
 	db     *sqlc.Queries
 }
 
+// NewAssignmentRepository builds the AssignmentRepository repository.
 func NewAssignmentRepository(logger *slog.Logger, pool *pgxpool.Pool) *AssignmentRepository {
 	return &AssignmentRepository{
 		logger: logger,
@@ -91,4 +93,13 @@ func mapAssignment(row sqlc.Assignment) domain.Assignment {
 		ResourceID: row.ResourceID,
 		Quantity:   int(row.Quantity),
 	}
+}
+
+// OwnerChain returns the owner chain (for RBAC checks in the middleware).
+func (r *AssignmentRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
+	row, err := r.db.OwnerChain(ctx, id)
+	if err != nil {
+		return rbac.Owners{}, err
+	}
+	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner}, nil
 }
