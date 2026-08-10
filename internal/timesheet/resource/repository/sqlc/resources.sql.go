@@ -24,6 +24,19 @@ func (q *Queries) CountEmployeesByResourceID(ctx context.Context, resourceID int
 	return column_1, err
 }
 
+const countResources = `-- name: CountResources :one
+SELECT COUNT(*)
+FROM resources
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountResources(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countResources)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createResource = `-- name: CreateResource :one
 INSERT INTO resources (title, code, owner_id)
 VALUES ($1, $2, $3)
@@ -110,7 +123,13 @@ LEFT JOIN employees e ON e.resource_id = r.id
 WHERE r.deleted_at IS NULL
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC
+LIMIT $2::bigint OFFSET $1::bigint
 `
+
+type ListResourcesParams struct {
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
+}
 
 type ListResourcesRow struct {
 	ID             int64       `json:"id"`
@@ -123,8 +142,8 @@ type ListResourcesRow struct {
 	DeletedAt      **time.Time `json:"deleted_at"`
 }
 
-func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error) {
-	rows, err := q.db.Query(ctx, listResources)
+func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
+	rows, err := q.db.Query(ctx, listResources, arg.PageOffset, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

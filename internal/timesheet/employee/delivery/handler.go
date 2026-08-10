@@ -66,17 +66,24 @@ func (h *EmployeeHandler) ListEmployeesByResource(c *gin.Context) {
 //	@Description	List all employees
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.SuccessResponse{data=[]dto.EmployeeResponse,error=nil}
-//	@Failure		400	{object}	response.ErrorResponse{data=nil}
-//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Param			limit	query		int	false	"Page size (default 50, max 500)"
+//	@Param			offset	query		int	false	"Page offset"
+//	@Success		200		{object}	response.SuccessResponse{data=response.Page{items=[]dto.EmployeeResponse},error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/employees [get]
 func (h *EmployeeHandler) ListEmployees(c *gin.Context) {
-	employees, err := h.service.ListEmployees(c.Request.Context())
+	limit, offset, perr := response.ParsePagination(c)
+	if perr != nil {
+		response.Error(c, h.logger, perr)
+		return
+	}
+	items, total, err := h.service.ListEmployees(c.Request.Context(), limit, offset)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}
-	response.OK(c, employees)
+	response.OK(c, response.Page{Items: items, Total: total, Limit: limit, Offset: offset})
 }
 
 // FindEmployee handles the request to get an employee by id.

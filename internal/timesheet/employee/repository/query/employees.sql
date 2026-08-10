@@ -11,7 +11,13 @@ SELECT e.*, r.title AS resource_title
 FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.deleted_at IS NULL
-ORDER BY e.id ASC;
+ORDER BY e.id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountEmployees :one
+SELECT COUNT(*)
+FROM employees
+WHERE deleted_at IS NULL;
 
 -- name: ListEmployeesByManagerID :many
 SELECT e.*, r.title AS resource_title

@@ -90,10 +90,17 @@ func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error 
 	return s.repository.DeleteMilestone(ctx, id)
 }
 
-func (s *MilestoneService) ListMilestones(ctx context.Context) ([]dto.MilestoneResponse, error) {
-	rows, err := s.repository.ListMilestones(ctx)
+func (s *MilestoneService) ListMilestones(
+	ctx context.Context,
+	limit, offset int,
+) ([]dto.MilestoneResponse, int64, error) {
+	rows, err := s.repository.ListMilestones(ctx, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return s.mapper.ToDTOs(rows), nil
+	total, err := s.repository.CountMilestones(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.mapper.ToDTOs(rows), total, nil
 }

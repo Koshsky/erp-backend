@@ -837,6 +837,16 @@ definitions:
       error:
         $ref: '#/definitions/errors.DomainError'
     type: object
+  response.Page:
+    properties:
+      items: {}
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
   response.SuccessResponse:
     properties:
       data: {}
@@ -862,6 +872,15 @@ paths:
   /assignment:
     get:
       description: Get a list of all assignments
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -872,9 +891,14 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/dto.AssignmentResponse'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.AssignmentResponse'
+                        type: array
+                    type: object
                 error:
                   type: object
               type: object
@@ -1219,6 +1243,15 @@ paths:
   /milestone:
     get:
       description: List all milestones
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -1229,9 +1262,14 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/dto.MilestoneResponse'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.MilestoneResponse'
+                        type: array
+                    type: object
                 error:
                   type: object
               type: object
@@ -1556,6 +1594,15 @@ paths:
   /process:
     get:
       description: Get a list of all processes
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -1566,9 +1613,14 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/dto.ProcessResponse'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.ProcessResponse'
+                        type: array
+                    type: object
                 error:
                   type: object
               type: object
@@ -1768,6 +1820,15 @@ paths:
   /project:
     get:
       description: Get a list of all projects
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -1778,9 +1839,14 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/dto.ProjectResponse'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.ProjectResponse'
+                        type: array
+                    type: object
                 error:
                   type: object
               type: object
@@ -1984,6 +2050,15 @@ paths:
   /task:
     get:
       description: Get a list of all tasks
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -1994,9 +2069,14 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/dto.TaskResponse'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.TaskResponse'
+                        type: array
+                    type: object
                 error:
                   type: object
               type: object
@@ -2254,6 +2334,15 @@ paths:
   /timesheet/employees:
     get:
       description: List all employees
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -2264,9 +2353,14 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/dto.EmployeeResponse'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.EmployeeResponse'
+                        type: array
+                    type: object
                 error:
                   type: object
               type: object
@@ -2585,6 +2679,15 @@ paths:
   /timesheet/resources:
     get:
       description: List all resources
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -2595,9 +2698,14 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/dto.ResourceResponse'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.ResourceResponse'
+                        type: array
+                    type: object
                 error:
                   type: object
               type: object

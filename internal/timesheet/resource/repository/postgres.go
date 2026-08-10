@@ -71,8 +71,11 @@ func (r *ResourceRepository) DeleteResource(ctx context.Context, id int64) error
 	return r.db.DeleteResource(ctx, id)
 }
 
-func (r *ResourceRepository) ListResources(ctx context.Context) ([]domain.Resource, error) {
-	rows, err := r.db.ListResources(ctx)
+func (r *ResourceRepository) ListResources(ctx context.Context, limit, offset int) ([]domain.Resource, error) {
+	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
+		PageLimit:  int64(limit),
+		PageOffset: int64(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +91,10 @@ func (r *ResourceRepository) ListResources(ctx context.Context) ([]domain.Resour
 		})
 	}
 	return resources, nil
+}
+
+func (r *ResourceRepository) CountResources(ctx context.Context) (int64, error) {
+	return r.db.CountResources(ctx)
 }
 
 func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error) {

@@ -27,12 +27,16 @@ func NewResourceService(logger *slog.Logger, r *repo.ResourceRepository) *Resour
 	}
 }
 
-func (s *ResourceService) ListResources(ctx context.Context) ([]dto.ResourceResponse, error) {
-	rows, err := s.repository.ListResources(ctx)
+func (s *ResourceService) ListResources(ctx context.Context, limit, offset int) ([]dto.ResourceResponse, int64, error) {
+	rows, err := s.repository.ListResources(ctx, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return s.mapper.ToDTOs(rows), nil
+	total, err := s.repository.CountResources(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.mapper.ToDTOs(rows), total, nil
 }
 
 // CreateResource creates a resource. The middleware checked permissions; here

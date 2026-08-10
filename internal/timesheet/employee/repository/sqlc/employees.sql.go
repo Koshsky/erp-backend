@@ -12,6 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countEmployees = `-- name: CountEmployees :one
+SELECT COUNT(*)
+FROM employees
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountEmployees(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countEmployees)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createEmployee = `-- name: CreateEmployee :one
 INSERT INTO employees (resource_id, name, position, manager_id, hire_date, termination_date)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -127,7 +140,13 @@ FROM employees e
 JOIN resources r ON r.id = e.resource_id
 WHERE e.deleted_at IS NULL
 ORDER BY e.id ASC
+LIMIT $2::bigint OFFSET $1::bigint
 `
+
+type ListEmployeesParams struct {
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
+}
 
 type ListEmployeesRow struct {
 	ID              int64       `json:"id"`
@@ -143,8 +162,8 @@ type ListEmployeesRow struct {
 	ResourceTitle   string      `json:"resource_title"`
 }
 
-func (q *Queries) ListEmployees(ctx context.Context) ([]ListEmployeesRow, error) {
-	rows, err := q.db.Query(ctx, listEmployees)
+func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([]ListEmployeesRow, error) {
+	rows, err := q.db.Query(ctx, listEmployees, arg.PageOffset, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

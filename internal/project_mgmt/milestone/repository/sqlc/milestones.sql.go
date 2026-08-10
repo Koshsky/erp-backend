@@ -10,6 +10,19 @@ import (
 	"time"
 )
 
+const countMilestones = `-- name: CountMilestones :one
+SELECT COUNT(*)
+FROM milestones
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountMilestones(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countMilestones)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMilestone = `-- name: CreateMilestone :one
 INSERT INTO milestones (process_id, title, content, date)
 VALUES ($1, $2, $3, $4)
@@ -84,10 +97,16 @@ SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at
 FROM milestones
 WHERE deleted_at IS NULL
 ORDER BY id ASC
+LIMIT $2::bigint OFFSET $1::bigint
 `
 
-func (q *Queries) ListMilestones(ctx context.Context) ([]Milestone, error) {
-	rows, err := q.db.Query(ctx, listMilestones)
+type ListMilestonesParams struct {
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
+}
+
+func (q *Queries) ListMilestones(ctx context.Context, arg ListMilestonesParams) ([]Milestone, error) {
+	rows, err := q.db.Query(ctx, listMilestones, arg.PageOffset, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

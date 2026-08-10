@@ -90,10 +90,14 @@ func (s *ProcessService) DeleteProcess(ctx context.Context, id int64) error {
 	return s.repository.DeleteProcess(ctx, id)
 }
 
-func (s *ProcessService) ListProcesses(ctx context.Context) ([]dto.ProcessResponse, error) {
-	rows, err := s.repository.ListProcesss(ctx)
+func (s *ProcessService) ListProcesses(ctx context.Context, limit, offset int) ([]dto.ProcessResponse, int64, error) {
+	rows, err := s.repository.ListProcesss(ctx, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return s.mapper.ToDTOs(rows), nil
+	total, err := s.repository.CountProcesses(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.mapper.ToDTOs(rows), total, nil
 }

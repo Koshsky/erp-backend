@@ -36,16 +36,23 @@ func NewProcessHandler(logger *slog.Logger, svc *service.ProcessService, mw *rba
 //	@Description	Get a list of all processes
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.SuccessResponse{data=[]dto.ProcessResponse,error=nil}
-//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Param			limit	query		int	false	"Page size (default 50, max 500)"
+//	@Param			offset	query		int	false	"Page offset"
+//	@Success		200		{object}	response.SuccessResponse{data=response.Page{items=[]dto.ProcessResponse},error=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/process [get]
 func (h *ProcessHandler) ListProcesses(c *gin.Context) {
-	processes, err := h.service.ListProcesses(c.Request.Context())
+	limit, offset, perr := response.ParsePagination(c)
+	if perr != nil {
+		response.Error(c, h.logger, perr)
+		return
+	}
+	items, total, err := h.service.ListProcesses(c.Request.Context(), limit, offset)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	response.OK(c, processes)
+	response.OK(c, response.Page{Items: items, Total: total, Limit: limit, Offset: offset})
 }
 
 // FindProcess handles the request to get a process by ID.

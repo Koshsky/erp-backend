@@ -37,16 +37,23 @@ func NewResourceHandler(logger *slog.Logger, svc *service.ResourceService, mw *r
 //	@Description	List all resources
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.SuccessResponse{data=[]dto.ResourceResponse,error=nil}
-//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Param			limit	query		int	false	"Page size (default 50, max 500)"
+//	@Param			offset	query		int	false	"Page offset"
+//	@Success		200		{object}	response.SuccessResponse{data=response.Page{items=[]dto.ResourceResponse},error=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources [get]
 func (h *ResourceHandler) ListResources(c *gin.Context) {
-	resources, err := h.service.ListResources(c.Request.Context())
+	limit, offset, perr := response.ParsePagination(c)
+	if perr != nil {
+		response.Error(c, h.logger, perr)
+		return
+	}
+	items, total, err := h.service.ListResources(c.Request.Context(), limit, offset)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	response.OK(c, resources)
+	response.OK(c, response.Page{Items: items, Total: total, Limit: limit, Offset: offset})
 }
 
 // FindResource handles the request to get a resource by id.

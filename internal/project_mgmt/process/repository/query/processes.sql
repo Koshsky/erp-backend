@@ -13,7 +13,13 @@ RETURNING *;
 SELECT *
 FROM processes
 WHERE deleted_at IS NULL
-ORDER BY id ASC;
+ORDER BY id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountProcesses :one
+SELECT COUNT(*)
+FROM processes
+WHERE deleted_at IS NULL;
 
 -- name: FindProcess :one
 SELECT *

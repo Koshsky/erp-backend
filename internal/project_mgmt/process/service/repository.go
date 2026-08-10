@@ -11,5 +11,6 @@ type ProcessRepository interface {
 	FindProcess(ctx context.Context, id int64) (*domain.Process, error)
 	UpdateProcess(ctx context.Context, process domain.Process) (*domain.Process, error)
 	DeleteProcess(ctx context.Context, id int64) error
-	ListProcesss(ctx context.Context) ([]domain.Process, error)
+	ListProcesss(ctx context.Context, limit, offset int) ([]domain.Process, error)
+	CountProcesses(ctx context.Context) (int64, error)
 }

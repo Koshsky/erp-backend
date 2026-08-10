@@ -9,6 +9,19 @@ import (
 	"context"
 )
 
+const countAssignments = `-- name: CountAssignments :one
+SELECT COUNT(*)
+FROM assignments
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountAssignments(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAssignments)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createAssignment = `-- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES ($1, $2, $3::bigint)
@@ -75,10 +88,16 @@ SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 FROM assignments
 WHERE deleted_at IS NULL
 ORDER BY id ASC
+LIMIT $2::bigint OFFSET $1::bigint
 `
 
-func (q *Queries) ListAssigments(ctx context.Context) ([]Assignment, error) {
-	rows, err := q.db.Query(ctx, listAssigments)
+type ListAssigmentsParams struct {
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
+}
+
+func (q *Queries) ListAssigments(ctx context.Context, arg ListAssigmentsParams) ([]Assignment, error) {
+	rows, err := q.db.Query(ctx, listAssigments, arg.PageOffset, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

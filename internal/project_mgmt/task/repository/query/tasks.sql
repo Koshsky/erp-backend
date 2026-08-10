@@ -7,7 +7,13 @@ RETURNING *;
 SELECT *
 FROM tasks
 WHERE deleted_at IS NULL
-ORDER BY id ASC;
+ORDER BY id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountTasks :one
+SELECT COUNT(*)
+FROM tasks
+WHERE deleted_at IS NULL;
 
 -- name: FindTask :one
 SELECT *

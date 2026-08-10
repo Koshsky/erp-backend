@@ -90,10 +90,17 @@ func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) erro
 	return s.repository.DeleteAssignment(ctx, id)
 }
 
-func (s *AssignmentService) ListAssignments(ctx context.Context) ([]dto.AssignmentResponse, error) {
-	rows, err := s.repository.ListAssignments(ctx)
+func (s *AssignmentService) ListAssignments(
+	ctx context.Context,
+	limit, offset int,
+) ([]dto.AssignmentResponse, int64, error) {
+	rows, err := s.repository.ListAssignments(ctx, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return s.mapper.ToDTOs(rows), nil
+	total, err := s.repository.CountAssignments(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.mapper.ToDTOs(rows), total, nil
 }

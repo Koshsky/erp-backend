@@ -7,7 +7,7 @@ import (
 )
 
 type MilestoneService interface {
-	ListMilestones(ctx context.Context) ([]dto.MilestoneResponse, error)
+	ListMilestones(ctx context.Context, limit, offset int) ([]dto.MilestoneResponse, int64, error)
 	FindMilestone(ctx context.Context, id int64) (*dto.MilestoneResponse, error)
 	CreateMilestone(ctx context.Context, milestone dto.CreateMilestoneRequest) (*dto.MilestoneResponse, error)
 	DeleteMilestone(ctx context.Context, id int64) error

@@ -42,12 +42,16 @@ func (s *EmployeeService) ListEmployeesByResource(
 
 // ListEmployees returns all employees; visibility by manager is filtered by the
 // middleware (vp sees only their own subordinates).
-func (s *EmployeeService) ListEmployees(ctx context.Context) ([]dto.EmployeeResponse, error) {
-	employees, err := s.repository.ListEmployees(ctx)
+func (s *EmployeeService) ListEmployees(ctx context.Context, limit, offset int) ([]dto.EmployeeResponse, int64, error) {
+	employees, err := s.repository.ListEmployees(ctx, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return s.mapper.ToEmployeeDTOs(employees), nil
+	total, err := s.repository.CountEmployees(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.mapper.ToEmployeeDTOs(employees), total, nil
 }
 
 func (s *EmployeeService) FindEmployee(ctx context.Context, id int64) (*dto.EmployeeResponse, error) {

@@ -10,7 +10,8 @@ import (
 type EmployeeRepository interface {
 	IsResourceActive(ctx context.Context, resourceID int64) (bool, error)
 	ListEmployeesByResourceID(ctx context.Context, resourceID int64) ([]domain.Employee, error)
-	ListEmployees(ctx context.Context) ([]domain.Employee, error)
+	ListEmployees(ctx context.Context, limit, offset int) ([]domain.Employee, error)
+	CountEmployees(ctx context.Context) (int64, error)
 	ListEmployeesByManagerID(ctx context.Context, managerID int64) ([]domain.Employee, error)
 	FindEmployee(ctx context.Context, id int64) (*domain.Employee, error)
 	CreateEmployee(ctx context.Context, employee domain.Employee) (*domain.Employee, error)

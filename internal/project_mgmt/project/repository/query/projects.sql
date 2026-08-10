@@ -13,7 +13,13 @@ RETURNING *;
 SELECT *
 FROM projects
 WHERE deleted_at IS NULL
-ORDER BY id ASC;
+ORDER BY id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountProjects :one
+SELECT COUNT(*)
+FROM projects
+WHERE deleted_at IS NULL;
 
 -- name: FindProject :one
 SELECT *

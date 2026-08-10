@@ -12,7 +12,13 @@ WHERE id = @assignment_id
 SELECT *
 FROM assignments
 WHERE deleted_at IS NULL
-ORDER BY id ASC;
+ORDER BY id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountAssignments :one
+SELECT COUNT(*)
+FROM assignments
+WHERE deleted_at IS NULL;
 
 -- name: UpdateAssignment :one
 UPDATE assignments

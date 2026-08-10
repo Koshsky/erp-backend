@@ -73,8 +73,11 @@ func (r *ProjectRepository) DeleteProject(ctx context.Context, id int64) error {
 	return r.db.DeleteProject(ctx, id)
 }
 
-func (r *ProjectRepository) ListProjects(ctx context.Context) ([]domain.Project, error) {
-	rows, err := r.db.ListProjects(ctx)
+func (r *ProjectRepository) ListProjects(ctx context.Context, limit, offset int) ([]domain.Project, error) {
+	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
+		PageLimit:  int64(limit),
+		PageOffset: int64(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +86,10 @@ func (r *ProjectRepository) ListProjects(ctx context.Context) ([]domain.Project,
 		projects = append(projects, mapProject(row))
 	}
 	return projects, nil
+}
+
+func (r *ProjectRepository) CountProjects(ctx context.Context) (int64, error) {
+	return r.db.CountProjects(ctx)
 }
 
 func mapProject(row sqlc.Project) domain.Project {

@@ -7,7 +7,13 @@ RETURNING *;
 SELECT *
 FROM milestones
 WHERE deleted_at IS NULL
-ORDER BY id ASC;
+ORDER BY id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountMilestones :one
+SELECT COUNT(*)
+FROM milestones
+WHERE deleted_at IS NULL;
 
 -- name: FindMilestone :one
 SELECT *

@@ -12,6 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countProcesses = `-- name: CountProcesses :one
+SELECT COUNT(*)
+FROM processes
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountProcesses(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countProcesses)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createProcess = `-- name: CreateProcess :one
 INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
 VALUES (
@@ -96,10 +109,16 @@ SELECT id, project_id, owner_id, title, start_date, end_date, created_at, update
 FROM processes
 WHERE deleted_at IS NULL
 ORDER BY id ASC
+LIMIT $2::bigint OFFSET $1::bigint
 `
 
-func (q *Queries) ListProcesss(ctx context.Context) ([]Process, error) {
-	rows, err := q.db.Query(ctx, listProcesss)
+type ListProcesssParams struct {
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
+}
+
+func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]Process, error) {
+	rows, err := q.db.Query(ctx, listProcesss, arg.PageOffset, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countTasks = `-- name: CountTasks :one
+SELECT COUNT(*)
+FROM tasks
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountTasks(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countTasks)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (process_id, owner_id, title, start_date, end_date)
 VALUES ($1, $2, $3, $4, $5)
@@ -90,10 +103,16 @@ SELECT id, process_id, owner_id, title, start_date, end_date, created_at, update
 FROM tasks
 WHERE deleted_at IS NULL
 ORDER BY id ASC
+LIMIT $2::bigint OFFSET $1::bigint
 `
 
-func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.Query(ctx, listTasks)
+type ListTasksParams struct {
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
+}
+
+func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listTasks, arg.PageOffset, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

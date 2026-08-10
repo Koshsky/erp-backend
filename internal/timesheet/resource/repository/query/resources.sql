@@ -6,7 +6,13 @@ FROM resources r
 LEFT JOIN employees e ON e.resource_id = r.id
 WHERE r.deleted_at IS NULL
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
-ORDER BY r.id ASC;
+ORDER BY r.id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountResources :one
+SELECT COUNT(*)
+FROM resources
+WHERE deleted_at IS NULL;
 
 -- name: ListResourcesByOwnerID :many
 SELECT r.id, r.code, r.title, r.owner_id,

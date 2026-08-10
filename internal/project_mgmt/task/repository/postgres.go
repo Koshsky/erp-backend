@@ -73,8 +73,11 @@ func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
 	return r.db.DeleteTask(ctx, id)
 }
 
-func (r *TaskRepository) ListTasks(ctx context.Context) ([]domain.Task, error) {
-	rows, err := r.db.ListTasks(ctx)
+func (r *TaskRepository) ListTasks(ctx context.Context, limit, offset int) ([]domain.Task, error) {
+	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
+		PageLimit:  int64(limit),
+		PageOffset: int64(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +86,10 @@ func (r *TaskRepository) ListTasks(ctx context.Context) ([]domain.Task, error) {
 		tasks = append(tasks, mapTask(row))
 	}
 	return tasks, nil
+}
+
+func (r *TaskRepository) CountTasks(ctx context.Context) (int64, error) {
+	return r.db.CountTasks(ctx)
 }
 
 func mapTask(row sqlc.Task) domain.Task {
