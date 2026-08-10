@@ -11,13 +11,15 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     installation_process_id BIGINT;
+    production_process_id BIGINT;
 BEGIN
     INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
     VALUES (NEW.id, 'Инсталляция', NEW.start_date, NEW.end_date, 3)
     RETURNING id INTO installation_process_id;
 
     INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
-    VALUES (NEW.id, 'Производство', NEW.start_date, NEW.end_date, 4);
+    VALUES (NEW.id, 'Производство', NEW.start_date, NEW.end_date, 4)
+    RETURNING id INTO production_process_id;
 
     INSERT INTO tasks (process_id, title, start_date, end_date)
     VALUES
@@ -30,6 +32,12 @@ BEGIN
         (installation_process_id, 'Предоставить карту сети', NEW.start_date, NEW.end_date),
         (installation_process_id, 'Монтаж кабеленесущих систем и кабельных трасс', NEW.start_date, NEW.end_date),
         (installation_process_id, 'Осмотр объекта', NEW.start_date, NEW.end_date);
+
+    INSERT INTO tasks (process_id, title, start_date, end_date)
+    VALUES
+        (production_process_id, 'Закупка материалов', NEW.start_date, NEW.end_date),
+        (production_process_id, 'Производство блоков телемедицины', NEW.start_date, NEW.end_date),
+        (production_process_id, 'Контроль качества продукции', NEW.start_date, NEW.end_date);
 
     RETURN NEW;
 END;

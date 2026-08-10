@@ -84,7 +84,8 @@ var matrix = map[rbac.Resource]map[Action][]rule{
 		ActionView: {
 			{userdomain.ProjectDirector, ScopeAll},
 			{userdomain.ProjectManager, ScopeProjectOwner},
-			{userdomain.ProcessOwner, ScopeProcessOwner},
+			// vp (владелец процесса) просматривает все процессы, но изменяет/удаляет только свои.
+			{userdomain.ProcessOwner, ScopeAll},
 		},
 		ActionCreate: {
 			{userdomain.ProjectManager, ScopeProjectOwner},

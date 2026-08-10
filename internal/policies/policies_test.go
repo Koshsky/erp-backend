@@ -97,7 +97,7 @@ func TestAuthorize_Process(t *testing.T) {
 		{"rp sees own project's process", rp, policies.ActionView, processOfVP1, uRP, true},
 		{"rp does not see foreign process", rp, policies.ActionView, processOfVP1, uVP1, false},
 		{"vp sees own process", vp, policies.ActionView, processOfVP1, uVP1, true},
-		{"vp does not see foreign process", vp, policies.ActionView, processOfVP1, uVP2, false},
+		{"vp sees all processes", vp, policies.ActionView, processOfVP1, uVP2, true},
 		{"worker sees none", worker, policies.ActionView, processOfVP1, uVP1, false},
 		// Create (in own project)
 		{"admin creates", admin, policies.ActionCreate, processOfVP1, uAdmin, true},
