@@ -45,7 +45,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -55,6 +55,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.AssignmentResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -66,7 +69,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -115,13 +118,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.AssignmentResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -133,7 +139,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -151,7 +157,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -197,13 +203,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.AssignmentResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -215,7 +224,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -233,7 +242,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -289,13 +298,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.AssignmentResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -307,7 +319,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -325,7 +337,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -372,7 +384,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -390,7 +402,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -436,13 +448,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.AuthResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -454,7 +469,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -472,7 +487,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -518,13 +533,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.RefreshResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -536,7 +554,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -554,7 +572,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -600,13 +618,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.AuthResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -618,7 +639,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -636,7 +657,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -673,7 +694,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -683,6 +704,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.MilestoneResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -694,7 +718,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -743,13 +767,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.MilestoneResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -761,7 +788,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -779,7 +806,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -825,13 +852,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.MilestoneResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -843,7 +873,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -861,7 +891,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -920,13 +950,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.MilestoneResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -938,7 +971,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -956,7 +989,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1003,7 +1036,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1021,7 +1054,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1058,13 +1091,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProcessPlanning"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1076,7 +1112,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1094,7 +1130,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1131,13 +1167,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProjectPlanning"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1149,7 +1188,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1167,7 +1206,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1204,13 +1243,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.TaskPlanning"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1222,7 +1264,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1240,7 +1282,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1277,7 +1319,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1287,6 +1329,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.ProcessResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1298,7 +1343,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1347,13 +1392,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProcessResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1365,7 +1413,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1383,7 +1431,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1426,13 +1474,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProcessResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1444,7 +1495,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1462,7 +1513,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1518,13 +1569,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProcessResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1536,7 +1590,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1554,7 +1608,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1598,7 +1652,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1616,7 +1670,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1653,7 +1707,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1663,6 +1717,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.ProjectResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1674,7 +1731,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1723,13 +1780,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProjectResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1741,7 +1801,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1759,7 +1819,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1805,13 +1865,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProjectResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1823,7 +1886,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1841,7 +1904,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1897,13 +1960,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ProjectResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1915,7 +1981,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1933,7 +1999,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1980,7 +2046,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1998,7 +2064,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2035,7 +2101,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2045,6 +2111,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.TaskResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2056,7 +2125,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2105,13 +2174,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.TaskResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2123,7 +2195,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2141,7 +2213,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2187,13 +2259,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.TaskResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2205,7 +2280,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2223,7 +2298,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2279,13 +2354,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.TaskResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2297,7 +2375,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2315,7 +2393,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2365,7 +2443,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2383,7 +2461,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2436,13 +2514,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.CalendarPlanning"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2454,7 +2535,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2472,7 +2553,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2509,7 +2590,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2519,6 +2600,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.EmployeeResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2530,7 +2614,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2548,7 +2632,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2594,13 +2678,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.EmployeeResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2612,7 +2699,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2630,7 +2717,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2686,13 +2773,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.EmployeeResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2704,7 +2794,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2722,7 +2812,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2769,7 +2859,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2787,7 +2877,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2847,7 +2937,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2857,6 +2947,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.EmployeeStateResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2868,7 +2961,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2886,7 +2979,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2945,7 +3038,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2963,7 +3056,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3030,7 +3123,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3048,7 +3141,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3085,7 +3178,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3095,6 +3188,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.ResourceResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3106,7 +3202,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3155,13 +3251,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ResourceResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3173,7 +3272,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3191,7 +3290,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3237,13 +3336,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ResourceResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3255,7 +3357,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3273,7 +3375,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3329,13 +3431,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ResourceResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3347,7 +3452,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3365,7 +3470,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3412,7 +3517,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3430,7 +3535,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3476,7 +3581,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3486,6 +3591,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.EmployeeResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3497,7 +3605,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3515,7 +3623,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3571,13 +3679,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.EmployeeResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3589,7 +3700,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3607,7 +3718,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3644,7 +3755,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3654,6 +3765,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.StateResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3665,7 +3779,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3714,13 +3828,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.StateResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3732,7 +3849,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3750,7 +3867,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3796,13 +3913,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.StateResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3814,7 +3934,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3832,7 +3952,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3888,13 +4008,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.StateResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -3906,7 +4029,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3924,7 +4047,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3971,7 +4094,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3989,7 +4112,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4026,7 +4149,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4036,6 +4159,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/dto.UserResponse"
                                             }
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -4047,7 +4173,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4095,13 +4221,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.ChangePasswordResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -4113,7 +4242,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4159,13 +4288,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.UserResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -4177,7 +4309,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4195,7 +4327,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4251,13 +4383,16 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.UserResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -4269,7 +4404,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4287,7 +4422,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4337,7 +4472,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4355,7 +4490,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.Response"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5490,6 +5625,52 @@ const docTemplate = `{
                 }
             }
         },
+        "errors.Code": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8
+            ],
+            "x-enum-varnames": [
+                "CodeInternal",
+                "CodeBadRequest",
+                "CodeUnauthorized",
+                "CodeForbidden",
+                "CodeNotFound",
+                "CodeTooManyRequests",
+                "CodeInvalidCredentials",
+                "CodeInvalidToken",
+                "CodeValidation"
+            ]
+        },
+        "errors.DomainError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/errors.Code"
+                        }
+                    ],
+                    "example": 1
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Some error message"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2026-08-09T10:30:00Z"
+                }
+            }
+        },
         "jwt.TokenPair": {
             "type": "object",
             "properties": {
@@ -5512,14 +5693,20 @@ const docTemplate = `{
                 }
             }
         },
-        "response.Response": {
+        "response.ErrorResponse": {
             "type": "object",
             "properties": {
                 "data": {},
                 "error": {
-                    "type": "string",
-                    "example": "error message"
+                    "$ref": "#/definitions/errors.DomainError"
                 }
+            }
+        },
+        "response.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {}
             }
         }
     },

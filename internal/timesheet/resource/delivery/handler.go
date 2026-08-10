@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
@@ -36,8 +37,8 @@ func NewResourceHandler(logger *slog.Logger, svc *service.ResourceService, mw *r
 //	@Description	List all resources
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=[]dto.ResourceResponse}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.ResourceResponse,error=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources [get]
 func (h *ResourceHandler) ListResources(c *gin.Context) {
 	resources, err := h.service.ListResources(c.Request.Context())
@@ -56,14 +57,14 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path		int	true	"Resource ID"
-//	@Success		200	{object}	response.Response{data=dto.ResourceResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.ResourceResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources/{id} [get]
 func (h *ResourceHandler) FindResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid resource id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
 		return
 	}
 
@@ -84,14 +85,14 @@ func (h *ResourceHandler) FindResource(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			resource	body		dto.CreateResourceRequest	true	"Resource"
-//	@Success		201			{object}	response.Response{data=dto.ResourceResponse}
-//	@Failure		400			{object}	response.Response{data=nil}
-//	@Failure		500			{object}	response.Response{data=nil}
+//	@Success		201			{object}	response.SuccessResponse{data=dto.ResourceResponse,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources [post]
 func (h *ResourceHandler) CreateResource(c *gin.Context) {
 	var resource dto.CreateResourceRequest
 	if err := c.ShouldBindJSON(&resource); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -118,13 +119,13 @@ func (h *ResourceHandler) CreateResource(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"Resource ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources/{id} [delete]
 func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid resource id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
 		return
 	}
 
@@ -145,20 +146,20 @@ func (h *ResourceHandler) DeleteResource(c *gin.Context) {
 //	@Produce		json
 //	@Param			id			path		int							true	"Resource ID"
 //	@Param			resource	body		dto.UpdateResourceRequest	true	"Resource"
-//	@Success		200			{object}	response.Response{data=dto.ResourceResponse}
-//	@Failure		400			{object}	response.Response{data=nil}
-//	@Failure		500			{object}	response.Response{data=nil}
+//	@Success		200			{object}	response.SuccessResponse{data=dto.ResourceResponse,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/resources/{id} [put]
 func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid resource id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
 		return
 	}
 
 	body := dto.UpdateResourceRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 

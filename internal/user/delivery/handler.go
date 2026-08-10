@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
@@ -36,8 +37,8 @@ func NewUserHandler(logger *slog.Logger, svc *userservice.UserService) *UserHand
 //	@Tags			Users
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.Response{data=[]dto.UserResponse}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.UserResponse,error=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/user [get]
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	users, err := h.service.ListUsers(c.Request.Context())
@@ -56,14 +57,14 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path		int	true	"User ID"
-//	@Success		200	{object}	response.Response{data=dto.UserResponse}
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Success		200	{object}	response.SuccessResponse{data=dto.UserResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/user/{id} [get]
 func (h *UserHandler) FindUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid user id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid user id")
 		return
 	}
 
@@ -85,23 +86,23 @@ func (h *UserHandler) FindUser(c *gin.Context) {
 //	@Produce		json
 //	@Param			id	path	int	true	"User ID"
 //	@Success		204
-//	@Failure		400	{object}	response.Response{data=nil}
-//	@Failure		500	{object}	response.Response{data=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid user id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid user id")
 		return
 	}
 
 	user, err := userctx.GetUser(c)
 	if err != nil {
-		response.Unauthorized(c, "authentication required")
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
 		return
 	}
 	if user.Role != domain.Admin && user.ID != id {
-		response.BadRequest(c, "you can only delete your own account")
+		response.BadRequest(c, errors.CodeBadRequest, "you can only delete your own account")
 		return
 	}
 
@@ -122,30 +123,30 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 //	@Produce		json
 //	@Param			id		path		int						true	"User ID"
 //	@Param			body	body		dto.UpdateUserRequest	true	"User data"
-//	@Success		200		{object}	response.Response{data=dto.UserResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
-//	@Failure		500		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.UserResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
+//	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/user/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.BadRequest(c, "invalid user id")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid user id")
 		return
 	}
 
 	user, err := userctx.GetUser(c)
 	if err != nil {
-		response.Unauthorized(c, "authentication required")
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
 		return
 	}
 	if user.Role != domain.Admin && user.ID != id {
-		response.BadRequest(c, "you can only update your own account")
+		response.BadRequest(c, errors.CodeBadRequest, "you can only update your own account")
 		return
 	}
 
 	body := dto.UpdateUserRequest{}
 	if err = c.ShouldBindJSON(&body); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
 
@@ -165,20 +166,20 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Accept			json
 //	@Param			request	body		dto.ChangePasswordRequest	true	"Old and new password"
-//	@Success		200		{object}	response.Response{data=dto.ChangePasswordResponse}
-//	@Failure		400		{object}	response.Response{data=nil}
+//	@Success		200		{object}	response.SuccessResponse{data=dto.ChangePasswordResponse,error=nil}
+//	@Failure		400		{object}	response.ErrorResponse{data=nil}
 //	@Router			/user/change-password [post]
 func (h *UserHandler) ChangePassword(c *gin.Context) {
 	userID, _ := userctx.GetUserID(c)
 
 	var req dto.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid request")
+		response.BadRequest(c, errors.CodeBadRequest, "invalid request")
 		return
 	}
 
 	if err := h.service.ChangePassword(c.Request.Context(), userID, req.OldPassword, req.NewPassword); err != nil {
-		response.BadRequest(c, "invalid password")
+		response.BadRequest(c, errors.CodeInvalidCredentials, "invalid password")
 		return
 	}
 
