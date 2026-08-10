@@ -16,7 +16,7 @@ import (
 // and may wrap a cause. It is also the API error body: only Code, Message and
 // Timestamp are serialized.
 type DomainError struct {
-	Code      Code   `json:"code" example:"BAD_REQUEST"`
+	Code      Code   `json:"code"      example:"BAD_REQUEST"          swaggertype:"string"`
 	Message   string `json:"message"   example:"Some error message"`
 	Timestamp string `json:"timestamp" example:"2026-08-09T10:30:00Z"`
 
@@ -45,17 +45,35 @@ func now() string {
 
 // NotFound returns a 404 error wrapping ErrNotFound.
 func NotFound(msg string) error {
-	return &DomainError{Status: http.StatusNotFound, Message: msg, Cause: ErrNotFound, Code: CodeNotFound, Timestamp: now()}
+	return &DomainError{
+		Status:    http.StatusNotFound,
+		Message:   msg,
+		Cause:     ErrNotFound,
+		Code:      CodeNotFound,
+		Timestamp: now(),
+	}
 }
 
 // Forbidden returns a 403 error wrapping ErrForbidden.
 func Forbidden(msg string) error {
-	return &DomainError{Status: http.StatusForbidden, Message: msg, Cause: ErrForbidden, Code: CodeForbidden, Timestamp: now()}
+	return &DomainError{
+		Status:    http.StatusForbidden,
+		Message:   msg,
+		Cause:     ErrForbidden,
+		Code:      CodeForbidden,
+		Timestamp: now(),
+	}
 }
 
 // BadRequest returns a 400 error wrapping ErrBadRequest.
 func BadRequest(msg string) error {
-	return &DomainError{Status: http.StatusBadRequest, Message: msg, Cause: ErrBadRequest, Code: CodeBadRequest, Timestamp: now()}
+	return &DomainError{
+		Status:    http.StatusBadRequest,
+		Message:   msg,
+		Cause:     ErrBadRequest,
+		Code:      CodeBadRequest,
+		Timestamp: now(),
+	}
 }
 
 // Entity-specific not-found errors for stable sentinel matching in services.
