@@ -17,7 +17,7 @@ SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
-  AND ($1::text IN ('admin', 'dp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::text IN ('admin', 'dp', 'vp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
 
@@ -118,7 +118,7 @@ SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.crea
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
-  AND ($1::text IN ('admin', 'dp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::text IN ('admin', 'dp', 'vp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 ORDER BY p.id ASC
 LIMIT $5::bigint OFFSET $4::bigint

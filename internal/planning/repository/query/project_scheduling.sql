@@ -13,7 +13,7 @@ FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    @role::text IN ('admin', 'dp') OR
+    @role::text IN ('admin', 'dp', 'vp') OR
     p.owner_id = @user_id::bigint OR
     pr.owner_id = @user_id::bigint
 );

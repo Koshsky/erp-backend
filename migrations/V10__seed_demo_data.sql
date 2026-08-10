@@ -75,6 +75,22 @@ JOIN (
     ON m.code = p.code
 WHERE pr.title = 'Инсталляция';
 
+-- Вехи производственных процессов («Производство»).
+INSERT INTO milestones (process_id, title, content, date)
+SELECT pr.id, m.title, m.content, m.milestone_date
+FROM processes pr
+JOIN projects p ON p.id = pr.project_id
+JOIN (
+    VALUES
+        ('КО-01_РП1_ВП1', 'Закупка материалов', 'Закуплены комплектующие для производства', DATE '2026-07-22'),
+        ('КО-01_РП1_ВП1', 'Готовность продукции', 'Производство блоков завершено', DATE '2026-08-10'),
+        ('КО-01_РП1_ВП1', 'Контроль качества', 'Продукция прошла контроль качества', DATE '2026-08-14'),
+        ('КО-02_РП2_ВП3', 'Закупка материалов', 'Закуплены комплектующие для производства', DATE '2026-08-08'),
+        ('КО-02_РП2_ВП3', 'Готовность продукции', 'Производство блоков завершено', DATE '2026-09-01')
+) AS m(code, title, content, milestone_date)
+    ON m.code = p.code
+WHERE pr.title = 'Производство';
+
 -- State dictionary: availability is set by is_available.
 INSERT INTO states (code, name, is_available) VALUES
 ('Я', 'Явка', TRUE),
