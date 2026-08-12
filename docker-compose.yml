@@ -44,6 +44,7 @@ services:
       - -url=jdbc:postgresql://db:5432/${DATABASE_NAME}
       - -user=${DATABASE_USER}
       - -password=${DATABASE_PASSWORD}
+      - -locations=filesystem:/flyway/sql,filesystem:/flyway/sql/plugins,filesystem:/flyway/sql/seed
       - migrate
     depends_on:
       db:
