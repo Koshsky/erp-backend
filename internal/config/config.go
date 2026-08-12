@@ -29,14 +29,15 @@ func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
 
 // Config is the root application configuration.
 type Config struct {
-	HTTPServer HTTPServerConfig `yaml:"server"`
-	Postgres   PostgresConfig   `yaml:"postgres"`
-	JWT        JWTConfig        `yaml:"jwt"`
-	Logging    LoggingConfig    `yaml:"logging"`
-	Swagger    SwaggerConfig    `yaml:"swagger"`
-	CORS       CORSConfig       `yaml:"cors"`
-	RateLimit  RateLimitConfig  `yaml:"rate_limiting"`
-	Profiling  ProfilingConfig  `yaml:"profiling"`
+	HTTPServer  HTTPServerConfig  `yaml:"server"`
+	Postgres    PostgresConfig    `yaml:"postgres"`
+	JWT         JWTConfig         `yaml:"jwt"`
+	Logging     LoggingConfig     `yaml:"logging"`
+	Swagger     SwaggerConfig     `yaml:"swagger"`
+	CORS        CORSConfig        `yaml:"cors"`
+	RateLimit   RateLimitConfig   `yaml:"rate_limiting"`
+	Profiling   ProfilingConfig   `yaml:"profiling"`
+	Maintenance MaintenanceConfig `yaml:"maintenance"`
 }
 
 // HTTPServerConfig is the HTTP server settings.
@@ -96,6 +97,13 @@ type CORSConfig struct {
 type ProfilingConfig struct {
 	Enabled bool   `yaml:"enabled"`
 	Address string `yaml:"address"`
+}
+
+// MaintenanceConfig — фоновая нормализация данных (периодический запуск
+// fn_normalize_employee_states для employee_states).
+type MaintenanceConfig struct {
+	Enabled  bool     `yaml:"enabled"`
+	Interval Duration `yaml:"interval"`
 }
 
 // RateLimitConfig is the per-client rate limiting settings.

@@ -55,3 +55,7 @@ swagger:
 profiling:
   enabled: false
   address: "0.0.0.0:6060"
+
+maintenance:
+  enabled: true
+  interval: 5m

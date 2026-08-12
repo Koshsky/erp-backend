@@ -15,6 +15,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
+	"github.com/Koshsky/erp-backend/internal/server/maintenance"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
 )
@@ -26,13 +27,14 @@ const (
 )
 
 type App struct {
-	cfg        *config.Config
-	logger     *slog.Logger
-	pool       *pgxpool.Pool
-	httpServer *http.Server
-	profiler   *profiler.Profiler
-	authMw     *auth.Middleware
-	modules    []Module
+	cfg         *config.Config
+	logger      *slog.Logger
+	pool        *pgxpool.Pool
+	httpServer  *http.Server
+	profiler    *profiler.Profiler
+	maintenance *maintenance.Normalizer
+	authMw      *auth.Middleware
+	modules     []Module
 }
 
 // New wires the application with its injected dependencies.
@@ -45,12 +47,13 @@ func New(
 	modules []Module,
 ) (*App, error) {
 	return &App{
-		cfg:      cfg,
-		logger:   logger,
-		pool:     pool,
-		authMw:   authMw,
-		profiler: profiler,
-		modules:  modules,
+		cfg:         cfg,
+		logger:      logger,
+		pool:        pool,
+		authMw:      authMw,
+		profiler:    profiler,
+		maintenance: maintenance.New(cfg.Maintenance, pool, logger),
+		modules:     modules,
 	}, nil
 }
 
@@ -64,6 +67,7 @@ func (a *App) Start() error {
 	router := gin.New()
 
 	a.profiler.Start()
+	a.maintenance.Start()
 
 	if a.cfg.Swagger.Enabled {
 		swagger.Register(router)
@@ -137,6 +141,7 @@ func (a *App) waitForServer(timeout time.Duration) error {
 }
 
 func (a *App) Stop(ctx context.Context) error {
+	a.maintenance.Stop(ctx)
 	if a.pool != nil {
 		a.pool.Close()
 	}
