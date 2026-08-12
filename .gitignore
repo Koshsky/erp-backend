@@ -32,3 +32,5 @@ logs/
 *.tmp
 *.temp
 temp/
+# Личный seed с реальными персональными данными
+migrations/V1000__seed_personal_data.sql
