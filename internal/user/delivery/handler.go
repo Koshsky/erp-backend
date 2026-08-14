@@ -109,6 +109,9 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		out = append(out, dto.AdminUserResponse{
 			ID:              u.ID,
 			Name:            u.Name,
+			LastName:        u.LastName,
+			FirstName:       u.FirstName,
+			MiddleName:      u.MiddleName,
 			Username:        u.Username,
 			Role:            u.Role,
 			ManagerID:       u.ManagerID,

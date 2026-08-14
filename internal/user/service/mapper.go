@@ -20,7 +20,10 @@ func (m *UserMapper) ToDTO(user *domain.User) *dto.UserResponse {
 	}
 	return &dto.UserResponse{
 		ID:              user.ID,
-		Name:            user.Name,
+		Name:            user.FullName(),
+		LastName:        user.LastName,
+		FirstName:       user.FirstName,
+		MiddleName:      user.MiddleName,
 		Username:        user.Username,
 		Role:            user.Role,
 		ManagerID:       user.ManagerID,
@@ -44,7 +47,9 @@ func (m *UserMapper) ToDTOs(users []domain.User) []dto.UserResponse {
 
 func (m *UserMapper) ToDomainFromCreate(req dto.CreateUserRequest) domain.User {
 	return domain.User{
-		Name:            req.Name,
+		LastName:        req.LastName,
+		FirstName:       req.FirstName,
+		MiddleName:      normalizeMiddle(req.MiddleName),
 		Username:        req.Username,
 		Role:            req.Role,
 		PasswordHash:    req.PasswordHash,
@@ -60,8 +65,14 @@ func (m *UserMapper) ApplyUpdateToDomain(user *domain.User, req dto.UpdateUserRe
 		return
 	}
 
-	if req.Name != nil {
-		user.Name = *req.Name
+	if req.LastName != nil {
+		user.LastName = *req.LastName
+	}
+	if req.FirstName != nil {
+		user.FirstName = *req.FirstName
+	}
+	if req.MiddleName != nil {
+		user.MiddleName = normalizeMiddle(req.MiddleName)
 	}
 	if req.Username != nil {
 		user.Username = *req.Username
@@ -119,4 +130,12 @@ func timePtr(d *date.Date) *time.Time {
 	}
 	t := d.Time()
 	return &t
+}
+
+// normalizeMiddle превращает пустую строку отчества в nil (нет отчества).
+func normalizeMiddle(p *string) *string {
+	if p != nil && *p == "" {
+		return nil
+	}
+	return p
 }

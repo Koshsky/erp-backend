@@ -75,7 +75,8 @@ WHERE id = @id::bigint
 -- ================= resource members =================
 
 -- name: ListMembersByResourceID :many
-SELECT u.id, u.name, u.role, u.position, u.hire_date, u.termination_date, u.manager_id
+SELECT u.id, CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), NULLIF(u.middle_name, '')) AS name,
+       u.role, u.position, u.hire_date, u.termination_date, u.manager_id
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
 WHERE rm.resource_id = @resource_id::bigint
@@ -97,3 +98,18 @@ SELECT manager_id
 FROM users
 WHERE id = @user_id::bigint
   AND deleted_at IS NULL;
+
+-- Отсутствия членов ресурса (состояния is_available = false) за окно.
+-- name: ListResourceAbsence :many
+SELECT u.id AS user_id,
+       CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), NULLIF(u.middle_name, '')) AS user_name,
+       s.id AS state_id, s.code AS state_code, s.name AS state_name,
+       es.start_date, es.end_date
+FROM user_states es
+JOIN resource_members rm ON rm.user_id = es.user_id AND rm.resource_id = @resource_id::bigint
+JOIN users u ON u.id = es.user_id AND u.deleted_at IS NULL
+JOIN states s ON s.id = es.state_id
+WHERE s.is_available = FALSE
+  AND es.end_date >= @start_date::date
+  AND es.start_date <= @end_date::date
+ORDER BY es.start_date ASC, u.last_name ASC;

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ResourceService interface {
@@ -29,4 +30,9 @@ type ResourceService interface {
 	ListMembers(ctx context.Context, resourceID int64) ([]dto.ResourceMemberResponse, error)
 	AddMember(ctx context.Context, resourceID, userID, actorID int64, role string) error
 	RemoveMember(ctx context.Context, resourceID, userID int64) error
+	ListAbsence(
+		ctx context.Context,
+		resourceID int64,
+		start, end date.Date,
+	) ([]dto.ResourceAbsenceResponse, error)
 }

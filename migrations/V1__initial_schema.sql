@@ -4,7 +4,10 @@
 -- рабочего (должность, даты, руководитель) хранится прямо на users.
 CREATE TABLE users (
 	id BIGSERIAL PRIMARY KEY,
-	name TEXT NOT NULL,
+	last_name TEXT NOT NULL,
+	first_name TEXT NOT NULL,
+	-- Отчество необязательное.
+	middle_name TEXT DEFAULT NULL,
 	role TEXT NOT NULL,
 	username TEXT NOT NULL,
 	password_hash TEXT NOT NULL,

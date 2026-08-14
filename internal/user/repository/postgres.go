@@ -61,7 +61,9 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
 
 func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
 	row, err := r.db.CreateUser(ctx, sqlc.CreateUserParams{
-		Name:            user.Name,
+		LastName:        user.LastName,
+		FirstName:       user.FirstName,
+		MiddleName:      nullable.ToString(user.MiddleName),
 		Username:        user.Username,
 		Role:            user.Role,
 		PasswordHash:    user.PasswordHash,
@@ -91,7 +93,9 @@ func (r *UserRepository) FindUser(ctx context.Context, id int64) (*domain.User, 
 func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*domain.User, error) {
 	row, err := r.db.UpdateUser(ctx, sqlc.UpdateUserParams{
 		UserID:          user.ID,
-		Name:            user.Name,
+		LastName:        user.LastName,
+		FirstName:       user.FirstName,
+		MiddleName:      nullable.ToString(user.MiddleName),
 		Username:        user.Username,
 		Role:            user.Role,
 		PasswordHash:    user.PasswordHash,
@@ -374,7 +378,9 @@ func toOverlapStatesByState(rows []sqlc.ListOverlappingStatesByStateRow) []overl
 func mapUser(row sqlc.User) domain.User {
 	return domain.User{
 		ID:              row.ID,
-		Name:            row.Name,
+		LastName:        row.LastName,
+		FirstName:       row.FirstName,
+		MiddleName:      nullable.StringPtr(row.MiddleName),
 		Role:            row.Role,
 		Username:        row.Username,
 		PasswordHash:    row.PasswordHash,

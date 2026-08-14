@@ -20,3 +20,14 @@ type ResourceMember struct {
 	HireDate        *time.Time
 	TerminationDate *time.Time
 }
+
+// ResourceAbsence is a member's absence range with the state reason.
+type ResourceAbsence struct {
+	UserID    int64
+	UserName  string
+	StateID   int64
+	StateCode string
+	StateName string
+	StartDate time.Time
+	EndDate   time.Time
+}

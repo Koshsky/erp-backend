@@ -194,6 +194,36 @@ func mapMember(row sqlc.ListMembersByResourceIDRow) domain.ResourceMember {
 	}
 }
 
+// ListAbsence returns the absence ranges (is_available=false states) of the
+// resource members overlapping [start, end].
+func (r *ResourceRepository) ListAbsence(
+	ctx context.Context,
+	resourceID int64,
+	start, end time.Time,
+) ([]domain.ResourceAbsence, error) {
+	rows, err := r.db.ListResourceAbsence(ctx, sqlc.ListResourceAbsenceParams{
+		ResourceID: resourceID,
+		StartDate:  start,
+		EndDate:    end,
+	})
+	if err != nil {
+		return nil, err
+	}
+	absences := make([]domain.ResourceAbsence, 0, len(rows))
+	for _, row := range rows {
+		absences = append(absences, domain.ResourceAbsence{
+			UserID:    row.UserID,
+			UserName:  row.UserName,
+			StateID:   row.StateID,
+			StateCode: row.StateCode,
+			StateName: row.StateName,
+			StartDate: row.StartDate,
+			EndDate:   row.EndDate,
+		})
+	}
+	return absences, nil
+}
+
 // fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
 func fromDate(v pgtype.Date) *time.Time {
 	if !v.Valid {

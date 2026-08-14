@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
@@ -289,4 +290,44 @@ func (h *ResourceHandler) RemoveMember(c *gin.Context) {
 		return
 	}
 	response.NoContent(c)
+}
+
+// ListAbsence handles the request to list the members' absences of a resource.
+//
+//	@Tags			TimesheetResources
+//	@Summary		List resource absences
+//	@Description	List absence ranges (is_available=false states) of the resource members
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Param			id			path		int		true	"Resource ID"
+//	@Param			start_date	query		string	true	"Start date (YYYY-MM-DD)"
+//	@Param			end_date	query		string	true	"End date (YYYY-MM-DD)"
+//	@Success		200			{object}	response.SuccessResponse{data=[]dto.ResourceAbsenceResponse,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
+//	@Router			/resources/{id}/absence [get]
+func (h *ResourceHandler) ListAbsence(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
+		return
+	}
+
+	start, err := date.Parse(c.Query("start_date"))
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid start_date")
+		return
+	}
+	end, err := date.Parse(c.Query("end_date"))
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid end_date")
+		return
+	}
+
+	absences, err := h.service.ListAbsence(c.Request.Context(), id, start, end)
+	if err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.OK(c, absences)
 }

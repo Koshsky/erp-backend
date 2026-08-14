@@ -20,7 +20,10 @@ type UserValidator struct {
 }
 
 func (v *UserValidator) ValidateUser(user *domain.User) error {
-	if err := v.ValidateRequiredText(user.Name, "name"); err != nil {
+	if err := v.ValidateRequiredText(user.LastName, "last_name"); err != nil {
+		return err
+	}
+	if err := v.ValidateRequiredText(user.FirstName, "first_name"); err != nil {
 		return err
 	}
 	if err := v.ValidateRequiredText(user.Username, "username"); err != nil {

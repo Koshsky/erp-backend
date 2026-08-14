@@ -72,7 +72,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.service.Register(c.Request.Context(), req.Name, req.Username, req.Password)
+	resp, err := h.service.Register(
+		c.Request.Context(),
+		req.LastName,
+		req.FirstName,
+		req.MiddleName,
+		req.Username,
+		req.Password,
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, "failed to register user", err)
 		return

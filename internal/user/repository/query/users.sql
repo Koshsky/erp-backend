@@ -48,14 +48,16 @@ SELECT EXISTS(
 );
 
 -- name: CreateUser :one
-INSERT INTO users (name, username, role, password_hash, manager_id, position, hire_date, termination_date)
-VALUES (@name, @username, @role, @password_hash, @manager_id, @position, @hire_date, @termination_date)
+INSERT INTO users (last_name, first_name, middle_name, username, role, password_hash, manager_id, position, hire_date, termination_date)
+VALUES (@last_name, @first_name, @middle_name, @username, @role, @password_hash, @manager_id, @position, @hire_date, @termination_date)
 RETURNING *;
 
 -- name: UpdateUser :one
 UPDATE users
 SET
-	name = @name,
+	last_name = @last_name,
+	first_name = @first_name,
+	middle_name = @middle_name,
 	username = @username,
 	role = @role,
 	password_hash = @password_hash,

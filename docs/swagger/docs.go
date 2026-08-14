@@ -2816,6 +2816,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/resources/{id}/absence": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "List absence ranges (is_available=false states) of the resource members",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TimesheetResources"
+                ],
+                "summary": "List resource absences",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Resource ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.ResourceAbsenceResponse"
+                                            }
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/resources/{id}/members": {
             "get": {
                 "security": [
@@ -5070,6 +5172,10 @@ const docTemplate = `{
         "dto.AdminUserResponse": {
             "type": "object",
             "properties": {
+                "first_name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
                 "hire_date": {
                     "type": "string",
                     "format": "date",
@@ -5079,9 +5185,17 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "last_name": {
+                    "type": "string",
+                    "example": "Иванов"
+                },
                 "manager_id": {
                     "type": "integer",
                     "example": 5
+                },
+                "middle_name": {
+                    "type": "string",
+                    "example": "Иванович"
                 },
                 "name": {
                     "type": "string",
@@ -5386,18 +5500,26 @@ const docTemplate = `{
         "dto.CreateUserRequest": {
             "type": "object",
             "properties": {
+                "first_name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
                 "hire_date": {
                     "type": "string",
                     "format": "date",
                     "example": "2025-01-10"
                 },
+                "last_name": {
+                    "type": "string",
+                    "example": "Иванов"
+                },
                 "manager_id": {
                     "type": "integer",
                     "example": 5
                 },
-                "name": {
+                "middle_name": {
                     "type": "string",
-                    "example": "Иванов Иван Иванович"
+                    "example": "Иванович"
                 },
                 "password_hash": {
                     "type": "string",
@@ -5802,9 +5924,17 @@ const docTemplate = `{
         "dto.RegisterRequest": {
             "type": "object",
             "properties": {
-                "name": {
+                "first_name": {
                     "type": "string",
-                    "example": "Ivan Ivanov"
+                    "example": "Иван"
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Иванов"
+                },
+                "middle_name": {
+                    "type": "string",
+                    "example": "Иванович"
                 },
                 "password": {
                     "type": "string",
@@ -5847,6 +5977,41 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Монтажник"
+                }
+            }
+        },
+        "dto.ResourceAbsenceResponse": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-08-02"
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-07-20"
+                },
+                "state_code": {
+                    "type": "string",
+                    "example": "ОТП"
+                },
+                "state_id": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "state_name": {
+                    "type": "string",
+                    "example": "Отпуск"
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "Иванов Иван Иванович"
                 }
             }
         },
@@ -6198,18 +6363,26 @@ const docTemplate = `{
         "dto.UpdateUserRequest": {
             "type": "object",
             "properties": {
+                "first_name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
                 "hire_date": {
                     "type": "string",
                     "format": "date",
                     "example": "2025-01-10"
                 },
+                "last_name": {
+                    "type": "string",
+                    "example": "Иванов"
+                },
                 "manager_id": {
                     "type": "integer",
                     "example": 5
                 },
-                "name": {
+                "middle_name": {
                     "type": "string",
-                    "example": "Иванов Иван Иванович"
+                    "example": "Иванович"
                 },
                 "position": {
                     "type": "string",
@@ -6233,13 +6406,25 @@ const docTemplate = `{
         "dto.UserInfo": {
             "type": "object",
             "properties": {
+                "first_name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
                 },
+                "last_name": {
+                    "type": "string",
+                    "example": "Иванов"
+                },
+                "middle_name": {
+                    "type": "string",
+                    "example": "Иванович"
+                },
                 "name": {
                     "type": "string",
-                    "example": "Ivan Ivanov"
+                    "example": "Иванов Иван Иванович"
                 },
                 "role": {
                     "type": "string",
@@ -6254,6 +6439,10 @@ const docTemplate = `{
         "dto.UserResponse": {
             "type": "object",
             "properties": {
+                "first_name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
                 "hire_date": {
                     "type": "string",
                     "format": "date",
@@ -6263,11 +6452,20 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "last_name": {
+                    "type": "string",
+                    "example": "Иванов"
+                },
                 "manager_id": {
                     "type": "integer",
                     "example": 5
                 },
+                "middle_name": {
+                    "type": "string",
+                    "example": "Иванович"
+                },
                 "name": {
+                    "description": "Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).",
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },

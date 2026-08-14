@@ -8,6 +8,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -167,4 +168,24 @@ func (s *ResourceService) RemoveMember(ctx context.Context, resourceID, userID i
 		return err
 	}
 	return s.repository.RemoveMember(ctx, resourceID, userID)
+}
+
+// ListAbsence returns absence ranges (is_available=false states) of the
+// resource members overlapping the window.
+func (s *ResourceService) ListAbsence(
+	ctx context.Context,
+	resourceID int64,
+	start, end date.Date,
+) ([]dto.ResourceAbsenceResponse, error) {
+	if err := s.validator.ValidatePositiveID(resourceID, "resource_id"); err != nil {
+		return nil, err
+	}
+	if err := s.validator.ValidateDayRange(start, end); err != nil {
+		return nil, err
+	}
+	absences, err := s.repository.ListAbsence(ctx, resourceID, start.Time(), end.Time())
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.ToAbsenceDTOs(absences), nil
 }

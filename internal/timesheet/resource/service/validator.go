@@ -2,7 +2,15 @@ package service
 
 import (
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
+	"github.com/Koshsky/erp-backend/pkg/date"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
+)
+
+// maxAbsenceRange — максимальная ширина окна запроса отсутствий (в днях).
+const (
+	maxAbsenceRange = 3660
+	hoursPerDay     = 24
 )
 
 type ResourceValidator struct {
@@ -14,4 +22,21 @@ func (v *ResourceValidator) ValidateResource(resource *domain.Resource) error {
 		return err
 	}
 	return v.ValidateRequiredText(resource.Title, "title")
+}
+
+// ValidateDayRange checks that a date window is present and ordered.
+func (v *ResourceValidator) ValidateDayRange(start, end date.Date) error {
+	if start == "" {
+		return errors.NewFieldError("start_date", "required", "start_date is required")
+	}
+	if end == "" {
+		return errors.NewFieldError("end_date", "required", "end_date is required")
+	}
+	if end.Time().Before(start.Time()) {
+		return errors.NewFieldError("end_date", "date_range", "end_date must be >= start_date")
+	}
+	if int(end.Time().Sub(start.Time()).Hours()/hoursPerDay) > maxAbsenceRange {
+		return errors.NewValidationError("date range is too wide")
+	}
+	return nil
 }

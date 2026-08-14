@@ -6,9 +6,11 @@ type LoginRequest struct {
 }
 
 type RegisterRequest struct {
-	Name     string `json:"name"     example:"Ivan Ivanov"`
-	Username string `json:"username" example:"ivanov"`
-	Password string `json:"password" example:"password"`
+	LastName   string `json:"last_name"   example:"Иванов"`
+	FirstName  string `json:"first_name"  example:"Иван"`
+	MiddleName string `json:"middle_name" example:"Иванович"`
+	Username   string `json:"username"    example:"ivanov"`
+	Password   string `json:"password"    example:"password"`
 }
 
 type RefreshTokenRequest struct {

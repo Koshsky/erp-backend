@@ -8,6 +8,9 @@ definitions:
     type: object
   dto.AdminUserResponse:
     properties:
+      first_name:
+        example: Иван
+        type: string
       hire_date:
         example: "2024-01-15"
         format: date
@@ -15,9 +18,15 @@ definitions:
       id:
         example: 1
         type: integer
+      last_name:
+        example: Иванов
+        type: string
       manager_id:
         example: 5
         type: integer
+      middle_name:
+        example: Иванович
+        type: string
       name:
         example: Иванов Иван Иванович
         type: string
@@ -235,15 +244,21 @@ definitions:
     type: object
   dto.CreateUserRequest:
     properties:
+      first_name:
+        example: Иван
+        type: string
       hire_date:
         example: "2025-01-10"
         format: date
         type: string
+      last_name:
+        example: Иванов
+        type: string
       manager_id:
         example: 5
         type: integer
-      name:
-        example: Иванов Иван Иванович
+      middle_name:
+        example: Иванович
         type: string
       password_hash:
         example: ""
@@ -532,8 +547,14 @@ definitions:
     type: object
   dto.RegisterRequest:
     properties:
-      name:
-        example: Ivan Ivanov
+      first_name:
+        example: Иван
+        type: string
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
         type: string
       password:
         example: password
@@ -564,6 +585,32 @@ definitions:
         type: integer
       title:
         example: Монтажник
+        type: string
+    type: object
+  dto.ResourceAbsenceResponse:
+    properties:
+      end_date:
+        example: "2026-08-02"
+        format: date
+        type: string
+      start_date:
+        example: "2026-07-20"
+        format: date
+        type: string
+      state_code:
+        example: ОТП
+        type: string
+      state_id:
+        example: 4
+        type: integer
+      state_name:
+        example: Отпуск
+        type: string
+      user_id:
+        example: 7
+        type: integer
+      user_name:
+        example: Иванов Иван Иванович
         type: string
     type: object
   dto.ResourceBinding:
@@ -813,15 +860,21 @@ definitions:
     type: object
   dto.UpdateUserRequest:
     properties:
+      first_name:
+        example: Иван
+        type: string
       hire_date:
         example: "2025-01-10"
         format: date
         type: string
+      last_name:
+        example: Иванов
+        type: string
       manager_id:
         example: 5
         type: integer
-      name:
-        example: Иванов Иван Иванович
+      middle_name:
+        example: Иванович
         type: string
       position:
         example: Инженер 2 категории
@@ -839,11 +892,20 @@ definitions:
     type: object
   dto.UserInfo:
     properties:
+      first_name:
+        example: Иван
+        type: string
       id:
         example: 1
         type: integer
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
+        type: string
       name:
-        example: Ivan Ivanov
+        example: Иванов Иван Иванович
         type: string
       role:
         example: rp
@@ -854,6 +916,9 @@ definitions:
     type: object
   dto.UserResponse:
     properties:
+      first_name:
+        example: Иван
+        type: string
       hire_date:
         example: "2024-01-15"
         format: date
@@ -861,10 +926,17 @@ definitions:
       id:
         example: 1
         type: integer
+      last_name:
+        example: Иванов
+        type: string
       manager_id:
         example: 5
         type: integer
+      middle_name:
+        example: Иванович
+        type: string
       name:
+        description: Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).
         example: Иванов Иван Иванович
         type: string
       position:
@@ -2496,6 +2568,65 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update resource
+      tags:
+      - TimesheetResources
+  /resources/{id}/absence:
+    get:
+      description: List absence ranges (is_available=false states) of the resource
+        members
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.ResourceAbsenceResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List resource absences
       tags:
       - TimesheetResources
   /resources/{id}/members:

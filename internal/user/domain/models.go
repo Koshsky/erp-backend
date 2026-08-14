@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 const (
 	Admin           string = "admin"
@@ -54,7 +57,9 @@ middleware on the routes.
 
 type User struct {
 	ID           int64
-	Name         string
+	LastName     string
+	FirstName    string
+	MiddleName   *string
 	Role         string
 	Username     string
 	PasswordHash string
@@ -63,6 +68,21 @@ type User struct {
 	Position        string
 	HireDate        *time.Time
 	TerminationDate *time.Time
+}
+
+// FullName возвращает полное ФИО «Фамилия Имя Отчество» (без пустых частей).
+func (u *User) FullName() string {
+	parts := []string{}
+	if u.LastName != "" {
+		parts = append(parts, u.LastName)
+	}
+	if u.FirstName != "" {
+		parts = append(parts, u.FirstName)
+	}
+	if u.MiddleName != nil && *u.MiddleName != "" {
+		parts = append(parts, *u.MiddleName)
+	}
+	return strings.Join(parts, " ")
 }
 
 // UserState is a worker state range (non-presence only), [StartDate, EndDate].

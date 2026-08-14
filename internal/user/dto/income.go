@@ -5,24 +5,28 @@ import "github.com/Koshsky/erp-backend/pkg/date"
 // CreateUserRequest creates a user (worker with auto-generated credentials when
 // username/password_hash are empty). Креды не возвращаются наружу.
 type CreateUserRequest struct {
-	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
+	LastName        string     `json:"last_name"        example:"Иванов"`
+	FirstName       string     `json:"first_name"       example:"Иван"`
+	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
 	Role            string     `json:"role"             example:"worker"`
 	Username        string     `json:"username"         example:"worker_1"`
 	PasswordHash    string     `json:"password_hash"    example:""`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	Position        string     `json:"position"         example:"Инженер 2 категории"`
-	HireDate        *date.Date `json:"hire_date"        example:"2025-01-10"           format:"date"`
-	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`
+	HireDate        *date.Date `json:"hire_date"        example:"2025-01-10"          format:"date"`
+	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"          format:"date"`
 }
 
 type UpdateUserRequest struct {
-	Name            *string    `json:"name"             example:"Иванов Иван Иванович"`
+	LastName        *string    `json:"last_name"        example:"Иванов"`
+	FirstName       *string    `json:"first_name"       example:"Иван"`
+	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
 	Username        *string    `json:"username"         example:"ivanov"`
 	Role            *string    `json:"role"             example:"worker"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	Position        *string    `json:"position"         example:"Инженер 2 категории"`
-	HireDate        *date.Date `json:"hire_date"        example:"2025-01-10"           format:"date"`
-	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`
+	HireDate        *date.Date `json:"hire_date"        example:"2025-01-10"          format:"date"`
+	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"          format:"date"`
 }
 
 type ChangePasswordRequest struct {

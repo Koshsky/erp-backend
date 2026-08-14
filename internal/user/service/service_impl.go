@@ -85,7 +85,7 @@ func (s *UserService) createUserInternal(
 	var generated string
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Username == "" {
-		username, err := s.generateUsername(ctx, req.Name, req.Role)
+		username, err := s.generateUsername(ctx, req.LastName, req.Role)
 		if err != nil {
 			return nil, err
 		}
@@ -117,8 +117,8 @@ func (s *UserService) createUserInternal(
 	return &dto.CreateUserResult{User: *s.mapper.ToDTO(created), Password: generated}, nil
 }
 
-// generateUsername строит уникальный login: транслитерация фамилии (последнего
-// слова ФИО); при занятости добавляет числовой суффикс; если фамилию
+// generateUsername строит уникальный login: транслитерация фамилии
+// (last_name); при занятости добавляет числовой суффикс; если фамилию
 // транслитерировать нечего — падение на prefix+случайный суффикс.
 func (s *UserService) generateUsername(ctx context.Context, name, role string) (string, error) {
 	prefix := "user_"
@@ -126,7 +126,7 @@ func (s *UserService) generateUsername(ctx context.Context, name, role string) (
 		prefix = "worker_"
 	}
 
-	base := creds.TransliterateSurname(name)
+	base := creds.Transliterate(name)
 	if base == "" {
 		suffix, err := creds.RandomUsernameSuffix()
 		if err != nil {

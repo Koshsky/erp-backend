@@ -27,21 +27,16 @@ var cyrToLat = map[rune]string{
 	'ъ': "", 'ы': "y", 'ь': "", 'э': "e", 'ю': "yu", 'я': "ya",
 }
 
-// TransliterateSurname возвращает латинскую транслитерацию фамилии (первое
-// слово ФИО, порядок «Фамилия Имя Отчество») в нижнем регистре; пустая
-// строка, если транслитерировать нечего.
-func TransliterateSurname(name string) string {
-	lower := strings.ToLower(strings.TrimSpace(name))
-	if lower == "" {
-		return ""
-	}
-	words := strings.Fields(lower)
-	surname := words[0]
+// Transliterate возвращает латинскую транслитерацию строки в нижнем регистре.
+func Transliterate(s string) string {
+	return transliterate(strings.ToLower(strings.TrimSpace(s)))
+}
 
+func transliterate(s string) string {
 	var b strings.Builder
-	for _, r := range surname {
-		if s, ok := cyrToLat[r]; ok {
-			b.WriteString(s)
+	for _, r := range s {
+		if lat, ok := cyrToLat[r]; ok {
+			b.WriteString(lat)
 		}
 	}
 	return b.String()

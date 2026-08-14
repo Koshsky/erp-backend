@@ -39,7 +39,7 @@ sql:
             go_type: "*time.Time"
           - db_type: "text"
             nullable: true
-            go_type: "sql.NullString"
+            go_type: "database/sql.NullString"
           - db_type: "integer"
             nullable: true
             go_type: "sql.NullInt64"

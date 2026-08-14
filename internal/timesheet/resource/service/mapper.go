@@ -89,6 +89,25 @@ func (m *ResourceMapper) ToMemberDTOs(members []domain.ResourceMember) []dto.Res
 	return responses
 }
 
+func (m *ResourceMapper) ToAbsenceDTOs(absences []domain.ResourceAbsence) []dto.ResourceAbsenceResponse {
+	if absences == nil {
+		return []dto.ResourceAbsenceResponse{}
+	}
+	responses := make([]dto.ResourceAbsenceResponse, len(absences))
+	for i, a := range absences {
+		responses[i] = dto.ResourceAbsenceResponse{
+			UserID:    a.UserID,
+			UserName:  a.UserName,
+			StateID:   a.StateID,
+			StateCode: a.StateCode,
+			StateName: a.StateName,
+			StartDate: date.From(a.StartDate),
+			EndDate:   date.From(a.EndDate),
+		}
+	}
+	return responses
+}
+
 func datePtr(t *time.Time) *date.Date {
 	if t == nil {
 		return nil

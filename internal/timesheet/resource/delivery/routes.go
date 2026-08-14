@@ -15,5 +15,6 @@ func (h *ResourceHandler) RegisterRoutes(router *gin.RouterGroup) {
 		r.GET("/:id/members", h.mw.Check("resource.member-list"), h.ListMembers)
 		r.POST("/:id/members", h.mw.Check("resource.member-add"), h.AddMember)
 		r.DELETE("/:id/members/:userId", h.mw.Check("resource.member-remove"), h.RemoveMember)
+		r.GET("/:id/absence", h.mw.Check("resource.view"), h.ListAbsence)
 	}
 }

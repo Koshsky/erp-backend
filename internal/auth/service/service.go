@@ -27,7 +27,10 @@ func NewAuthService(users *userservice.UserService, jwtService *jwt.Service) *Au
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error) {
+func (s *AuthService) Register(
+	ctx context.Context,
+	lastName, firstName, middleName, username, password string,
+) (*dto.AuthResponse, error) {
 	username = strings.TrimSpace(username)
 
 	hash, err := hasher.Hash(password)
@@ -35,8 +38,15 @@ func (s *AuthService) Register(ctx context.Context, name, username, password str
 		return nil, fmt.Errorf("failed to hash password")
 	}
 
+	var middlePtr *string
+	if middleName != "" {
+		m := middleName
+		middlePtr = &m
+	}
 	user, err := s.users.CreateUser(ctx, userDTO.CreateUserRequest{
-		Name:         name,
+		LastName:     lastName,
+		FirstName:    firstName,
+		MiddleName:   middlePtr,
 		Username:     username,
 		Role:         domain.Worker,
 		PasswordHash: hash,
@@ -81,10 +91,13 @@ func newAuthResponse(user *userDTO.UserResponse, tokens *jwt.TokenPair) *dto.Aut
 		ExpiresIn:    tokens.ExpiresIn,
 		RefreshToken: tokens.RefreshToken,
 		User: dto.UserInfo{
-			ID:       user.ID,
-			Name:     user.Name,
-			Username: user.Username,
-			Role:     user.Role,
+			ID:         user.ID,
+			Name:       user.Name,
+			LastName:   user.LastName,
+			FirstName:  user.FirstName,
+			MiddleName: user.MiddleName,
+			Username:   user.Username,
+			Role:       user.Role,
 		},
 	}
 }

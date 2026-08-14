@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -41,25 +42,29 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, username, role, password_hash, manager_id, position, hire_date, termination_date)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+INSERT INTO users (last_name, first_name, middle_name, username, role, password_hash, manager_id, position, hire_date, termination_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
-	Name            string      `json:"name"`
-	Username        string      `json:"username"`
-	Role            string      `json:"role"`
-	PasswordHash    string      `json:"password_hash"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	Position        string      `json:"position"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
+	LastName        string         `json:"last_name"`
+	FirstName       string         `json:"first_name"`
+	MiddleName      sql.NullString `json:"middle_name"`
+	Username        string         `json:"username"`
+	Role            string         `json:"role"`
+	PasswordHash    string         `json:"password_hash"`
+	ManagerID       pgtype.Int8    `json:"manager_id"`
+	Position        string         `json:"position"`
+	HireDate        pgtype.Date    `json:"hire_date"`
+	TerminationDate pgtype.Date    `json:"termination_date"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
-		arg.Name,
+		arg.LastName,
+		arg.FirstName,
+		arg.MiddleName,
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
@@ -71,7 +76,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.LastName,
+		&i.FirstName,
+		&i.MiddleName,
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
@@ -142,7 +149,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
 	AND deleted_at IS NULL
@@ -154,7 +161,9 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.LastName,
+		&i.FirstName,
+		&i.MiddleName,
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
@@ -170,7 +179,7 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 }
 
 const findUserByUsername = `-- name: FindUserByUsername :one
-SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE username = $1
 	AND deleted_at IS NULL
@@ -182,7 +191,9 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.LastName,
+		&i.FirstName,
+		&i.MiddleName,
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
@@ -231,7 +242,7 @@ func (q *Queries) InsertStateRange(ctx context.Context, arg InsertStateRangePara
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
 ORDER BY id ASC
@@ -248,7 +259,9 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 		var i User
 		if err := rows.Scan(
 			&i.ID,
-			&i.Name,
+			&i.LastName,
+			&i.FirstName,
+			&i.MiddleName,
 			&i.Role,
 			&i.Username,
 			&i.PasswordHash,
@@ -437,7 +450,7 @@ func (q *Queries) ListStatesByUserRange(ctx context.Context, arg ListStatesByUse
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
   -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
@@ -477,7 +490,9 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		var i User
 		if err := rows.Scan(
 			&i.ID,
-			&i.Name,
+			&i.LastName,
+			&i.FirstName,
+			&i.MiddleName,
 			&i.Role,
 			&i.Username,
 			&i.PasswordHash,
@@ -518,35 +533,41 @@ func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
-	name = $1,
-	username = $2,
-	role = $3,
-	password_hash = $4,
-	manager_id = $5,
-	position = $6,
-	hire_date = $7,
-	termination_date = $8,
+	last_name = $1,
+	first_name = $2,
+	middle_name = $3,
+	username = $4,
+	role = $5,
+	password_hash = $6,
+	manager_id = $7,
+	position = $8,
+	hire_date = $9,
+	termination_date = $10,
 	updated_at = NOW()
-WHERE id = $9
+WHERE id = $11
 	AND deleted_at IS NULL
-RETURNING id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
-	Name            string      `json:"name"`
-	Username        string      `json:"username"`
-	Role            string      `json:"role"`
-	PasswordHash    string      `json:"password_hash"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	Position        string      `json:"position"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	UserID          int64       `json:"user_id"`
+	LastName        string         `json:"last_name"`
+	FirstName       string         `json:"first_name"`
+	MiddleName      sql.NullString `json:"middle_name"`
+	Username        string         `json:"username"`
+	Role            string         `json:"role"`
+	PasswordHash    string         `json:"password_hash"`
+	ManagerID       pgtype.Int8    `json:"manager_id"`
+	Position        string         `json:"position"`
+	HireDate        pgtype.Date    `json:"hire_date"`
+	TerminationDate pgtype.Date    `json:"termination_date"`
+	UserID          int64          `json:"user_id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
-		arg.Name,
+		arg.LastName,
+		arg.FirstName,
+		arg.MiddleName,
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
@@ -559,7 +580,9 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.LastName,
+		&i.FirstName,
+		&i.MiddleName,
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,

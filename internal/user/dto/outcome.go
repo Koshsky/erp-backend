@@ -4,8 +4,12 @@ import "github.com/Koshsky/erp-backend/pkg/date"
 
 // UserResponse — user data (incl. worker profile fields).
 type UserResponse struct {
-	ID              int64      `json:"id"               example:"1"`
+	ID int64 `json:"id" example:"1"`
+	// Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).
 	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
+	LastName        string     `json:"last_name"        example:"Иванов"`
+	FirstName       string     `json:"first_name"       example:"Иван"`
+	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
 	Username        string     `json:"username"         example:"worker_1"`
 	Role            string     `json:"role"             example:"worker"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
@@ -27,6 +31,9 @@ type CreateUserResult struct {
 type AdminUserResponse struct {
 	ID              int64      `json:"id"                      example:"1"`
 	Name            string     `json:"name"                    example:"Иванов Иван Иванович"`
+	LastName        string     `json:"last_name"               example:"Иванов"`
+	FirstName       string     `json:"first_name"              example:"Иван"`
+	MiddleName      *string    `json:"middle_name"             example:"Иванович"`
 	Username        string     `json:"username"                example:"worker_1"`
 	Role            string     `json:"role"                    example:"worker"`
 	ManagerID       *int64     `json:"manager_id"              example:"5"`

@@ -155,7 +155,8 @@ func (q *Queries) FindUserManager(ctx context.Context, userID int64) (pgtype.Int
 
 const listMembersByResourceID = `-- name: ListMembersByResourceID :many
 
-SELECT u.id, u.name, u.role, u.position, u.hire_date, u.termination_date, u.manager_id
+SELECT u.id, CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), NULLIF(u.middle_name, '')) AS name,
+       u.role, u.position, u.hire_date, u.termination_date, u.manager_id
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
 WHERE rm.resource_id = $1::bigint
@@ -191,6 +192,66 @@ func (q *Queries) ListMembersByResourceID(ctx context.Context, resourceID int64)
 			&i.HireDate,
 			&i.TerminationDate,
 			&i.ManagerID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listResourceAbsence = `-- name: ListResourceAbsence :many
+SELECT u.id AS user_id,
+       CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), NULLIF(u.middle_name, '')) AS user_name,
+       s.id AS state_id, s.code AS state_code, s.name AS state_name,
+       es.start_date, es.end_date
+FROM user_states es
+JOIN resource_members rm ON rm.user_id = es.user_id AND rm.resource_id = $1::bigint
+JOIN users u ON u.id = es.user_id AND u.deleted_at IS NULL
+JOIN states s ON s.id = es.state_id
+WHERE s.is_available = FALSE
+  AND es.end_date >= $2::date
+  AND es.start_date <= $3::date
+ORDER BY es.start_date ASC, u.last_name ASC
+`
+
+type ListResourceAbsenceParams struct {
+	ResourceID int64     `json:"resource_id"`
+	StartDate  time.Time `json:"start_date"`
+	EndDate    time.Time `json:"end_date"`
+}
+
+type ListResourceAbsenceRow struct {
+	UserID    int64     `json:"user_id"`
+	UserName  string    `json:"user_name"`
+	StateID   int64     `json:"state_id"`
+	StateCode string    `json:"state_code"`
+	StateName string    `json:"state_name"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+// Отсутствия членов ресурса (состояния is_available = false) за окно.
+func (q *Queries) ListResourceAbsence(ctx context.Context, arg ListResourceAbsenceParams) ([]ListResourceAbsenceRow, error) {
+	rows, err := q.db.Query(ctx, listResourceAbsence, arg.ResourceID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListResourceAbsenceRow{}
+	for rows.Next() {
+		var i ListResourceAbsenceRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.UserName,
+			&i.StateID,
+			&i.StateCode,
+			&i.StateName,
+			&i.StartDate,
+			&i.EndDate,
 		); err != nil {
 			return nil, err
 		}
