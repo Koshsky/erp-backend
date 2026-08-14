@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/Koshsky/erp-backend/internal/auth"
+	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt"
@@ -45,6 +46,7 @@ func ProvideModules(
 	planning planning.Module,
 	project project_mgmt.Module,
 	timesheet timesheet.Module,
+	autoCreate autocreate.Module,
 ) []Module {
-	return []Module{auth, user, planning, project, timesheet}
+	return []Module{auth, user, planning, project, timesheet, autoCreate}
 }

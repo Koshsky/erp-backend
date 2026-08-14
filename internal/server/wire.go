@@ -7,6 +7,7 @@ import (
 	"github.com/google/wire"
 
 	"github.com/Koshsky/erp-backend/internal/auth"
+	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/logger"
@@ -42,6 +43,7 @@ func InitializeApp() (*App, error) {
 		planning.ProviderSet,
 		project_mgmt.ProviderSet,
 		timesheet.ProviderSet,
+		autocreate.ProviderSet,
 
 		ProvideModules,
 		New,

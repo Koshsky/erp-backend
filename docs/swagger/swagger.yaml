@@ -70,6 +70,15 @@ definitions:
       user:
         $ref: '#/definitions/dto.UserInfo'
     type: object
+  dto.AutoCreateConfig:
+    properties:
+      enabled:
+        type: boolean
+      processes:
+        items:
+          $ref: '#/definitions/dto.ProcessTemplate'
+        type: array
+    type: object
   dto.AvailabilityPeriod:
     properties:
       available:
@@ -451,6 +460,17 @@ definitions:
         example: Инсталляция
         type: string
     type: object
+  dto.ProcessTemplate:
+    properties:
+      owner_id:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/dto.TaskTemplate'
+        type: array
+      title:
+        type: string
+    type: object
   dto.Project:
     properties:
       end_date:
@@ -545,6 +565,13 @@ definitions:
       title:
         example: Монтажник
         type: string
+    type: object
+  dto.ResourceBinding:
+    properties:
+      quantity:
+        type: integer
+      resource_id:
+        type: integer
     type: object
   dto.ResourceCalendar:
     properties:
@@ -654,6 +681,15 @@ definitions:
         type: integer
       start_date:
         type: string
+      title:
+        type: string
+    type: object
+  dto.TaskTemplate:
+    properties:
+      resources:
+        items:
+          $ref: '#/definitions/dto.ResourceBinding'
+        type: array
       title:
         type: string
     type: object
@@ -830,9 +866,6 @@ definitions:
         type: integer
       name:
         example: Иванов Иван Иванович
-        type: string
-      password_hash:
-        description: PasswordHash выводится только админу (GET /users?include_hash=true).
         type: string
       position:
         example: Инженер 2 категории
@@ -1315,6 +1348,103 @@ paths:
       summary: Register
       tags:
       - Auth
+  /auto-create/config:
+    get:
+      description: Returns the project auto-create configuration (admin)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AutoCreateConfig'
+                error:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get auto-create config
+      tags:
+      - AutoCreate
+    put:
+      consumes:
+      - application/json
+      description: Replaces the project auto-create configuration (admin)
+      parameters:
+      - description: Auto-create config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AutoCreateConfig'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AutoCreateConfig'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update auto-create config
+      tags:
+      - AutoCreate
   /milestone:
     get:
       description: List all milestones

@@ -705,6 +705,188 @@ const docTemplate = `{
                 }
             }
         },
+        "/auto-create/config": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the project auto-create configuration (admin)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AutoCreate"
+                ],
+                "summary": "Get auto-create config",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.AutoCreateConfig"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Replaces the project auto-create configuration (admin)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AutoCreate"
+                ],
+                "summary": "Update auto-create config",
+                "parameters": [
+                    {
+                        "description": "Auto-create config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AutoCreateConfig"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.AutoCreateConfig"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/milestone": {
             "get": {
                 "security": [
@@ -4973,6 +5155,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AutoCreateConfig": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "processes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProcessTemplate"
+                    }
+                }
+            }
+        },
         "dto.AvailabilityPeriod": {
             "type": "object",
             "properties": {
@@ -5500,6 +5696,23 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ProcessTemplate": {
+            "type": "object",
+            "properties": {
+                "owner_id": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TaskTemplate"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.Project": {
             "type": "object",
             "properties": {
@@ -5634,6 +5847,17 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Монтажник"
+                }
+            }
+        },
+        "dto.ResourceBinding": {
+            "type": "object",
+            "properties": {
+                "quantity": {
+                    "type": "integer"
+                },
+                "resource_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -5788,6 +6012,20 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TaskTemplate": {
+            "type": "object",
+            "properties": {
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ResourceBinding"
+                    }
                 },
                 "title": {
                     "type": "string"
@@ -6032,10 +6270,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Иванов Иван Иванович"
-                },
-                "password_hash": {
-                    "description": "PasswordHash выводится только админу (GET /users?include_hash=true).",
-                    "type": "string"
                 },
                 "position": {
                     "type": "string",

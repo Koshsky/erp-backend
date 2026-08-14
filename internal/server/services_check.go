@@ -1,6 +1,8 @@
 package server
 
 import (
+	autocreateDelivery "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
+	autocreateService "github.com/Koshsky/erp-backend/internal/auto_create/service"
 	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	assignmentService "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
 	milestoneDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
@@ -22,6 +24,7 @@ import (
 )
 
 type (
+	AutoCreateService = autocreateDelivery.AutoCreateService
 	UserService       = userDelivery.UserService
 	TaskService       = taskDelivery.TaskService
 	ResourceService   = resourceDelivery.ResourceService
@@ -35,6 +38,7 @@ type (
 
 // COMPILATION CHECK.
 var (
+	_ AutoCreateService = (*autocreateService.AutoCreateService)(nil)
 	_ UserService       = (*userService.UserService)(nil)
 	_ TaskService       = (*taskService.TaskService)(nil)
 	_ ResourceService   = (*resourceService.ResourceService)(nil)

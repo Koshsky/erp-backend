@@ -10,6 +10,10 @@ import (
 	auth2 "github.com/Koshsky/erp-backend/internal/auth"
 	"github.com/Koshsky/erp-backend/internal/auth/delivery"
 	service2 "github.com/Koshsky/erp-backend/internal/auth/service"
+	"github.com/Koshsky/erp-backend/internal/auto_create"
+	delivery12 "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
+	repository10 "github.com/Koshsky/erp-backend/internal/auto_create/repository"
+	service12 "github.com/Koshsky/erp-backend/internal/auto_create/service"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/logger"
@@ -116,7 +120,11 @@ func InitializeApp() (*App, error) {
 	calendarService := service11.NewCalendarService(slogLogger, calendarRepository)
 	calendarHandler := delivery11.NewCalendarHandler(slogLogger, calendarService, rbacMiddleware)
 	timesheetModule := timesheet.ProvideModule(resourceHandler, stateHandler, calendarHandler)
-	v2 := ProvideModules(module, userModule, planningModule, project_mgmtModule, timesheetModule)
+	autoCreateRepository := repository10.NewAutoCreateRepository(slogLogger, pool)
+	autoCreateService := service12.NewAutoCreateService(slogLogger, autoCreateRepository)
+	autoCreateHandler := delivery12.NewAutoCreateHandler(slogLogger, autoCreateService, rbacMiddleware)
+	autocreateModule := autocreate.ProvideModule(autoCreateHandler)
+	v2 := ProvideModules(module, userModule, planningModule, project_mgmtModule, timesheetModule, autocreateModule)
 	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, v2)
 	if err != nil {
 		return nil, err

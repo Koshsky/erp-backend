@@ -18,6 +18,7 @@ func All() []rbac.Policy {
 		resourcePolicies,
 		workerPolicies,
 		statePolicies,
+		autoCreatePolicies,
 	)
 }
 
