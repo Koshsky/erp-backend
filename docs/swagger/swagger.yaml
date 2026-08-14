@@ -1,5 +1,43 @@
 basePath: /api/v1
 definitions:
+  dto.AddMemberRequest:
+    properties:
+      user_id:
+        example: 7
+        type: integer
+    type: object
+  dto.AdminUserResponse:
+    properties:
+      hire_date:
+        example: "2024-01-15"
+        format: date
+        type: string
+      id:
+        example: 1
+        type: integer
+      manager_id:
+        example: 5
+        type: integer
+      name:
+        example: Иванов Иван Иванович
+        type: string
+      password_hash:
+        example: $2a$10$...
+        type: string
+      position:
+        example: Инженер 2 категории
+        type: string
+      role:
+        example: worker
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
+        type: string
+      username:
+        example: worker_1
+        type: string
+    type: object
   dto.AssignmentResponse:
     properties:
       id:
@@ -85,26 +123,6 @@ definitions:
       task_id:
         example: 1
         type: integer
-    type: object
-  dto.CreateEmployeeRequest:
-    properties:
-      hire_date:
-        example: "2025-01-10"
-        format: date
-        type: string
-      manager_id:
-        example: 5
-        type: integer
-      name:
-        example: Иванов Иван Иванович
-        type: string
-      position:
-        example: Ведущий инженер
-        type: string
-      termination_date:
-        example: "2026-12-31"
-        format: date
-        type: string
     type: object
   dto.CreateMilestoneRequest:
     properties:
@@ -206,6 +224,42 @@ definitions:
         example: Пуско-наладочные работы
         type: string
     type: object
+  dto.CreateUserRequest:
+    properties:
+      hire_date:
+        example: "2025-01-10"
+        format: date
+        type: string
+      manager_id:
+        example: 5
+        type: integer
+      name:
+        example: Иванов Иван Иванович
+        type: string
+      password_hash:
+        example: ""
+        type: string
+      position:
+        example: Инженер 2 категории
+        type: string
+      role:
+        example: worker
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
+        type: string
+      username:
+        example: worker_1
+        type: string
+    type: object
+  dto.CreateUserResult:
+    properties:
+      password:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserResponse'
+    type: object
   dto.DetailedProcess:
     properties:
       end_date:
@@ -292,58 +346,6 @@ definitions:
         type: string
       title:
         example: Пуско-наладочные работы
-        type: string
-    type: object
-  dto.EmployeeResponse:
-    properties:
-      hire_date:
-        example: "2024-01-15"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      manager_id:
-        example: 5
-        type: integer
-      name:
-        example: Иванов Иван Иванович
-        type: string
-      position:
-        example: Ведущий инженер
-        type: string
-      resource_id:
-        example: 3
-        type: integer
-      termination_date:
-        example: "2026-12-31"
-        format: date
-        type: string
-    type: object
-  dto.EmployeeStateResponse:
-    properties:
-      end_date:
-        example: "2026-08-02"
-        format: date
-        type: string
-      id:
-        example: 1
-        type: integer
-      is_available:
-        example: false
-        type: boolean
-      start_date:
-        example: "2026-07-20"
-        format: date
-        type: string
-      state_code:
-        example: ОТП
-        type: string
-      state_id:
-        example: 4
-        type: integer
-      state_name:
-        example: Отпуск
         type: string
     type: object
   dto.LoginRequest:
@@ -520,6 +522,12 @@ definitions:
         example: ivanov
         type: string
     type: object
+  dto.ResetPasswordResponse:
+    properties:
+      password:
+        example: Xy9kLm2QrT8wAb3z
+        type: string
+    type: object
   dto.Resource:
     properties:
       assignment_id:
@@ -552,6 +560,32 @@ definitions:
         type: integer
       title:
         example: Инженер
+        type: string
+    type: object
+  dto.ResourceMemberResponse:
+    properties:
+      hire_date:
+        example: "2024-01-15"
+        format: date
+        type: string
+      id:
+        example: 7
+        type: integer
+      manager_id:
+        example: 5
+        type: integer
+      name:
+        example: Иванов Иван Иванович
+        type: string
+      position:
+        example: Инженер 2 категории
+        type: string
+      role:
+        example: worker
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
         type: string
     type: object
   dto.ResourceResponse:
@@ -635,28 +669,11 @@ definitions:
         example: 1
         type: integer
     type: object
-  dto.UpdateEmployeeRequest:
+  dto.UpdateManagerRequest:
     properties:
-      hire_date:
-        example: "2025-01-10"
-        format: date
-        type: string
       manager_id:
         example: 5
         type: integer
-      name:
-        example: Иванов Иван Иванович
-        type: string
-      position:
-        example: Ведущий инженер
-        type: string
-      resource_id:
-        example: 2
-        type: integer
-      termination_date:
-        example: "2026-12-31"
-        format: date
-        type: string
     type: object
   dto.UpdateMilestoneRequest:
     properties:
@@ -760,11 +777,25 @@ definitions:
     type: object
   dto.UpdateUserRequest:
     properties:
+      hire_date:
+        example: "2025-01-10"
+        format: date
+        type: string
+      manager_id:
+        example: 5
+        type: integer
       name:
-        example: Ivan Ivanov
+        example: Иванов Иван Иванович
+        type: string
+      position:
+        example: Инженер 2 категории
         type: string
       role:
-        example: dp
+        example: worker
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
         type: string
       username:
         example: ivanov
@@ -787,17 +818,60 @@ definitions:
     type: object
   dto.UserResponse:
     properties:
+      hire_date:
+        example: "2024-01-15"
+        format: date
+        type: string
       id:
         example: 1
         type: integer
+      manager_id:
+        example: 5
+        type: integer
       name:
-        example: Ivan Ivanov
+        example: Иванов Иван Иванович
+        type: string
+      password_hash:
+        description: PasswordHash выводится только админу (GET /users?include_hash=true).
+        type: string
+      position:
+        example: Инженер 2 категории
         type: string
       role:
-        example: dp
+        example: worker
+        type: string
+      termination_date:
+        example: "2026-12-31"
+        format: date
         type: string
       username:
-        example: ivanov
+        example: worker_1
+        type: string
+    type: object
+  dto.UserStateResponse:
+    properties:
+      end_date:
+        example: "2026-08-02"
+        format: date
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_available:
+        example: false
+        type: boolean
+      start_date:
+        example: "2026-07-20"
+        format: date
+        type: string
+      state_code:
+        example: ОТП
+        type: string
+      state_id:
+        example: 4
+        type: integer
+      state_name:
+        example: Отпуск
         type: string
     type: object
   errors.DomainError:
@@ -1241,355 +1315,6 @@ paths:
       summary: Register
       tags:
       - Auth
-  /employees:
-    get:
-      description: List all employees
-      parameters:
-      - description: Page size (default 50, max 500)
-        in: query
-        name: limit
-        type: integer
-      - description: Filter by manager (admin)
-        in: query
-        name: manager_id
-        type: integer
-      - description: Page offset
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/response.Page'
-                  - properties:
-                      items:
-                        items:
-                          $ref: '#/definitions/dto.EmployeeResponse'
-                        type: array
-                    type: object
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: List all employees
-      tags:
-      - TimesheetEmployees
-  /employees/{id}:
-    delete:
-      description: Delete an employee by id (soft delete)
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete employee
-      tags:
-      - TimesheetEmployees
-    get:
-      description: Get an employee by id
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.EmployeeResponse'
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get employee
-      tags:
-      - TimesheetEmployees
-    put:
-      consumes:
-      - application/json
-      description: Update an employee by id
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Employee
-        in: body
-        name: employee
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateEmployeeRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.EmployeeResponse'
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update employee
-      tags:
-      - TimesheetEmployees
-  /employees/{id}/days:
-    delete:
-      description: Clear state ranges of an employee overlapping a date range (splits
-        overlaps, optional state filter)
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Start date (YYYY-MM-DD)
-        in: query
-        name: start_date
-        required: true
-        type: string
-      - description: End date (YYYY-MM-DD)
-        in: query
-        name: end_date
-        required: true
-        type: string
-      - description: Optional state filter
-        in: query
-        name: state_id
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete employee days
-      tags:
-      - TimesheetEmployees
-    get:
-      description: List state ranges of an employee overlapping a date range
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Start date (YYYY-MM-DD)
-        in: query
-        name: start_date
-        required: true
-        type: string
-      - description: End date (YYYY-MM-DD)
-        in: query
-        name: end_date
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/dto.EmployeeStateResponse'
-                  type: array
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: List employee days
-      tags:
-      - TimesheetEmployees
-    put:
-      consumes:
-      - application/json
-      description: Overwrite a state on a date range of an employee's calendar (splits
-        overlapping ranges)
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Days
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/dto.SetDaysRequest'
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Set employee days
-      tags:
-      - TimesheetEmployees
   /milestone:
     get:
       description: List all milestones
@@ -2643,9 +2368,9 @@ paths:
       summary: Update resource
       tags:
       - TimesheetResources
-  /resources/{id}/employees:
+  /resources/{id}/members:
     get:
-      description: List concrete employees of a resource category
+      description: List the users attached to a resource
       parameters:
       - description: Resource ID
         in: path
@@ -2663,7 +2388,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.EmployeeResponse'
+                    $ref: '#/definitions/dto.ResourceMemberResponse'
                   type: array
                 error:
                   type: object
@@ -2688,39 +2413,81 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: List employees
+      summary: List resource members
       tags:
-      - TimesheetEmployees
+      - TimesheetResources
     post:
       consumes:
       - application/json
-      description: Create a concrete employee for a resource category
+      description: Attach a user to a resource (vp — only own subordinates)
       parameters:
       - description: Resource ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Employee
+      - description: Member
         in: body
-        name: employee
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateEmployeeRequest'
+          $ref: '#/definitions/dto.AddMemberRequest'
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
+            - $ref: '#/definitions/response.ErrorResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.EmployeeResponse'
-                error:
                   type: object
               type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Add resource member
+      tags:
+      - TimesheetResources
+  /resources/{id}/members/{userId}:
+    delete:
+      description: Detach a user from a resource
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
         "400":
           description: Bad Request
           schema:
@@ -2741,9 +2508,9 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create employee
+      summary: Remove resource member
       tags:
-      - TimesheetEmployees
+      - TimesheetResources
   /task:
     get:
       description: Get a list of all tasks
@@ -3281,11 +3048,174 @@ paths:
       summary: List all users
       tags:
       - Users
-  /user/{id}:
-    delete:
+  /user/change-password:
+    post:
       consumes:
       - application/json
-      description: Delete a user by ID
+      description: Change password (requires old password)
+      parameters:
+      - description: Old and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChangePasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ChangePasswordResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Change Password
+      tags:
+      - Users
+  /users:
+    get:
+      description: Returns a paged list of users; admin sees all, vp sees own subordinates
+        + self.
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by role (e.g. worker)
+        in: query
+        name: role
+        type: string
+      - description: Filter by manager (admin)
+        in: query
+        name: manager_id
+        type: integer
+      - description: Включить password_hash (только admin)
+        in: query
+        name: include_hash
+        type: boolean
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.AdminUserResponse'
+                        type: array
+                    type: object
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a user (auto-generated username/password; password returned
+        once)
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CreateUserResult'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create user
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      description: Delete a user by ID (soft delete)
       parameters:
       - description: User ID
         in: path
@@ -3418,18 +3348,78 @@ paths:
       summary: Update a user
       tags:
       - Users
-  /user/change-password:
-    post:
-      consumes:
-      - application/json
-      description: Change password (requires old password)
+  /users/{id}/days:
+    delete:
+      description: Clear state ranges of a worker overlapping a date range (splits
+        overlaps, optional state filter)
       parameters:
-      - description: Old and new password
-        in: body
-        name: request
+      - description: User ID
+        in: path
+        name: id
         required: true
-        schema:
-          $ref: '#/definitions/dto.ChangePasswordRequest'
+        type: integer
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - description: Optional state filter
+        in: query
+        name: state_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete worker days
+      tags:
+      - Users
+    get:
+      description: List state ranges of a worker overlapping a date range
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -3438,7 +3428,9 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ChangePasswordResponse'
+                  items:
+                    $ref: '#/definitions/dto.UserStateResponse'
+                  type: array
                 error:
                   type: object
               type: object
@@ -3451,9 +3443,172 @@ paths:
                 data:
                   type: object
               type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
       security:
       - ApiKeyAuth: []
-      summary: Change Password
+      summary: List worker days
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Overwrite a state on a date range of a worker's calendar (splits
+        overlapping ranges)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Days
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SetDaysRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Set worker days
+      tags:
+      - Users
+  /users/{id}/manager:
+    put:
+      consumes:
+      - application/json
+      description: Explicitly set (or clear, manager_id=null) the manager of a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Manager
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateManagerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update user manager
+      tags:
+      - Users
+  /users/{id}/reset-password:
+    post:
+      description: Generate a new random password for a user and return it once
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ResetPasswordResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Reset user password
       tags:
       - Users
 securityDefinitions:

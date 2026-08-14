@@ -33,8 +33,8 @@ func NewCalendarService(logger *slog.Logger, r *repo.CalendarRepository) *Calend
 }
 
 // GetCalendar returns resource availability as ranges (constant-availability
-// segments): capacity, unavailable and available. Complexity O((E+S) log(E+S))
-// depends on employees and state intervals, not the number of days.
+// segments): capacity, unavailable and available. Complexity O((M+S) log(M+S))
+// depends on resource members and state intervals, not the number of days.
 func (s *CalendarService) GetCalendar(
 	ctx context.Context,
 	start, end date.Date,
@@ -51,7 +51,7 @@ func (s *CalendarService) GetCalendar(
 	if err != nil {
 		return nil, err
 	}
-	employees, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
+	members, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *CalendarService) GetCalendar(
 		return nil, err
 	}
 
-	employeesByResource := groupEmployees(employees)
+	membersByResource := groupMembers(members)
 	rangesByResource := groupRanges(ranges)
 
 	planning := &dto.CalendarPlanning{
@@ -70,7 +70,7 @@ func (s *CalendarService) GetCalendar(
 		periods := buildPeriods(
 			startT,
 			endT,
-			employeesByResource[resource.ID],
+			membersByResource[resource.ID],
 			rangesByResource[resource.ID],
 		)
 		planning.Resources = append(planning.Resources, dto.ResourceCalendar{
@@ -84,10 +84,10 @@ func (s *CalendarService) GetCalendar(
 	return planning, nil
 }
 
-func groupEmployees(employees []dto.CalendarEmployee) map[int64][]dto.CalendarEmployee {
-	result := make(map[int64][]dto.CalendarEmployee, len(employees))
-	for _, employee := range employees {
-		result[employee.ResourceID] = append(result[employee.ResourceID], employee)
+func groupMembers(members []dto.CalendarMember) map[int64][]dto.CalendarMember {
+	result := make(map[int64][]dto.CalendarMember, len(members))
+	for _, member := range members {
+		result[member.ResourceID] = append(result[member.ResourceID], member)
 	}
 	return result
 }
@@ -110,10 +110,10 @@ type availabilityEvent struct {
 // sweep: segment bounds are hire/termination dates and absence interval edges.
 func buildPeriods(
 	start, end time.Time,
-	employees []dto.CalendarEmployee,
+	members []dto.CalendarMember,
 	ranges []dto.UnavailableRange,
 ) []dto.AvailabilityPeriod {
-	active := countActiveAt(start, employees)
+	active := countActiveAt(start, members)
 	absent := countAbsentAt(start, ranges)
 
 	events := make(map[time.Time]availabilityEvent)
@@ -125,12 +125,12 @@ func buildPeriods(
 			events[day] = event
 		}
 	}
-	for _, employee := range employees {
-		if employee.HireDate != nil {
-			addEvent(*employee.HireDate, 1, 0)
+	for _, member := range members {
+		if member.HireDate != nil {
+			addEvent(*member.HireDate, 1, 0)
 		}
-		if employee.TerminationDate != nil {
-			addEvent(employee.TerminationDate.AddDate(0, 0, 1), -1, 0)
+		if member.TerminationDate != nil {
+			addEvent(member.TerminationDate.AddDate(0, 0, 1), -1, 0)
 		}
 	}
 	for _, r := range ranges {
@@ -176,19 +176,19 @@ func buildPeriods(
 	return periods
 }
 
-// countActiveAt counts employees active on day.
-func countActiveAt(day time.Time, employees []dto.CalendarEmployee) int {
+// countActiveAt counts members active on day.
+func countActiveAt(day time.Time, members []dto.CalendarMember) int {
 	count := 0
-	for _, employee := range employees {
-		if (employee.HireDate == nil || !employee.HireDate.After(day)) &&
-			(employee.TerminationDate == nil || !employee.TerminationDate.Before(day)) {
+	for _, member := range members {
+		if (member.HireDate == nil || !member.HireDate.After(day)) &&
+			(member.TerminationDate == nil || !member.TerminationDate.Before(day)) {
 			count++
 		}
 	}
 	return count
 }
 
-// countAbsentAt counts employees absent on day.
+// countAbsentAt counts members absent on day.
 func countAbsentAt(day time.Time, ranges []dto.UnavailableRange) int {
 	count := 0
 	for _, r := range ranges {

@@ -11,3 +11,7 @@ type UpdateResourceRequest struct {
 	Title   *string `json:"title"    example:"Монтажник"`
 	OwnerID *int64  `json:"owner_id" example:"3"`
 }
+
+type AddMemberRequest struct {
+	UserID int64 `json:"user_id" example:"7"`
+}

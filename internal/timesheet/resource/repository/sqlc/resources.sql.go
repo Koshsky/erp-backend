@@ -8,17 +8,34 @@ package sqlc
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countEmployeesByResourceID = `-- name: CountEmployeesByResourceID :one
-SELECT COUNT(*)::bigint
-FROM employees
-WHERE resource_id = $1::bigint
-	AND deleted_at IS NULL
+const addMember = `-- name: AddMember :exec
+INSERT INTO resource_members (resource_id, user_id)
+VALUES ($1::bigint, $2::bigint)
+ON CONFLICT DO NOTHING
 `
 
-func (q *Queries) CountEmployeesByResourceID(ctx context.Context, resourceID int64) (int64, error) {
-	row := q.db.QueryRow(ctx, countEmployeesByResourceID, resourceID)
+type AddMemberParams struct {
+	ResourceID int64 `json:"resource_id"`
+	UserID     int64 `json:"user_id"`
+}
+
+func (q *Queries) AddMember(ctx context.Context, arg AddMemberParams) error {
+	_, err := q.db.Exec(ctx, addMember, arg.ResourceID, arg.UserID)
+	return err
+}
+
+const countMembersByResourceID = `-- name: CountMembersByResourceID :one
+SELECT COUNT(*)::bigint
+FROM resource_members
+WHERE resource_id = $1::bigint
+`
+
+func (q *Queries) CountMembersByResourceID(ctx context.Context, resourceID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countMembersByResourceID, resourceID)
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -86,10 +103,10 @@ func (q *Queries) DeleteResource(ctx context.Context, resourceID int64) error {
 
 const findResource = `-- name: FindResource :one
 SELECT r.id, r.code, r.title, r.owner_id,
-    COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL)::bigint AS employees_count,
+    COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
-LEFT JOIN employees e ON e.resource_id = r.id
+LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.id = $1::bigint
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
@@ -122,12 +139,75 @@ func (q *Queries) FindResource(ctx context.Context, resourceID int64) (FindResou
 	return i, err
 }
 
+const findUserManager = `-- name: FindUserManager :one
+SELECT manager_id
+FROM users
+WHERE id = $1::bigint
+  AND deleted_at IS NULL
+`
+
+func (q *Queries) FindUserManager(ctx context.Context, userID int64) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, findUserManager, userID)
+	var manager_id pgtype.Int8
+	err := row.Scan(&manager_id)
+	return manager_id, err
+}
+
+const listMembersByResourceID = `-- name: ListMembersByResourceID :many
+
+SELECT u.id, u.name, u.role, u.position, u.hire_date, u.termination_date, u.manager_id
+FROM resource_members rm
+JOIN users u ON u.id = rm.user_id
+WHERE rm.resource_id = $1::bigint
+  AND u.deleted_at IS NULL
+ORDER BY u.id ASC
+`
+
+type ListMembersByResourceIDRow struct {
+	ID              int64       `json:"id"`
+	Name            string      `json:"name"`
+	Role            string      `json:"role"`
+	Position        string      `json:"position"`
+	HireDate        pgtype.Date `json:"hire_date"`
+	TerminationDate pgtype.Date `json:"termination_date"`
+	ManagerID       pgtype.Int8 `json:"manager_id"`
+}
+
+// ================= resource members =================
+func (q *Queries) ListMembersByResourceID(ctx context.Context, resourceID int64) ([]ListMembersByResourceIDRow, error) {
+	rows, err := q.db.Query(ctx, listMembersByResourceID, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMembersByResourceIDRow{}
+	for rows.Next() {
+		var i ListMembersByResourceIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Role,
+			&i.Position,
+			&i.HireDate,
+			&i.TerminationDate,
+			&i.ManagerID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listResources = `-- name: ListResources :many
 SELECT r.id, r.code, r.title, r.owner_id,
-    COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL)::bigint AS employees_count,
+    COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
-LEFT JOIN employees e ON e.resource_id = r.id
+LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
   AND ($1::text = 'admin' OR r.owner_id = $2::bigint)
   AND ($3::bigint = 0 OR r.owner_id = $3::bigint)
@@ -192,10 +272,10 @@ func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([
 
 const listResourcesByOwnerID = `-- name: ListResourcesByOwnerID :many
 SELECT r.id, r.code, r.title, r.owner_id,
-    COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL)::bigint AS employees_count,
+    COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
-LEFT JOIN employees e ON e.resource_id = r.id
+LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.owner_id = $1::bigint
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
@@ -254,6 +334,22 @@ func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
 	var owner_id int64
 	err := row.Scan(&owner_id)
 	return owner_id, err
+}
+
+const removeMember = `-- name: RemoveMember :exec
+DELETE FROM resource_members
+WHERE resource_id = $1::bigint
+  AND user_id = $2::bigint
+`
+
+type RemoveMemberParams struct {
+	ResourceID int64 `json:"resource_id"`
+	UserID     int64 `json:"user_id"`
+}
+
+func (q *Queries) RemoveMember(ctx context.Context, arg RemoveMemberParams) error {
+	_, err := q.db.Exec(ctx, removeMember, arg.ResourceID, arg.UserID)
+	return err
 }
 
 const updateResource = `-- name: UpdateResource :one

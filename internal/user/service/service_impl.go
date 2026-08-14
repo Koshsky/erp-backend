@@ -8,8 +8,12 @@ import (
 
 	repo "github.com/Koshsky/erp-backend/internal/user/repository"
 
+	"github.com/Koshsky/erp-backend/internal/security/creds"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
+	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type UserService struct {
@@ -18,6 +22,9 @@ type UserService struct {
 	mapper     *UserMapper
 	validator  *UserValidator
 }
+
+// maxManagerDepth — страховка от зацикливания при обходе иерархии руководителей.
+const maxManagerDepth = 1000
 
 // NewUserService builds the UserService service.
 func NewUserService(logger *slog.Logger, r *repo.UserRepository) *UserService {
@@ -51,8 +58,52 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	return s.repository.UpdatePassword(ctx, userID, newHash)
 }
 
+// CreateUser creates a user; used by auth (credentials always provided).
 func (s *UserService) CreateUser(ctx context.Context, req dto.CreateUserRequest) (*dto.UserResponse, error) {
+	res, err := s.createUserInternal(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return &res.User, nil
+}
+
+// CreateUserWithCreds creates a user and returns the generated password (if any)
+// for the admin UI. The password is shown exactly once.
+func (s *UserService) CreateUserWithCreds(
+	ctx context.Context,
+	req dto.CreateUserRequest,
+) (*dto.CreateUserResult, error) {
+	return s.createUserInternal(ctx, req)
+}
+
+// createUserInternal creates a user; when credentials are missing they are
+// generated (the plaintext password is returned for one-time display).
+func (s *UserService) createUserInternal(
+	ctx context.Context,
+	req dto.CreateUserRequest,
+) (*dto.CreateUserResult, error) {
+	var generated string
 	req.Username = strings.TrimSpace(req.Username)
+	if req.Username == "" {
+		username, err := s.generateUsername(ctx, req.Name, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		req.Username = username
+	}
+	if req.PasswordHash == "" {
+		raw, err := creds.RandomPassword()
+		if err != nil {
+			return nil, err
+		}
+		hash, err := hasher.Hash(raw)
+		if err != nil {
+			return nil, err
+		}
+		req.PasswordHash = hash
+		generated = raw
+	}
+
 	user := s.mapper.ToDomainFromCreate(req)
 	if err := s.validator.ValidateUser(&user); err != nil {
 		return nil, err
@@ -63,7 +114,60 @@ func (s *UserService) CreateUser(ctx context.Context, req dto.CreateUserRequest)
 		return nil, err
 	}
 
-	return s.mapper.ToDTO(created), nil
+	return &dto.CreateUserResult{User: *s.mapper.ToDTO(created), Password: generated}, nil
+}
+
+// generateUsername строит уникальный login: транслитерация фамилии (последнего
+// слова ФИО); при занятости добавляет числовой суффикс; если фамилию
+// транслитерировать нечего — падение на prefix+случайный суффикс.
+func (s *UserService) generateUsername(ctx context.Context, name, role string) (string, error) {
+	prefix := "user_"
+	if role == userdomain.Worker {
+		prefix = "worker_"
+	}
+
+	base := creds.TransliterateSurname(name)
+	if base == "" {
+		suffix, err := creds.RandomUsernameSuffix()
+		if err != nil {
+			return "", err
+		}
+		return prefix + suffix, nil
+	}
+
+	username := base
+	for i := 2; ; i++ {
+		exists, err := s.repository.UsernameExists(ctx, username)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			return username, nil
+		}
+		username = fmt.Sprintf("%s%d", base, i)
+	}
+}
+
+// ResetPassword generates a new random password for the user and returns it once.
+func (s *UserService) ResetPassword(ctx context.Context, id int64) (*dto.ResetPasswordResponse, error) {
+	user, err := s.repository.FindUser(ctx, id)
+	if err != nil || user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	raw, err := creds.RandomPassword()
+	if err != nil {
+		return nil, err
+	}
+	hash, err := hasher.Hash(raw)
+	if err != nil {
+		return nil, err
+	}
+	if err = s.repository.UpdatePassword(ctx, id, hash); err != nil {
+		return nil, err
+	}
+
+	return &dto.ResetPasswordResponse{Password: raw}, nil
 }
 
 func (s *UserService) FindUserByUsername(ctx context.Context, username string) (*dto.UserResponse, error) {
@@ -85,10 +189,31 @@ func (s *UserService) FindUser(ctx context.Context, id int64) (*dto.UserResponse
 	return s.mapper.ToDTO(user), nil
 }
 
-func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUserRequest) (*dto.UserResponse, error) {
+// UpdateUser updates a user. callerRole/callerID guard sensitive fields:
+// role and manager_id change only by admin; an admin cannot change their own
+// role and cannot remove the last active admin.
+func (s *UserService) UpdateUser(
+	ctx context.Context,
+	id int64,
+	req dto.UpdateUserRequest,
+	callerRole string,
+	callerID int64,
+) (*dto.UserResponse, error) {
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
 		return nil, fmt.Errorf("user not found")
+	}
+
+	if err = s.checkRoleChange(ctx, user, req.Role, callerRole, callerID); err != nil {
+		return nil, err
+	}
+	if req.ManagerID != nil {
+		if callerRole != userdomain.Admin {
+			return nil, errors.ErrForbidden
+		}
+		if err = s.validateManager(ctx, id, req.ManagerID); err != nil {
+			return nil, err
+		}
 	}
 
 	s.mapper.ApplyUpdateToDomain(user, req)
@@ -105,14 +230,218 @@ func (s *UserService) UpdateUser(ctx context.Context, id int64, req dto.UpdateUs
 	return s.mapper.ToDTO(updated), nil
 }
 
+// checkRoleChange validates a role change: only admin, not on self, and never
+// removing the last active admin.
+func (s *UserService) checkRoleChange(
+	ctx context.Context,
+	user *userdomain.User,
+	newRole *string,
+	callerRole string,
+	callerID int64,
+) error {
+	if newRole == nil {
+		return nil
+	}
+	if callerRole != userdomain.Admin {
+		return errors.ErrForbidden
+	}
+	if user.ID == callerID {
+		return errors.NewValidationError("нельзя менять роль самому себе")
+	}
+	if *newRole == userdomain.Admin || user.Role != userdomain.Admin {
+		return nil
+	}
+	admins, err := s.repository.CountUsers(ctx, 0, userdomain.Admin, userdomain.Admin, 0)
+	if err != nil {
+		return err
+	}
+	if admins <= 1 {
+		return errors.NewValidationError("нельзя снять последнего админа")
+	}
+	return nil
+}
+
+// UpdateManager explicitly sets (or clears) a user's manager. Only admin; the
+// manager cannot be the user themself.
+func (s *UserService) UpdateManager(
+	ctx context.Context,
+	id int64,
+	managerID *int64,
+	callerRole string,
+) (*dto.UserResponse, error) {
+	if callerRole != userdomain.Admin {
+		return nil, errors.ErrForbidden
+	}
+	user, err := s.repository.FindUser(ctx, id)
+	if err != nil || user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+	if err = s.validateManager(ctx, id, managerID); err != nil {
+		return nil, err
+	}
+
+	user.ManagerID = managerID
+	if err = s.validator.ValidateUser(user); err != nil {
+		return nil, err
+	}
+	updated, err := s.repository.UpdateUser(ctx, *user)
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.ToDTO(updated), nil
+}
+
+// validateManager проверяет, что назначение руководителя допустимо: не является
+// самим пользователем, руководитель существует и активен, а назначение не
+// создаёт кольцевой зависимости (обход вверх по цепочке manager_id).
+// managerID == nil — сброс, допустимо.
+func (s *UserService) validateManager(ctx context.Context, userID int64, managerID *int64) error {
+	if managerID == nil {
+		return nil
+	}
+	if *managerID == userID {
+		return errors.NewValidationError("руководитель не может быть самим пользователем")
+	}
+
+	manager, err := s.repository.FindUser(ctx, *managerID)
+	if err != nil || manager == nil {
+		return errors.NotFound("руководитель не найден")
+	}
+
+	cur := manager.ManagerID
+	depth := 0
+	for cur != nil {
+		depth++
+		if depth > maxManagerDepth {
+			return errors.NewValidationError("иерархия руководителей слишком глубокая")
+		}
+		if *cur == userID {
+			return errors.NewValidationError("кольцевая зависимость в руководстве не допускается")
+		}
+		u, ferr := s.repository.FindUser(ctx, *cur)
+		if ferr != nil || u == nil {
+			return errors.NotFound("руководитель не найден")
+		}
+		cur = u.ManagerID
+	}
+	return nil
+}
+
 func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 	return s.repository.DeleteUser(ctx, id)
 }
 
-func (s *UserService) ListUsers(ctx context.Context) ([]dto.UserResponse, error) {
-	users, err := s.repository.ListUsers(ctx)
+// ListUsers returns a paged list of users; visibility by manager is enforced
+// in the middleware (vp sees only their own subordinates).
+func (s *UserService) ListUsers(
+	ctx context.Context,
+	userID int64,
+	role string,
+	roleFilter string,
+	managerID int64,
+	limit, offset int,
+) ([]dto.UserResponse, int64, error) {
+	users, err := s.repository.ListUsers(ctx, userID, role, roleFilter, managerID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := s.repository.CountUsers(ctx, userID, role, roleFilter, managerID)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.mapper.ToDTOs(users), total, nil
+}
+
+// ListAllUsers returns every active user (unscoped; used for owner pickers).
+func (s *UserService) ListAllUsers(ctx context.Context) ([]dto.UserResponse, error) {
+	users, err := s.repository.ListAllUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return s.mapper.ToDTOs(users), nil
+}
+
+func (s *UserService) ListStates(
+	ctx context.Context,
+	userID int64,
+	start, end date.Date,
+) ([]dto.UserStateResponse, error) {
+	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
+		return nil, err
+	}
+	if err := s.validator.ValidateDayRange(start, end); err != nil {
+		return nil, err
+	}
+
+	if err := s.ensureUserExists(ctx, userID); err != nil {
+		return nil, err
+	}
+
+	states, err := s.repository.ListStates(ctx, userID, start.Time(), end.Time())
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.ToStateDTOs(states), nil
+}
+
+func (s *UserService) SetDays(
+	ctx context.Context,
+	userID int64,
+	req dto.SetDaysRequest,
+) error {
+	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
+		return err
+	}
+	if err := s.validator.ValidatePositiveID(req.StateID, "state_id"); err != nil {
+		return err
+	}
+	if err := s.validator.ValidateDayRange(req.StartDate, req.EndDate); err != nil {
+		return err
+	}
+
+	if err := s.ensureUserExists(ctx, userID); err != nil {
+		return err
+	}
+
+	return s.repository.SetStateRange(ctx, userID, req.StateID, req.StartDate.Time(), req.EndDate.Time())
+}
+
+func (s *UserService) DeleteDays(
+	ctx context.Context,
+	userID int64,
+	start, end date.Date,
+	stateID *int64,
+) error {
+	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
+		return err
+	}
+	if stateID != nil {
+		if err := s.validator.ValidatePositiveID(*stateID, "state_id"); err != nil {
+			return err
+		}
+	}
+	if err := s.validator.ValidateDayRange(start, end); err != nil {
+		return err
+	}
+
+	if err := s.ensureUserExists(ctx, userID); err != nil {
+		return err
+	}
+
+	return s.repository.DeleteStateRange(ctx, userID, start.Time(), end.Time(), stateID)
+}
+
+// ensureUserExists verifies the user exists (404 otherwise).
+func (s *UserService) ensureUserExists(ctx context.Context, userID int64) error {
+	user, err := s.repository.FindUser(ctx, userID)
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return errors.ErrUserNotFound
+		}
+		return err
+	}
+	if user == nil {
+		return errors.ErrUserNotFound
+	}
+	return nil
 }

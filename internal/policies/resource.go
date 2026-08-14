@@ -12,6 +12,10 @@ var resourcePolicies = []rbac.Policy{
 	{Name: "resource.update", Check: EntityCheck(rbac.ResourceResource, ActionUpdate)},
 	{Name: "resource.delete", Check: EntityCheck(rbac.ResourceResource, ActionDelete)},
 	{Name: "resource.create", Check: createResource},
+	// Членство ресурса: список — видимость ресурса; добавление/снятие — управление ресурсом.
+	{Name: "resource.member-list", Check: EntityCheck(rbac.ResourceResource, ActionView)},
+	{Name: "resource.member-add", Check: EntityCheck(rbac.ResourceResource, ActionUpdate)},
+	{Name: "resource.member-remove", Check: EntityCheck(rbac.ResourceResource, ActionUpdate)},
 }
 
 // createResource lets vp create a resource into their own ownership, admin — any owner.

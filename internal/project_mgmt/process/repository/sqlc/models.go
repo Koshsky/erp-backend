@@ -20,29 +20,6 @@ type Assignment struct {
 	DeletedAt  **time.Time `json:"deleted_at"`
 }
 
-type Employee struct {
-	ID              int64       `json:"id"`
-	ResourceID      int64       `json:"resource_id"`
-	Name            string      `json:"name"`
-	Position        string      `json:"position"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	DeletedAt       **time.Time `json:"deleted_at"`
-}
-
-type EmployeeState struct {
-	ID         int64     `json:"id"`
-	EmployeeID int64     `json:"employee_id"`
-	StateID    int64     `json:"state_id"`
-	StartDate  time.Time `json:"start_date"`
-	EndDate    time.Time `json:"end_date"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-}
-
 type Milestone struct {
 	ID        int64       `json:"id"`
 	ProcessID int64       `json:"process_id"`
@@ -88,6 +65,12 @@ type Resource struct {
 	DeletedAt **time.Time `json:"deleted_at"`
 }
 
+type ResourceMember struct {
+	ResourceID int64     `json:"resource_id"`
+	UserID     int64     `json:"user_id"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type State struct {
 	ID          int64       `json:"id"`
 	Code        string      `json:"code"`
@@ -111,12 +94,26 @@ type Task struct {
 }
 
 type User struct {
-	ID           int64       `json:"id"`
-	Name         string      `json:"name"`
-	Role         string      `json:"role"`
-	Username     string      `json:"username"`
-	PasswordHash string      `json:"password_hash"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
-	DeletedAt    **time.Time `json:"deleted_at"`
+	ID              int64       `json:"id"`
+	Name            string      `json:"name"`
+	Role            string      `json:"role"`
+	Username        string      `json:"username"`
+	PasswordHash    string      `json:"password_hash"`
+	ManagerID       pgtype.Int8 `json:"manager_id"`
+	Position        string      `json:"position"`
+	HireDate        pgtype.Date `json:"hire_date"`
+	TerminationDate pgtype.Date `json:"termination_date"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
+	DeletedAt       **time.Time `json:"deleted_at"`
+}
+
+type UserState struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	StateID   int64     `json:"state_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

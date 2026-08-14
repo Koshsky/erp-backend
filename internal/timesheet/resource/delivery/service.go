@@ -26,4 +26,7 @@ type ResourceService interface {
 		id int64,
 		resource dto.UpdateResourceRequest,
 	) (*dto.ResourceResponse, error)
+	ListMembers(ctx context.Context, resourceID int64) ([]dto.ResourceMemberResponse, error)
+	AddMember(ctx context.Context, resourceID, userID, actorID int64, role string) error
+	RemoveMember(ctx context.Context, resourceID, userID int64) error
 }

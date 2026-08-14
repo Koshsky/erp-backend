@@ -11,8 +11,8 @@ import (
 	"github.com/Koshsky/erp-backend/internal/config"
 )
 
-// Normalizer периодически вызывает fn_normalize_employee_states(): сливает
-// смежные диапазоны состояний сотрудников (employee_states) в непрерывные.
+// Normalizer периодически вызывает fn_normalize_user_states(): сливает
+// смежные диапазоны состояний рабочих (user_states) в непрерывные.
 type Normalizer struct {
 	cfg    config.MaintenanceConfig
 	logger *slog.Logger
@@ -56,11 +56,11 @@ func (n *Normalizer) loop(ctx context.Context) {
 }
 
 func (n *Normalizer) normalize(ctx context.Context) {
-	if _, err := n.pool.Exec(ctx, "SELECT fn_normalize_employee_states()"); err != nil {
-		n.logger.ErrorContext(ctx, "employee states normalization failed", "error", err)
+	if _, err := n.pool.Exec(ctx, "SELECT fn_normalize_user_states()"); err != nil {
+		n.logger.ErrorContext(ctx, "user states normalization failed", "error", err)
 		return
 	}
-	n.logger.InfoContext(ctx, "employee states normalized")
+	n.logger.InfoContext(ctx, "user states normalized")
 }
 
 // Stop cancels the background loop and waits for it to finish.

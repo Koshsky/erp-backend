@@ -11,9 +11,9 @@ import (
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
-	employeeRepo "github.com/Koshsky/erp-backend/internal/timesheet/employee/repository"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 	"github.com/Koshsky/erp-backend/internal/user"
+	userRepo "github.com/Koshsky/erp-backend/internal/user/repository"
 )
 
 // ProvideRBACData assembles the owner resolvers for the policy engine. The
@@ -25,7 +25,7 @@ func ProvideRBACData(
 	milestone *milestoneRepo.MilestoneRepository,
 	assignment *assignmentRepo.AssignmentRepository,
 	resource *resourceRepo.ResourceRepository,
-	employee *employeeRepo.EmployeeRepository,
+	user *userRepo.UserRepository,
 ) rbacMW.Data {
 	return rbacMW.Data{
 		ProjectOwners:    project.OwnerChain,
@@ -34,7 +34,7 @@ func ProvideRBACData(
 		MilestoneOwners:  milestone.OwnerChain,
 		AssignmentOwners: assignment.OwnerChain,
 		ResourceOwners:   resource.OwnerChain,
-		EmployeeOwners:   employee.OwnerChain,
+		WorkerOwners:     user.OwnerChain,
 	}
 }
 

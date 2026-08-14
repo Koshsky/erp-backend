@@ -705,626 +705,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/employees": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "List all employees",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TimesheetEmployees"
-                ],
-                "summary": "List all employees",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Page size (default 50, max 500)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by manager (admin)",
-                        "name": "manager_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page offset",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/response.Page"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "items": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "$ref": "#/definitions/dto.EmployeeResponse"
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/employees/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get an employee by id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TimesheetEmployees"
-                ],
-                "summary": "Get employee",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.EmployeeResponse"
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Update an employee by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TimesheetEmployees"
-                ],
-                "summary": "Update employee",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Employee",
-                        "name": "employee",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateEmployeeRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.EmployeeResponse"
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Delete an employee by id (soft delete)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TimesheetEmployees"
-                ],
-                "summary": "Delete employee",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/employees/{id}/days": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "List state ranges of an employee overlapping a date range",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TimesheetEmployees"
-                ],
-                "summary": "List employee days",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start date (YYYY-MM-DD)",
-                        "name": "start_date",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "End date (YYYY-MM-DD)",
-                        "name": "end_date",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/dto.EmployeeStateResponse"
-                                            }
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Overwrite a state on a date range of an employee's calendar (splits overlapping ranges)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TimesheetEmployees"
-                ],
-                "summary": "Set employee days",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Days",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.SetDaysRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Clear state ranges of an employee overlapping a date range (splits overlaps, optional state filter)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TimesheetEmployees"
-                ],
-                "summary": "Delete employee days",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start date (YYYY-MM-DD)",
-                        "name": "start_date",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "End date (YYYY-MM-DD)",
-                        "name": "end_date",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Optional state filter",
-                        "name": "state_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/milestone": {
             "get": {
                 "security": [
@@ -3254,21 +2634,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/resources/{id}/employees": {
+        "/resources/{id}/members": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "List concrete employees of a resource category",
+                "description": "List the users attached to a resource",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "TimesheetEmployees"
+                    "TimesheetResources"
                 ],
-                "summary": "List employees",
+                "summary": "List resource members",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3292,7 +2672,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.EmployeeResponse"
+                                                "$ref": "#/definitions/dto.ResourceMemberResponse"
                                             }
                                         },
                                         "error": {
@@ -3347,7 +2727,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Create a concrete employee for a resource category",
+                "description": "Attach a user to a resource (vp — only own subordinates)",
                 "consumes": [
                     "application/json"
                 ],
@@ -3355,9 +2735,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "TimesheetEmployees"
+                    "TimesheetResources"
                 ],
-                "summary": "Create employee",
+                "summary": "Add resource member",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3367,36 +2747,110 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Employee",
-                        "name": "employee",
+                        "description": "Member",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateEmployeeRequest"
+                            "$ref": "#/definitions/dto.AddMemberRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.SuccessResponse"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.EmployeeResponse"
-                                        },
-                                        "error": {
                                             "type": "object"
                                         }
                                     }
                                 }
                             ]
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/{id}/members/{userId}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Detach a user from a resource",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TimesheetResources"
+                ],
+                "summary": "Remove resource member",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Resource ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -4482,7 +3936,236 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/{id}": {
+        "/users": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a paged list of users; admin sees all, vp sees own subordinates + self.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by role (e.g. worker)",
+                        "name": "role",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by manager (admin)",
+                        "name": "manager_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Включить password_hash (только admin)",
+                        "name": "include_hash",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.Page"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.AdminUserResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create a user (auto-generated username/password; password returned once)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create user",
+                "parameters": [
+                    {
+                        "description": "User",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.CreateUserResult"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
             "get": {
                 "security": [
                     {
@@ -4667,10 +4350,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Delete a user by ID",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Delete a user by ID (soft delete)",
                 "produces": [
                     "application/json"
                 ],
@@ -4729,9 +4409,525 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{id}/days": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "List state ranges of a worker overlapping a date range",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List worker days",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.UserStateResponse"
+                                            }
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Overwrite a state on a date range of a worker's calendar (splits overlapping ranges)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Set worker days",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Days",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SetDaysRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Clear state ranges of a worker overlapping a date range (splits overlaps, optional state filter)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete worker days",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Optional state filter",
+                        "name": "state_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/manager": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Explicitly set (or clear, manager_id=null) the manager of a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user manager",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Manager",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateManagerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/reset-password": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Generate a new random password for a user and return it once",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Reset user password",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ResetPasswordResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "dto.AddMemberRequest": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "integer",
+                    "example": 7
+                }
+            }
+        },
+        "dto.AdminUserResponse": {
+            "type": "object",
+            "properties": {
+                "hire_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2024-01-15"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "manager_id": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иванов Иван Иванович"
+                },
+                "password_hash": {
+                    "type": "string",
+                    "example": "$2a$10$..."
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Инженер 2 категории"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "worker"
+                },
+                "termination_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-12-31"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "worker_1"
+                }
+            }
+        },
         "dto.AssignmentResponse": {
             "type": "object",
             "properties": {
@@ -4851,33 +5047,6 @@ const docTemplate = `{
                 "task_id": {
                     "type": "integer",
                     "example": 1
-                }
-            }
-        },
-        "dto.CreateEmployeeRequest": {
-            "type": "object",
-            "properties": {
-                "hire_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2025-01-10"
-                },
-                "manager_id": {
-                    "type": "integer",
-                    "example": 5
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Иванов Иван Иванович"
-                },
-                "position": {
-                    "type": "string",
-                    "example": "Ведущий инженер"
-                },
-                "termination_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-12-31"
                 }
             }
         },
@@ -5018,6 +5187,56 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateUserRequest": {
+            "type": "object",
+            "properties": {
+                "hire_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2025-01-10"
+                },
+                "manager_id": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иванов Иван Иванович"
+                },
+                "password_hash": {
+                    "type": "string",
+                    "example": ""
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Инженер 2 категории"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "worker"
+                },
+                "termination_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-12-31"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "worker_1"
+                }
+            }
+        },
+        "dto.CreateUserResult": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserResponse"
+                }
+            }
+        },
         "dto.DetailedProcess": {
             "type": "object",
             "properties": {
@@ -5136,76 +5355,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Пуско-наладочные работы"
-                }
-            }
-        },
-        "dto.EmployeeResponse": {
-            "type": "object",
-            "properties": {
-                "hire_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2024-01-15"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "manager_id": {
-                    "type": "integer",
-                    "example": 5
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Иванов Иван Иванович"
-                },
-                "position": {
-                    "type": "string",
-                    "example": "Ведущий инженер"
-                },
-                "resource_id": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "termination_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-12-31"
-                }
-            }
-        },
-        "dto.EmployeeStateResponse": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-08-02"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "is_available": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "start_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-07-20"
-                },
-                "state_code": {
-                    "type": "string",
-                    "example": "ОТП"
-                },
-                "state_id": {
-                    "type": "integer",
-                    "example": 4
-                },
-                "state_name": {
-                    "type": "string",
-                    "example": "Отпуск"
                 }
             }
         },
@@ -5454,6 +5603,15 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ResetPasswordResponse": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "Xy9kLm2QrT8wAb3z"
+                }
+            }
+        },
         "dto.Resource": {
             "type": "object",
             "properties": {
@@ -5499,6 +5657,41 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Инженер"
+                }
+            }
+        },
+        "dto.ResourceMemberResponse": {
+            "type": "object",
+            "properties": {
+                "hire_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2024-01-15"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "manager_id": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иванов Иван Иванович"
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Инженер 2 категории"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "worker"
+                },
+                "termination_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-12-31"
                 }
             }
         },
@@ -5618,34 +5811,12 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateEmployeeRequest": {
+        "dto.UpdateManagerRequest": {
             "type": "object",
             "properties": {
-                "hire_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2025-01-10"
-                },
                 "manager_id": {
                     "type": "integer",
                     "example": 5
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Иванов Иван Иванович"
-                },
-                "position": {
-                    "type": "string",
-                    "example": "Ведущий инженер"
-                },
-                "resource_id": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "termination_date": {
-                    "type": "string",
-                    "format": "date",
-                    "example": "2026-12-31"
                 }
             }
         },
@@ -5789,13 +5960,31 @@ const docTemplate = `{
         "dto.UpdateUserRequest": {
             "type": "object",
             "properties": {
+                "hire_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2025-01-10"
+                },
+                "manager_id": {
+                    "type": "integer",
+                    "example": 5
+                },
                 "name": {
                     "type": "string",
-                    "example": "Ivan Ivanov"
+                    "example": "Иванов Иван Иванович"
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Инженер 2 категории"
                 },
                 "role": {
                     "type": "string",
-                    "example": "dp"
+                    "example": "worker"
+                },
+                "termination_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-12-31"
                 },
                 "username": {
                     "type": "string",
@@ -5827,21 +6016,78 @@ const docTemplate = `{
         "dto.UserResponse": {
             "type": "object",
             "properties": {
+                "hire_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2024-01-15"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
                 },
+                "manager_id": {
+                    "type": "integer",
+                    "example": 5
+                },
                 "name": {
                     "type": "string",
-                    "example": "Ivan Ivanov"
+                    "example": "Иванов Иван Иванович"
+                },
+                "password_hash": {
+                    "description": "PasswordHash выводится только админу (GET /users?include_hash=true).",
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string",
+                    "example": "Инженер 2 категории"
                 },
                 "role": {
                     "type": "string",
-                    "example": "dp"
+                    "example": "worker"
+                },
+                "termination_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-12-31"
                 },
                 "username": {
                     "type": "string",
-                    "example": "ivanov"
+                    "example": "worker_1"
+                }
+            }
+        },
+        "dto.UserStateResponse": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-08-02"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_available": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-07-20"
+                },
+                "state_code": {
+                    "type": "string",
+                    "example": "ОТП"
+                },
+                "state_id": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "state_name": {
+                    "type": "string",
+                    "example": "Отпуск"
                 }
             }
         },

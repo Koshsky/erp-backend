@@ -1,9 +1,9 @@
 -- name: ListResources :many
 SELECT r.id, r.code, r.title, r.owner_id,
-    COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL)::bigint AS employees_count,
+    COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
-LEFT JOIN employees e ON e.resource_id = r.id
+LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
   AND (@role::text = 'admin' OR r.owner_id = @user_id::bigint)
   AND (@owner_id::bigint = 0 OR r.owner_id = @owner_id::bigint)
@@ -20,10 +20,10 @@ WHERE deleted_at IS NULL
 
 -- name: ListResourcesByOwnerID :many
 SELECT r.id, r.code, r.title, r.owner_id,
-    COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL)::bigint AS employees_count,
+    COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
-LEFT JOIN employees e ON e.resource_id = r.id
+LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.owner_id = @owner_id::bigint
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
@@ -31,10 +31,10 @@ ORDER BY r.id ASC;
 
 -- name: FindResource :one
 SELECT r.id, r.code, r.title, r.owner_id,
-    COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL)::bigint AS employees_count,
+    COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
-LEFT JOIN employees e ON e.resource_id = r.id
+LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.id = @resource_id::bigint
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at;
@@ -44,11 +44,10 @@ INSERT INTO resources (title, code, owner_id)
 VALUES (@title, @code, @owner_id)
 RETURNING *;
 
--- name: CountEmployeesByResourceID :one
+-- name: CountMembersByResourceID :one
 SELECT COUNT(*)::bigint
-FROM employees
-WHERE resource_id = @resource_id::bigint
-	AND deleted_at IS NULL;
+FROM resource_members
+WHERE resource_id = @resource_id::bigint;
 
 -- name: UpdateResource :one
 UPDATE resources
@@ -72,3 +71,29 @@ SELECT COALESCE(owner_id, 0)::bigint AS owner_id
 FROM resources
 WHERE id = @id::bigint
 	AND deleted_at IS NULL;
+
+-- ================= resource members =================
+
+-- name: ListMembersByResourceID :many
+SELECT u.id, u.name, u.role, u.position, u.hire_date, u.termination_date, u.manager_id
+FROM resource_members rm
+JOIN users u ON u.id = rm.user_id
+WHERE rm.resource_id = @resource_id::bigint
+  AND u.deleted_at IS NULL
+ORDER BY u.id ASC;
+
+-- name: AddMember :exec
+INSERT INTO resource_members (resource_id, user_id)
+VALUES (@resource_id::bigint, @user_id::bigint)
+ON CONFLICT DO NOTHING;
+
+-- name: RemoveMember :exec
+DELETE FROM resource_members
+WHERE resource_id = @resource_id::bigint
+  AND user_id = @user_id::bigint;
+
+-- name: FindUserManager :one
+SELECT manager_id
+FROM users
+WHERE id = @user_id::bigint
+  AND deleted_at IS NULL;

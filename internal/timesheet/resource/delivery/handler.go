@@ -190,3 +190,103 @@ func (h *ResourceHandler) UpdateResource(c *gin.Context) {
 	}
 	response.OK(c, updated)
 }
+
+// ListMembers handles the request to list the users of a resource.
+//
+//	@Tags			TimesheetResources
+//	@Summary		List resource members
+//	@Description	List the users attached to a resource
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Param			id	path		int	true	"Resource ID"
+//	@Success		200	{object}	response.SuccessResponse{data=[]dto.ResourceMemberResponse,error=nil}
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Router			/resources/{id}/members [get]
+func (h *ResourceHandler) ListMembers(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
+		return
+	}
+
+	members, err := h.service.ListMembers(c.Request.Context(), id)
+	if err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.OK(c, members)
+}
+
+// AddMember handles the request to attach a user to a resource.
+//
+//	@Tags			TimesheetResources
+//	@Summary		Add resource member
+//	@Description	Attach a user to a resource (vp — only own subordinates)
+//	@Security		ApiKeyAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path	int						true	"Resource ID"
+//	@Param			body	body	dto.AddMemberRequest	true	"Member"
+//	@Success		204
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		403	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Router			/resources/{id}/members [post]
+func (h *ResourceHandler) AddMember(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
+		return
+	}
+
+	var body dto.AddMemberRequest
+	if err = c.ShouldBindJSON(&body); err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
+		return
+	}
+
+	user, err := userctx.GetUser(c)
+	if err != nil {
+		response.InternalError(c, h.logger, err.Error(), err)
+		return
+	}
+
+	if err = h.service.AddMember(c.Request.Context(), id, body.UserID, user.ID, user.Role); err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.NoContent(c)
+}
+
+// RemoveMember handles the request to detach a user from a resource.
+//
+//	@Tags			TimesheetResources
+//	@Summary		Remove resource member
+//	@Description	Detach a user from a resource
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Param			id		path	int	true	"Resource ID"
+//	@Param			userId	path	int	true	"User ID"
+//	@Success		204
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Router			/resources/{id}/members/{userId} [delete]
+func (h *ResourceHandler) RemoveMember(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid resource id")
+		return
+	}
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid user id")
+		return
+	}
+
+	if err = h.service.RemoveMember(c.Request.Context(), id, userID); err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.NoContent(c)
+}

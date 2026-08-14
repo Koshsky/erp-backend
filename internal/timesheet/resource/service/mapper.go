@@ -1,8 +1,11 @@
 package service
 
 import (
+	"time"
+
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ResourceMapper struct{}
@@ -58,4 +61,38 @@ func (m *ResourceMapper) ApplyUpdateToDomain(resource *domain.Resource, req dto.
 	if req.OwnerID != nil {
 		resource.OwnerID = req.OwnerID
 	}
+}
+
+func (m *ResourceMapper) ToMemberDTO(member *domain.ResourceMember) *dto.ResourceMemberResponse {
+	if member == nil {
+		return nil
+	}
+	return &dto.ResourceMemberResponse{
+		ID:              member.ID,
+		Name:            member.Name,
+		Role:            member.Role,
+		Position:        member.Position,
+		ManagerID:       member.ManagerID,
+		HireDate:        datePtr(member.HireDate),
+		TerminationDate: datePtr(member.TerminationDate),
+	}
+}
+
+func (m *ResourceMapper) ToMemberDTOs(members []domain.ResourceMember) []dto.ResourceMemberResponse {
+	if members == nil {
+		return []dto.ResourceMemberResponse{}
+	}
+	responses := make([]dto.ResourceMemberResponse, len(members))
+	for i, member := range members {
+		responses[i] = *m.ToMemberDTO(&member)
+	}
+	return responses
+}
+
+func datePtr(t *time.Time) *date.Date {
+	if t == nil {
+		return nil
+	}
+	d := date.From(*t)
+	return &d
 }

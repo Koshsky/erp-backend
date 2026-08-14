@@ -7,19 +7,54 @@ package sqlc
 
 import (
 	"context"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countUsers = `-- name: CountUsers :one
+SELECT COUNT(*)
+FROM users
+WHERE deleted_at IS NULL
+  AND ($1::bool OR manager_id = $2::bigint)
+  AND ($3::text = '' OR role = $3::text)
+  AND ($4::bigint = 0 OR manager_id = $4::bigint)
+`
+
+type CountUsersParams struct {
+	IsAdmin    bool   `json:"is_admin"`
+	UserID     int64  `json:"user_id"`
+	RoleFilter string `json:"role_filter"`
+	ManagerID  int64  `json:"manager_id"`
+}
+
+func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsers,
+		arg.IsAdmin,
+		arg.UserID,
+		arg.RoleFilter,
+		arg.ManagerID,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, username, role, password_hash)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, role, username, password_hash, created_at, updated_at, deleted_at
+INSERT INTO users (name, username, role, password_hash, manager_id, position, hire_date, termination_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
-	Name         string `json:"name"`
-	Username     string `json:"username"`
-	Role         string `json:"role"`
-	PasswordHash string `json:"password_hash"`
+	Name            string      `json:"name"`
+	Username        string      `json:"username"`
+	Role            string      `json:"role"`
+	PasswordHash    string      `json:"password_hash"`
+	ManagerID       pgtype.Int8 `json:"manager_id"`
+	Position        string      `json:"position"`
+	HireDate        pgtype.Date `json:"hire_date"`
+	TerminationDate pgtype.Date `json:"termination_date"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -28,6 +63,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
+		arg.ManagerID,
+		arg.Position,
+		arg.HireDate,
+		arg.TerminationDate,
 	)
 	var i User
 	err := row.Scan(
@@ -36,11 +75,58 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
+		&i.ManagerID,
+		&i.Position,
+		&i.HireDate,
+		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const deleteOverlapping = `-- name: DeleteOverlapping :exec
+DELETE FROM user_states
+WHERE user_id = $1::bigint
+	AND end_date >= $2::date
+	AND start_date <= $3::date
+`
+
+type DeleteOverlappingParams struct {
+	UserID    int64     `json:"user_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+func (q *Queries) DeleteOverlapping(ctx context.Context, arg DeleteOverlappingParams) error {
+	_, err := q.db.Exec(ctx, deleteOverlapping, arg.UserID, arg.StartDate, arg.EndDate)
+	return err
+}
+
+const deleteOverlappingByState = `-- name: DeleteOverlappingByState :exec
+DELETE FROM user_states
+WHERE user_id = $1::bigint
+	AND state_id = $2::bigint
+	AND end_date >= $3::date
+	AND start_date <= $4::date
+`
+
+type DeleteOverlappingByStateParams struct {
+	UserID    int64     `json:"user_id"`
+	StateID   int64     `json:"state_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+func (q *Queries) DeleteOverlappingByState(ctx context.Context, arg DeleteOverlappingByStateParams) error {
+	_, err := q.db.Exec(ctx, deleteOverlappingByState,
+		arg.UserID,
+		arg.StateID,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	return err
 }
 
 const deleteUser = `-- name: DeleteUser :exec
@@ -56,7 +142,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
+SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
 	AND deleted_at IS NULL
@@ -72,6 +158,10 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
+		&i.ManagerID,
+		&i.Position,
+		&i.HireDate,
+		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -80,7 +170,7 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 }
 
 const findUserByUsername = `-- name: FindUserByUsername :one
-SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
+SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE username = $1
 	AND deleted_at IS NULL
@@ -96,6 +186,10 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
+		&i.ManagerID,
+		&i.Position,
+		&i.HireDate,
+		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -103,15 +197,48 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 	return i, err
 }
 
-const listUsers = `-- name: ListUsers :many
-SELECT id, name, role, username, password_hash, created_at, updated_at, deleted_at
+const insertStateRange = `-- name: InsertStateRange :one
+INSERT INTO user_states (user_id, state_id, start_date, end_date)
+VALUES ($1, $2, $3::date, $4::date)
+RETURNING id, user_id, state_id, start_date, end_date, created_at, updated_at
+`
+
+type InsertStateRangeParams struct {
+	UserID    int64     `json:"user_id"`
+	StateID   int64     `json:"state_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+func (q *Queries) InsertStateRange(ctx context.Context, arg InsertStateRangeParams) (UserState, error) {
+	row := q.db.QueryRow(ctx, insertStateRange,
+		arg.UserID,
+		arg.StateID,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	var i UserState
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.StateID,
+		&i.StartDate,
+		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listAllUsers = `-- name: ListAllUsers :many
+SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
-func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers)
+func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, listAllUsers)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +252,10 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Role,
 			&i.Username,
 			&i.PasswordHash,
+			&i.ManagerID,
+			&i.Position,
+			&i.HireDate,
+			&i.TerminationDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -139,6 +270,251 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const listOverlappingStates = `-- name: ListOverlappingStates :many
+SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id
+FROM user_states es
+WHERE es.user_id = $1::bigint
+	AND es.end_date >= $2::date
+	AND es.start_date <= $3::date
+ORDER BY es.start_date ASC
+FOR UPDATE
+`
+
+type ListOverlappingStatesParams struct {
+	UserID    int64     `json:"user_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+type ListOverlappingStatesRow struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+	StateID   int64     `json:"state_id"`
+}
+
+func (q *Queries) ListOverlappingStates(ctx context.Context, arg ListOverlappingStatesParams) ([]ListOverlappingStatesRow, error) {
+	rows, err := q.db.Query(ctx, listOverlappingStates, arg.UserID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOverlappingStatesRow{}
+	for rows.Next() {
+		var i ListOverlappingStatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.StateID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOverlappingStatesByState = `-- name: ListOverlappingStatesByState :many
+SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id
+FROM user_states es
+WHERE es.user_id = $1::bigint
+	AND es.state_id = $2::bigint
+	AND es.end_date >= $3::date
+	AND es.start_date <= $4::date
+ORDER BY es.start_date ASC
+FOR UPDATE
+`
+
+type ListOverlappingStatesByStateParams struct {
+	UserID    int64     `json:"user_id"`
+	StateID   int64     `json:"state_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+type ListOverlappingStatesByStateRow struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+	StateID   int64     `json:"state_id"`
+}
+
+func (q *Queries) ListOverlappingStatesByState(ctx context.Context, arg ListOverlappingStatesByStateParams) ([]ListOverlappingStatesByStateRow, error) {
+	rows, err := q.db.Query(ctx, listOverlappingStatesByState,
+		arg.UserID,
+		arg.StateID,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOverlappingStatesByStateRow{}
+	for rows.Next() {
+		var i ListOverlappingStatesByStateRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.StateID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStatesByUserRange = `-- name: ListStatesByUserRange :many
+
+SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id,
+	s.code AS state_code, s.name AS state_name, s.is_available
+FROM user_states es
+JOIN states s ON s.id = es.state_id
+WHERE es.user_id = $1::bigint
+	AND es.end_date >= $2::date
+	AND es.start_date <= $3::date
+ORDER BY es.start_date ASC
+`
+
+type ListStatesByUserRangeParams struct {
+	UserID    int64     `json:"user_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+type ListStatesByUserRangeRow struct {
+	ID          int64     `json:"id"`
+	UserID      int64     `json:"user_id"`
+	StartDate   time.Time `json:"start_date"`
+	EndDate     time.Time `json:"end_date"`
+	StateID     int64     `json:"state_id"`
+	StateCode   string    `json:"state_code"`
+	StateName   string    `json:"state_name"`
+	IsAvailable bool      `json:"is_available"`
+}
+
+// ================= worker days (user_states) =================
+func (q *Queries) ListStatesByUserRange(ctx context.Context, arg ListStatesByUserRangeParams) ([]ListStatesByUserRangeRow, error) {
+	rows, err := q.db.Query(ctx, listStatesByUserRange, arg.UserID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStatesByUserRangeRow{}
+	for rows.Next() {
+		var i ListStatesByUserRangeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.StateID,
+			&i.StateCode,
+			&i.StateName,
+			&i.IsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+FROM users
+WHERE deleted_at IS NULL
+  -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
+  -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
+  -- себя на клиенте отдельно).
+  AND ($1::bool OR manager_id = $2::bigint)
+  AND ($3::text = '' OR role = $3::text)
+  AND ($4::bigint = 0 OR manager_id = $4::bigint)
+ORDER BY id ASC
+LIMIT $6::bigint OFFSET $5::bigint
+`
+
+type ListUsersParams struct {
+	IsAdmin    bool   `json:"is_admin"`
+	UserID     int64  `json:"user_id"`
+	RoleFilter string `json:"role_filter"`
+	ManagerID  int64  `json:"manager_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers,
+		arg.IsAdmin,
+		arg.UserID,
+		arg.RoleFilter,
+		arg.ManagerID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Role,
+			&i.Username,
+			&i.PasswordHash,
+			&i.ManagerID,
+			&i.Position,
+			&i.HireDate,
+			&i.TerminationDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const ownerChain = `-- name: OwnerChain :one
+SELECT COALESCE(manager_id, id)::bigint AS owner_id
+FROM users
+WHERE id = $1::bigint
+	AND deleted_at IS NULL
+`
+
+// Владелец записи: руководитель, а при его отсутствии — сам пользователь
+// (чтобы пользователь мог видеть/менять свой табель).
+func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, ownerChain, id)
+	var owner_id int64
+	err := row.Scan(&owner_id)
+	return owner_id, err
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
@@ -146,18 +522,26 @@ SET
 	username = $2,
 	role = $3,
 	password_hash = $4,
+	manager_id = $5,
+	position = $6,
+	hire_date = $7,
+	termination_date = $8,
 	updated_at = NOW()
-WHERE id = $5
+WHERE id = $9
 	AND deleted_at IS NULL
-RETURNING id, name, role, username, password_hash, created_at, updated_at, deleted_at
+RETURNING id, name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
-	Name         string `json:"name"`
-	Username     string `json:"username"`
-	Role         string `json:"role"`
-	PasswordHash string `json:"password_hash"`
-	UserID       int64  `json:"user_id"`
+	Name            string      `json:"name"`
+	Username        string      `json:"username"`
+	Role            string      `json:"role"`
+	PasswordHash    string      `json:"password_hash"`
+	ManagerID       pgtype.Int8 `json:"manager_id"`
+	Position        string      `json:"position"`
+	HireDate        pgtype.Date `json:"hire_date"`
+	TerminationDate pgtype.Date `json:"termination_date"`
+	UserID          int64       `json:"user_id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -166,6 +550,10 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Username,
 		arg.Role,
 		arg.PasswordHash,
+		arg.ManagerID,
+		arg.Position,
+		arg.HireDate,
+		arg.TerminationDate,
 		arg.UserID,
 	)
 	var i User
@@ -175,6 +563,10 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Role,
 		&i.Username,
 		&i.PasswordHash,
+		&i.ManagerID,
+		&i.Position,
+		&i.HireDate,
+		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -197,4 +589,20 @@ type UpdateUserPasswordParams struct {
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.Exec(ctx, updateUserPassword, arg.PasswordHash, arg.UserID)
 	return err
+}
+
+const usernameExists = `-- name: UsernameExists :one
+SELECT EXISTS(
+	SELECT 1
+	FROM users
+	WHERE username = $1
+		AND deleted_at IS NULL
+)
+`
+
+func (q *Queries) UsernameExists(ctx context.Context, username string) (bool, error) {
+	row := q.db.QueryRow(ctx, usernameExists, username)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

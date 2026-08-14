@@ -7,6 +7,7 @@ import (
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
+	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -114,4 +115,56 @@ func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {
 	}
 
 	return s.repository.DeleteResource(ctx, id)
+}
+
+// ListMembers returns the users attached to a resource.
+func (s *ResourceService) ListMembers(ctx context.Context, resourceID int64) ([]dto.ResourceMemberResponse, error) {
+	members, err := s.repository.ListMembersByResourceID(ctx, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.ToMemberDTOs(members), nil
+}
+
+// AddMember attaches a user to a resource. The middleware checks resource
+// management rights (admin or the resource owner); here we enforce the
+// hierarchy rule: vp может привязывать только своих прямых подчинённых
+// («вассал моего вассала не мой вассал»), admin — любого. Исключение —
+// самоподчинение: владелец может добавить себя в свой ресурс.
+func (s *ResourceService) AddMember(
+	ctx context.Context,
+	resourceID int64,
+	userID int64,
+	actorID int64,
+	role string,
+) error {
+	if err := s.validator.ValidatePositiveID(resourceID, "resource_id"); err != nil {
+		return err
+	}
+	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
+		return err
+	}
+
+	if role != userdomain.Admin && userID != actorID {
+		managerID, err := s.repository.FindUserManager(ctx, userID)
+		if err != nil {
+			return err
+		}
+		if managerID == nil || *managerID != actorID {
+			return errors.ErrForbidden
+		}
+	}
+
+	return s.repository.AddMember(ctx, resourceID, userID)
+}
+
+// RemoveMember detaches a user from a resource.
+func (s *ResourceService) RemoveMember(ctx context.Context, resourceID, userID int64) error {
+	if err := s.validator.ValidatePositiveID(resourceID, "resource_id"); err != nil {
+		return err
+	}
+	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
+		return err
+	}
+	return s.repository.RemoveMember(ctx, resourceID, userID)
 }

@@ -8,9 +8,6 @@ import (
 	calendarDelivery "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
 	calendarRepo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
 	calendarService "github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
-	employeeDelivery "github.com/Koshsky/erp-backend/internal/timesheet/employee/delivery"
-	employeeRepo "github.com/Koshsky/erp-backend/internal/timesheet/employee/repository"
-	employeeService "github.com/Koshsky/erp-backend/internal/timesheet/employee/service"
 	resourceDelivery "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 	resourceService "github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
@@ -29,10 +26,6 @@ var ProviderSet = wire.NewSet(
 	stateService.NewStateService,
 	stateDelivery.NewStateHandler,
 
-	employeeRepo.NewEmployeeRepository,
-	employeeService.NewEmployeeService,
-	employeeDelivery.NewEmployeeHandler,
-
 	calendarRepo.NewCalendarRepository,
 	calendarService.NewCalendarService,
 	calendarDelivery.NewCalendarHandler,
@@ -44,7 +37,6 @@ var ProviderSet = wire.NewSet(
 type Module struct {
 	resource *resourceDelivery.ResourceHandler
 	state    *stateDelivery.StateHandler
-	employee *employeeDelivery.EmployeeHandler
 	calendar *calendarDelivery.CalendarHandler
 }
 
@@ -52,13 +44,11 @@ type Module struct {
 func ProvideModule(
 	resource *resourceDelivery.ResourceHandler,
 	state *stateDelivery.StateHandler,
-	employee *employeeDelivery.EmployeeHandler,
 	calendar *calendarDelivery.CalendarHandler,
 ) Module {
 	return Module{
 		resource: resource,
 		state:    state,
-		employee: employee,
 		calendar: calendar,
 	}
 }
@@ -71,6 +61,5 @@ func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
 func (m Module) RegisterProtectedRoutes(r *gin.RouterGroup) {
 	m.resource.RegisterRoutes(r)
 	m.state.RegisterRoutes(r)
-	m.employee.RegisterRoutes(r)
 	m.calendar.RegisterRoutes(r)
 }

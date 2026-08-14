@@ -44,11 +44,11 @@ func (r *CalendarRepository) ListResources(ctx context.Context) ([]dto.ResourceI
 	return resources, nil
 }
 
-// ListEmployeesForCalendar returns employees active within the window for the calendar.
+// ListEmployeesForCalendar returns resource members active within the window for the calendar.
 func (r *CalendarRepository) ListEmployeesForCalendar(
 	ctx context.Context,
 	start, end time.Time,
-) ([]dto.CalendarEmployee, error) {
+) ([]dto.CalendarMember, error) {
 	rows, err := r.db.ListEmployeesForCalendar(ctx, sqlc.ListEmployeesForCalendarParams{
 		StartDate: start,
 		EndDate:   end,
@@ -56,16 +56,16 @@ func (r *CalendarRepository) ListEmployeesForCalendar(
 	if err != nil {
 		return nil, err
 	}
-	employees := make([]dto.CalendarEmployee, 0, len(rows))
+	members := make([]dto.CalendarMember, 0, len(rows))
 	for _, row := range rows {
-		employees = append(employees, dto.CalendarEmployee{
-			EmployeeID:      row.ID,
+		members = append(members, dto.CalendarMember{
+			UserID:          row.ID,
 			ResourceID:      row.ResourceID,
 			HireDate:        fromDate(row.HireDate),
 			TerminationDate: fromDate(row.TerminationDate),
 		})
 	}
-	return employees, nil
+	return members, nil
 }
 
 // ListUnavailableRanges returns absence intervals overlapping the window.
