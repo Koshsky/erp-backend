@@ -26,12 +26,18 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+
+	"github.com/Koshsky/erp-backend/internal/response"
 )
 
 // registerRoutes registers every module's routes: public ones on the api
 // group, protected ones behind RequireAuth.
 func (a *App) registerRoutes(router *gin.Engine) {
 	api := router.Group("/api/v1")
+
+	// Health: liveness-probe без авторизации. Фронтенд проверяет им
+	// доступность бэкенда перед офлайн-синхронизацией (вместо статики).
+	api.GET("/health", a.health)
 
 	for _, m := range a.modules {
 		m.RegisterPublicRoutes(api)
@@ -42,4 +48,9 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	for _, m := range a.modules {
 		m.RegisterProtectedRoutes(protected)
 	}
+}
+
+// health отвечает 200 с состоянием статус-пробы «ok».
+func (a *App) health(c *gin.Context) {
+	response.OK(c, gin.H{"status": "ok"})
 }
