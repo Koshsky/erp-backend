@@ -29,15 +29,17 @@ func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
 
 // Config is the root application configuration.
 type Config struct {
-	HTTPServer  HTTPServerConfig  `yaml:"server"`
-	Postgres    PostgresConfig    `yaml:"postgres"`
-	JWT         JWTConfig         `yaml:"jwt"`
-	Logging     LoggingConfig     `yaml:"logging"`
-	Swagger     SwaggerConfig     `yaml:"swagger"`
-	CORS        CORSConfig        `yaml:"cors"`
-	RateLimit   RateLimitConfig   `yaml:"rate_limiting"`
-	Profiling   ProfilingConfig   `yaml:"profiling"`
-	Maintenance MaintenanceConfig `yaml:"maintenance"`
+	HTTPServer HTTPServerConfig `yaml:"server"`
+	Postgres   PostgresConfig   `yaml:"postgres"`
+	JWT        JWTConfig        `yaml:"jwt"`
+	Logging    LoggingConfig    `yaml:"logging"`
+	Swagger    SwaggerConfig    `yaml:"swagger"`
+	CORS       CORSConfig       `yaml:"cors"`
+	RateLimit  RateLimitConfig  `yaml:"rate_limiting"`
+	// UserRateLimit is the per authenticated user limit for protected routes.
+	UserRateLimit RateLimitConfig   `yaml:"user_rate_limiting"`
+	Profiling     ProfilingConfig   `yaml:"profiling"`
+	Maintenance   MaintenanceConfig `yaml:"maintenance"`
 }
 
 // HTTPServerConfig is the HTTP server settings.
@@ -46,6 +48,11 @@ type HTTPServerConfig struct {
 	ReadTimeout  Duration `yaml:"read_timeout"`
 	WriteTimeout Duration `yaml:"write_timeout"`
 	IdleTimeout  Duration `yaml:"idle_timeout"`
+	// TrustedProxies is the CIDR/client networks allowed to forward client IP
+	// headers (X-Forwarded-For / X-Real-IP) to the backend. It MUST list only
+	// the reverse proxy (nginx) networks; trusting all networks lets remote
+	// clients spoof their IP and bypass per-IP rate limiting.
+	TrustedProxies []string `yaml:"trusted_proxies"`
 }
 
 // PostgresConfig is the Postgres connection pool settings.

@@ -15,18 +15,34 @@ import (
 // retryAfterSeconds is the Retry-After value sent with a 429 response.
 const retryAfterSeconds = "1"
 
+// KeyFunc returns the identity used to bucket clients. Returning the same
+// value for several requests groups them into one token bucket; returning a
+// distinct value per request gives each its own bucket.
+type KeyFunc func(*gin.Context) string
+
 // Config is the rate limiting settings.
 type Config struct {
 	RequestsPerSecond float64
 	Burst             int
 	CleanupInterval   time.Duration
 	Expiration        time.Duration
+	// Key selects the bucket identity (defaults to the client IP when nil).
+	Key KeyFunc
 }
 
-// FromConfig builds a rate limiting handler from the application configuration.
+// FromConfig builds a rate limiting handler from the application configuration,
+// keyed by the client IP.
 //
 // When rate limiting is disabled, a no-op handler is returned.
 func FromConfig(cfg config.RateLimitConfig, logger *slog.Logger) gin.HandlerFunc {
+	return FromConfigKeyed(cfg, nil, logger)
+}
+
+// FromConfigKeyed builds a rate limiting handler from the application
+// configuration, keyed by key (nil keys by the client IP).
+//
+// When rate limiting is disabled, a no-op handler is returned.
+func FromConfigKeyed(cfg config.RateLimitConfig, key KeyFunc, logger *slog.Logger) gin.HandlerFunc {
 	if !cfg.Enabled {
 		return func(c *gin.Context) {
 			c.Next()
@@ -38,10 +54,12 @@ func FromConfig(cfg config.RateLimitConfig, logger *slog.Logger) gin.HandlerFunc
 		Burst:             cfg.Burst,
 		CleanupInterval:   time.Duration(cfg.CleanupInterval),
 		Expiration:        time.Duration(cfg.Expiration),
+		Key:               key,
 	}, logger)
 }
 
-// New builds a per-client-IP token bucket middleware.
+// New builds a per-key token bucket middleware. The bucket identity is chosen
+// by config.Key; when it is nil the client IP is used.
 //
 // The returned handler runs a background cleanup goroutine for the lifetime
 // of the process; it prunes limiters that were not used for the expiration
@@ -58,6 +76,10 @@ func New(config Config, logger *slog.Logger) gin.HandlerFunc {
 	}
 
 	clientLimit := rate.Limit(config.RequestsPerSecond)
+	keyFunc := config.Key
+	if keyFunc == nil {
+		keyFunc = func(c *gin.Context) string { return c.ClientIP() }
+	}
 
 	var mu sync.Mutex
 	limiters := make(map[string]*clientLimiter)
@@ -72,7 +94,7 @@ func New(config Config, logger *slog.Logger) gin.HandlerFunc {
 	}()
 
 	return func(c *gin.Context) {
-		key := c.ClientIP()
+		key := keyFunc(c)
 
 		mu.Lock()
 		cl, ok := limiters[key]

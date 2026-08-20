@@ -66,17 +66,33 @@ func (a *App) Start() error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
+	// Only trust the reverse proxy (nginx) as a source of client IP headers.
+	// Gin defaults to trusting every peer, which lets remote clients spoof
+	// X-Forwarded-For and bypass the per-IP rate limiter. An invalid/empty
+	// list falls back to "trust nobody": ClientIP() then returns the proxy's
+	// own IP, so all traffic shares one bucket instead of being bypassable.
+	if err := router.SetTrustedProxies(a.cfg.HTTPServer.TrustedProxies); err != nil {
+		a.logger.Error("invalid trusted_proxies config, rate limit will key on the proxy IP",
+			"error", err, "trusted_proxies", a.cfg.HTTPServer.TrustedProxies)
+		_ = router.SetTrustedProxies(nil)
+	}
+
 	a.profiler.Start()
 	a.maintenance.Start()
 
 	if a.cfg.Swagger.Enabled {
-		swagger.Register(router)
+		// Swagger is outside /api/v1; keep a public per-IP wall on it.
+		swag := router.Group("/swagger")
+		swag.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
+		swagger.Register(swag)
 	}
 
-	// Register middleware
+	// Register middleware. The rate limiter is intentionally NOT mounted here
+	// globally: public routes are limited per-IP and protected routes per-user
+	// (see registerRoutes), so a heavy user behind a shared NAT does not drain
+	// a common IP bucket and block their neighbors.
 	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
-	router.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()

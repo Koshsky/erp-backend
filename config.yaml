@@ -3,6 +3,13 @@ server:
   read_timeout: 15s
   write_timeout: 15s
   idle_timeout: 60s
+  # Trusted reverse-proxy networks that may supply the real client IP via
+  # X-Forwarded-For / X-Real-IP. Only nginx (in the docker app-network) is
+  # allowed; never 0.0.0.0/0. MUST match the app-network subnet fixed in
+  # docker-compose.yml (172.18.0.0/16) so the value is stable across rebuilds.
+  # If unset/invalid the backend trusts nobody and rate limits on the proxy IP.
+  trusted_proxies:
+    - 172.18.0.0/16
 
 jwt:
   access_expiry: 15m
@@ -34,6 +41,16 @@ rate_limiting:
   enabled: true
   requests_per_second: 10
   burst: 20
+  cleanup_interval: 1m
+  expiration: 10m
+
+# Per authenticated user limit for protected /api/v1/* routes (keyed by the
+# JWT user id, not by IP, so heavy users behind a shared NAT do not trip the
+# public per-IP bucket and block their neighbors).
+user_rate_limiting:
+  enabled: true
+  requests_per_second: 20
+  burst: 40
   cleanup_interval: 1m
   expiration: 10m
 
