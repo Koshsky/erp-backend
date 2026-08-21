@@ -7,6 +7,6 @@ import (
 func (h *CalendarHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/timesheet/calendar")
 	{
-		r.GET("", h.GetCalendar)
+		r.GET("", h.mw.Check("calendar.view"), h.GetCalendar)
 	}
 }

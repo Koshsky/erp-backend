@@ -16,6 +16,9 @@ var resourcePolicies = []rbac.Policy{
 	{Name: "resource.member-list", Check: EntityCheck(rbac.ResourceResource, ActionView)},
 	{Name: "resource.member-add", Check: EntityCheck(rbac.ResourceResource, ActionUpdate)},
 	{Name: "resource.member-remove", Check: EntityCheck(rbac.ResourceResource, ActionUpdate)},
+	// Календарь доступности табеля: видимость по матрице ResourceResource
+	// (admin все, vp свои; dp/rp/worker — нет) — глубокий аудит, маршрут был без RBAC.
+	{Name: "calendar.view", Check: ListCheck(rbac.ResourceResource, "owner_id")},
 }
 
 // createResource lets vp create a resource into their own ownership, admin — any owner.
