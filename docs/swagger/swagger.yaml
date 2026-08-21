@@ -3213,77 +3213,6 @@ paths:
       - TimesheetStates
   /user:
     get:
-      description: Returns all users in the system
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/dto.UserResponse'
-                  type: array
-                error:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: List all users
-      tags:
-      - Users
-  /user/change-password:
-    post:
-      consumes:
-      - application/json
-      description: Change password (requires old password)
-      parameters:
-      - description: Old and new password
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ChangePasswordRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ChangePasswordResponse'
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Change Password
-      tags:
-      - Users
-  /users:
-    get:
       description: Returns a paged list of users; admin sees all, vp sees own subordinates
         + self.
       parameters:
@@ -3409,7 +3338,7 @@ paths:
       summary: Create user
       tags:
       - Users
-  /users/{id}:
+  /user/{id}:
     delete:
       description: Delete a user by ID (soft delete)
       parameters:
@@ -3544,7 +3473,7 @@ paths:
       summary: Update a user
       tags:
       - Users
-  /users/{id}/days:
+  /user/{id}/days:
     delete:
       description: Clear state ranges of a worker overlapping a date range (splits
         overlaps, optional state filter)
@@ -3698,7 +3627,7 @@ paths:
       summary: Set worker days
       tags:
       - Users
-  /users/{id}/manager:
+  /user/{id}/manager:
     put:
       consumes:
       - application/json
@@ -3761,7 +3690,7 @@ paths:
       summary: Update user manager
       tags:
       - Users
-  /users/{id}/reset-password:
+  /user/{id}/reset-password:
     post:
       description: Generate a new random password for a user and return it once
       parameters:
@@ -3805,6 +3734,77 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Reset user password
+      tags:
+      - Users
+  /user/all:
+    get:
+      description: Returns all users in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.UserResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List all users
+      tags:
+      - Users
+  /user/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change password (requires old password)
+      parameters:
+      - description: Old and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChangePasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ChangePasswordResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Change Password
       tags:
       - Users
 securityDefinitions:

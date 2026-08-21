@@ -41,7 +41,7 @@ func NewUserHandler(logger *slog.Logger, svc *userservice.UserService, mw *rbac.
 //	@Produce		json
 //	@Success		200	{object}	response.SuccessResponse{data=[]dto.UserResponse,error=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/user [get]
+//	@Router			/user/all [get]
 func (h *UserHandler) ListAllUsers(c *gin.Context) {
 	users, err := h.service.ListAllUsers(c.Request.Context())
 	if err != nil {
@@ -67,7 +67,7 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 //	@Failure		400				{object}	response.ErrorResponse{data=nil}
 //	@Failure		403				{object}	response.ErrorResponse{data=nil}
 //	@Failure		500				{object}	response.ErrorResponse{data=nil}
-//	@Router			/users [get]
+//	@Router			/user [get]
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	limit, offset, perr := response.ParsePagination(c)
 	if perr != nil {
@@ -135,7 +135,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 //	@Success		200	{object}	response.SuccessResponse{data=dto.UserResponse,error=nil}
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id} [get]
+//	@Router			/user/{id} [get]
 func (h *UserHandler) FindUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -163,7 +163,7 @@ func (h *UserHandler) FindUser(c *gin.Context) {
 //	@Success		201		{object}	response.SuccessResponse{data=dto.CreateUserResult,error=nil}
 //	@Failure		400		{object}	response.ErrorResponse{data=nil}
 //	@Failure		500		{object}	response.ErrorResponse{data=nil}
-//	@Router			/users [post]
+//	@Router			/user [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var req dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -200,7 +200,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 //	@Success		200	{object}	response.SuccessResponse{data=dto.ResetPasswordResponse,error=nil}
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id}/reset-password [post]
+//	@Router			/user/{id}/reset-password [post]
 func (h *UserHandler) ResetPassword(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -229,7 +229,7 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 //	@Success		200		{object}	response.SuccessResponse{data=dto.UserResponse,error=nil}
 //	@Failure		400		{object}	response.ErrorResponse{data=nil}
 //	@Failure		500		{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id} [put]
+//	@Router			/user/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -271,7 +271,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 //	@Failure		400		{object}	response.ErrorResponse{data=nil}
 //	@Failure		403		{object}	response.ErrorResponse{data=nil}
 //	@Failure		500		{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id}/manager [put]
+//	@Router			/user/{id}/manager [put]
 func (h *UserHandler) UpdateManager(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -310,7 +310,7 @@ func (h *UserHandler) UpdateManager(c *gin.Context) {
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id} [delete]
+//	@Router			/user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -366,7 +366,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 //	@Success		200			{object}	response.SuccessResponse{data=[]dto.UserStateResponse,error=nil}
 //	@Failure		400			{object}	response.ErrorResponse{data=nil}
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id}/days [get]
+//	@Router			/user/{id}/days [get]
 func (h *UserHandler) ListDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -406,7 +406,7 @@ func (h *UserHandler) ListDays(c *gin.Context) {
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id}/days [put]
+//	@Router			/user/{id}/days [put]
 func (h *UserHandler) SetDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -441,7 +441,7 @@ func (h *UserHandler) SetDays(c *gin.Context) {
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
-//	@Router			/users/{id}/days [delete]
+//	@Router			/user/{id}/days [delete]
 func (h *UserHandler) DeleteDays(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
