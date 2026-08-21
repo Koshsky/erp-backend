@@ -7,10 +7,12 @@ import (
 )
 
 // ProvideJWTService builds the JWT service.
+//
+// refreshKey (JWT_REFRESH_KEY) больше не используется: refresh-токены opaque и
+// хранятся в БД (AD-06), ключ сохранён в конфиге/окружении для совместимости.
 func ProvideJWTService(cfg config.JWTConfig) *Service {
 	return &Service{
 		secretKey:     []byte(cfg.SecretKey),
-		refreshKey:    []byte(cfg.RefreshKey),
 		accessExpiry:  time.Duration(cfg.AccessExpiry),
 		refreshExpiry: time.Duration(cfg.RefreshExpiry),
 		issuer:        cfg.Issuer,

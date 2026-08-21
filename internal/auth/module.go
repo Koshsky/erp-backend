@@ -9,6 +9,7 @@ import (
 	"github.com/google/wire"
 
 	"github.com/Koshsky/erp-backend/internal/auth/delivery"
+	"github.com/Koshsky/erp-backend/internal/auth/repository"
 	"github.com/Koshsky/erp-backend/internal/auth/service"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
 )
@@ -28,6 +29,7 @@ const (
 // ProviderSet aggregates the auth module's dependencies.
 var ProviderSet = wire.NewSet(
 	service.NewAuthService,
+	repository.NewAuthRepository,
 	delivery.NewAuthHandler,
 	ProvideModule,
 )

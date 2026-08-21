@@ -7,5 +7,6 @@ func (h *AuthHandler) RegisterRoutes(router *gin.RouterGroup, loginGuard gin.Han
 	{
 		r.POST("/login", loginGuard, h.Login)
 		r.POST("/refresh", h.RefreshToken)
+		r.POST("/logout", h.Logout)
 	}
 }

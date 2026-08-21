@@ -14,6 +14,9 @@ server:
 jwt:
   access_expiry: 15m
   refresh_expiry: 168h
+  # Refresh-кука ставится только с флагом Secure. True — за https (nginx-стек);
+  # для нативного dev на http (make dev) — false, иначе браузер не пришлёт куку.
+  refresh_cookie_secure: true
   issuer: mvs-erp
 
 cors:

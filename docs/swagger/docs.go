@@ -452,7 +452,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user and return JWT token",
+                "description": "Authenticate user; the refresh token goes into an HttpOnly cookie",
                 "consumes": [
                     "application/json"
                 ],
@@ -535,30 +535,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/refresh": {
+        "/auth/logout": {
             "post": {
-                "description": "Refresh access token using refresh token, returns new pair",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Revoke the refresh session and clear the cookie (idempotent)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Refresh Token",
-                "parameters": [
-                    {
-                        "description": "Refresh token",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RefreshTokenRequest"
-                        }
-                    }
-                ],
+                "summary": "Logout",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -571,7 +557,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.RefreshResponse"
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
                                         },
                                         "error": {
                                             "type": "object"
@@ -580,18 +569,35 @@ const docTemplate = `{
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Rotate the refresh session from the HttpOnly cookie; returns a new access token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh Token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.ErrorResponse"
+                                    "$ref": "#/definitions/response.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
+                                            "$ref": "#/definitions/dto.AuthResponse"
+                                        },
+                                        "error": {
                                             "type": "object"
                                         }
                                     }
@@ -5169,11 +5175,7 @@ const docTemplate = `{
                 },
                 "expires_in": {
                     "type": "integer",
-                    "example": 3600
-                },
-                "refresh_token": {
-                    "type": "string",
-                    "example": "abcdef123456..."
+                    "example": 900
                 },
                 "token_type": {
                     "type": "string",
@@ -5815,27 +5817,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.RefreshResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Token refreshed successfully"
-                },
-                "tokens": {
-                    "$ref": "#/definitions/jwt.TokenPair"
-                }
-            }
-        },
-        "dto.RefreshTokenRequest": {
-            "type": "object",
-            "properties": {
-                "refresh_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6I..."
-                }
-            }
-        },
         "dto.ResetPasswordResponse": {
             "type": "object",
             "properties": {
@@ -6427,28 +6408,6 @@ const docTemplate = `{
                 "timestamp": {
                     "type": "string",
                     "example": "2026-08-09T10:30:00Z"
-                }
-            }
-        },
-        "jwt.TokenPair": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                },
-                "expires_in": {
-                    "description": "seconds",
-                    "type": "integer",
-                    "example": 3600
-                },
-                "refresh_token": {
-                    "type": "string",
-                    "example": "abcdef123456..."
-                },
-                "token_type": {
-                    "type": "string",
-                    "example": "Bearer"
                 }
             }
         },

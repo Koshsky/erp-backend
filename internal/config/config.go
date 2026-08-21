@@ -72,11 +72,14 @@ type PostgresConfig struct {
 //
 // Secrets come from environment variables (yaml:"-").
 type JWTConfig struct {
-	SecretKey     string   `yaml:"-"`
-	RefreshKey    string   `yaml:"-"`
-	AccessExpiry  Duration `yaml:"access_expiry"`
-	RefreshExpiry Duration `yaml:"refresh_expiry"`
-	Issuer        string   `yaml:"issuer"`
+	SecretKey string `yaml:"-"`
+	// RefreshKey остаётся legacy-совместимым: refresh-токены opaque и хранятся
+	// в БД (AD-06), ключ лишь сохраняется в окружении.
+	RefreshKey          string   `yaml:"-"`
+	AccessExpiry        Duration `yaml:"access_expiry"`
+	RefreshExpiry       Duration `yaml:"refresh_expiry"`
+	Issuer              string   `yaml:"issuer"`
+	RefreshCookieSecure bool     `yaml:"refresh_cookie_secure"`
 }
 
 // LoggingConfig is the logging settings.

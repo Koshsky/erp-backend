@@ -68,11 +68,8 @@ definitions:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
       expires_in:
-        example: 3600
+        example: 900
         type: integer
-      refresh_token:
-        example: abcdef123456...
-        type: string
       token_type:
         example: Bearer
         type: string
@@ -531,20 +528,6 @@ definitions:
       start_date:
         type: string
     type: object
-  dto.RefreshResponse:
-    properties:
-      message:
-        example: Token refreshed successfully
-        type: string
-      tokens:
-        $ref: '#/definitions/jwt.TokenPair'
-    type: object
-  dto.RefreshTokenRequest:
-    properties:
-      refresh_token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6I...
-        type: string
-    type: object
   dto.ResetPasswordResponse:
     properties:
       password:
@@ -973,22 +956,6 @@ definitions:
         example: "2026-08-09T10:30:00Z"
         type: string
     type: object
-  jwt.TokenPair:
-    properties:
-      access_token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        type: string
-      expires_in:
-        description: seconds
-        example: 3600
-        type: integer
-      refresh_token:
-        example: abcdef123456...
-        type: string
-      token_type:
-        example: Bearer
-        type: string
-    type: object
   response.ErrorResponse:
     properties:
       data: {}
@@ -1265,7 +1232,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user and return JWT token
+      description: Authenticate user; the refresh token goes into an HttpOnly cookie
       parameters:
       - description: Login credentials
         in: body
@@ -1308,18 +1275,9 @@ paths:
       summary: Login
       tags:
       - Auth
-  /auth/refresh:
+  /auth/logout:
     post:
-      consumes:
-      - application/json
-      description: Refresh access token using refresh token, returns new pair
-      parameters:
-      - description: Refresh token
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RefreshTokenRequest'
+      description: Revoke the refresh session and clear the cookie (idempotent)
       produces:
       - application/json
       responses:
@@ -1330,17 +1288,31 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.RefreshResponse'
+                  additionalProperties:
+                    type: string
+                  type: object
                 error:
                   type: object
               type: object
-        "400":
-          description: Bad Request
+      summary: Logout
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      description: Rotate the refresh session from the HttpOnly cookie; returns a
+        new access token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
+            - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
+                  $ref: '#/definitions/dto.AuthResponse'
+                error:
                   type: object
               type: object
         "401":
