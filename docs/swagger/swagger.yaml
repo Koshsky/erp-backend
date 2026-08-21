@@ -545,24 +545,6 @@ definitions:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6I...
         type: string
     type: object
-  dto.RegisterRequest:
-    properties:
-      first_name:
-        example: Иван
-        type: string
-      last_name:
-        example: Иванов
-        type: string
-      middle_name:
-        example: Иванович
-        type: string
-      password:
-        example: password
-        type: string
-      username:
-        example: ivanov
-        type: string
-    type: object
   dto.ResetPasswordResponse:
     properties:
       password:
@@ -1371,53 +1353,6 @@ paths:
                   type: object
               type: object
       summary: Refresh Token
-      tags:
-      - Auth
-  /auth/register:
-    post:
-      consumes:
-      - application/json
-      description: Create user and return JWT token
-      parameters:
-      - description: Register credentials
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.AuthResponse'
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      summary: Register
       tags:
       - Auth
   /auto-create/config:

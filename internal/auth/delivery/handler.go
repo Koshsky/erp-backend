@@ -53,41 +53,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response.OK(c, resp)
 }
 
-// Register handles the register request.
-//
-//	@Tags			Auth
-//	@Summary		Register
-//	@Description	Create user and return JWT token
-//	@Accept			json
-//	@Produce		json
-//	@Param			request	body		dto.RegisterRequest	true	"Register credentials"
-//	@Success		201		{object}	response.SuccessResponse{data=dto.AuthResponse,error=nil}
-//	@Failure		400		{object}	response.ErrorResponse{data=nil}
-//	@Failure		500		{object}	response.ErrorResponse{data=nil}
-//	@Router			/auth/register [post]
-func (h *AuthHandler) Register(c *gin.Context) {
-	var req dto.RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, errors.CodeBadRequest, "invalid request")
-		return
-	}
-
-	resp, err := h.service.Register(
-		c.Request.Context(),
-		req.LastName,
-		req.FirstName,
-		req.MiddleName,
-		req.Username,
-		req.Password,
-	)
-	if err != nil {
-		response.InternalError(c, h.logger, "failed to register user", err)
-		return
-	}
-
-	response.Created(c, resp)
-}
-
 // RefreshToken handles the request to refresh access token.
 //
 //	@Tags			Auth

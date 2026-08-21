@@ -10,5 +10,4 @@ import (
 type UserService interface {
 	FindUserByUsername(ctx context.Context, username string) (*userDTO.UserResponse, error)
 	FindUserByID(ctx context.Context, userID int64) (*userDTO.UserResponse, error)
-	CreateUser(ctx context.Context, req userDTO.CreateUserRequest) (*userDTO.UserResponse, error)
 }

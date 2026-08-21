@@ -58,15 +58,6 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	return s.repository.UpdatePassword(ctx, userID, newHash)
 }
 
-// CreateUser creates a user; used by auth (credentials always provided).
-func (s *UserService) CreateUser(ctx context.Context, req dto.CreateUserRequest) (*dto.UserResponse, error) {
-	res, err := s.createUserInternal(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return &res.User, nil
-}
-
 // CreateUserWithCreds creates a user and returns the generated password (if any)
 // for the admin UI. The password is shown exactly once.
 func (s *UserService) CreateUserWithCreds(

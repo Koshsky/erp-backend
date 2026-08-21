@@ -10,7 +10,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
-	"github.com/Koshsky/erp-backend/internal/user/domain"
 	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
@@ -25,42 +24,6 @@ func NewAuthService(users *userservice.UserService, jwtService *jwt.Service) *Au
 		users: users,
 		jwt:   jwtService,
 	}
-}
-
-func (s *AuthService) Register(
-	ctx context.Context,
-	lastName, firstName, middleName, username, password string,
-) (*dto.AuthResponse, error) {
-	username = strings.TrimSpace(username)
-
-	hash, err := hasher.Hash(password)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash password")
-	}
-
-	var middlePtr *string
-	if middleName != "" {
-		m := middleName
-		middlePtr = &m
-	}
-	user, err := s.users.CreateUser(ctx, userDTO.CreateUserRequest{
-		LastName:     lastName,
-		FirstName:    firstName,
-		MiddleName:   middlePtr,
-		Username:     username,
-		Role:         domain.Worker,
-		PasswordHash: hash,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	tokens, err := s.jwt.GenerateTokenPair(user.ID, user.Role, user.Username)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate tokens")
-	}
-
-	return newAuthResponse(user, tokens), nil
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.AuthResponse, error) {
@@ -83,7 +46,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 	return newAuthResponse(user, tokens), nil
 }
 
-// newAuthResponse builds the flattened login/register payload.
+// newAuthResponse builds the flattened login payload.
 func newAuthResponse(user *userDTO.UserResponse, tokens *jwt.TokenPair) *dto.AuthResponse {
 	return &dto.AuthResponse{
 		AccessToken:  tokens.AccessToken,
