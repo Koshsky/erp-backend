@@ -514,6 +514,16 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
+const normalizeUserStates = `-- name: NormalizeUserStates :exec
+SELECT fn_normalize_user_states()
+`
+
+// Сливает смежные диапазоны одинакового (user_id, state_id) в непрерывные.
+func (q *Queries) NormalizeUserStates(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, normalizeUserStates)
+	return err
+}
+
 const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(manager_id, id)::bigint AS owner_id
 FROM users

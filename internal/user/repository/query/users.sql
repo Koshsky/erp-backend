@@ -138,3 +138,7 @@ WHERE user_id = @user_id::bigint
 INSERT INTO user_states (user_id, state_id, start_date, end_date)
 VALUES (@user_id, @state_id, @start_date::date, @end_date::date)
 RETURNING *;
+
+-- name: NormalizeUserStates :exec
+-- Сливает смежные диапазоны одинакового (user_id, state_id) в непрерывные.
+SELECT fn_normalize_user_states();

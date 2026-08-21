@@ -237,6 +237,13 @@ func (r *UserRepository) SetStateRange(
 		return err
 	}
 
+	// Сливаем смежные/пересекающиеся диапазоны того же состояния в непрерывный:
+	// fn_normalize_user_states() схлопывает соседние интервалы одинакового
+	// (user_id, state_id) сразу в рамках этой транзакции.
+	if err = q.NormalizeUserStates(ctx); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 

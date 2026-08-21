@@ -78,5 +78,5 @@ profiling:
   address: "127.0.0.1:6060"
 
 maintenance:
-  enabled: true
+  enabled: false
   interval: 5m
