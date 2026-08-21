@@ -41,6 +41,12 @@ func (s *UserService) FindUserByID(ctx context.Context, id int64) (*dto.UserResp
 }
 
 func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
+	// Политика сложности — до проверки старого пароля (AD-09): формат нового
+	// пароля не раскрывает ничего о текущем.
+	if err := creds.ValidatePassword(newPassword); err != nil {
+		return err
+	}
+
 	user, err := s.FindUserByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("user not found")

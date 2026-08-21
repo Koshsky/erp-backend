@@ -26,6 +26,15 @@ const (
 	loginResponseDelay = 500 * time.Millisecond
 )
 
+// refresh rate limit (per IP) — стpоже общего API-лимита: refresh-токены
+// 256-бит (подбор нереален), лимит гасит злоупотребление/DoS по /auth/refresh.
+const (
+	refreshRatePerSecond  = 2.0
+	refreshBurst          = 10
+	refreshCleanupEvery   = time.Minute
+	refreshLimitExpiresIn = 10 * time.Minute
+)
+
 // ProviderSet aggregates the auth module's dependencies.
 var ProviderSet = wire.NewSet(
 	service.NewAuthService,
@@ -63,9 +72,19 @@ func (m Module) loginGuard() gin.HandlerFunc {
 	}
 }
 
+// refreshGuard returns a per-IP rate limiter applied to the endpoint /auth/refresh.
+func (m Module) refreshGuard() gin.HandlerFunc {
+	return ratelimit.New(ratelimit.Config{
+		RequestsPerSecond: refreshRatePerSecond,
+		Burst:             refreshBurst,
+		CleanupInterval:   refreshCleanupEvery,
+		Expiration:        refreshLimitExpiresIn,
+	}, m.logger)
+}
+
 // RegisterPublicRoutes registers the auth routes without authentication.
 func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
-	m.handler.RegisterRoutes(r, m.loginGuard())
+	m.handler.RegisterRoutes(r, m.loginGuard(), m.refreshGuard())
 }
 
 // RegisterProtectedRoutes is a no-op: auth has no protected routes.

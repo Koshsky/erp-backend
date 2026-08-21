@@ -2,7 +2,7 @@ package delivery
 
 import "github.com/gin-gonic/gin"
 
-func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup) {
+func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup, changePasswordGuard gin.HandlerFunc) {
 	// Единый контур /user: аккаунт/самообслуживание, пул пикеров и CRUD-коллекция.
 	// - GET /user       — скоупированный список с пагинацией (admin всё, vp — свои подчинённые).
 	// - GET /user/all   — нескоупированный пул для пикеров владельцев (user.picker).
@@ -23,7 +23,7 @@ func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup) {
 		r.GET("/:id/days", h.mw.Check("worker.view"), h.ListDays)
 		r.PUT("/:id/days", h.mw.Check("worker.update"), h.SetDays)
 		r.DELETE("/:id/days", h.mw.Check("worker.delete"), h.DeleteDays)
-		// Самообслуживание.
-		r.POST("/change-password", h.ChangePassword)
+		// Самообслуживание (смена пароля) — с per-user лимитом и uniform-задержкой.
+		r.POST("/change-password", changePasswordGuard, h.ChangePassword)
 	}
 }

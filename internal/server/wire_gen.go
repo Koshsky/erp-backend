@@ -97,7 +97,7 @@ func InitializeApp() (*App, error) {
 	v := policies.ProvideAll()
 	rbacMiddleware := rbac.ProvideMiddleware(slogLogger, data, v)
 	userHandler := delivery2.NewUserHandler(slogLogger, userService, rbacMiddleware)
-	userModule := user.ProvideModule(userHandler)
+	userModule := user.ProvideModule(userHandler, slogLogger)
 	planningRepository := repository8.NewPlanningRepository(slogLogger, pool)
 	planningService := service3.NewPlanningService(slogLogger, planningRepository)
 	planningHandler := delivery3.NewPlanningHandler(slogLogger, planningService)

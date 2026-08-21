@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	stderrors "errors"
 	"log/slog"
 	"strconv"
 
@@ -345,7 +346,14 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangePassword(c.Request.Context(), userID, req.OldPassword, req.NewPassword); err != nil {
+	err := h.service.ChangePassword(c.Request.Context(), userID, req.OldPassword, req.NewPassword)
+	if err != nil {
+		// Нарушение политики пароля — отдельный 400 с текстом требований;
+		// остальные ошибки (старый пароль неверен) — generic 400, не раскрываем.
+		if stderrors.Is(err, errors.ErrBadRequest) {
+			response.Error(c, h.logger, err)
+			return
+		}
 		response.BadRequest(c, errors.CodeInvalidCredentials, "invalid password")
 		return
 	}
