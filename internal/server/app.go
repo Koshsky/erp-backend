@@ -15,6 +15,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
+	"github.com/Koshsky/erp-backend/internal/server/maintenance"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
 )
@@ -26,13 +27,14 @@ const (
 )
 
 type App struct {
-	cfg        *config.Config
-	logger     *slog.Logger
-	pool       *pgxpool.Pool
-	httpServer *http.Server
-	profiler   *profiler.Profiler
-	authMw     *auth.Middleware
-	modules    []Module
+	cfg         *config.Config
+	logger      *slog.Logger
+	pool        *pgxpool.Pool
+	httpServer  *http.Server
+	profiler    *profiler.Profiler
+	maintenance *maintenance.Normalizer
+	authMw      *auth.Middleware
+	modules     []Module
 }
 
 // New wires the application with its injected dependencies.
@@ -45,12 +47,13 @@ func New(
 	modules []Module,
 ) (*App, error) {
 	return &App{
-		cfg:      cfg,
-		logger:   logger,
-		pool:     pool,
-		authMw:   authMw,
-		profiler: profiler,
-		modules:  modules,
+		cfg:         cfg,
+		logger:      logger,
+		pool:        pool,
+		authMw:      authMw,
+		profiler:    profiler,
+		maintenance: maintenance.New(cfg.Maintenance, pool, logger),
+		modules:     modules,
 	}, nil
 }
 
@@ -63,16 +66,33 @@ func (a *App) Start() error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	a.profiler.Start()
-
-	if a.cfg.Swagger.Enabled {
-		swagger.Register(router)
+	// Only trust the reverse proxy (nginx) as a source of client IP headers.
+	// Gin defaults to trusting every peer, which lets remote clients spoof
+	// X-Forwarded-For and bypass the per-IP rate limiter. An invalid/empty
+	// list falls back to "trust nobody": ClientIP() then returns the proxy's
+	// own IP, so all traffic shares one bucket instead of being bypassable.
+	if err := router.SetTrustedProxies(a.cfg.HTTPServer.TrustedProxies); err != nil {
+		a.logger.Error("invalid trusted_proxies config, rate limit will key on the proxy IP",
+			"error", err, "trusted_proxies", a.cfg.HTTPServer.TrustedProxies)
+		_ = router.SetTrustedProxies(nil)
 	}
 
-	// Register middleware
+	a.profiler.Start()
+	a.maintenance.Start()
+
+	if a.cfg.Swagger.Enabled {
+		// Swagger is outside /api/v1; keep a public per-IP wall on it.
+		swag := router.Group("/swagger")
+		swag.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
+		swagger.Register(swag)
+	}
+
+	// Register middleware. The rate limiter is intentionally NOT mounted here
+	// globally: public routes are limited per-IP and protected routes per-user
+	// (see registerRoutes), so a heavy user behind a shared NAT does not drain
+	// a common IP bucket and block their neighbors.
 	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
-	router.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
 	router.Use(func(c *gin.Context) {
 		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
 		c.Next()
@@ -137,6 +157,7 @@ func (a *App) waitForServer(timeout time.Duration) error {
 }
 
 func (a *App) Stop(ctx context.Context) error {
+	a.maintenance.Stop(ctx)
 	if a.pool != nil {
 		a.pool.Close()
 	}

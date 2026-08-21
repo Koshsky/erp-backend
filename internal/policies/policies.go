@@ -16,8 +16,9 @@ func All() []rbac.Policy {
 		milestonePolicies,
 		assignmentPolicies,
 		resourcePolicies,
-		employeePolicies,
+		workerPolicies,
 		statePolicies,
+		autoCreatePolicies,
 	)
 }
 
@@ -48,7 +49,7 @@ const (
 	ScopeProjectOwner // project owner (project.owner_id == user)
 	ScopeProcessOwner // process owner (process.owner_id == user)
 	ScopeAnyOwner     // project or process owner
-	ScopeOwned        // row owner (resource.owner_id / employee.manager_id == user)
+	ScopeOwned        // row owner (resource.owner_id / worker.manager_id == user)
 )
 
 // rule binds a role and the required access scope.
@@ -84,7 +85,8 @@ var matrix = map[rbac.Resource]map[Action][]rule{
 		ActionView: {
 			{userdomain.ProjectDirector, ScopeAll},
 			{userdomain.ProjectManager, ScopeProjectOwner},
-			{userdomain.ProcessOwner, ScopeProcessOwner},
+			// vp (владелец процесса) просматривает все процессы, но изменяет/удаляет только свои.
+			{userdomain.ProcessOwner, ScopeAll},
 		},
 		ActionCreate: {
 			{userdomain.ProjectManager, ScopeProjectOwner},
@@ -169,8 +171,8 @@ var matrix = map[rbac.Resource]map[Action][]rule{
 			{userdomain.ProcessOwner, ScopeOwned},
 		},
 	},
-	// Employees: admin — all, vp — their subordinates (manager_id); vp creates into own team.
-	rbac.ResourceEmployee: {
+	// Workers: admin — all, vp — their subordinates (manager_id); vp creates into own team.
+	rbac.ResourceWorker: {
 		ActionView: {
 			{userdomain.ProcessOwner, ScopeOwned},
 		},

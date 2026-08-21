@@ -11,5 +11,12 @@ type AssignmentRepository interface {
 	FindAssignment(ctx context.Context, id int64) (*domain.Assignment, error)
 	UpdateAssignment(ctx context.Context, assignment domain.Assignment) (*domain.Assignment, error)
 	DeleteAssignment(ctx context.Context, id int64) error
-	ListAssignments(ctx context.Context) ([]domain.Assignment, error)
+	ListAssignments(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]domain.Assignment, error)
+	CountAssignments(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
 }

@@ -12,6 +12,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countProjects = `-- name: CountProjects :one
+SELECT COUNT(*)
+FROM projects
+WHERE deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR owner_id = $3::bigint)
+`
+
+type CountProjectsParams struct {
+	Role    string `json:"role"`
+	UserID  int64  `json:"user_id"`
+	OwnerID int64  `json:"owner_id"`
+}
+
+func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countProjects, arg.Role, arg.UserID, arg.OwnerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES (
@@ -95,11 +116,28 @@ const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
 WHERE deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR owner_id = $3::bigint)
 ORDER BY id ASC
+LIMIT $5::bigint OFFSET $4::bigint
 `
 
-func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
-	rows, err := q.db.Query(ctx, listProjects)
+type ListProjectsParams struct {
+	Role       string `json:"role"`
+	UserID     int64  `json:"user_id"`
+	OwnerID    int64  `json:"owner_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
+}
+
+func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listProjects,
+		arg.Role,
+		arg.UserID,
+		arg.OwnerID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

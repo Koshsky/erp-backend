@@ -12,6 +12,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
 type MilestoneHandler struct {
@@ -36,16 +37,36 @@ func NewMilestoneHandler(logger *slog.Logger, svc *service.MilestoneService, mw 
 //	@Description	List all milestones
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Success		200	{object}	response.SuccessResponse{data=[]dto.MilestoneResponse,error=nil}
-//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Param			limit		query		int	false	"Page size (default 50, max 500)"
+//	@Param			owner_id	query		int	false	"Filter by process/project owner (admin/dp)"
+//	@Param			offset		query		int	false	"Page offset"
+//	@Success		200			{object}	response.SuccessResponse{data=response.Page{items=[]dto.MilestoneResponse},error=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/milestone [get]
 func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
-	milestones, err := h.service.ListMilestones(c.Request.Context())
+	limit, offset, perr := response.ParsePagination(c)
+	if perr != nil {
+		response.Error(c, h.logger, perr)
+		return
+	}
+	user, err := userctx.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
+		return
+	}
+	items, total, err := h.service.ListMilestones(
+		c.Request.Context(),
+		user.ID,
+		user.Role,
+		response.QueryID(c, "owner_id"),
+		limit,
+		offset,
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	response.OK(c, milestones)
+	response.OK(c, response.Page{Items: items, Total: total, Limit: limit, Offset: offset})
 }
 
 // FindMilestone handles the request to get a milestone by id.

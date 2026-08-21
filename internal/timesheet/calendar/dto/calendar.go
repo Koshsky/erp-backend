@@ -35,9 +35,9 @@ type ResourceInfo struct {
 	OwnerID *int64 `json:"owner_id" example:"3"`
 }
 
-// CalendarEmployee is an employee (with their work interval) for the calendar.
-type CalendarEmployee struct {
-	EmployeeID      int64
+// CalendarMember is a resource member (worker) with their work interval for the calendar.
+type CalendarMember struct {
+	UserID          int64
 	ResourceID      int64
 	HireDate        *time.Time
 	TerminationDate *time.Time

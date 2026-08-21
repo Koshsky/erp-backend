@@ -84,7 +84,7 @@ FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    $1::text IN ('admin', 'dp') OR
+    $1::text IN ('admin', 'dp', 'vp') OR
     p.owner_id = $2::bigint OR
     pr.owner_id = $2::bigint
 )

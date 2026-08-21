@@ -7,6 +7,8 @@ import (
 
 //nolint:gochecknoglobals // rule registry
 var statePolicies = []rbac.Policy{
+	// Список справочника состояний = та же матрица view (admin/vp; по умолчанию 404 для остальных).
+	{Name: "state.list", Check: stateCheck(ActionView)},
 	{Name: "state.view", Check: stateCheck(ActionView)},
 	{Name: "state.create", Check: stateCheck(ActionCreate)},
 	{Name: "state.update", Check: stateCheck(ActionUpdate)},

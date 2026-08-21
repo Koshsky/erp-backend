@@ -97,7 +97,7 @@ func TestAuthorize_Process(t *testing.T) {
 		{"rp sees own project's process", rp, policies.ActionView, processOfVP1, uRP, true},
 		{"rp does not see foreign process", rp, policies.ActionView, processOfVP1, uVP1, false},
 		{"vp sees own process", vp, policies.ActionView, processOfVP1, uVP1, true},
-		{"vp does not see foreign process", vp, policies.ActionView, processOfVP1, uVP2, false},
+		{"vp sees all processes", vp, policies.ActionView, processOfVP1, uVP2, true},
 		{"worker sees none", worker, policies.ActionView, processOfVP1, uVP1, false},
 		// Create (in own project)
 		{"admin creates", admin, policies.ActionCreate, processOfVP1, uAdmin, true},
@@ -248,7 +248,7 @@ func TestCan(t *testing.T) {
 func TestAuthorize_Timesheet(t *testing.T) {
 	t.Parallel()
 	resourceOfVP := rbac.Owners{Owner: uVP1}
-	empOfVP := rbac.Owners{Owner: uVP1}
+	workerOfVP := rbac.Owners{Owner: uVP1}
 
 	cases := []struct {
 		name    string
@@ -321,14 +321,14 @@ func TestAuthorize_Timesheet(t *testing.T) {
 		},
 		{"vp deletes own resource", rbac.ResourceResource, policies.ActionDelete, vp, resourceOfVP, uVP1, true},
 		// === Employees ===
-		{"admin views all employees", rbac.ResourceEmployee, policies.ActionView, admin, rbac.Owners{}, uAdmin, true},
-		{"vp views own employee", rbac.ResourceEmployee, policies.ActionView, vp, empOfVP, uVP1, true},
-		{"vp does not view foreign employee", rbac.ResourceEmployee, policies.ActionView, vp, empOfVP, uVP2, false},
-		{"rp does not view employees", rbac.ResourceEmployee, policies.ActionView, rp, empOfVP, uRP, false},
-		{"vp creates own employee", rbac.ResourceEmployee, policies.ActionCreate, vp, empOfVP, uVP1, true},
+		{"admin views all employees", rbac.ResourceWorker, policies.ActionView, admin, rbac.Owners{}, uAdmin, true},
+		{"vp views own employee", rbac.ResourceWorker, policies.ActionView, vp, workerOfVP, uVP1, true},
+		{"vp does not view foreign employee", rbac.ResourceWorker, policies.ActionView, vp, workerOfVP, uVP2, false},
+		{"rp does not view employees", rbac.ResourceWorker, policies.ActionView, rp, workerOfVP, uRP, false},
+		{"vp creates own employee", rbac.ResourceWorker, policies.ActionCreate, vp, workerOfVP, uVP1, true},
 		{
 			"vp cannot create employee for another",
-			rbac.ResourceEmployee,
+			rbac.ResourceWorker,
 			policies.ActionCreate,
 			vp,
 			rbac.Owners{Owner: uVP2},
@@ -337,16 +337,24 @@ func TestAuthorize_Timesheet(t *testing.T) {
 		},
 		{
 			"rp cannot create employee",
-			rbac.ResourceEmployee,
+			rbac.ResourceWorker,
 			policies.ActionCreate,
 			rp,
 			rbac.Owners{Owner: uRP},
 			uRP,
 			false,
 		},
-		{"vp updates own employee", rbac.ResourceEmployee, policies.ActionUpdate, vp, empOfVP, uVP1, true},
-		{"vp does not update foreign employee", rbac.ResourceEmployee, policies.ActionUpdate, vp, empOfVP, uVP2, false},
-		{"vp deletes own employee", rbac.ResourceEmployee, policies.ActionDelete, vp, empOfVP, uVP1, true},
+		{"vp updates own employee", rbac.ResourceWorker, policies.ActionUpdate, vp, workerOfVP, uVP1, true},
+		{
+			"vp does not update foreign employee",
+			rbac.ResourceWorker,
+			policies.ActionUpdate,
+			vp,
+			workerOfVP,
+			uVP2,
+			false,
+		},
+		{"vp deletes own employee", rbac.ResourceWorker, policies.ActionDelete, vp, workerOfVP, uVP1, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

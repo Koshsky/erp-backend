@@ -12,6 +12,29 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countTasks = `-- name: CountTasks :one
+SELECT COUNT(*)
+FROM tasks t
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE t.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+`
+
+type CountTasksParams struct {
+	Role    string `json:"role"`
+	UserID  int64  `json:"user_id"`
+	OwnerID int64  `json:"owner_id"`
+}
+
+func (q *Queries) CountTasks(ctx context.Context, arg CountTasksParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countTasks, arg.Role, arg.UserID, arg.OwnerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (process_id, owner_id, title, start_date, end_date)
 VALUES ($1, $2, $3, $4, $5)
@@ -86,14 +109,33 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
-FROM tasks
-WHERE deleted_at IS NULL
-ORDER BY id ASC
+SELECT t.id, t.process_id, t.owner_id, t.title, t.start_date, t.end_date, t.created_at, t.updated_at, t.deleted_at
+FROM tasks t
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE t.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+ORDER BY t.id ASC
+LIMIT $5::bigint OFFSET $4::bigint
 `
 
-func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.Query(ctx, listTasks)
+type ListTasksParams struct {
+	Role       string `json:"role"`
+	UserID     int64  `json:"user_id"`
+	OwnerID    int64  `json:"owner_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
+}
+
+func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listTasks,
+		arg.Role,
+		arg.UserID,
+		arg.OwnerID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

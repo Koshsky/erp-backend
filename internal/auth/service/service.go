@@ -2,55 +2,47 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"strings"
+	"time"
 
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
+	"github.com/Koshsky/erp-backend/internal/auth/repository"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
-	"github.com/Koshsky/erp-backend/internal/user/domain"
 	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
+// activeSessionSweepWindow — насколько давно истёкшие сессии вычищаем фоново.
+const activeSessionSweepWindow = 30 * 24 * time.Hour
+
 type AuthService struct {
-	users UserService
-	jwt   *jwt.Service
+	users    UserService
+	jwt      *jwt.Service
+	sessions *repository.AuthRepository
 }
 
 // NewAuthService builds the auth service.
-func NewAuthService(users *userservice.UserService, jwtService *jwt.Service) *AuthService {
+func NewAuthService(
+	users *userservice.UserService,
+	jwtService *jwt.Service,
+	sessions *repository.AuthRepository,
+) *AuthService {
 	return &AuthService{
-		users: users,
-		jwt:   jwtService,
+		users:    users,
+		jwt:      jwtService,
+		sessions: sessions,
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error) {
-	hash, err := hasher.Hash(password)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash password")
-	}
+func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.SessionResult, error) {
+	username = strings.TrimSpace(username)
 
-	user, err := s.users.CreateUser(ctx, userDTO.CreateUserRequest{
-		Name:         name,
-		Username:     username,
-		Role:         domain.Worker,
-		PasswordHash: hash,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	tokens, err := s.jwt.GenerateTokenPair(user.ID, user.Role, user.Username)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate tokens")
-	}
-
-	return newAuthResponse(user, tokens), nil
-}
-
-func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.AuthResponse, error) {
 	user, err := s.users.FindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
@@ -60,53 +52,135 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(user.ID, user.Role, user.Username)
+	refresh, err := s.issueSession(ctx, user.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate tokens")
+		return nil, err
 	}
 
-	return newAuthResponse(user, tokens), nil
-}
-
-// newAuthResponse builds the flattened login/register payload.
-func newAuthResponse(user *userDTO.UserResponse, tokens *jwt.TokenPair) *dto.AuthResponse {
-	return &dto.AuthResponse{
-		AccessToken:  tokens.AccessToken,
-		TokenType:    tokens.TokenType,
-		ExpiresIn:    tokens.ExpiresIn,
-		RefreshToken: tokens.RefreshToken,
-		User: dto.UserInfo{
-			ID:       user.ID,
-			Name:     user.Name,
-			Username: user.Username,
-			Role:     user.Role,
-		},
-	}
-}
-
-func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshResponse, error) {
-	claims, err := s.jwt.ValidateRefreshToken(refreshToken)
+	access, err := s.jwt.GenerateAccessToken(user.ID, user.Role, user.Username)
 	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token")
+	}
+
+	return &dto.SessionResult{
+		Auth:         s.newAuthResponse(user, access),
+		RefreshToken: refresh,
+	}, nil
+}
+
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.SessionResult, error) {
+	session, err := s.findSession(ctx, refreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	if session.RevokedAt != nil {
+		// Повторное использование отозванного токена — признак кражи: сбрасываем
+		// все активные сессии пользователя.
+		_ = s.sessions.RevokeAllUserSessions(ctx, session.UserID)
+		return nil, fmt.Errorf("invalid refresh token")
+	}
+	if !session.ExpiresAt.After(time.Now()) {
 		return nil, fmt.Errorf("invalid refresh token")
 	}
 
-	var userID int64
-	if _, err = fmt.Sscanf(claims.Subject, "%d", &userID); err != nil {
-		return nil, fmt.Errorf("invalid token subject")
-	}
-
-	user, err := s.users.FindUserByID(ctx, userID)
+	user, err := s.users.FindUserByID(ctx, session.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("user not found")
 	}
 
-	tokens, err := s.jwt.GenerateTokenPair(userID, user.Role, claims.Subject)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate tokens")
+	// Ротация: старая сессия отзывается, выписывается новая пара.
+	if err = s.sessions.RevokeSession(ctx, session.ID); err != nil {
+		return nil, fmt.Errorf("failed to rotate session")
 	}
+	refresh, err := s.issueSession(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	access, err := s.jwt.GenerateAccessToken(user.ID, user.Role, user.Username)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token")
+	}
+	s.sweepExpired(ctx)
 
-	return &dto.RefreshResponse{
-		Tokens:  tokens,
-		Message: "Token refreshed successfully",
+	return &dto.SessionResult{
+		Auth:         s.newAuthResponse(user, access),
+		RefreshToken: refresh,
 	}, nil
+}
+
+// Logout отзывает сессию по refresh-токену (идемпотентно).
+func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
+	if refreshToken == "" {
+		return nil
+	}
+	session, err := s.findSession(ctx, refreshToken)
+	if err != nil {
+		// Неизвестный/уже отозванный токен — logout идемпотентен, это не ошибка.
+		//nolint:nilerr // идемпотентный logout: неизвестный токен — не ошибка
+		return nil
+	}
+	if err = s.sessions.RevokeSession(ctx, session.ID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *AuthService) findSession(ctx context.Context, refreshToken string) (repository.Session, error) {
+	return s.sessions.FindSessionByHash(ctx, hashToken(refreshToken))
+}
+
+// issueSession создаёт opaque refresh-токен и сохраняет его SHA-256 хэш в БД.
+func (s *AuthService) issueSession(ctx context.Context, userID int64) (string, error) {
+	refresh, err := generateRefreshToken()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate refresh token")
+	}
+	_, err = s.sessions.CreateSession(
+		ctx,
+		userID,
+		hashToken(refresh),
+		time.Now().Add(s.jwt.RefreshExpiry()),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create session")
+	}
+	return refresh, nil
+}
+
+// sweepExpired — фоновая очистка давно истёкших сессий (best-effort).
+func (s *AuthService) sweepExpired(ctx context.Context) {
+	_ = s.sessions.DeleteExpiredSessions(ctx, time.Now().Add(-activeSessionSweepWindow))
+}
+
+// generateRefreshToken — opaque 256-битный токен (crypto/rand, hex).
+func generateRefreshToken() (string, error) {
+	var buf [32]byte
+	if _, err := rand.Read(buf[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf[:]), nil
+}
+
+// hashToken — SHA-256 токена; в БД хранится только хэш.
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
+func (s *AuthService) newAuthResponse(user *userDTO.UserResponse, access string) *dto.AuthResponse {
+	return &dto.AuthResponse{
+		AccessToken: access,
+		TokenType:   "Bearer",
+		ExpiresIn:   int(s.jwt.AccessExpiry().Seconds()),
+		User: dto.UserInfo{
+			ID:         user.ID,
+			Name:       user.Name,
+			LastName:   user.LastName,
+			FirstName:  user.FirstName,
+			MiddleName: user.MiddleName,
+			Username:   user.Username,
+			Role:       user.Role,
+		},
+	}
 }

@@ -1,6 +1,8 @@
 package jwt
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"time"
@@ -10,7 +12,6 @@ import (
 
 type Service struct {
 	secretKey     []byte
-	refreshKey    []byte
 	accessExpiry  time.Duration
 	refreshExpiry time.Duration
 	issuer        string
@@ -29,48 +30,12 @@ func (s *Service) GenerateAccessToken(userID int64, role, email string) (string,
 			NotBefore: jwt.NewNumericDate(now),
 			Issuer:    s.issuer,
 			Subject:   strconv.FormatInt(userID, 10),
-			ID:        generateTokenID(),
+			ID:        randomTokenID(),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.secretKey)
-}
-
-// GenerateRefreshToken generates a refresh token with the given user ID.
-func (s *Service) GenerateRefreshToken(userID int64) (string, error) {
-	now := time.Now()
-	claims := jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(now.Add(s.refreshExpiry)),
-		IssuedAt:  jwt.NewNumericDate(now),
-		NotBefore: jwt.NewNumericDate(now),
-		Issuer:    s.issuer,
-		Subject:   strconv.FormatInt(userID, 10),
-		ID:        generateTokenID(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(s.refreshKey)
-}
-
-// GenerateTokenPair generates both access and refresh tokens.
-func (s *Service) GenerateTokenPair(userID int64, role, email string) (*TokenPair, error) {
-	accessToken, err := s.GenerateAccessToken(userID, role, email)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate access token: %w", err)
-	}
-
-	refreshToken, err := s.GenerateRefreshToken(userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
-	}
-
-	return &TokenPair{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
-		ExpiresIn:    int(s.accessExpiry.Seconds()),
-	}, nil
 }
 
 // ValidateAccessToken checks and validates the access token.
@@ -93,57 +58,24 @@ func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-// ValidateRefreshToken checks and parses the refresh token.
-func (s *Service) ValidateRefreshToken(tokenString string) (*jwt.RegisteredClaims, error) {
-	token, err := jwt.ParseWithClaims(
-		tokenString,
-		&jwt.RegisteredClaims{},
-		func(token *jwt.Token) (any, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return s.refreshKey, nil
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("invalid refresh token: %w", err)
-	}
-
-	claims, ok := token.Claims.(*jwt.RegisteredClaims)
-	if !ok || !token.Valid {
-		return nil, fmt.Errorf("invalid refresh token claims")
-	}
-
-	return claims, nil
+// RefreshExpiry returns the refresh session lifetime (shared with the cookie Max-Age).
+func (s *Service) RefreshExpiry() time.Duration {
+	return s.refreshExpiry
 }
 
-// RefreshAccessToken creates a new access token using the refresh token.
-func (s *Service) RefreshAccessToken(refreshTokenString string) (*TokenPair, error) {
-	claims, err := s.ValidateRefreshToken(refreshTokenString)
-	if err != nil {
-		return nil, err
-	}
-
-	// Extract userID from Subject
-	var userID int64
-	if _, err = fmt.Sscanf(claims.Subject, "%d", &userID); err != nil {
-		return nil, fmt.Errorf("invalid user id in token")
-	}
-
-	// Generate only a new access token
-	accessToken, err := s.GenerateAccessToken(userID, "", "")
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate access token: %w", err)
-	}
-
-	return &TokenPair{
-		AccessToken:  accessToken,
-		RefreshToken: refreshTokenString,
-		TokenType:    "Bearer",
-		ExpiresIn:    int(s.accessExpiry.Seconds()),
-	}, nil
+// AccessExpiry returns the access token lifetime (for the ExpiresIn field).
+func (s *Service) AccessExpiry() time.Duration {
+	return s.accessExpiry
 }
 
-func generateTokenID() string {
-	return strconv.FormatInt(time.Now().UnixNano(), 10)
+// randomTokenID returns an unpredictable token id (crypto/rand) instead of a
+// time-based one that could be guessed (AD-06: was UnixNano по текущему времени).
+func randomTokenID() string {
+	var buf [16]byte
+	if _, err := rand.Read(buf[:]); err != nil {
+		// crypto/rand практически не падает; деградация на текущую
+		// отметку времени допустима, чтобы не разрывать подпись токена.
+		return strconv.FormatInt(time.Now().UnixNano(), 10)
+	}
+	return hex.EncodeToString(buf[:])
 }

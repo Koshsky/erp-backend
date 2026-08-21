@@ -36,7 +36,10 @@ type Config struct {
 	Swagger    SwaggerConfig    `yaml:"swagger"`
 	CORS       CORSConfig       `yaml:"cors"`
 	RateLimit  RateLimitConfig  `yaml:"rate_limiting"`
-	Profiling  ProfilingConfig  `yaml:"profiling"`
+	// UserRateLimit is the per authenticated user limit for protected routes.
+	UserRateLimit RateLimitConfig   `yaml:"user_rate_limiting"`
+	Profiling     ProfilingConfig   `yaml:"profiling"`
+	Maintenance   MaintenanceConfig `yaml:"maintenance"`
 }
 
 // HTTPServerConfig is the HTTP server settings.
@@ -45,6 +48,11 @@ type HTTPServerConfig struct {
 	ReadTimeout  Duration `yaml:"read_timeout"`
 	WriteTimeout Duration `yaml:"write_timeout"`
 	IdleTimeout  Duration `yaml:"idle_timeout"`
+	// TrustedProxies is the CIDR/client networks allowed to forward client IP
+	// headers (X-Forwarded-For / X-Real-IP) to the backend. It MUST list only
+	// the reverse proxy (nginx) networks; trusting all networks lets remote
+	// clients spoof their IP and bypass per-IP rate limiting.
+	TrustedProxies []string `yaml:"trusted_proxies"`
 }
 
 // PostgresConfig is the Postgres connection pool settings.
@@ -64,11 +72,14 @@ type PostgresConfig struct {
 //
 // Secrets come from environment variables (yaml:"-").
 type JWTConfig struct {
-	SecretKey     string   `yaml:"-"`
-	RefreshKey    string   `yaml:"-"`
-	AccessExpiry  Duration `yaml:"access_expiry"`
-	RefreshExpiry Duration `yaml:"refresh_expiry"`
-	Issuer        string   `yaml:"issuer"`
+	SecretKey string `yaml:"-"`
+	// RefreshKey остаётся legacy-совместимым: refresh-токены opaque и хранятся
+	// в БД (AD-06), ключ лишь сохраняется в окружении.
+	RefreshKey          string   `yaml:"-"`
+	AccessExpiry        Duration `yaml:"access_expiry"`
+	RefreshExpiry       Duration `yaml:"refresh_expiry"`
+	Issuer              string   `yaml:"issuer"`
+	RefreshCookieSecure bool     `yaml:"refresh_cookie_secure"`
 }
 
 // LoggingConfig is the logging settings.
@@ -96,6 +107,13 @@ type CORSConfig struct {
 type ProfilingConfig struct {
 	Enabled bool   `yaml:"enabled"`
 	Address string `yaml:"address"`
+}
+
+// MaintenanceConfig — фоновая нормализация данных (периодический запуск
+// fn_normalize_employee_states для employee_states).
+type MaintenanceConfig struct {
+	Enabled  bool     `yaml:"enabled"`
+	Interval Duration `yaml:"interval"`
 }
 
 // RateLimitConfig is the per-client rate limiting settings.

@@ -1,14 +1,28 @@
 -- Initial schema for enterprise resource planning
 
+-- Люди (единая таблица). Рабочий — это пользователь с ролью worker; профиль
+-- рабочего (должность, даты, руководитель) хранится прямо на users.
 CREATE TABLE users (
 	id BIGSERIAL PRIMARY KEY,
-	name TEXT NOT NULL,
+	last_name TEXT NOT NULL,
+	first_name TEXT NOT NULL,
+	-- Отчество необязательное.
+	middle_name TEXT DEFAULT NULL,
 	role TEXT NOT NULL,
 	username TEXT NOT NULL,
 	password_hash TEXT NOT NULL,
+	-- Руководитель рабочего (user с ролью vp); для остальных ролей — NULL.
+	manager_id BIGINT REFERENCES users(id),
+	-- Должность — свободный текст (не тип ресурса).
+	position TEXT NOT NULL DEFAULT '',
+	-- NULL означает "в штате с начала времён"; до hire_date рабочий не учитывается.
+	hire_date DATE DEFAULT NULL,
+	-- NULL означает "работает поныне"; после termination_date рабочий не учитывается.
+	termination_date DATE DEFAULT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL
+	deleted_at TIMESTAMPTZ DEFAULT NULL,
+	CHECK (termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date)
 );
 
 CREATE TABLE projects (
@@ -71,33 +85,14 @@ CREATE TABLE states (
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- A concrete employee (unique resource) of the resources category.
-CREATE TABLE employees (
-	id BIGSERIAL PRIMARY KEY,
-	resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE RESTRICT,
-	name TEXT NOT NULL,
-	-- Position is free text (not a resource type).
-	position TEXT NOT NULL DEFAULT '',
-	-- Employee manager (user account); NULL means no subordination.
-	manager_id BIGINT REFERENCES users(id),
-	-- NULL означает "в штате с начала времён"; до hire_date ресурс не учитывается.
-	hire_date DATE DEFAULT NULL,
-	-- NULL означает "работает поныне"; после termination_date ресурс не учитывается.
-	termination_date DATE DEFAULT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
-	CHECK (termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date)
-);
-
--- Employee state ranges (non-presence only): one row = an interval [start_date, end_date].
--- Missing rows mean presence. They are hard-deleted (journal).
--- EXCLUDE запрещает пересечение состояний одного сотрудника (одно состояние в день).
+-- Состояния рабочего (только неприсутствие): одна строка = интервал [start_date, end_date].
+-- Отсутствие строк — присутствие. Жёстко удаляются (журнал).
+-- EXCLUDE запрещает пересечение состояний одного рабочего (одно состояние в день).
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
-CREATE TABLE employee_states (
+CREATE TABLE user_states (
 	id BIGSERIAL PRIMARY KEY,
-	employee_id BIGINT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+	user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	state_id BIGINT NOT NULL REFERENCES states(id) ON DELETE RESTRICT,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
@@ -105,12 +100,22 @@ CREATE TABLE employee_states (
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	CHECK (end_date >= start_date),
 	EXCLUDE USING gist (
-		employee_id WITH =,
+		user_id WITH =,
 		daterange(start_date, end_date, '[]') WITH &&
 	)
 );
 
-CREATE INDEX idx_employee_states_dates ON employee_states (start_date, end_date);
+CREATE INDEX idx_user_states_dates ON user_states (start_date, end_date);
+
+-- Перечень пользователей ресурса: у ресурса перечислены его работники.
+-- UNIQUE(user_id) — рабочий входит не более чем в один ресурс; членство необязательно.
+CREATE TABLE resource_members (
+	resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+	user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	PRIMARY KEY (resource_id, user_id),
+	UNIQUE (user_id)
+);
 
 CREATE TABLE assignments (
 	id BIGSERIAL PRIMARY KEY,

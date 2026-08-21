@@ -100,10 +100,20 @@ func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {
 	return s.repository.DeleteProject(ctx, id)
 }
 
-func (s *ProjectService) ListProjects(ctx context.Context) ([]dto.ProjectResponse, error) {
-	rows, err := s.repository.ListProjects(ctx)
+func (s *ProjectService) ListProjects(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]dto.ProjectResponse, int64, error) {
+	rows, err := s.repository.ListProjects(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return s.mapper.ToDTOs(rows), nil
+	total, err := s.repository.CountProjects(ctx, userID, role, ownerID)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.mapper.ToDTOs(rows), total, nil
 }

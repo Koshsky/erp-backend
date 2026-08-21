@@ -7,7 +7,13 @@ import (
 )
 
 type TaskService interface {
-	ListTasks(ctx context.Context) ([]dto.TaskResponse, error)
+	ListTasks(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]dto.TaskResponse, int64, error)
 	FindTask(ctx context.Context, id int64) (*dto.TaskResponse, error)
 	CreateTask(ctx context.Context, task dto.CreateTaskRequest) (*dto.TaskResponse, error)
 	DeleteTask(ctx context.Context, id int64) error

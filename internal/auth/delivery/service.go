@@ -7,7 +7,7 @@ import (
 )
 
 type AuthService interface {
-	Register(ctx context.Context, name, username, password string) (*dto.AuthResponse, error)
-	Login(ctx context.Context, username, password string) (*dto.AuthResponse, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshResponse, error)
+	Login(ctx context.Context, username, password string) (*dto.SessionResult, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*dto.SessionResult, error)
+	Logout(ctx context.Context, refreshToken string) error
 }

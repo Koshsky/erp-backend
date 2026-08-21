@@ -4,10 +4,24 @@ VALUES (@process_id, @title, @content, @date)
 RETURNING *;
 
 -- name: ListMilestones :many
-SELECT *
-FROM milestones
-WHERE deleted_at IS NULL
-ORDER BY id ASC;
+SELECT m.*
+FROM milestones m
+JOIN processes p ON p.id = m.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE m.deleted_at IS NULL
+  AND (@role::text IN ('admin', 'dp') OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)
+  AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
+ORDER BY m.id ASC
+LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
+
+-- name: CountMilestones :one
+SELECT COUNT(*)
+FROM milestones m
+JOIN processes p ON p.id = m.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE m.deleted_at IS NULL
+  AND (@role::text IN ('admin', 'dp') OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)
+  AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
 -- name: FindMilestone :one
 SELECT *

@@ -76,8 +76,20 @@ func (r *MilestoneRepository) DeleteMilestone(ctx context.Context, id int64) err
 	return r.db.DeleteMilestone(ctx, id)
 }
 
-func (r *MilestoneRepository) ListMilestones(ctx context.Context) ([]domain.Milestone, error) {
-	rows, err := r.db.ListMilestones(ctx)
+func (r *MilestoneRepository) ListMilestones(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]domain.Milestone, error) {
+	rows, err := r.db.ListMilestones(ctx, sqlc.ListMilestonesParams{
+		Role:       role,
+		UserID:     userID,
+		OwnerID:    ownerID,
+		PageLimit:  int64(limit),
+		PageOffset: int64(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +98,15 @@ func (r *MilestoneRepository) ListMilestones(ctx context.Context) ([]domain.Mile
 		milestones = append(milestones, mapMilestone(row))
 	}
 	return milestones, nil
+}
+
+func (r *MilestoneRepository) CountMilestones(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+) (int64, error) {
+	return r.db.CountMilestones(ctx, sqlc.CountMilestonesParams{Role: role, UserID: userID, OwnerID: ownerID})
 }
 
 func mapMilestone(row sqlc.Milestone) domain.Milestone {

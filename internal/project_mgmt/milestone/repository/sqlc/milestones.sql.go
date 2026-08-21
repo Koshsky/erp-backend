@@ -10,6 +10,29 @@ import (
 	"time"
 )
 
+const countMilestones = `-- name: CountMilestones :one
+SELECT COUNT(*)
+FROM milestones m
+JOIN processes p ON p.id = m.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE m.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+`
+
+type CountMilestonesParams struct {
+	Role    string `json:"role"`
+	UserID  int64  `json:"user_id"`
+	OwnerID int64  `json:"owner_id"`
+}
+
+func (q *Queries) CountMilestones(ctx context.Context, arg CountMilestonesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countMilestones, arg.Role, arg.UserID, arg.OwnerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMilestone = `-- name: CreateMilestone :one
 INSERT INTO milestones (process_id, title, content, date)
 VALUES ($1, $2, $3, $4)
@@ -80,14 +103,33 @@ func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milesto
 }
 
 const listMilestones = `-- name: ListMilestones :many
-SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at
-FROM milestones
-WHERE deleted_at IS NULL
-ORDER BY id ASC
+SELECT m.id, m.process_id, m.title, m.content, m.date, m.created_at, m.updated_at, m.deleted_at
+FROM milestones m
+JOIN processes p ON p.id = m.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE m.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+ORDER BY m.id ASC
+LIMIT $5::bigint OFFSET $4::bigint
 `
 
-func (q *Queries) ListMilestones(ctx context.Context) ([]Milestone, error) {
-	rows, err := q.db.Query(ctx, listMilestones)
+type ListMilestonesParams struct {
+	Role       string `json:"role"`
+	UserID     int64  `json:"user_id"`
+	OwnerID    int64  `json:"owner_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
+}
+
+func (q *Queries) ListMilestones(ctx context.Context, arg ListMilestonesParams) ([]Milestone, error) {
+	rows, err := q.db.Query(ctx, listMilestones,
+		arg.Role,
+		arg.UserID,
+		arg.OwnerID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

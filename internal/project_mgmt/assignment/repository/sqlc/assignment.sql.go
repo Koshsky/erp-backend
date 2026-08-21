@@ -9,6 +9,30 @@ import (
 	"context"
 )
 
+const countAssignments = `-- name: CountAssignments :one
+SELECT COUNT(*)
+FROM assignments a
+JOIN tasks t ON t.id = a.task_id
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE a.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+`
+
+type CountAssignmentsParams struct {
+	Role    string `json:"role"`
+	UserID  int64  `json:"user_id"`
+	OwnerID int64  `json:"owner_id"`
+}
+
+func (q *Queries) CountAssignments(ctx context.Context, arg CountAssignmentsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAssignments, arg.Role, arg.UserID, arg.OwnerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createAssignment = `-- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES ($1, $2, $3::bigint)
@@ -71,14 +95,34 @@ func (q *Queries) FindAssignment(ctx context.Context, assignmentID int64) (Assig
 }
 
 const listAssigments = `-- name: ListAssigments :many
-SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
-FROM assignments
-WHERE deleted_at IS NULL
-ORDER BY id ASC
+SELECT a.id, a.task_id, a.resource_id, a.quantity, a.created_at, a.updated_at, a.deleted_at
+FROM assignments a
+JOIN tasks t ON t.id = a.task_id
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE a.deleted_at IS NULL
+  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+ORDER BY a.id ASC
+LIMIT $5::bigint OFFSET $4::bigint
 `
 
-func (q *Queries) ListAssigments(ctx context.Context) ([]Assignment, error) {
-	rows, err := q.db.Query(ctx, listAssigments)
+type ListAssigmentsParams struct {
+	Role       string `json:"role"`
+	UserID     int64  `json:"user_id"`
+	OwnerID    int64  `json:"owner_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
+}
+
+func (q *Queries) ListAssigments(ctx context.Context, arg ListAssigmentsParams) ([]Assignment, error) {
+	rows, err := q.db.Query(ctx, listAssigments,
+		arg.Role,
+		arg.UserID,
+		arg.OwnerID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

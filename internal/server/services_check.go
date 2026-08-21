@@ -1,6 +1,8 @@
 package server
 
 import (
+	autocreateDelivery "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
+	autocreateService "github.com/Koshsky/erp-backend/internal/auto_create/service"
 	assignmentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	assignmentService "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
 	milestoneDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
@@ -13,8 +15,6 @@ import (
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
 	calendarDelivery "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
 	calendarService "github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
-	employeeDelivery "github.com/Koshsky/erp-backend/internal/timesheet/employee/delivery"
-	employeeService "github.com/Koshsky/erp-backend/internal/timesheet/employee/service"
 	resourceDelivery "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
 	resourceService "github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
 	stateDelivery "github.com/Koshsky/erp-backend/internal/timesheet/state/delivery"
@@ -24,6 +24,7 @@ import (
 )
 
 type (
+	AutoCreateService = autocreateDelivery.AutoCreateService
 	UserService       = userDelivery.UserService
 	TaskService       = taskDelivery.TaskService
 	ResourceService   = resourceDelivery.ResourceService
@@ -32,12 +33,12 @@ type (
 	MilestoneService  = milestoneDelivery.MilestoneService
 	AssignmentService = assignmentDelivery.AssignmentService
 	StateService      = stateDelivery.StateService
-	EmployeeService   = employeeDelivery.EmployeeService
 	CalendarService   = calendarDelivery.CalendarService
 )
 
 // COMPILATION CHECK.
 var (
+	_ AutoCreateService = (*autocreateService.AutoCreateService)(nil)
 	_ UserService       = (*userService.UserService)(nil)
 	_ TaskService       = (*taskService.TaskService)(nil)
 	_ ResourceService   = (*resourceService.ResourceService)(nil)
@@ -46,6 +47,5 @@ var (
 	_ MilestoneService  = (*milestoneService.MilestoneService)(nil)
 	_ AssignmentService = (*assignmentService.AssignmentService)(nil)
 	_ StateService      = (*stateService.StateService)(nil)
-	_ EmployeeService   = (*employeeService.EmployeeService)(nil)
 	_ CalendarService   = (*calendarService.CalendarService)(nil)
 )

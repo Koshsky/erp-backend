@@ -3,10 +3,20 @@ server:
   read_timeout: 15s
   write_timeout: 15s
   idle_timeout: 60s
+  # Trusted reverse-proxy networks that may supply the real client IP via
+  # X-Forwarded-For / X-Real-IP. Only nginx (in the docker app-network) is
+  # allowed; never 0.0.0.0/0. MUST match the app-network subnet fixed in
+  # docker-compose.yml (172.18.0.0/16) so the value is stable across rebuilds.
+  # If unset/invalid the backend trusts nobody and rate limits on the proxy IP.
+  trusted_proxies:
+    - 172.18.0.0/16
 
 jwt:
   access_expiry: 15m
   refresh_expiry: 168h
+  # Refresh-кука ставится только с флагом Secure. True — за https (nginx-стек);
+  # для нативного dev на http (make dev) — false, иначе браузер не пришлёт куку.
+  refresh_cookie_secure: true
   issuer: mvs-erp
 
 cors:
@@ -37,6 +47,16 @@ rate_limiting:
   cleanup_interval: 1m
   expiration: 10m
 
+# Per authenticated user limit for protected /api/v1/* routes (keyed by the
+# JWT user id, not by IP, so heavy users behind a shared NAT do not trip the
+# public per-IP bucket and block their neighbors).
+user_rate_limiting:
+  enabled: true
+  requests_per_second: 20
+  burst: 40
+  cleanup_interval: 1m
+  expiration: 10m
+
 postgres:
   max_conns: 25
   min_conns: 5
@@ -54,4 +74,9 @@ swagger:
 
 profiling:
   enabled: false
-  address: "0.0.0.0:6060"
+  # pprof только на loopback (AD-13): даже при включении наружу не торчит.
+  address: "127.0.0.1:6060"
+
+maintenance:
+  enabled: true
+  interval: 5m

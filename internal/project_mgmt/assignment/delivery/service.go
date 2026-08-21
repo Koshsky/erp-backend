@@ -7,7 +7,13 @@ import (
 )
 
 type AssignmentService interface {
-	ListAssignments(ctx context.Context) ([]dto.AssignmentResponse, error)
+	ListAssignments(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]dto.AssignmentResponse, int64, error)
 	FindAssignment(ctx context.Context, id int64) (*dto.AssignmentResponse, error)
 	CreateAssignment(ctx context.Context, assignment dto.CreateAssignmentRequest) (*dto.AssignmentResponse, error)
 	DeleteAssignment(ctx context.Context, id int64) error

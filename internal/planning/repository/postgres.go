@@ -31,7 +31,6 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 		UserID: userID,
 		Role:   role,
 	})
-
 	if err != nil {
 		return nil, err
 	}

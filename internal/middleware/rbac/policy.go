@@ -16,8 +16,8 @@ const (
 	ResourceState
 	// ResourceResource is a timesheet resource category (specialization).
 	ResourceResource
-	// ResourceEmployee is a concrete employee.
-	ResourceEmployee
+	// ResourceWorker is a worker (user with role worker).
+	ResourceWorker
 )
 
 // Owners is an entity's chain of owners: the project owner and the process owner.

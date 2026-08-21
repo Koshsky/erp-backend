@@ -74,8 +74,20 @@ func (r *AssignmentRepository) DeleteAssignment(ctx context.Context, id int64) e
 	return r.db.DeleteAssignment(ctx, id)
 }
 
-func (r *AssignmentRepository) ListAssignments(ctx context.Context) ([]domain.Assignment, error) {
-	rows, err := r.db.ListAssigments(ctx)
+func (r *AssignmentRepository) ListAssignments(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]domain.Assignment, error) {
+	rows, err := r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
+		Role:       role,
+		UserID:     userID,
+		OwnerID:    ownerID,
+		PageLimit:  int64(limit),
+		PageOffset: int64(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +96,15 @@ func (r *AssignmentRepository) ListAssignments(ctx context.Context) ([]domain.As
 		assignments = append(assignments, mapAssignment(row))
 	}
 	return assignments, nil
+}
+
+func (r *AssignmentRepository) CountAssignments(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+) (int64, error) {
+	return r.db.CountAssignments(ctx, sqlc.CountAssignmentsParams{Role: role, UserID: userID, OwnerID: ownerID})
 }
 
 func mapAssignment(row sqlc.Assignment) domain.Assignment {

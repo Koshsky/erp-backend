@@ -55,6 +55,10 @@ func (r Response) MarshalJSON() ([]byte, error) {
 	}{Data: data, Error: errBody})
 }
 
+// internalErrorMessage is the stable client-facing message for 5xx responses.
+// Internal details are never exposed to the client; they go to the logs only.
+const internalErrorMessage = "internal server error"
+
 // errorBody builds an error envelope with the given code, message and now.
 func errorBody(code errors.Code, msg string) *errors.DomainError {
 	return &errors.DomainError{
@@ -89,10 +93,12 @@ func Unauthorized(c *gin.Context, code errors.Code, msg string) {
 	c.JSON(http.StatusUnauthorized, Response{Error: errorBody(code, msg)})
 }
 
-// InternalError sends a 500 error response and logs the internal error.
+// InternalError sends a 500 error response and logs the internal error. The
+// client always receives the generic internalErrorMessage; msg and err (which
+// may contain internal details) are only written to the logs.
 func InternalError(c *gin.Context, logger *slog.Logger, msg string, err error) {
 	logger.Error(msg, "error", err)
-	c.JSON(http.StatusInternalServerError, Response{Error: errorBody(errors.CodeInternal, msg)})
+	c.JSON(http.StatusInternalServerError, Response{Error: errorBody(errors.CodeInternal, internalErrorMessage)})
 }
 
 // Forbidden sends a 403 error response.
@@ -119,6 +125,8 @@ func Error(c *gin.Context, logger *slog.Logger, err error) {
 	code := errors.CodeOf(err, status)
 	if status == http.StatusInternalServerError {
 		logger.Error("internal error", "error", err)
+		c.JSON(status, Response{Error: errorBody(code, internalErrorMessage)})
+		return
 	}
 	c.JSON(status, Response{Error: errorBody(code, err.Error())})
 }

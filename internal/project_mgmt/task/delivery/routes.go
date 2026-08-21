@@ -7,7 +7,7 @@ import (
 func (h *TaskHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/task")
 	{
-		r.GET("", h.ListTasks)
+		r.GET("", h.mw.Check("task.list"), h.ListTasks)
 		r.GET("/:id", h.mw.Check("task.view"), h.FindTask)
 		r.POST("", h.mw.Check("task.create"), h.CreateTask)
 		r.PUT("/:id", h.mw.Check("task.update"), h.UpdateTask)

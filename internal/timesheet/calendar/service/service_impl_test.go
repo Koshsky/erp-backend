@@ -43,9 +43,9 @@ func TestBuildPeriodsEmpty(t *testing.T) {
 
 func TestBuildPeriodsHireAndVacation(t *testing.T) {
 	t.Parallel()
-	employees := []dto.CalendarEmployee{
-		{EmployeeID: 1, ResourceID: 1, HireDate: timePtr("2025-01-01")},
-		{EmployeeID: 2, ResourceID: 1, HireDate: timePtr("2026-06-01")},
+	employees := []dto.CalendarMember{
+		{UserID: 1, ResourceID: 1, HireDate: timePtr("2025-01-01")},
+		{UserID: 2, ResourceID: 1, HireDate: timePtr("2026-06-01")},
 	}
 	ranges := []dto.UnavailableRange{
 		{ResourceID: 1, StartDate: dt("2026-07-20"), EndDate: dt("2026-08-02")},
@@ -69,9 +69,9 @@ func TestBuildPeriodsHireAndVacation(t *testing.T) {
 
 func TestBuildPeriodsTerminationAndMerge(t *testing.T) {
 	t.Parallel()
-	employees := []dto.CalendarEmployee{
-		{EmployeeID: 1, ResourceID: 1, HireDate: timePtr("2024-01-01"), TerminationDate: timePtr("2026-03-15")},
-		{EmployeeID: 2, ResourceID: 1, HireDate: timePtr("2024-01-01")},
+	employees := []dto.CalendarMember{
+		{UserID: 1, ResourceID: 1, HireDate: timePtr("2024-01-01"), TerminationDate: timePtr("2026-03-15")},
+		{UserID: 2, ResourceID: 1, HireDate: timePtr("2024-01-01")},
 	}
 	got := buildPeriods(dt("2026-01-01"), dt("2026-12-31"), employees, nil)
 	want := []dto.AvailabilityPeriod{

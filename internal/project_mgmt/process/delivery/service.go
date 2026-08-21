@@ -7,7 +7,13 @@ import (
 )
 
 type ProcessService interface {
-	ListProcesses(ctx context.Context) ([]dto.ProcessResponse, error)
+	ListProcesses(
+		ctx context.Context,
+		userID int64,
+		role string,
+		ownerID int64,
+		limit, offset int,
+	) ([]dto.ProcessResponse, int64, error)
 	FindProcess(ctx context.Context, id int64) (*dto.ProcessResponse, error)
 	CreateProcess(ctx context.Context, process dto.CreateProcessRequest) (*dto.ProcessResponse, error)
 	DeleteProcess(ctx context.Context, id int64) error

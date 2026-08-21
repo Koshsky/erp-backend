@@ -42,7 +42,7 @@ func chainOwners(_ context.Context, id int64) (rbac.Owners, error) {
 	return rbac.Owners{ProjectOwner: 1, ProcessOwner: 2}, nil
 }
 
-// rowOwner is a "row owner" resolver: resource/employee → owner=id.
+// rowOwner is a "row owner" resolver: resource/worker → owner=id.
 func rowOwner(_ context.Context, id int64) (rbac.Owners, error) {
 	if id%10 == 0 {
 		return rbac.Owners{}, errors.ErrNotFound
@@ -58,7 +58,7 @@ func testData() rbac.Data {
 		MilestoneOwners:  chainOwners,
 		AssignmentOwners: chainOwners,
 		ResourceOwners:   rowOwner,
-		EmployeeOwners:   rowOwner,
+		WorkerOwners:     rowOwner,
 	}
 }
 

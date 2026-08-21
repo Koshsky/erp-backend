@@ -86,5 +86,4 @@ var (
 	ErrAssignmentNotFound = NotFound("assignment not found")
 	ErrUserNotFound       = NotFound("user not found")
 	ErrStateNotFound      = NotFound("state not found")
-	ErrEmployeeNotFound   = NotFound("employee not found")
 )

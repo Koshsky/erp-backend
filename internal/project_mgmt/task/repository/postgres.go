@@ -73,8 +73,20 @@ func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
 	return r.db.DeleteTask(ctx, id)
 }
 
-func (r *TaskRepository) ListTasks(ctx context.Context) ([]domain.Task, error) {
-	rows, err := r.db.ListTasks(ctx)
+func (r *TaskRepository) ListTasks(
+	ctx context.Context,
+	userID int64,
+	role string,
+	ownerID int64,
+	limit, offset int,
+) ([]domain.Task, error) {
+	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
+		Role:       role,
+		UserID:     userID,
+		OwnerID:    ownerID,
+		PageLimit:  int64(limit),
+		PageOffset: int64(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +95,10 @@ func (r *TaskRepository) ListTasks(ctx context.Context) ([]domain.Task, error) {
 		tasks = append(tasks, mapTask(row))
 	}
 	return tasks, nil
+}
+
+func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, role string, ownerID int64) (int64, error) {
+	return r.db.CountTasks(ctx, sqlc.CountTasksParams{Role: role, UserID: userID, OwnerID: ownerID})
 }
 
 func mapTask(row sqlc.Task) domain.Task {
