@@ -74,7 +74,8 @@ swagger:
 
 profiling:
   enabled: false
-  address: "0.0.0.0:6060"
+  # pprof только на loopback (AD-13): даже при включении наружу не торчит.
+  address: "127.0.0.1:6060"
 
 maintenance:
   enabled: true
