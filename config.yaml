@@ -80,3 +80,10 @@ profiling:
 maintenance:
   enabled: false
   interval: 5m
+
+tracing:
+  enabled: true
+  # OTLP/gRPC endpoint — in-stack Jaeger collector (see docker-compose.yml).
+  exporter_endpoint: "jaeger:4317"
+  service_name: "erp-backend"
+  sampler_ratio: 1.0

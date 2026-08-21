@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -12,15 +13,21 @@ import (
 
 type MilestoneService struct {
 	logger     *slog.Logger
+	tracer     *tracingpkg.Tracer
 	repository MilestoneRepository
 	mapper     *MilestoneMapper
 	validator  *MilestoneValidator
 }
 
 // NewMilestoneService builds the MilestoneService service.
-func NewMilestoneService(logger *slog.Logger, r *repo.MilestoneRepository) *MilestoneService {
+func NewMilestoneService(
+	logger *slog.Logger,
+	tracer *tracingpkg.Tracer,
+	r *repo.MilestoneRepository,
+) *MilestoneService {
 	return &MilestoneService{
 		logger:     logger,
+		tracer:     tracer,
 		repository: r,
 		mapper:     NewMilestoneMapper(),
 		validator:  &MilestoneValidator{},
@@ -31,6 +38,9 @@ func (s *MilestoneService) CreateMilestone(
 	ctx context.Context,
 	req dto.CreateMilestoneRequest,
 ) (*dto.MilestoneResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "milestone.CreateMilestone")
+	defer end(nil)
+
 	milestone := s.mapper.ToDomainFromCreate(req)
 	if err := s.validator.ValidateMilestone(&milestone); err != nil {
 		return nil, err
@@ -45,6 +55,9 @@ func (s *MilestoneService) CreateMilestone(
 }
 
 func (s *MilestoneService) FindMilestone(ctx context.Context, id int64) (*dto.MilestoneResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "milestone.FindMilestone")
+	defer end(nil)
+
 	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
@@ -63,6 +76,9 @@ func (s *MilestoneService) UpdateMilestone(
 	id int64,
 	req dto.UpdateMilestoneRequest,
 ) (*dto.MilestoneResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "milestone.UpdateMilestone")
+	defer end(nil)
+
 	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil || milestone == nil {
 		return nil, errors.ErrMilestoneNotFound
@@ -82,6 +98,9 @@ func (s *MilestoneService) UpdateMilestone(
 }
 
 func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error {
+	ctx, end := s.tracer.Start(ctx, "milestone.DeleteMilestone")
+	defer end(nil)
+
 	milestone, err := s.repository.FindMilestone(ctx, id)
 	if err != nil || milestone == nil {
 		return errors.ErrMilestoneNotFound
@@ -97,6 +116,9 @@ func (s *MilestoneService) ListMilestones(
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.MilestoneResponse, int64, error) {
+	ctx, end := s.tracer.Start(ctx, "milestone.ListMilestones")
+	defer end(nil)
+
 	rows, err := s.repository.ListMilestones(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err

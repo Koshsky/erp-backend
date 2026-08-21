@@ -7,6 +7,7 @@ import (
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -17,15 +18,17 @@ type ResourceService struct {
 	repository ResourceRepository
 	mapper     *ResourceMapper
 	validator  *ResourceValidator
+	tracer     *tracingpkg.Tracer
 }
 
 // NewResourceService builds the ResourceService service.
-func NewResourceService(logger *slog.Logger, r *repo.ResourceRepository) *ResourceService {
+func NewResourceService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ResourceRepository) *ResourceService {
 	return &ResourceService{
 		logger:     logger,
 		repository: r,
 		mapper:     NewResourceMapper(),
 		validator:  &ResourceValidator{},
+		tracer:     tracer,
 	}
 }
 
@@ -36,6 +39,9 @@ func (s *ResourceService) ListResources(
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ResourceResponse, int64, error) {
+	ctx, end := s.tracer.Start(ctx, "resource.ListResources")
+	defer end(nil)
+
 	rows, err := s.repository.ListResources(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -55,6 +61,9 @@ func (s *ResourceService) CreateResource(
 	req dto.CreateResourceRequest,
 	userID int64,
 ) (*dto.ResourceResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "resource.CreateResource")
+	defer end(nil)
+
 	if req.OwnerID == nil {
 		req.OwnerID = &userID
 	}
@@ -73,6 +82,8 @@ func (s *ResourceService) CreateResource(
 }
 
 func (s *ResourceService) FindResource(ctx context.Context, id int64) (*dto.ResourceResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "resource.FindResource")
+	defer end(nil)
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
@@ -91,6 +102,9 @@ func (s *ResourceService) UpdateResource(
 	id int64,
 	req dto.UpdateResourceRequest,
 ) (*dto.ResourceResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "resource.UpdateResource")
+	defer end(nil)
+
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil || resource == nil {
 		return nil, errors.ErrResourceNotFound
@@ -110,6 +124,9 @@ func (s *ResourceService) UpdateResource(
 }
 
 func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {
+	ctx, end := s.tracer.Start(ctx, "resource.DeleteResource")
+	defer end(nil)
+
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil || resource == nil {
 		return errors.ErrResourceNotFound
@@ -120,6 +137,9 @@ func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {
 
 // ListMembers returns the users attached to a resource.
 func (s *ResourceService) ListMembers(ctx context.Context, resourceID int64) ([]dto.ResourceMemberResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "resource.ListMembers")
+	defer end(nil)
+
 	members, err := s.repository.ListMembersByResourceID(ctx, resourceID)
 	if err != nil {
 		return nil, err
@@ -139,6 +159,9 @@ func (s *ResourceService) AddMember(
 	actorID int64,
 	role string,
 ) error {
+	ctx, end := s.tracer.Start(ctx, "resource.AddMember")
+	defer end(nil)
+
 	if err := s.validator.ValidatePositiveID(resourceID, "resource_id"); err != nil {
 		return err
 	}
@@ -161,6 +184,9 @@ func (s *ResourceService) AddMember(
 
 // RemoveMember detaches a user from a resource.
 func (s *ResourceService) RemoveMember(ctx context.Context, resourceID, userID int64) error {
+	ctx, end := s.tracer.Start(ctx, "resource.RemoveMember")
+	defer end(nil)
+
 	if err := s.validator.ValidatePositiveID(resourceID, "resource_id"); err != nil {
 		return err
 	}
@@ -177,6 +203,9 @@ func (s *ResourceService) ListAbsence(
 	resourceID int64,
 	start, end date.Date,
 ) ([]dto.ResourceAbsenceResponse, error) {
+	ctx, finish := s.tracer.Start(ctx, "resource.ListAbsence")
+	defer finish(nil)
+
 	if err := s.validator.ValidatePositiveID(resourceID, "resource_id"); err != nil {
 		return nil, err
 	}

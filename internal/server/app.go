@@ -18,6 +18,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/server/maintenance"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 )
 
 const (
@@ -34,6 +35,7 @@ type App struct {
 	profiler    *profiler.Profiler
 	maintenance *maintenance.Normalizer
 	authMw      *auth.Middleware
+	tracer      *tracingpkg.Tracer
 	modules     []Module
 }
 
@@ -44,6 +46,7 @@ func New(
 	pool *pgxpool.Pool,
 	authMw *auth.Middleware,
 	profiler *profiler.Profiler,
+	tracer *tracingpkg.Tracer,
 	modules []Module,
 ) (*App, error) {
 	return &App{
@@ -53,6 +56,7 @@ func New(
 		authMw:      authMw,
 		profiler:    profiler,
 		maintenance: maintenance.New(cfg.Maintenance, pool, logger),
+		tracer:      tracer,
 		modules:     modules,
 	}, nil
 }
@@ -93,11 +97,10 @@ func (a *App) Start() error {
 	// a common IP bucket and block their neighbors.
 	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
-	router.Use(func(c *gin.Context) {
-		a.logger.Info("request", "method", c.Request.Method, "path", c.Request.RequestURI)
-		c.Next()
-	})
-
+	// Корневой span запроса (trace): method/path/status/duration + user_id.
+	router.Use(a.tracer.HTTPRootSpan())
+	// Резервное текстовое логирование запросов (независимо от трейсинга).
+	router.Use(a.requestLog())
 	// Register routes
 	a.registerRoutes(router)
 
@@ -164,8 +167,28 @@ func (a *App) Stop(ctx context.Context) error {
 	if err := a.profiler.Stop(ctx); err != nil {
 		return err
 	}
+	if a.tracer != nil {
+		if err := a.tracer.Shutdown(ctx); err != nil {
+			a.logger.ErrorContext(ctx, "tracing shutdown failed", "error", err)
+		}
+	}
 	if a.httpServer != nil {
 		return a.httpServer.Shutdown(ctx)
 	}
 	return nil
+}
+
+// requestLog пишет в лог сводку по каждому HTTP-запросу (метод, путь, статус,
+// длительность) — независимый от трейсинга резерв для текстовых логов.
+func (a *App) requestLog() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		a.logger.Info("request",
+			"method", c.Request.Method,
+			"path", c.Request.RequestURI,
+			"status", c.Writer.Status(),
+			"duration_ms", time.Since(start).Milliseconds(),
+		)
+	}
 }

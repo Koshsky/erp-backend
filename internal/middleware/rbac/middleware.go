@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
@@ -128,17 +129,22 @@ func (rc *CheckCtx) Owners(rsrc Resource, id int64) (Owners, error) {
 // Middleware is the policy engine.
 type Middleware struct {
 	logger *slog.Logger
+	tracer *tracingpkg.Tracer
 	data   Data
 	byName map[string]Policy
 }
 
-// Check runs the policy by name.
+// Check runs the policy by name, wrapped in its own trace span.
 func (m *Middleware) Check(name string) gin.HandlerFunc {
 	policy, ok := m.byName[name]
 	if !ok {
 		panic("rbac: unknown policy " + name)
 	}
 	return func(c *gin.Context) {
+		ctx, end := m.tracer.Start(c.Request.Context(), "rbac."+name)
+		c.Request = c.Request.WithContext(ctx)
+		defer end(nil)
+
 		user, found := getUser(c)
 		if !found {
 			return

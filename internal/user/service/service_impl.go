@@ -10,6 +10,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/security/creds"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 	"github.com/Koshsky/erp-backend/pkg/date"
@@ -21,26 +22,33 @@ type UserService struct {
 	repository UserRepository
 	mapper     *UserMapper
 	validator  *UserValidator
+	tracer     *tracingpkg.Tracer
 }
 
 // maxManagerDepth — страховка от зацикливания при обходе иерархии руководителей.
 const maxManagerDepth = 1000
 
 // NewUserService builds the UserService service.
-func NewUserService(logger *slog.Logger, r *repo.UserRepository) *UserService {
+func NewUserService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.UserRepository) *UserService {
 	return &UserService{
 		logger:     logger,
 		repository: r,
 		mapper:     &UserMapper{},
 		validator:  &UserValidator{},
+		tracer:     tracer,
 	}
 }
 
 func (s *UserService) FindUserByID(ctx context.Context, id int64) (*dto.UserResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "user.FindUserByID")
+	defer end(nil)
 	return s.FindUser(ctx, id)
 }
 
 func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
+	ctx, end := s.tracer.Start(ctx, "user.ChangePassword")
+	defer end(nil)
+
 	// Политика сложности — до проверки старого пароля (AD-09): формат нового
 	// пароля не раскрывает ничего о текущем.
 	if err := creds.ValidatePassword(newPassword); err != nil {
@@ -70,6 +78,8 @@ func (s *UserService) CreateUserWithCreds(
 	ctx context.Context,
 	req dto.CreateUserRequest,
 ) (*dto.CreateUserResult, error) {
+	ctx, end := s.tracer.Start(ctx, "user.CreateUser")
+	defer end(nil)
 	return s.createUserInternal(ctx, req)
 }
 
@@ -147,6 +157,9 @@ func (s *UserService) generateUsername(ctx context.Context, name, role string) (
 
 // ResetPassword generates a new random password for the user and returns it once.
 func (s *UserService) ResetPassword(ctx context.Context, id int64) (*dto.ResetPasswordResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "user.ResetPassword")
+	defer end(nil)
+
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
 		return nil, fmt.Errorf("user not found")
@@ -168,6 +181,9 @@ func (s *UserService) ResetPassword(ctx context.Context, id int64) (*dto.ResetPa
 }
 
 func (s *UserService) FindUserByUsername(ctx context.Context, username string) (*dto.UserResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "user.FindUserByUsername")
+	defer end(nil)
+
 	user, err := s.repository.FindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, err
@@ -176,6 +192,9 @@ func (s *UserService) FindUserByUsername(ctx context.Context, username string) (
 }
 
 func (s *UserService) FindUser(ctx context.Context, id int64) (*dto.UserResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "user.FindUser")
+	defer end(nil)
+
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil {
 		return nil, err
@@ -196,6 +215,9 @@ func (s *UserService) UpdateUser(
 	callerRole string,
 	callerID int64,
 ) (*dto.UserResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "user.UpdateUser")
+	defer end(nil)
+
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
 		return nil, fmt.Errorf("user not found")
@@ -266,6 +288,9 @@ func (s *UserService) UpdateManager(
 	managerID *int64,
 	callerRole string,
 ) (*dto.UserResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "user.UpdateManager")
+	defer end(nil)
+
 	if callerRole != userdomain.Admin {
 		return nil, errors.ErrForbidden
 	}
@@ -325,6 +350,8 @@ func (s *UserService) validateManager(ctx context.Context, userID int64, manager
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
+	ctx, end := s.tracer.Start(ctx, "user.DeleteUser")
+	defer end(nil)
 	return s.repository.DeleteUser(ctx, id)
 }
 
@@ -338,6 +365,9 @@ func (s *UserService) ListUsers(
 	managerID int64,
 	limit, offset int,
 ) ([]dto.UserResponse, int64, error) {
+	ctx, end := s.tracer.Start(ctx, "user.ListUsers")
+	defer end(nil)
+
 	users, err := s.repository.ListUsers(ctx, userID, role, roleFilter, managerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -351,6 +381,9 @@ func (s *UserService) ListUsers(
 
 // ListAllUsers returns every active user (unscoped; used for owner pickers).
 func (s *UserService) ListAllUsers(ctx context.Context) ([]dto.UserResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "user.ListAllUsers")
+	defer end(nil)
+
 	users, err := s.repository.ListAllUsers(ctx)
 	if err != nil {
 		return nil, err
@@ -363,6 +396,9 @@ func (s *UserService) ListStates(
 	userID int64,
 	start, end date.Date,
 ) ([]dto.UserStateResponse, error) {
+	ctx, finish := s.tracer.Start(ctx, "user.ListStates")
+	defer finish(nil)
+
 	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
 		return nil, err
 	}
@@ -386,6 +422,9 @@ func (s *UserService) SetDays(
 	userID int64,
 	req dto.SetDaysRequest,
 ) error {
+	ctx, end := s.tracer.Start(ctx, "user.SetDays")
+	defer end(nil)
+
 	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
 		return err
 	}
@@ -409,6 +448,9 @@ func (s *UserService) DeleteDays(
 	start, end date.Date,
 	stateID *int64,
 ) error {
+	ctx, finish := s.tracer.Start(ctx, "user.DeleteDays")
+	defer finish(nil)
+
 	if err := s.validator.ValidatePositiveID(userID, "user_id"); err != nil {
 		return err
 	}

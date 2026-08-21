@@ -11,6 +11,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -64,7 +65,7 @@ func testData() rbac.Data {
 
 func TestCheckEntity(t *testing.T) {
 	t.Parallel()
-	mw := rbac.ProvideMiddleware(nil, testData(), []rbac.Policy{
+	mw := rbac.ProvideMiddleware(nil, tracingpkg.New(nil), testData(), []rbac.Policy{
 		{Name: "task.view", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionView)},
 		{Name: "task.update", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionUpdate)},
 	})
@@ -109,7 +110,7 @@ func TestCheckEntity(t *testing.T) {
 
 func TestCheckAssignmentCreate(t *testing.T) {
 	t.Parallel()
-	mw := rbac.ProvideMiddleware(nil, testData(), []rbac.Policy{
+	mw := rbac.ProvideMiddleware(nil, tracingpkg.New(nil), testData(), []rbac.Policy{
 		{Name: "assignment.create", Check: createAssignmentForTest},
 	})
 

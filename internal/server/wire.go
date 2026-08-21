@@ -19,6 +19,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/internal/user"
 )
 
@@ -27,6 +28,8 @@ func InitializeApp() (*App, error) {
 	wire.Build(
 		config.ProvideConfig,
 		logger.ProvideLogger,
+		tracingpkg.ProvideTracer,
+		config.ProvideTracingConfig,
 		database.ProvidePostgresDB,
 		config.ProvidePostgresConfig,
 		config.ProvideJWTConfig,

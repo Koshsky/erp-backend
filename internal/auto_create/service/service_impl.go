@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	repo "github.com/Koshsky/erp-backend/internal/auto_create/repository"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/auto_create/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -14,25 +15,37 @@ import (
 
 type AutoCreateService struct {
 	logger     *slog.Logger
+	tracer     *tracingpkg.Tracer
 	repository AutoCreateRepository
 }
 
 // NewAutoCreateService builds the AutoCreateService service.
-func NewAutoCreateService(logger *slog.Logger, r *repo.AutoCreateRepository) *AutoCreateService {
+func NewAutoCreateService(
+	logger *slog.Logger,
+	tracer *tracingpkg.Tracer,
+	r *repo.AutoCreateRepository,
+) *AutoCreateService {
 	return &AutoCreateService{
 		logger:     logger,
+		tracer:     tracer,
 		repository: r,
 	}
 }
 
 // GetConfig returns the current auto-create config (disabled+empty if unset).
 func (s *AutoCreateService) GetConfig(ctx context.Context) (*dto.AutoCreateConfig, error) {
+	ctx, end := s.tracer.Start(ctx, "autocreate.GetConfig")
+	defer end(nil)
+
 	return s.repository.GetConfig(ctx)
 }
 
 // SaveConfig replaces the auto-create config; validates shape and that all
 // referenced owners/resources exist (иначе автосоздание проекта упадёт на FK).
 func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateConfig) error {
+	ctx, end := s.tracer.Start(ctx, "autocreate.SaveConfig")
+	defer end(nil)
+
 	if err := validateConfig(cfg); err != nil {
 		return err
 	}

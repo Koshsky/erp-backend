@@ -8,6 +8,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/response"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -59,6 +60,7 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 			Email: claims.Email, // if present
 		}
 		c.Set("user", user)
+		tracingpkg.SetUserOnSpan(c, user.ID, user.Role)
 
 		// 6. Pass the request through
 		c.Next()

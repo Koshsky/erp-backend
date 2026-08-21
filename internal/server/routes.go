@@ -46,6 +46,7 @@ import (
 // own token bucket keyed by user id.
 func (a *App) registerRoutes(router *gin.Engine) {
 	api := router.Group("/api/v1")
+	api.Use(a.tracer.GinSpan("middleware.ratelimit.public"))
 	api.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
 
 	// Health: liveness-probe без авторизации. Фронтенд проверяет им
@@ -57,7 +58,9 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	}
 
 	protected := router.Group("/api/v1")
+	protected.Use(a.tracer.GinSpan("middleware.auth"))
 	protected.Use(a.authMw.RequireAuth())
+	protected.Use(a.tracer.GinSpan("middleware.ratelimit.user"))
 	protected.Use(ratelimit.FromConfigKeyed(a.cfg.UserRateLimit, a.userKey, a.logger))
 	for _, m := range a.modules {
 		m.RegisterProtectedRoutes(protected)

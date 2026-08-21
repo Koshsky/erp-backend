@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
@@ -13,15 +14,17 @@ import (
 
 type ProjectService struct {
 	logger     *slog.Logger
+	tracer     *tracingpkg.Tracer
 	repository ProjectRepository
 	mapper     *ProjectMapper
 	validator  *ProjectValidator
 }
 
 // NewProjectService builds the ProjectService service.
-func NewProjectService(logger *slog.Logger, r *repo.ProjectRepository) *ProjectService {
+func NewProjectService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ProjectRepository) *ProjectService {
 	return &ProjectService{
 		logger:     logger,
+		tracer:     tracer,
 		repository: r,
 		mapper:     NewProjectMapper(),
 		validator:  &ProjectValidator{},
@@ -36,6 +39,9 @@ func (s *ProjectService) CreateProject(
 	userID int64,
 	role string,
 ) (*dto.ProjectResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "project.CreateProject")
+	defer end(nil)
+
 	if role == userdomain.ProjectManager {
 		// the project manager immediately becomes the owner; a foreign owner from the request is ignored
 		req.OwnerID = &userID
@@ -55,6 +61,9 @@ func (s *ProjectService) CreateProject(
 }
 
 func (s *ProjectService) FindProject(ctx context.Context, id int64) (*dto.ProjectResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "project.FindProject")
+	defer end(nil)
+
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil {
 		return nil, err
@@ -73,6 +82,9 @@ func (s *ProjectService) UpdateProject(
 	id int64,
 	req dto.UpdateProjectRequest,
 ) (*dto.ProjectResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "project.UpdateProject")
+	defer end(nil)
+
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil || project == nil {
 		return nil, errors.ErrProjectNotFound
@@ -92,6 +104,9 @@ func (s *ProjectService) UpdateProject(
 }
 
 func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {
+	ctx, end := s.tracer.Start(ctx, "project.DeleteProject")
+	defer end(nil)
+
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil || project == nil {
 		return errors.ErrProjectNotFound
@@ -107,6 +122,9 @@ func (s *ProjectService) ListProjects(
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ProjectResponse, int64, error) {
+	ctx, end := s.tracer.Start(ctx, "project.ListProjects")
+	defer end(nil)
+
 	rows, err := s.repository.ListProjects(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err

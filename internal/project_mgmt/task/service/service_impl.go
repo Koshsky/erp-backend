@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -12,15 +13,17 @@ import (
 
 type TaskService struct {
 	logger     *slog.Logger
+	tracer     *tracingpkg.Tracer
 	repository TaskRepository
 	mapper     *TaskMapper
 	validator  *TaskValidator
 }
 
 // NewTaskService builds the TaskService service.
-func NewTaskService(logger *slog.Logger, r *repo.TaskRepository) *TaskService {
+func NewTaskService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.TaskRepository) *TaskService {
 	return &TaskService{
 		logger:     logger,
+		tracer:     tracer,
 		repository: r,
 		mapper:     &TaskMapper{},
 		validator:  &TaskValidator{},
@@ -28,6 +31,9 @@ func NewTaskService(logger *slog.Logger, r *repo.TaskRepository) *TaskService {
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest) (*dto.TaskResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "task.CreateTask")
+	defer end(nil)
+
 	task := s.mapper.ToDomainFromCreate(req)
 	if err := s.validator.ValidateTask(&task); err != nil {
 		return nil, err
@@ -42,6 +48,9 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 }
 
 func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "task.FindTask")
+	defer end(nil)
+
 	task, err := s.repository.FindTask(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
@@ -56,6 +65,9 @@ func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse
 }
 
 func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTaskRequest) (*dto.TaskResponse, error) {
+	ctx, end := s.tracer.Start(ctx, "task.UpdateTask")
+	defer end(nil)
+
 	task, err := s.repository.FindTask(ctx, id)
 	if err != nil || task == nil {
 		return nil, errors.ErrTaskNotFound
@@ -75,6 +87,9 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 }
 
 func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
+	ctx, end := s.tracer.Start(ctx, "task.DeleteTask")
+	defer end(nil)
+
 	task, err := s.repository.FindTask(ctx, id)
 	if err != nil || task == nil {
 		return errors.ErrTaskNotFound
@@ -90,6 +105,9 @@ func (s *TaskService) ListTasks(
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.TaskResponse, int64, error) {
+	ctx, end := s.tracer.Start(ctx, "task.ListTasks")
+	defer end(nil)
+
 	rows, err := s.repository.ListTasks(ctx, userID, role, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
