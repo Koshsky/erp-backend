@@ -980,7 +980,7 @@ definitions:
 externalDocs:
   description: ERP documentation (placeholder)
   url: https://swagger.io/resources/open-api/
-host: localhost:8080
+host: localhost
 info:
   contact:
     email: shmonov.mv@gmail.com
@@ -3779,6 +3779,8 @@ paths:
       summary: Change Password
       tags:
       - Users
+schemes:
+- https
 securityDefinitions:
   ApiKeyAuth:
     description: '"Provide JWT token in the format: Bearer {token}"'

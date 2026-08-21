@@ -1,4 +1,7 @@
 {
+    "schemes": [
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "For managing the enterprise's universal resources",
@@ -15,7 +18,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "localhost",
     "basePath": "/api/v1",
     "paths": {
         "/assignment": {
