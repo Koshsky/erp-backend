@@ -3,11 +3,12 @@ package delivery
 import "github.com/gin-gonic/gin"
 
 func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup) {
-	// Аккаунт/самообслуживание и список всех пользователей (для пикеров владельцев).
+	// Аккаунт/самообслуживание и пул пользователей для пикеров владельцев.
+	// GET /user — только для ролей с планировочными страницами (user.picker);
+	// карточка по id — через защищённый /users/:id (worker.view).
 	r := router.Group("/user")
 	{
-		r.GET("", h.ListAllUsers)
-		r.GET("/:id", h.FindUser)
+		r.GET("", h.mw.Check("user.picker"), h.ListAllUsers)
 		r.POST("/change-password", h.ChangePassword)
 	}
 
