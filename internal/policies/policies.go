@@ -13,6 +13,7 @@ func All() []rbac.Policy {
 		projectPolicies,
 		processPolicies,
 		taskPolicies,
+		commentPolicies,
 		milestonePolicies,
 		assignmentPolicies,
 		resourcePolicies,
@@ -186,6 +187,10 @@ var matrix = map[rbac.Resource]map[Action][]rule{
 			{userdomain.ProcessOwner, ScopeOwned},
 		},
 	},
+	// Comments: доступа нет в общей матрице — права считаются по родительской
+	// задаче (см. commentPolicies: list/create по task.view, delete — автор или
+	// право обновления задачи).
+	rbac.ResourceComment: {},
 }
 
 // scopeFor returns the required access scope for (role, resource, action).

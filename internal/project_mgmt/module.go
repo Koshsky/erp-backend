@@ -8,6 +8,9 @@ import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
+	commentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/delivery"
+	commentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
+	commentService "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/service"
 	milestoneDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
 	milestoneRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	milestoneService "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
@@ -36,6 +39,10 @@ var ProviderSet = wire.NewSet(
 	taskService.NewTaskService,
 	taskDelivery.NewTaskHandler,
 
+	commentRepo.NewCommentRepository,
+	commentService.NewCommentService,
+	commentDelivery.NewCommentHandler,
+
 	milestoneRepo.NewMilestoneRepository,
 	milestoneService.NewMilestoneService,
 	milestoneDelivery.NewMilestoneHandler,
@@ -54,6 +61,7 @@ type Module struct {
 	process    *processDelivery.ProcessHandler
 	milestone  *milestoneDelivery.MilestoneHandler
 	assignment *delivery.AssignmentHandler
+	comment    *commentDelivery.CommentHandler
 }
 
 // ProvideModule builds the project management module.
@@ -63,6 +71,7 @@ func ProvideModule(
 	process *processDelivery.ProcessHandler,
 	milestone *milestoneDelivery.MilestoneHandler,
 	assignment *delivery.AssignmentHandler,
+	comment *commentDelivery.CommentHandler,
 ) Module {
 	return Module{
 		task:       task,
@@ -70,6 +79,7 @@ func ProvideModule(
 		process:    process,
 		milestone:  milestone,
 		assignment: assignment,
+		comment:    comment,
 	}
 }
 
@@ -84,4 +94,5 @@ func (m Module) RegisterProtectedRoutes(r *gin.RouterGroup) {
 	m.process.RegisterRoutes(r)
 	m.milestone.RegisterRoutes(r)
 	m.assignment.RegisterRoutes(r)
+	m.comment.RegisterRoutes(r)
 }

@@ -99,4 +99,5 @@ var (
 	ErrAssignmentNotFound = NotFound("assignment not found")
 	ErrUserNotFound       = NotFound("user not found")
 	ErrStateNotFound      = NotFound("state not found")
+	ErrCommentNotFound    = NotFound("comment not found")
 )

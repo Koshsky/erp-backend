@@ -18,6 +18,8 @@ const (
 	ResourceResource
 	// ResourceWorker is a worker (user with role worker).
 	ResourceWorker
+	// ResourceComment is a task comment (threaded discussion on a task).
+	ResourceComment
 )
 
 // Owners is an entity's chain of owners: the project owner and the process owner.

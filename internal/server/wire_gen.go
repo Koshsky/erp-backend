@@ -11,10 +11,10 @@ import (
 	"github.com/Koshsky/erp-backend/internal/auth/delivery"
 	repository2 "github.com/Koshsky/erp-backend/internal/auth/repository"
 	service2 "github.com/Koshsky/erp-backend/internal/auth/service"
-	"github.com/Koshsky/erp-backend/internal/auto_create"
-	delivery12 "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
-	repository11 "github.com/Koshsky/erp-backend/internal/auto_create/repository"
-	service12 "github.com/Koshsky/erp-backend/internal/auto_create/service"
+	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
+	delivery13 "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
+	repository12 "github.com/Koshsky/erp-backend/internal/auto_create/repository"
+	service13 "github.com/Koshsky/erp-backend/internal/auto_create/service"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/idempotency"
@@ -23,15 +23,18 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
 	delivery3 "github.com/Koshsky/erp-backend/internal/planning/delivery"
-	repository8 "github.com/Koshsky/erp-backend/internal/planning/repository"
+	repository9 "github.com/Koshsky/erp-backend/internal/planning/repository"
 	service3 "github.com/Koshsky/erp-backend/internal/planning/service"
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt"
 	delivery8 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	repository6 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	service8 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
+	delivery9 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/delivery"
+	repository8 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
+	service9 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/service"
 	delivery7 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
+	postgres "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	service7 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
 	delivery6 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
 	repository4 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
@@ -45,15 +48,15 @@ import (
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
-	delivery11 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
-	repository10 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
-	service11 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
-	delivery9 "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
+	delivery12 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/delivery"
+	repository11 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
+	service12 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
+	delivery10 "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
 	repository7 "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
-	service9 "github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
-	delivery10 "github.com/Koshsky/erp-backend/internal/timesheet/state/delivery"
-	repository9 "github.com/Koshsky/erp-backend/internal/timesheet/state/repository"
-	service10 "github.com/Koshsky/erp-backend/internal/timesheet/state/service"
+	service10 "github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
+	delivery11 "github.com/Koshsky/erp-backend/internal/timesheet/state/delivery"
+	repository10 "github.com/Koshsky/erp-backend/internal/timesheet/state/repository"
+	service11 "github.com/Koshsky/erp-backend/internal/timesheet/state/service"
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/internal/user"
 	delivery2 "github.com/Koshsky/erp-backend/internal/user/delivery"
@@ -102,12 +105,13 @@ func InitializeApp() (*App, error) {
 	milestoneRepository := postgres.NewMilestoneRepository(slogLogger, pool)
 	assignmentRepository := repository6.NewAssignmentRepository(slogLogger, pool)
 	resourceRepository := repository7.NewResourceRepository(slogLogger, pool)
-	data := ProvideRBACData(projectRepository, processRepository, taskRepository, milestoneRepository, assignmentRepository, resourceRepository, userRepository)
+	commentRepository := repository8.NewCommentRepository(slogLogger, pool)
+	data := ProvideRBACData(projectRepository, processRepository, taskRepository, milestoneRepository, assignmentRepository, resourceRepository, userRepository, commentRepository)
 	v := policies.ProvideAll()
 	rbacMiddleware := rbac.ProvideMiddleware(slogLogger, tracer, data, v)
 	userHandler := delivery2.NewUserHandler(slogLogger, userService, rbacMiddleware)
 	userModule := user.ProvideModule(userHandler, slogLogger)
-	planningRepository := repository8.NewPlanningRepository(slogLogger, pool)
+	planningRepository := repository9.NewPlanningRepository(slogLogger, pool)
 	planningService := service3.NewPlanningService(slogLogger, tracer, planningRepository)
 	planningHandler := delivery3.NewPlanningHandler(slogLogger, planningService)
 	planningModule := planning.ProvideModule(planningHandler)
@@ -121,19 +125,21 @@ func InitializeApp() (*App, error) {
 	milestoneHandler := delivery7.NewMilestoneHandler(slogLogger, milestoneService, rbacMiddleware)
 	assignmentService := service8.NewAssignmentService(slogLogger, tracer, assignmentRepository)
 	assignmentHandler := delivery8.NewAssignmentHandler(slogLogger, assignmentService, rbacMiddleware)
-	project_mgmtModule := project_mgmt.ProvideModule(taskHandler, projectHandler, processHandler, milestoneHandler, assignmentHandler)
-	resourceService := service9.NewResourceService(slogLogger, tracer, resourceRepository)
-	resourceHandler := delivery9.NewResourceHandler(slogLogger, resourceService, rbacMiddleware)
-	stateRepository := repository9.NewStateRepository(slogLogger, pool)
-	stateService := service10.NewStateService(slogLogger, tracer, stateRepository)
-	stateHandler := delivery10.NewStateHandler(slogLogger, stateService, rbacMiddleware)
-	calendarRepository := repository10.NewCalendarRepository(slogLogger, pool)
-	calendarService := service11.NewCalendarService(slogLogger, tracer, calendarRepository)
-	calendarHandler := delivery11.NewCalendarHandler(slogLogger, calendarService, rbacMiddleware)
+	commentService := service9.NewCommentService(slogLogger, tracer, commentRepository)
+	commentHandler := delivery9.NewCommentHandler(slogLogger, commentService, rbacMiddleware)
+	project_mgmtModule := project_mgmt.ProvideModule(taskHandler, projectHandler, processHandler, milestoneHandler, assignmentHandler, commentHandler)
+	resourceService := service10.NewResourceService(slogLogger, tracer, resourceRepository)
+	resourceHandler := delivery10.NewResourceHandler(slogLogger, resourceService, rbacMiddleware)
+	stateRepository := repository10.NewStateRepository(slogLogger, pool)
+	stateService := service11.NewStateService(slogLogger, tracer, stateRepository)
+	stateHandler := delivery11.NewStateHandler(slogLogger, stateService, rbacMiddleware)
+	calendarRepository := repository11.NewCalendarRepository(slogLogger, pool)
+	calendarService := service12.NewCalendarService(slogLogger, tracer, calendarRepository)
+	calendarHandler := delivery12.NewCalendarHandler(slogLogger, calendarService, rbacMiddleware)
 	timesheetModule := timesheet.ProvideModule(resourceHandler, stateHandler, calendarHandler)
-	autoCreateRepository := repository11.NewAutoCreateRepository(slogLogger, pool)
-	autoCreateService := service12.NewAutoCreateService(slogLogger, tracer, autoCreateRepository)
-	autoCreateHandler := delivery12.NewAutoCreateHandler(slogLogger, autoCreateService, rbacMiddleware)
+	autoCreateRepository := repository12.NewAutoCreateRepository(slogLogger, pool)
+	autoCreateService := service13.NewAutoCreateService(slogLogger, tracer, autoCreateRepository)
+	autoCreateHandler := delivery13.NewAutoCreateHandler(slogLogger, autoCreateService, rbacMiddleware)
 	autocreateModule := autocreate.ProvideModule(autoCreateHandler)
 	v2 := ProvideModules(module, userModule, planningModule, project_mgmtModule, timesheetModule, autocreateModule)
 	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, tracer, idempotencyMiddleware, v2)

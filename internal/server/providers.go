@@ -7,6 +7,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/planning"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
+	commentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
 	milestoneRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	processRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
@@ -27,6 +28,7 @@ func ProvideRBACData(
 	assignment *assignmentRepo.AssignmentRepository,
 	resource *resourceRepo.ResourceRepository,
 	user *userRepo.UserRepository,
+	comment *commentRepo.CommentRepository,
 ) rbacMW.Data {
 	return rbacMW.Data{
 		ProjectOwners:    project.OwnerChain,
@@ -36,6 +38,7 @@ func ProvideRBACData(
 		AssignmentOwners: assignment.OwnerChain,
 		ResourceOwners:   resource.OwnerChain,
 		WorkerOwners:     user.OwnerChain,
+		CommentOwners:    comment.OwnerChain,
 	}
 }
 

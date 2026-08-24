@@ -127,6 +127,28 @@ definitions:
         example: password changed
         type: string
     type: object
+  dto.CommentResponse:
+    properties:
+      author_id:
+        example: 7
+        type: integer
+      content:
+        example: Перенести сроки?
+        type: string
+      created_at:
+        example: "2026-02-01T10:00:00Z"
+        format: date-time
+        type: string
+      id:
+        example: 1
+        type: integer
+      parent_id:
+        example: 3
+        type: integer
+      task_id:
+        example: 42
+        type: integer
+    type: object
   dto.CreateAssignmentRequest:
     properties:
       quantity:
@@ -137,6 +159,16 @@ definitions:
         type: integer
       task_id:
         example: 1
+        type: integer
+    type: object
+  dto.CreateCommentRequest:
+    properties:
+      content:
+        example: Перенести сроки?
+        type: string
+      parent_id:
+        description: Ответ на другой комментарий той же задачи; пусто — корневой комментарий.
+        example: 3
         type: integer
     type: object
   dto.CreateMilestoneRequest:
@@ -2913,6 +2945,152 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update a task
+      tags:
+      - Tasks
+  /task/{id}/comments:
+    get:
+      description: Get all comments of a task (flat list, ordered by creation time;
+        the client builds the thread tree by parent_id)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.CommentResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List task comments
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a comment on a task (reply to another comment via parent_id).
+        The author is taken from the authenticated user
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Comment data
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CommentResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create task comment
+      tags:
+      - Tasks
+  /task/{id}/comments/{comment_id}:
+    delete:
+      description: Soft-delete a comment (replies stay; the thread keeps consistency
+        in the UI)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Comment ID
+        in: path
+        name: comment_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete task comment
       tags:
       - Tasks
   /timesheet/calendar:

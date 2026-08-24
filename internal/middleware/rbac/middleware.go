@@ -36,6 +36,7 @@ type Data struct {
 	AssignmentOwners ResolveByID
 	ResourceOwners   ResolveByID
 	WorkerOwners     ResolveByID
+	CommentOwners    ResolveByID
 }
 
 // resolve returns the resolver for a resource (nil — the resource has no owner).
@@ -55,6 +56,8 @@ func (d Data) resolve(rsrc Resource) ResolveByID {
 		return d.ResourceOwners
 	case ResourceWorker:
 		return d.WorkerOwners
+	case ResourceComment:
+		return d.CommentOwners
 	case ResourceState:
 		// States have no owner.
 		return nil
