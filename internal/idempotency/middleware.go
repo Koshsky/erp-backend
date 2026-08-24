@@ -24,6 +24,9 @@ import (
 // HTTP header the client uses to mark an idempotent request.
 const headerIdempotencyKey = "Idempotency-Key"
 
+// maxKeyLen — верхний предел длины ключа (защита PK от мусорных/гигантских значений).
+const maxKeyLen = 256
+
 // keyTTL — сколько жить ключу идемпотентности до авто-очистки.
 const keyTTL = 24 * time.Hour
 
@@ -81,8 +84,8 @@ func (m *Middleware) Handler() gin.HandlerFunc {
 	m.startCleanup()
 	return func(c *gin.Context) {
 		key := c.GetHeader(headerIdempotencyKey)
-		if key == "" {
-			// Без ключа — обычный неидемпотентный запрос.
+		if key == "" || len(key) > maxKeyLen {
+			// Без ключа (или с неоправданно длинным) — обычный неидемпотентный запрос.
 			c.Next()
 			return
 		}
@@ -131,20 +134,31 @@ func (m *Middleware) Handler() gin.HandlerFunc {
 		c.Writer = cw
 		c.Next()
 
-		status := cw.status
-		if status == 0 {
-			status = http.StatusOK
-		}
-		if status >= http.StatusInternalServerError {
-			// 5xx не кэшируем — даём клиенту повторить операцию с тем же ключом.
-			if rerr := m.repo.Release(ctx, key, userID, method, path); rerr != nil {
-				m.logger.Error("idempotency release failed", "error", rerr, "key", key)
-			}
-			return
-		}
+		m.finalize(ctx, cw, key, userID, method, path)
+	}
+}
+
+// finalize сохраняет 2xx-ответ для replay либо освобождает ключ, чтобы ретрай
+// (4xx/5xx) выполнил операцию заново и получил свежую оценку.
+func (m *Middleware) finalize(
+	ctx context.Context,
+	cw *captureWriter,
+	key string,
+	userID int64,
+	method, path string,
+) {
+	status := cw.status
+	if status == 0 {
+		status = http.StatusOK
+	}
+	if status >= http.StatusOK && status < http.StatusMultipleChoices {
 		if cerr := m.repo.Complete(ctx, key, userID, method, path, status, json.RawMessage(cw.body)); cerr != nil {
-			m.logger.Error("idempotency complete failed", "error", cerr, "key", key)
+			m.logger.ErrorContext(ctx, "idempotency complete failed", "error", cerr, "key", key)
 		}
+		return
+	}
+	if rerr := m.repo.Release(ctx, key, userID, method, path); rerr != nil {
+		m.logger.ErrorContext(ctx, "idempotency release failed", "error", rerr, "key", key)
 	}
 }
 
@@ -163,8 +177,12 @@ func (m *Middleware) startCleanup() {
 	})
 }
 
-// replay отправляет сохранённый ответ клиенту.
+// replay отправляет сохранённый ответ клиенту. Все ответы приложения — JSON
+// ({data,error}), поэтому Content-Type фиксируем; Idempotency-Replayed —
+// диагностический маркер для клиента.
 func replay(c *gin.Context, status int, body json.RawMessage) {
+	c.Header("Content-Type", "application/json")
+	c.Header("Idempotency-Replayed", "true")
 	if len(body) == 0 {
 		c.Status(status)
 		return

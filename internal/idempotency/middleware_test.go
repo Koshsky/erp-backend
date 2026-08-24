@@ -244,6 +244,83 @@ func TestIdempotencyFiveHundredReleasesKey(t *testing.T) {
 	}
 }
 
+func TestIdempotencyFourXxReleasesKey(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	mw := idem.New(repo, nil, nil)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(setUser(7))
+	router.Use(mw.Handler())
+	router.POST("/invalid", func(c *gin.Context) {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "bad"})
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/invalid", nil)
+	req.Header.Set(headerKey, "k-4")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422", rec.Code)
+	}
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if repo.completes != 0 {
+		t.Fatalf("completes = %d, want 0 (4xx must not be cached)", repo.completes)
+	}
+	if repo.releases != 1 {
+		t.Fatalf("releases = %d, want 1 (4xx must release the key for retry)", repo.releases)
+	}
+}
+
+func TestIdempotencyReplayHeaders(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	mw := idem.New(repo, nil, nil)
+	counter := 0
+	router := buildRouter(mw, &counter)
+
+	doPost(router, "k-h")
+	second := doPost(router, "k-h")
+
+	if second.Code != http.StatusCreated {
+		t.Fatalf("replay status = %d, want 201", second.Code)
+	}
+	if ct := second.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("replay Content-Type = %q, want application/json", ct)
+	}
+	if re := second.Header().Get("Idempotency-Replayed"); re != "true" {
+		t.Fatalf("replay Idempotency-Replayed = %q, want true", re)
+	}
+}
+
+func TestIdempotencyOverlongKeyPassesThrough(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	mw := idem.New(repo, nil, nil)
+	counter := 0
+	router := buildRouter(mw, &counter)
+
+	req := httptest.NewRequest(http.MethodPost, "/tasks", nil)
+	req.Header.Set(headerKey, "k-"+string(make([]byte, 300)))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want 201 (pass-through)", rec.Code)
+	}
+	if counter != 1 {
+		t.Fatalf("handler executed %d times, want 1", counter)
+	}
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if repo.claims != 0 {
+		t.Fatalf("claims = %d, want 0 (overlong key must not be claimed)", repo.claims)
+	}
+}
+
 func TestIdempotencyWithoutAuthPassesThrough(t *testing.T) {
 	t.Parallel()
 	repo := newFakeRepo()
