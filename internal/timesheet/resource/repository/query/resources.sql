@@ -40,8 +40,12 @@ WHERE r.deleted_at IS NULL
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at;
 
 -- name: CreateResource :one
+-- Идемпотентный create по бизнес-ключу code: на существующем активном code
+-- ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
 INSERT INTO resources (title, code, owner_id)
 VALUES (@title, @code, @owner_id)
+ON CONFLICT (code) WHERE deleted_at IS NULL
+DO NOTHING
 RETURNING *;
 
 -- name: CountMembersByResourceID :one

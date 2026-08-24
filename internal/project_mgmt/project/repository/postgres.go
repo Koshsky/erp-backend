@@ -3,14 +3,17 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type ProjectRepository struct {
@@ -35,6 +38,11 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 		Priority:  int64(project.Priority),
 	})
 	if err != nil {
+		// Идемпотентный create: активный code уже существует (ON CONFLICT
+		// ничего не вставил) — это не внутренняя ошибка, а конфликт ключа.
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errapi.Conflict("project with this code already exists")
+		}
 		return nil, err
 	}
 

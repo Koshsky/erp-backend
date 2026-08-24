@@ -91,8 +91,14 @@ func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 	defer end(nil)
 
 	task, err := s.repository.FindTask(ctx, id)
-	if err != nil || task == nil {
-		return errors.ErrTaskNotFound
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return nil // идемпотентный delete: уже удалено — не ошибка
+		}
+		return err
+	}
+	if task == nil {
+		return nil // идемпотентный delete
 	}
 
 	return s.repository.DeleteTask(ctx, id)

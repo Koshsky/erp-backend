@@ -12,6 +12,8 @@ import (
 const createState = `-- name: CreateState :one
 INSERT INTO states (code, name, is_available)
 VALUES ($1, $2, $3)
+ON CONFLICT ON CONSTRAINT states_code_key
+DO NOTHING
 RETURNING id, code, name, is_available, created_at, updated_at, deleted_at
 `
 
@@ -21,6 +23,8 @@ type CreateStateParams struct {
 	IsAvailable bool   `json:"is_available"`
 }
 
+// Идемпотентный create по бизнес-ключу code: на существующем code ничего не
+// вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
 func (q *Queries) CreateState(ctx context.Context, arg CreateStateParams) (State, error) {
 	row := q.db.QueryRow(ctx, createState, arg.Code, arg.Name, arg.IsAvailable)
 	var i State

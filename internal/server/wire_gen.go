@@ -17,6 +17,7 @@ import (
 	service12 "github.com/Koshsky/erp-backend/internal/auto_create/service"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
+	"github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/logger"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -87,6 +88,8 @@ func InitializeApp() (*App, error) {
 	middleware := auth.ProvideAuthMiddleware(slogLogger, jwtService)
 	profilingConfig := config.ProvideProfilingConfig(configConfig)
 	profilerProfiler := profiler.ProvideProfiler(profilingConfig, slogLogger)
+	idempotencyRepository := idempotency.ProvideIdempotencyRepository(pool)
+	idempotencyMiddleware := idempotency.ProvideIdempotencyMiddleware(idempotencyRepository, slogLogger, tracer)
 	userRepository := repository.NewUserRepository(slogLogger, pool)
 	userService := service.NewUserService(slogLogger, tracer, userRepository)
 	authRepository := repository2.NewAuthRepository(pool)
@@ -133,7 +136,7 @@ func InitializeApp() (*App, error) {
 	autoCreateHandler := delivery12.NewAutoCreateHandler(slogLogger, autoCreateService, rbacMiddleware)
 	autocreateModule := autocreate.ProvideModule(autoCreateHandler)
 	v2 := ProvideModules(module, userModule, planningModule, project_mgmtModule, timesheetModule, autocreateModule)
-	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, tracer, v2)
+	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, tracer, idempotencyMiddleware, v2)
 	if err != nil {
 		return nil, err
 	}

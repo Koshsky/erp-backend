@@ -36,6 +36,8 @@ func (q *Queries) CountAssignments(ctx context.Context, arg CountAssignmentsPara
 const createAssignment = `-- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES ($1, $2, $3::bigint)
+ON CONFLICT (task_id, resource_id) WHERE deleted_at IS NULL
+DO NOTHING
 RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
 `
 
@@ -45,6 +47,9 @@ type CreateAssignmentParams struct {
 	Quantity   int64 `json:"quantity"`
 }
 
+// Идемпотентный create: если связка (task_id, resource_id) уже активна —
+// ничего не вставляем; наличие существующей строки возвращает вызывающий
+// код (репозиторий) через FindAssignmentByKey.
 func (q *Queries) CreateAssignment(ctx context.Context, arg CreateAssignmentParams) (Assignment, error) {
 	row := q.db.QueryRow(ctx, createAssignment, arg.TaskID, arg.ResourceID, arg.Quantity)
 	var i Assignment
@@ -81,6 +86,35 @@ WHERE id = $1
 
 func (q *Queries) FindAssignment(ctx context.Context, assignmentID int64) (Assignment, error) {
 	row := q.db.QueryRow(ctx, findAssignment, assignmentID)
+	var i Assignment
+	err := row.Scan(
+		&i.ID,
+		&i.TaskID,
+		&i.ResourceID,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const findAssignmentByKey = `-- name: FindAssignmentByKey :one
+SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
+FROM assignments
+WHERE task_id = $1::bigint
+	AND resource_id = $2::bigint
+	AND deleted_at IS NULL
+LIMIT 1
+`
+
+type FindAssignmentByKeyParams struct {
+	TaskID     int64 `json:"task_id"`
+	ResourceID int64 `json:"resource_id"`
+}
+
+func (q *Queries) FindAssignmentByKey(ctx context.Context, arg FindAssignmentByKeyParams) (Assignment, error) {
+	row := q.db.QueryRow(ctx, findAssignmentByKey, arg.TaskID, arg.ResourceID)
 	var i Assignment
 	err := row.Scan(
 		&i.ID,

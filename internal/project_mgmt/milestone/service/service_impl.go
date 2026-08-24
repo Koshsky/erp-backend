@@ -102,8 +102,14 @@ func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error 
 	defer end(nil)
 
 	milestone, err := s.repository.FindMilestone(ctx, id)
-	if err != nil || milestone == nil {
-		return errors.ErrMilestoneNotFound
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return nil // идемпотентный delete: уже удалено — не ошибка
+		}
+		return err
+	}
+	if milestone == nil {
+		return nil // идемпотентный delete
 	}
 
 	return s.repository.DeleteMilestone(ctx, id)

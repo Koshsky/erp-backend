@@ -23,6 +23,11 @@ func IsForbidden(err error) bool {
 	return stderrors.Is(err, ErrForbidden)
 }
 
+// IsConflictError reports whether the error is a business-key conflict (409).
+func IsConflictError(err error) bool {
+	return stderrors.Is(err, ErrConflict)
+}
+
 // IsValidationError reports whether the error is a validation failure: our
 // ErrValidation sentinel or a unique/foreign-key/check violation from the DB.
 func IsValidationError(err error) bool {

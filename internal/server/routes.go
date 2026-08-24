@@ -60,6 +60,12 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	protected := router.Group("/api/v1")
 	protected.Use(a.tracer.GinSpan("middleware.auth"))
 	protected.Use(a.authMw.RequireAuth())
+	// Idempotency-Key: pass-through без заголовка; с заголовком — идемпотентный
+	// create (replay-безопасно). Монтируется глобально на protected, т.к. ключ
+	// скоуплен по (key, user_id, method, path) и активен только при наличии
+	// Idempotency-Key в заголовке.
+	protected.Use(a.tracer.GinSpan("middleware.idempotency"))
+	protected.Use(a.idemMw.Handler())
 	protected.Use(a.tracer.GinSpan("middleware.ratelimit.user"))
 	protected.Use(ratelimit.FromConfigKeyed(a.cfg.UserRateLimit, a.userKey, a.logger))
 	for _, m := range a.modules {

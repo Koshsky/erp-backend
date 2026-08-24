@@ -1,4 +1,6 @@
 -- name: CreateProject :one
+-- Идемпотентный create по бизнес-ключу code: на существующем активном code
+-- ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES (
   @code::text,
@@ -7,6 +9,8 @@ VALUES (
   @priority::bigint,
   @owner_id
 )
+ON CONFLICT (code) WHERE deleted_at IS NULL
+DO NOTHING
 RETURNING *;
 
 -- name: ListProjects :many

@@ -98,8 +98,14 @@ func (s *ProcessService) DeleteProcess(ctx context.Context, id int64) error {
 	defer end(nil)
 
 	process, err := s.repository.FindProcess(ctx, id)
-	if err != nil || process == nil {
-		return errors.ErrProcessNotFound
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return nil // идемпотентный delete: уже удалено — не ошибка
+		}
+		return err
+	}
+	if process == nil {
+		return nil // идемпотентный delete
 	}
 
 	return s.repository.DeleteProcess(ctx, id)

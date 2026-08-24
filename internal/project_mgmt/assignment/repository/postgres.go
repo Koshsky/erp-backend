@@ -3,8 +3,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -35,6 +37,20 @@ func (r *AssignmentRepository) CreateAssignment(
 		Quantity:   int64(assignment.Quantity),
 	})
 	if err != nil {
+		// Идемпотентный create: на существующей активной связке
+		// (task_id, resource_id) INSERT ... ON CONFLICT DO NOTHING не вставил
+		// строку, RETURNING вернул пусто. Возвращаем уже существующую запись.
+		if errors.Is(err, pgx.ErrNoRows) {
+			existing, ferr := r.db.FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
+				TaskID:     assignment.TaskID,
+				ResourceID: assignment.ResourceID,
+			})
+			if ferr != nil {
+				return nil, ferr
+			}
+			mapped := mapAssignment(existing)
+			return &mapped, nil
+		}
 		return nil, err
 	}
 

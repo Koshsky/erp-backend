@@ -10,6 +10,7 @@ import (
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
+	"github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/logger"
 	authMw "github.com/Koshsky/erp-backend/internal/middleware/auth"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -34,6 +35,8 @@ func InitializeApp() (*App, error) {
 		config.ProvidePostgresConfig,
 		config.ProvideJWTConfig,
 		config.ProvideProfilingConfig,
+		idempotency.ProvideIdempotencyRepository,
+		idempotency.ProvideIdempotencyMiddleware,
 		jwt.ProvideJWTService,
 		authMw.ProvideAuthMiddleware,
 		rbacMW.ProvideMiddleware,

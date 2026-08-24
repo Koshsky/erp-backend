@@ -3,12 +3,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/repository/sqlc"
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type StateRepository struct {
@@ -31,6 +34,11 @@ func (r *StateRepository) CreateState(ctx context.Context, state domain.State) (
 		IsAvailable: state.IsAvailable,
 	})
 	if err != nil {
+		// Идемпотентный create: code уже существует (ON CONFLICT ничего не
+		// вставил) — это конфликт бизнес-ключа, а не внутренняя ошибка.
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errapi.Conflict("state with this code already exists")
+		}
 		return nil, err
 	}
 	mapped := mapState(row)

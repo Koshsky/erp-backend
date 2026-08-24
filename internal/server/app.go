@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/config"
+	idempotencypkg "github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
@@ -36,6 +37,7 @@ type App struct {
 	maintenance *maintenance.Normalizer
 	authMw      *auth.Middleware
 	tracer      *tracingpkg.Tracer
+	idemMw      *idempotencypkg.Middleware
 	modules     []Module
 }
 
@@ -47,6 +49,7 @@ func New(
 	authMw *auth.Middleware,
 	profiler *profiler.Profiler,
 	tracer *tracingpkg.Tracer,
+	idemMw *idempotencypkg.Middleware,
 	modules []Module,
 ) (*App, error) {
 	return &App{
@@ -57,6 +60,7 @@ func New(
 		profiler:    profiler,
 		maintenance: maintenance.New(cfg.Maintenance, pool, logger),
 		tracer:      tracer,
+		idemMw:      idemMw,
 		modules:     modules,
 	}, nil
 }

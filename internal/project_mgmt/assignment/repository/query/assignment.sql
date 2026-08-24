@@ -1,7 +1,20 @@
 -- name: CreateAssignment :one
+-- Идемпотентный create: если связка (task_id, resource_id) уже активна —
+-- ничего не вставляем; наличие существующей строки возвращает вызывающий
+-- код (репозиторий) через FindAssignmentByKey.
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES (@task_id, @resource_id, @quantity::bigint)
+ON CONFLICT (task_id, resource_id) WHERE deleted_at IS NULL
+DO NOTHING
 RETURNING *;
+
+-- name: FindAssignmentByKey :one
+SELECT *
+FROM assignments
+WHERE task_id = @task_id::bigint
+	AND resource_id = @resource_id::bigint
+	AND deleted_at IS NULL
+LIMIT 1;
 
 -- name: FindAssignment :one
 SELECT *

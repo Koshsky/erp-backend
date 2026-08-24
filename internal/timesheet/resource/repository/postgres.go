@@ -3,9 +3,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type ResourceRepository struct {
@@ -35,6 +38,11 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 		OwnerID: ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
+		// Идемпотентный create: активный code уже существует (ON CONFLICT
+		// ничего не вставил) — это конфликт бизнес-ключа, а не внутренняя ошибка.
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errapi.Conflict("resource with this code already exists")
+		}
 		return nil, err
 	}
 

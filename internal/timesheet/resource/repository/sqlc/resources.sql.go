@@ -65,6 +65,8 @@ func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) 
 const createResource = `-- name: CreateResource :one
 INSERT INTO resources (title, code, owner_id)
 VALUES ($1, $2, $3)
+ON CONFLICT (code) WHERE deleted_at IS NULL
+DO NOTHING
 RETURNING id, title, code, owner_id, created_at, updated_at, deleted_at
 `
 
@@ -74,6 +76,8 @@ type CreateResourceParams struct {
 	OwnerID int64  `json:"owner_id"`
 }
 
+// Идемпотентный create по бизнес-ключу code: на существующем активном code
+// ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
 func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (Resource, error) {
 	row := q.db.QueryRow(ctx, createResource, arg.Title, arg.Code, arg.OwnerID)
 	var i Resource
