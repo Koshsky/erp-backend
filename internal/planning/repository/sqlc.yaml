@@ -3,7 +3,9 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema:
+      # V14 подключаем для запроса счётчика комментариев (task_comments).
       - "../../../migrations/V1__initial_schema.sql"
+      - "../../../migrations/V14__task_comments.sql"
     queries:
       - "./query"
     gen:

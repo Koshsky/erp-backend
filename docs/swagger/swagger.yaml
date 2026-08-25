@@ -376,6 +376,10 @@ definitions:
     type: object
   dto.DetailedTask:
     properties:
+      comments_count:
+        description: Количество активных комментариев задачи (для бейджа на диаграмме).
+        example: 3
+        type: integer
       end_date:
         example: "2026-02-01"
         format: date

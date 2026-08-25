@@ -5860,6 +5860,11 @@ const docTemplate = `{
         "dto.DetailedTask": {
             "type": "object",
             "properties": {
+                "comments_count": {
+                    "description": "Количество активных комментариев задачи (для бейджа на диаграмме).",
+                    "type": "integer",
+                    "example": 3
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",

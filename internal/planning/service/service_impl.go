@@ -97,10 +97,10 @@ func (s *PlanningService) GetTaskPlanning(
 		}, nil
 	}
 
-	milestones, tasks, assignments, resourcesMap, err := s.loadAllData(ctx, processes)
+	milestones, tasks, assignments, resourcesMap, commentCounts, err := s.loadAllData(ctx, processes)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.buildPlanning(processes, milestones, tasks, assignments, resourcesMap), nil
+	return s.buildPlanning(processes, milestones, tasks, assignments, resourcesMap, commentCounts), nil
 }

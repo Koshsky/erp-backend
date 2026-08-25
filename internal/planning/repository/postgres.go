@@ -157,6 +157,22 @@ func (r *PlanningRepository) ListAssignmentsByTaskIDs(
 	return groupByKey(assignments, func(a dto.Assignment) int64 { return a.TaskID }), nil
 }
 
+// ListTaskCommentCountsByTaskIDs returns the number of active comments per task.
+func (r *PlanningRepository) ListTaskCommentCountsByTaskIDs(
+	ctx context.Context,
+	taskIDs []int64,
+) (map[int64]int64, error) {
+	rows, err := r.db.ListTaskCommentCountsByTaskIDs(ctx, taskIDs)
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[int64]int64, len(rows))
+	for _, row := range rows {
+		counts[row.TaskID] = row.CommentsCount
+	}
+	return counts, nil
+}
+
 // groupByKey groups items by the key returned by the key function.
 func groupByKey[T any](items []T, key func(T) int64) map[int64][]T {
 	result := make(map[int64][]T)

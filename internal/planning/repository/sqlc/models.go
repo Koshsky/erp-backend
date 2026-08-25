@@ -94,6 +94,17 @@ type Task struct {
 	DeletedAt **time.Time `json:"deleted_at"`
 }
 
+type TaskComment struct {
+	ID        int64       `json:"id"`
+	TaskID    int64       `json:"task_id"`
+	AuthorID  int64       `json:"author_id"`
+	ParentID  pgtype.Int8 `json:"parent_id"`
+	Content   string      `json:"content"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	DeletedAt **time.Time `json:"deleted_at"`
+}
+
 type User struct {
 	ID              int64          `json:"id"`
 	LastName        string         `json:"last_name"`

@@ -48,3 +48,10 @@ AND deleted_at IS NULL;
 SELECT * FROM assignments
 WHERE task_id = ANY(@task_ids::bigint[])
 AND deleted_at IS NULL;
+
+-- name: ListTaskCommentCountsByTaskIDs :many
+SELECT task_id, COUNT(*)::bigint AS comments_count
+FROM task_comments
+WHERE task_id = ANY(@task_ids::bigint[])
+AND deleted_at IS NULL
+GROUP BY task_id;

@@ -281,6 +281,39 @@ func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
 	return items, nil
 }
 
+const listTaskCommentCountsByTaskIDs = `-- name: ListTaskCommentCountsByTaskIDs :many
+SELECT task_id, COUNT(*)::bigint AS comments_count
+FROM task_comments
+WHERE task_id = ANY($1::bigint[])
+AND deleted_at IS NULL
+GROUP BY task_id
+`
+
+type ListTaskCommentCountsByTaskIDsRow struct {
+	TaskID        int64 `json:"task_id"`
+	CommentsCount int64 `json:"comments_count"`
+}
+
+func (q *Queries) ListTaskCommentCountsByTaskIDs(ctx context.Context, taskIds []int64) ([]ListTaskCommentCountsByTaskIDsRow, error) {
+	rows, err := q.db.Query(ctx, listTaskCommentCountsByTaskIDs, taskIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTaskCommentCountsByTaskIDsRow{}
+	for rows.Next() {
+		var i ListTaskCommentCountsByTaskIDsRow
+		if err := rows.Scan(&i.TaskID, &i.CommentsCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
 SELECT id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at FROM tasks
 WHERE process_id = ANY($1::bigint[])
