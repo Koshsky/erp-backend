@@ -41,6 +41,15 @@ type Config struct {
 	Profiling     ProfilingConfig   `yaml:"profiling"`
 	Maintenance   MaintenanceConfig `yaml:"maintenance"`
 	Tracing       TracingConfig     `yaml:"tracing"`
+	RBAC          RBACConfig        `yaml:"rbac"`
+}
+
+// RBACConfig — настройки runtime-RBAC (перезагрузка правил из БД).
+type RBACConfig struct {
+	// RefreshInterval — период фоновой перезагрузки правил из Postgres
+	// (эвентуальная консистентность между инстансами; локальные правки
+	// применяются сразу).
+	RefreshInterval Duration `yaml:"refresh_interval"`
 }
 
 // HTTPServerConfig is the HTTP server settings.

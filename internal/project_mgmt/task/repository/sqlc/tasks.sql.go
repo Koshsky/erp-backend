@@ -18,18 +18,18 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.deleted_at IS NULL
-  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::boolean OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
 
 type CountTasksParams struct {
-	Role    string `json:"role"`
-	UserID  int64  `json:"user_id"`
-	OwnerID int64  `json:"owner_id"`
+	SeeAll  bool  `json:"see_all"`
+	UserID  int64 `json:"user_id"`
+	OwnerID int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountTasks(ctx context.Context, arg CountTasksParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countTasks, arg.Role, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countTasks, arg.SeeAll, arg.UserID, arg.OwnerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -114,23 +114,23 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.deleted_at IS NULL
-  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::boolean OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 ORDER BY t.id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListTasksParams struct {
-	Role       string `json:"role"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	SeeAll     bool  `json:"see_all"`
+	UserID     int64 `json:"user_id"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listTasks,
-		arg.Role,
+		arg.SeeAll,
 		arg.UserID,
 		arg.OwnerID,
 		arg.PageOffset,

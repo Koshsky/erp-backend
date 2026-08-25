@@ -16,6 +16,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
+	rbacpolicysvc "github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
 	"github.com/Koshsky/erp-backend/internal/server/maintenance"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
@@ -38,6 +39,7 @@ type App struct {
 	authMw      *auth.Middleware
 	tracer      *tracingpkg.Tracer
 	idemMw      *idempotencypkg.Middleware
+	policyStore *rbacpolicysvc.PolicyStore
 	modules     []Module
 }
 
@@ -50,6 +52,7 @@ func New(
 	profiler *profiler.Profiler,
 	tracer *tracingpkg.Tracer,
 	idemMw *idempotencypkg.Middleware,
+	policyStore *rbacpolicysvc.PolicyStore,
 	modules []Module,
 ) (*App, error) {
 	return &App{
@@ -61,6 +64,7 @@ func New(
 		maintenance: maintenance.New(cfg.Maintenance, pool, logger),
 		tracer:      tracer,
 		idemMw:      idemMw,
+		policyStore: policyStore,
 		modules:     modules,
 	}, nil
 }
@@ -87,6 +91,9 @@ func (a *App) Start() error {
 
 	a.profiler.Start()
 	a.maintenance.Start()
+	if a.policyStore != nil {
+		a.policyStore.Start()
+	}
 
 	if a.cfg.Swagger.Enabled {
 		// Swagger is outside /api/v1; keep a public per-IP wall on it.
@@ -165,6 +172,9 @@ func (a *App) waitForServer(timeout time.Duration) error {
 
 func (a *App) Stop(ctx context.Context) error {
 	a.maintenance.Stop(ctx)
+	if a.policyStore != nil {
+		a.policyStore.Stop()
+	}
 	if a.pool != nil {
 		a.pool.Close()
 	}

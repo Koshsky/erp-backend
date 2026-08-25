@@ -2,7 +2,7 @@
 SELECT * FROM projects
 WHERE deleted_at IS NULL
 AND (
-    @role::text IN ('admin', 'dp') OR
+    @see_all_projects::boolean OR
     owner_id = @user_id::bigint
 )
 ORDER BY priority ASC;
@@ -13,7 +13,7 @@ FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    @role::text IN ('admin', 'dp', 'vp') OR
+    @see_all_processes::boolean OR
     p.owner_id = @user_id::bigint OR
     pr.owner_id = @user_id::bigint
 );

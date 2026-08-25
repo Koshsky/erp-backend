@@ -20,6 +20,13 @@ const (
 	ResourceWorker
 	// ResourceComment is a task comment (threaded discussion on a task).
 	ResourceComment
+
+	// ResourceUserCatalog is a virtual resource: the user catalog (pickers).
+	// No owner chain; access is decided by the matrix only.
+	ResourceUserCatalog
+	// ResourceRBACConfig is a virtual resource: auto-create and RBAC admin
+	// configuration (admin only, bypass).
+	ResourceRBACConfig
 )
 
 // Owners is an entity's chain of owners: the project owner and the process owner.

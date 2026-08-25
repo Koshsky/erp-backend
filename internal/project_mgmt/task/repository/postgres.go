@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -81,7 +82,7 @@ func (r *TaskRepository) ListTasks(
 	limit, offset int,
 ) ([]domain.Task, error) {
 	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
-		Role:       role,
+		SeeAll:     policies.SeeAll(role, rbac.ResourceTask, policies.ActionView),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -98,7 +99,14 @@ func (r *TaskRepository) ListTasks(
 }
 
 func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, role string, ownerID int64) (int64, error) {
-	return r.db.CountTasks(ctx, sqlc.CountTasksParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountTasks(
+		ctx,
+		sqlc.CountTasksParams{
+			SeeAll:  policies.SeeAll(role, rbac.ResourceTask, policies.ActionView),
+			UserID:  userID,
+			OwnerID: ownerID,
+		},
+	)
 }
 
 func mapTask(row sqlc.Task) domain.Task {

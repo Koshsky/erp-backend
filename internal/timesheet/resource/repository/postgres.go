@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -90,7 +91,7 @@ func (r *ResourceRepository) ListResources(
 	limit, offset int,
 ) ([]domain.Resource, error) {
 	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
-		Role:       role,
+		SeeAll:     policies.SeeAll(role, rbac.ResourceResource, policies.ActionView),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -119,7 +120,14 @@ func (r *ResourceRepository) CountResources(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountResources(ctx, sqlc.CountResourcesParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountResources(
+		ctx,
+		sqlc.CountResourcesParams{
+			SeeAll:  policies.SeeAll(role, rbac.ResourceResource, policies.ActionView),
+			UserID:  userID,
+			OwnerID: ownerID,
+		},
+	)
 }
 
 func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error) {

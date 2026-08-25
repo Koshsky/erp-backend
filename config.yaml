@@ -87,3 +87,8 @@ tracing:
   exporter_endpoint: "jaeger:4317"
   service_name: "erp-backend"
   sampler_ratio: 1.0
+
+rbac:
+  # Период фоновой перезагрузки правил из Postgres (эвентуальная
+  # консистентность между инстансами; локальные правки применяются сразу).
+  refresh_interval: 30s

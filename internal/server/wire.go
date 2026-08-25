@@ -17,6 +17,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/planning"
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt"
+	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
@@ -35,6 +36,7 @@ func InitializeApp() (*App, error) {
 		config.ProvidePostgresConfig,
 		config.ProvideJWTConfig,
 		config.ProvideProfilingConfig,
+		config.ProvideRBACRefreshInterval,
 		idempotency.ProvideIdempotencyRepository,
 		idempotency.ProvideIdempotencyMiddleware,
 		jwt.ProvideJWTService,
@@ -50,6 +52,7 @@ func InitializeApp() (*App, error) {
 		project_mgmt.ProviderSet,
 		timesheet.ProviderSet,
 		autocreate.ProviderSet,
+		rbacpolicy.ProviderSet,
 
 		ProvideModules,
 		New,

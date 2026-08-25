@@ -12,6 +12,7 @@ import (
 	processRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 	"github.com/Koshsky/erp-backend/internal/user"
@@ -50,6 +51,7 @@ func ProvideModules(
 	project project_mgmt.Module,
 	timesheet timesheet.Module,
 	autoCreate autocreate.Module,
+	rbac rbacpolicy.Module,
 ) []Module {
-	return []Module{auth, user, planning, project, timesheet, autoCreate}
+	return []Module{auth, user, planning, project, timesheet, autoCreate, rbac}
 }

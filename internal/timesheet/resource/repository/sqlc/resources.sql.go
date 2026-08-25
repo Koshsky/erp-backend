@@ -45,18 +45,18 @@ const countResources = `-- name: CountResources :one
 SELECT COUNT(*)
 FROM resources
 WHERE deleted_at IS NULL
-  AND ($1::text = 'admin' OR owner_id = $2::bigint)
+  AND ($1::boolean OR owner_id = $2::bigint)
   AND ($3::bigint = 0 OR owner_id = $3::bigint)
 `
 
 type CountResourcesParams struct {
-	Role    string `json:"role"`
-	UserID  int64  `json:"user_id"`
-	OwnerID int64  `json:"owner_id"`
+	SeeAll  bool  `json:"see_all"`
+	UserID  int64 `json:"user_id"`
+	OwnerID int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countResources, arg.Role, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countResources, arg.SeeAll, arg.UserID, arg.OwnerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -274,7 +274,7 @@ SELECT r.id, r.code, r.title, r.owner_id,
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
-  AND ($1::text = 'admin' OR r.owner_id = $2::bigint)
+  AND ($1::boolean OR r.owner_id = $2::bigint)
   AND ($3::bigint = 0 OR r.owner_id = $3::bigint)
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC
@@ -282,11 +282,11 @@ LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListResourcesParams struct {
-	Role       string `json:"role"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	SeeAll     bool  `json:"see_all"`
+	UserID     int64 `json:"user_id"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 type ListResourcesRow struct {
@@ -302,7 +302,7 @@ type ListResourcesRow struct {
 
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
 	rows, err := q.db.Query(ctx, listResources,
-		arg.Role,
+		arg.SeeAll,
 		arg.UserID,
 		arg.OwnerID,
 		arg.PageOffset,

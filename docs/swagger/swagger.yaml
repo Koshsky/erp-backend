@@ -1,5 +1,15 @@
 basePath: /api/v1
 definitions:
+  domain.Role:
+    properties:
+      description:
+        type: string
+      id:
+        format: int64
+        type: integer
+      name:
+        type: string
+    type: object
   dto.AddMemberRequest:
     properties:
       user_id:
@@ -405,6 +415,13 @@ definitions:
         example: Пуско-наладочные работы
         type: string
     type: object
+  dto.ExplainResult:
+    properties:
+      allowed:
+        type: boolean
+      scope:
+        type: string
+    type: object
   dto.LoginRequest:
     properties:
       password:
@@ -412,6 +429,17 @@ definitions:
         type: string
       username:
         example: ivanov
+        type: string
+    type: object
+  dto.MatrixCell:
+    properties:
+      action:
+        type: string
+      resource:
+        type: string
+      role:
+        type: string
+      scope:
         type: string
     type: object
   dto.Milestone:
@@ -680,6 +708,76 @@ definitions:
       title:
         example: Монтажник
         type: string
+    type: object
+  dto.RoutePolicyInput:
+    properties:
+      active:
+        type: boolean
+      kind:
+        example: create
+        type: string
+      name:
+        example: task.create
+        type: string
+      params:
+        additionalProperties: {}
+        type: object
+    required:
+    - kind
+    - name
+    type: object
+  dto.RoutePolicyView:
+    properties:
+      active:
+        type: boolean
+      kind:
+        type: string
+      name:
+        type: string
+      params:
+        additionalProperties: {}
+        type: object
+      updated_at:
+        type: string
+      updated_by:
+        type: integer
+    type: object
+  dto.RuleInput:
+    properties:
+      action:
+        example: update
+        type: string
+      resource:
+        example: task
+        type: string
+      role:
+        example: vp
+        type: string
+      scope:
+        example: parent
+        type: string
+    required:
+    - action
+    - resource
+    - role
+    - scope
+    type: object
+  dto.RuleView:
+    properties:
+      action:
+        type: string
+      id:
+        type: integer
+      resource:
+        type: string
+      role:
+        type: string
+      scope:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: integer
     type: object
   dto.SetDaysRequest:
     properties:
@@ -990,6 +1088,24 @@ definitions:
         type: string
       timestamp:
         example: "2026-08-09T10:30:00Z"
+        type: string
+    type: object
+  policies.KindInfo:
+    properties:
+      name:
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/policies.ParamInfo'
+        type: array
+    type: object
+  policies.ParamInfo:
+    properties:
+      key:
+        type: string
+      required:
+        type: boolean
+      type:
         type: string
     type: object
   response.ErrorResponse:
@@ -2279,6 +2395,292 @@ paths:
       summary: Update project
       tags:
       - Projects
+  /rbac/explain:
+    get:
+      parameters:
+      - description: Role
+        in: query
+        name: role
+        required: true
+        type: string
+      - description: Resource
+        in: query
+        name: resource
+        required: true
+        type: string
+      - description: Action
+        in: query
+        name: action
+        required: true
+        type: string
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Project owner ID
+        in: query
+        name: project_owner
+        type: integer
+      - description: Process owner ID
+        in: query
+        name: process_owner
+        type: integer
+      - description: Row owner ID
+        in: query
+        name: owner
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ExplainResult'
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Explain a decision
+      tags:
+      - RBAC
+  /rbac/kinds:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/policies.KindInfo'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List check kinds
+      tags:
+      - RBAC
+  /rbac/matrix:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.MatrixCell'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Effective permission matrix
+      tags:
+      - RBAC
+  /rbac/policies:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.RoutePolicyView'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List route policies
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Route policy
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RoutePolicyInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoutePolicyView'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Upsert a route policy
+      tags:
+      - RBAC
+  /rbac/policies/{name}:
+    delete:
+      parameters:
+      - description: Policy name
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a route policy
+      tags:
+      - RBAC
+  /rbac/reset:
+    post:
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Reset policies to defaults
+      tags:
+      - RBAC
+  /rbac/roles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Role'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List roles
+      tags:
+      - RBAC
+  /rbac/rules:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.RuleView'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List matrix rules
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Matrix rule
+        in: body
+        name: rule
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RuleInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RuleView'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Upsert a matrix rule
+      tags:
+      - RBAC
+  /rbac/rules/{id}:
+    delete:
+      parameters:
+      - description: Rule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a matrix rule
+      tags:
+      - RBAC
   /resources:
     get:
       description: List all resources

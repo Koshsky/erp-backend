@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -89,7 +90,7 @@ func (r *ProjectRepository) ListProjects(
 	limit, offset int,
 ) ([]domain.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
-		Role:       role,
+		SeeAll:     policies.SeeAll(role, rbac.ResourceProject, policies.ActionView),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -111,7 +112,14 @@ func (r *ProjectRepository) CountProjects(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountProjects(ctx, sqlc.CountProjectsParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountProjects(
+		ctx,
+		sqlc.CountProjectsParams{
+			SeeAll:  policies.SeeAll(role, rbac.ResourceProject, policies.ActionView),
+			UserID:  userID,
+			OwnerID: ownerID,
+		},
+	)
 }
 
 func mapProject(row sqlc.Project) domain.Project {

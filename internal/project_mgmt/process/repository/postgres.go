@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -81,7 +82,7 @@ func (r *ProcessRepository) ListProcesss(
 	limit, offset int,
 ) ([]domain.Process, error) {
 	rows, err := r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
-		Role:       role,
+		SeeAll:     policies.SeeAll(role, rbac.ResourceProcess, policies.ActionView),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -103,7 +104,14 @@ func (r *ProcessRepository) CountProcesses(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountProcesses(ctx, sqlc.CountProcessesParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountProcesses(
+		ctx,
+		sqlc.CountProcessesParams{
+			SeeAll:  policies.SeeAll(role, rbac.ResourceProcess, policies.ActionView),
+			UserID:  userID,
+			OwnerID: ownerID,
+		},
+	)
 }
 
 func mapProcess(row sqlc.Process) domain.Process {

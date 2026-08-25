@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
@@ -98,7 +99,7 @@ func (r *AssignmentRepository) ListAssignments(
 	limit, offset int,
 ) ([]domain.Assignment, error) {
 	rows, err := r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
-		Role:       role,
+		SeeAll:     policies.SeeAll(role, rbac.ResourceAssignment, policies.ActionView),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -120,7 +121,14 @@ func (r *AssignmentRepository) CountAssignments(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountAssignments(ctx, sqlc.CountAssignmentsParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountAssignments(
+		ctx,
+		sqlc.CountAssignmentsParams{
+			SeeAll:  policies.SeeAll(role, rbac.ResourceAssignment, policies.ActionView),
+			UserID:  userID,
+			OwnerID: ownerID,
+		},
+	)
 }
 
 func mapAssignment(row sqlc.Assignment) domain.Assignment {
