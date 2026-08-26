@@ -1237,6 +1237,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/permissions/me": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Permissions"
+                ],
+                "summary": "My RBAC permissions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.Permission"
+                                            }
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/planning/processes": {
             "get": {
                 "security": [
@@ -6509,6 +6551,23 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Телевидение"
+                }
+            }
+        },
+        "dto.Permission": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "create"
+                },
+                "resource": {
+                    "type": "string",
+                    "example": "project"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "own"
                 }
             }
         },

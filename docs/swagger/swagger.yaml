@@ -479,6 +479,18 @@ definitions:
         example: Телевидение
         type: string
     type: object
+  dto.Permission:
+    properties:
+      action:
+        example: create
+        type: string
+      resource:
+        example: project
+        type: string
+      scope:
+        example: own
+        type: string
+    type: object
   dto.Process:
     properties:
       end_date:
@@ -1810,6 +1822,29 @@ paths:
       summary: Update milestone
       tags:
       - Milestones
+  /permissions/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.Permission'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: My RBAC permissions
+      tags:
+      - Permissions
   /planning/processes:
     get:
       description: Get process planning

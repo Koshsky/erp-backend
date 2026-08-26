@@ -64,3 +64,11 @@ type ExplainResult struct {
 	Scope   string `json:"scope"`
 	Allowed bool   `json:"allowed"`
 }
+
+// Permission — принципиальное право роли: действие над ресурсом разрешено
+// (скоуп доступа из матрицы; по нему фронт понимает зону владения).
+type Permission struct {
+	Resource string `json:"resource" example:"project"`
+	Action   string `json:"action" example:"create"`
+	Scope    string `json:"scope" example:"own"`
+}

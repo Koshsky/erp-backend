@@ -215,3 +215,24 @@ func roleExists(roles []domain.Role, name string) bool {
 	}
 	return false
 }
+
+// MyPermissions возвращает принципиальные права роли (все разрешённые
+// действия, ScopeFor != none; admin — всё). Используется фронтом для
+// отображения возможностей по правам, а не по ролям.
+func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission {
+	out := []dto.Permission{}
+	for res := rbac.ResourceProject; res <= rbac.ResourceRBACConfig; res++ {
+		for act := policies.ActionView; act <= policies.ActionDelete; act++ {
+			scope := policies.CurrentMatrix().ScopeFor(role, res, act)
+			if scope == policies.ScopeNone {
+				continue
+			}
+			out = append(out, dto.Permission{
+				Resource: policies.ResourceName(res),
+				Action:   policies.ActionName(act),
+				Scope:    policies.ScopeName(scope),
+			})
+		}
+	}
+	return out
+}

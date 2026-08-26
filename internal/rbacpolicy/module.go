@@ -39,7 +39,9 @@ func ProvideModule(handler *delivery.RBACHandler, logger *slog.Logger) Module {
 func (m Module) RegisterPublicRoutes(_ *gin.RouterGroup) {
 }
 
-// RegisterProtectedRoutes registers the admin routes behind authentication.
+// RegisterProtectedRoutes registers the admin routes behind authentication
+// plus the own-permissions endpoint (any authenticated role, no admin gate).
 func (m Module) RegisterProtectedRoutes(r *gin.RouterGroup) {
 	m.handler.RegisterRoutes(r)
+	r.GET("/permissions/me", m.handler.MyPermissions)
 }

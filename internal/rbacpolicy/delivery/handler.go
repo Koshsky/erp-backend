@@ -249,3 +249,21 @@ func (h *RBACHandler) Explain(c *gin.Context) {
 	}
 	response.OK(c, res)
 }
+
+// MyPermissions handles listing the caller's permitted actions (by rights,
+// not by role) — used by the frontend to show/hide capabilities.
+//
+//	@Tags		Permissions
+//	@Summary	My RBAC permissions
+//	@Security	ApiKeyAuth
+//	@Produce	json
+//	@Success	200	{object}	response.SuccessResponse{data=[]dto.Permission,error=nil}
+//	@Router		/permissions/me [get]
+func (h *RBACHandler) MyPermissions(c *gin.Context) {
+	user, err := userctx.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
+		return
+	}
+	response.OK(c, h.service.MyPermissions(c.Request.Context(), user.Role))
+}
