@@ -3,9 +3,11 @@ package repository
 
 import (
 	"context"
+	stderrors "errors"
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type UserRepository struct {
@@ -74,7 +77,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 		TerminationDate: toDate(user.TerminationDate),
 	})
 	if err != nil {
-		return nil, err
+		return nil, mapUserErr(err)
 	}
 
 	mapped := mapUser(row)
@@ -106,7 +109,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 		TerminationDate: toDate(user.TerminationDate),
 	})
 	if err != nil {
-		return nil, err
+		return nil, mapUserErr(err)
 	}
 
 	mapped := mapUser(row)
@@ -436,4 +439,14 @@ func (r *UserRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners,
 		return rbac.Owners{}, err
 	}
 	return rbac.Owners{Owner: owner}, nil
+}
+
+// mapUserErr превращает нарушение FK роли (роль не в каталоге rbac_roles)
+// в 400-ошибку; остальные ошибки возвращаются как есть.
+func mapUserErr(err error) error {
+	var pgErr *pgconn.PgError
+	if stderrors.As(err, &pgErr) && pgErr.Code == "23503" && pgErr.ConstraintName == "users_role_fk" {
+		return errapi.BadRequest("неизвестная роль: её нет в каталоге ролей")
+	}
+	return err
 }
