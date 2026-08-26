@@ -7,6 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
@@ -36,7 +38,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 		EndDate:   task.EndDate,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.FromPgInvalidParam(err)
 	}
 
 	mapped := mapTask(row)
@@ -63,7 +65,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 		EndDate:   task.EndDate,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.FromPgInvalidParam(err)
 	}
 
 	mapped := mapTask(row)

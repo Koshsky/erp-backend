@@ -7,6 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
@@ -36,7 +38,7 @@ func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Pr
 		OwnerID:   nullable.ToInt8(process.OwnerID),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.FromPgInvalidParam(err)
 	}
 
 	mapped := mapProcess(row)
@@ -63,7 +65,7 @@ func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Pr
 		EndDate:   process.EndDate,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.FromPgInvalidParam(err)
 	}
 
 	mapped := mapProcess(row)

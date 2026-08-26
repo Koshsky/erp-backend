@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgconn"
+
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -45,5 +47,26 @@ func TestStatusCodeMapsConflict(t *testing.T) {
 	t.Parallel()
 	if got := errapi.StatusCode(errapi.Conflict("x")); got != http.StatusConflict {
 		t.Fatalf("StatusCode(Conflict) = %d, want %d", got, http.StatusConflict)
+	}
+}
+
+func TestFromPgInvalidParam(t *testing.T) {
+	t.Parallel()
+	pgErr := &pgconn.PgError{Code: "22023", Message: "Сроки процесса выходят за границы проекта"}
+	got := errapi.FromPgInvalidParam(pgErr)
+	if errapi.StatusCode(got) != http.StatusBadRequest {
+		t.Fatalf("StatusCode = %d, want 400", errapi.StatusCode(got))
+	}
+	if got.Error() != pgErr.Message {
+		t.Errorf("Message = %q, want %q", got.Error(), pgErr.Message)
+	}
+	// Другие коды и чужие ошибки — без изменений.
+	other := &pgconn.PgError{Code: "23505", Message: "dup"}
+	if !stdErrors.Is(errapi.FromPgInvalidParam(other), other) {
+		t.Errorf("23505 не должен мапиться")
+	}
+	sentinel := stdErrors.New("boom")
+	if !stdErrors.Is(errapi.FromPgInvalidParam(sentinel), sentinel) {
+		t.Errorf("сторонняя ошибка не должна мапиться")
 	}
 }
