@@ -344,18 +344,24 @@ func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 	return 0
 }
 
-// ancestorField возвращает владельца предка на один уровень выше родителя
-// (для задачи/вехи/назначения — владелец проекта; 0 — предка нет).
-func ancestorField(res rbac.Resource, owners rbac.Owners) int64 {
+// ancestorMatch сообщает, совпадает ли пользователь с любым из владельцев
+// по цепочке строго вверх от сущности: для задачи/вехи/назначения — владелец
+// процесса или проектa; для процесса — владелец проекта (≡ parent).
+func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
+	if userID == 0 {
+		return false
+	}
 	switch res {
 	case rbac.ResourceTask, rbac.ResourceMilestone, rbac.ResourceAssignment:
-		return owners.ProjectOwner
-	case rbac.ResourceProject, rbac.ResourceProcess, rbac.ResourceState,
-		rbac.ResourceResource, rbac.ResourceWorker, rbac.ResourceComment,
+		return owners.ProcessOwner == userID || owners.ProjectOwner == userID
+	case rbac.ResourceProcess:
+		return owners.ProjectOwner == userID
+	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
+		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
-		return 0
+		return false
 	}
-	return 0
+	return false
 }
 
 // Authorize сообщает, может ли пользователь выполнить действие над сущностью
@@ -373,8 +379,7 @@ func Authorize(role string, res rbac.Resource, act Action, owners rbac.Owners, u
 		parent := parentField(res, owners)
 		return userID != 0 && parent != 0 && parent == userID
 	case ScopeAncestor:
-		ancestor := ancestorField(res, owners)
-		return userID != 0 && ancestor != 0 && ancestor == userID
+		return ancestorMatch(res, owners, userID)
 	default:
 		return false
 	}
@@ -501,7 +506,7 @@ var parentApplicable = map[rbac.Resource]bool{
 //nolint:gochecknoglobals // applicability maps зон (полные: все ресурсы перечислены)
 var ancestorApplicable = map[rbac.Resource]bool{
 	rbac.ResourceProject:     false,
-	rbac.ResourceProcess:     false,
+	rbac.ResourceProcess:     true,
 	rbac.ResourceTask:        true,
 	rbac.ResourceMilestone:   true,
 	rbac.ResourceAssignment:  true,

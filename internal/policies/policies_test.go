@@ -153,7 +153,17 @@ func TestAuthorize_TaskMilestoneAssignment(t *testing.T) {
 				{"admin sees any", admin, policies.ActionView, processOfVP1, uAdmin, true},
 				{"dp sees any", dp, policies.ActionView, processOfVP1, uDP, true},
 				{"rp sees own project's", rp, policies.ActionView, processOfVP1, uRP, true},
-				{"rp view only foreign project", rp, policies.ActionView, processOfVP1, uVP1, false},
+				// ancestor = любой из владельцев по цепочке вверх: rp, совпавший
+				// с владельцем процесса, тоже видит.
+				{
+					"rp — любой владелец по цепочке (владелец процесса)",
+					rp,
+					policies.ActionView,
+					processOfVP1,
+					uVP1,
+					true,
+				},
+				{"rp — не совпал ни с одним владельцем", rp, policies.ActionView, processOfVP1, uVP2, false},
 				{"vp sees own process's", vp, policies.ActionView, processOfVP1, uVP1, true},
 				{"vp does not see foreign process's", vp, policies.ActionView, processOfVP1, uVP2, false},
 				{"worker sees none", worker, policies.ActionView, processOfVP1, uVP1, false},

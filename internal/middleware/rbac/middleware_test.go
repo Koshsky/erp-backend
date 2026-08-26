@@ -81,7 +81,9 @@ func TestCheckEntity(t *testing.T) {
 		{"no user → 401", "", "/1", "task.view", false, http.StatusUnauthorized},
 		{"bad id → 400", testAdmin, "/abc", "task.view", true, http.StatusBadRequest},
 		{"not found → 404", testAdmin, "/10", "task.view", true, http.StatusNotFound},
-		{"rp views foreign project → 404", testRP, "/1", "task.view", true, http.StatusNotFound},
+		// rp (id 2) — владелец процесса задачи (owners {Project:1, Process:2}):
+		// ancestor = любой владелец по цепочке вверх → доступ есть.
+		{"rp — владелец процесса (ancestor) → 200", testRP, "/1", "task.view", true, http.StatusOK},
 		{"rp update → 403 (view-only)", testRP, "/1", "task.update", true, http.StatusForbidden},
 		{"vp views own process → 200", testVP, "/1", "task.view", true, http.StatusOK},
 		{"vp updates own → 200", testVP, "/1", "task.update", true, http.StatusOK},

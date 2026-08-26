@@ -15,6 +15,7 @@ WHERE p.deleted_at IS NULL
 AND (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'ancestor' AND pr.owner_id = @user_id::bigint) OR
     (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
 );
 

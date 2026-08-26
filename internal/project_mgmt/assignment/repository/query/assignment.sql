@@ -31,7 +31,7 @@ WHERE a.deleted_at IS NULL
   AND (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND pr.owner_id = @user_id::bigint)
+    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY a.id ASC
@@ -47,7 +47,7 @@ WHERE a.deleted_at IS NULL
   AND (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND pr.owner_id = @user_id::bigint)
+    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
