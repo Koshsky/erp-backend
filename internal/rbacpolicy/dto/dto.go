@@ -69,6 +69,17 @@ type ExplainResult struct {
 // (скоуп доступа из матрицы; по нему фронт понимает зону владения).
 type Permission struct {
 	Resource string `json:"resource" example:"project"`
-	Action   string `json:"action" example:"create"`
-	Scope    string `json:"scope" example:"own"`
+	Action   string `json:"action"   example:"create"`
+	Scope    string `json:"scope"    example:"own"`
+}
+
+// RoleUpsertInput — создание роли (имя = системный код доступа).
+type RoleUpsertInput struct {
+	Name        string `json:"name"        example:"auditor"       binding:"required"`
+	Description string `json:"description" example:"Внешний аудит"`
+}
+
+// RoleUpdateInput — обновление описания роли.
+type RoleUpdateInput struct {
+	Description string `json:"description" example:"Внешний аудит"`
 }

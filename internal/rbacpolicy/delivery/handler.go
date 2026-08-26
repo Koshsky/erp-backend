@@ -267,3 +267,70 @@ func (h *RBACHandler) MyPermissions(c *gin.Context) {
 	}
 	response.OK(c, h.service.MyPermissions(c.Request.Context(), user.Role))
 }
+
+// CreateRole handles creating (or reviving) a role.
+//
+//	@Tags		RBAC
+//	@Summary	Create a role
+//	@Security	ApiKeyAuth
+//	@Accept		json
+//	@Produce	json
+//	@Param		role	body		dto.RoleUpsertInput	true	"Role"
+//	@Success	201		{object}	response.SuccessResponse{data=domain.Role,error=nil}
+//	@Failure	400		{object}	response.ErrorResponse{data=nil}
+//	@Router		/rbac/roles [post]
+func (h *RBACHandler) CreateRole(c *gin.Context) {
+	var in dto.RoleUpsertInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
+		return
+	}
+	role, err := h.service.CreateRole(c.Request.Context(), in)
+	if err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.Created(c, role)
+}
+
+// UpdateRole handles updating a role's description.
+//
+//	@Tags		RBAC
+//	@Summary	Update a role
+//	@Security	ApiKeyAuth
+//	@Accept		json
+//	@Produce	json
+//	@Param		name	path		string				true	"Role name"
+//	@Param		role	body		dto.RoleUpdateInput	true	"Role"
+//	@Success	200		{object}	response.SuccessResponse{data=domain.Role,error=nil}
+//	@Failure	400		{object}	response.ErrorResponse{data=nil}
+//	@Router		/rbac/roles/{name} [put]
+func (h *RBACHandler) UpdateRole(c *gin.Context) {
+	var in dto.RoleUpdateInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
+		return
+	}
+	role, err := h.service.UpdateRole(c.Request.Context(), c.Param("name"), in)
+	if err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.OK(c, role)
+}
+
+// DeleteRole handles soft-deleting a role (and its rules).
+//
+//	@Tags		RBAC
+//	@Summary	Delete a role
+//	@Security	ApiKeyAuth
+//	@Param		name	path	string	true	"Role name"
+//	@Success	204
+//	@Router		/rbac/roles/{name} [delete]
+func (h *RBACHandler) DeleteRole(c *gin.Context) {
+	if err := h.service.DeleteRole(c.Request.Context(), c.Param("name")); err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.NoContent(c)
+}

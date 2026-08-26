@@ -9,6 +9,9 @@ func (h *RBACHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r.Use(h.mw.Check("rbac.manage"))
 	{
 		r.GET("/roles", h.ListRoles)
+		r.POST("/roles", h.CreateRole)
+		r.PUT("/roles/:name", h.UpdateRole)
+		r.DELETE("/roles/:name", h.DeleteRole)
 		r.GET("/rules", h.ListRules)
 		r.PUT("/rules", h.UpsertRule)
 		r.DELETE("/rules/:id", h.DeleteRule)

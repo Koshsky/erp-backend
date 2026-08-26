@@ -154,6 +154,17 @@ func (q *Queries) SoftDeleteAllRules(ctx context.Context) error {
 	return err
 }
 
+const softDeleteRole = `-- name: SoftDeleteRole :exec
+UPDATE rbac_roles
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE name = $1::text AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteRole(ctx context.Context, name string) error {
+	_, err := q.db.Exec(ctx, softDeleteRole, name)
+	return err
+}
+
 const softDeleteRoutePolicy = `-- name: SoftDeleteRoutePolicy :exec
 UPDATE rbac_route_policies
 SET deleted_at = NOW(), updated_at = NOW()
@@ -174,6 +185,70 @@ WHERE id = $1::bigint AND deleted_at IS NULL
 func (q *Queries) SoftDeleteRule(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, softDeleteRule, id)
 	return err
+}
+
+const softDeleteRulesByRole = `-- name: SoftDeleteRulesByRole :exec
+UPDATE rbac_role_rules
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE role = $1::text AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteRulesByRole(ctx context.Context, role string) error {
+	_, err := q.db.Exec(ctx, softDeleteRulesByRole, role)
+	return err
+}
+
+const updateRoleDescription = `-- name: UpdateRoleDescription :one
+UPDATE rbac_roles
+SET description = $1::text, updated_at = NOW()
+WHERE name = $2::text AND deleted_at IS NULL
+RETURNING id, name, description
+`
+
+type UpdateRoleDescriptionParams struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+}
+
+type UpdateRoleDescriptionRow struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+func (q *Queries) UpdateRoleDescription(ctx context.Context, arg UpdateRoleDescriptionParams) (UpdateRoleDescriptionRow, error) {
+	row := q.db.QueryRow(ctx, updateRoleDescription, arg.Description, arg.Name)
+	var i UpdateRoleDescriptionRow
+	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	return i, err
+}
+
+const upsertRole = `-- name: UpsertRole :one
+INSERT INTO rbac_roles (name, description)
+VALUES ($1::text, $2::text)
+ON CONFLICT (name) DO UPDATE
+SET description = EXCLUDED.description,
+    deleted_at = NULL, -- upsert «оживляет» soft-deleted роль
+    updated_at = NOW()
+RETURNING id, name, description
+`
+
+type UpsertRoleParams struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type UpsertRoleRow struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+func (q *Queries) UpsertRole(ctx context.Context, arg UpsertRoleParams) (UpsertRoleRow, error) {
+	row := q.db.QueryRow(ctx, upsertRole, arg.Name, arg.Description)
+	var i UpsertRoleRow
+	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	return i, err
 }
 
 const upsertRoutePolicy = `-- name: UpsertRoutePolicy :one

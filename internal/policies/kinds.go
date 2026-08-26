@@ -340,7 +340,8 @@ func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
 		return func(id int64) rbac.Owners { return rbac.Owners{Owner: id} }, true
 	case rbac.ResourceProcess, rbac.ResourceTask, rbac.ResourceMilestone,
 		rbac.ResourceAssignment, rbac.ResourceState, rbac.ResourceComment,
-		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
+		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
 		return nil, false
 	}
 	return nil, false

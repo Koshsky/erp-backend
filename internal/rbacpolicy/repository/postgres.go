@@ -179,3 +179,29 @@ func fromInt8(v pgtype.Int8) *int64 {
 	out := v.Int64
 	return &out
 }
+
+// UpsertRole создаёт роль (или «оживляет» soft-deleted по имени).
+func (r *RuleRepository) UpsertRole(ctx context.Context, name, description string) (domain.Role, error) {
+	row, err := r.db.UpsertRole(ctx, sqlc.UpsertRoleParams{Name: name, Description: description})
+	if err != nil {
+		return domain.Role{}, err
+	}
+	return domain.Role{ID: row.ID, Name: row.Name, Description: row.Description}, nil
+}
+
+// UpdateRoleDescription обновляет описание роли.
+func (r *RuleRepository) UpdateRoleDescription(ctx context.Context, name, description string) (domain.Role, error) {
+	row, err := r.db.UpdateRoleDescription(ctx, sqlc.UpdateRoleDescriptionParams{Name: name, Description: description})
+	if err != nil {
+		return domain.Role{}, err
+	}
+	return domain.Role{ID: row.ID, Name: row.Name, Description: row.Description}, nil
+}
+
+// SoftDeleteRole мягко удаляет роль вместе с её правилами.
+func (r *RuleRepository) SoftDeleteRole(ctx context.Context, name string) error {
+	if err := r.db.SoftDeleteRole(ctx, name); err != nil {
+		return err
+	}
+	return r.db.SoftDeleteRulesByRole(ctx, name)
+}

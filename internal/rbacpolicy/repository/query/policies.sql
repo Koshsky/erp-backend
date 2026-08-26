@@ -55,3 +55,27 @@ WHERE name = @name::text AND deleted_at IS NULL;
 UPDATE rbac_route_policies
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE deleted_at IS NULL;
+-- name: UpsertRole :one
+INSERT INTO rbac_roles (name, description)
+VALUES (@name::text, @description::text)
+ON CONFLICT (name) DO UPDATE
+SET description = EXCLUDED.description,
+    deleted_at = NULL, -- upsert «оживляет» soft-deleted роль
+    updated_at = NOW()
+RETURNING id, name, description;
+
+-- name: UpdateRoleDescription :one
+UPDATE rbac_roles
+SET description = @description::text, updated_at = NOW()
+WHERE name = @name::text AND deleted_at IS NULL
+RETURNING id, name, description;
+
+-- name: SoftDeleteRole :exec
+UPDATE rbac_roles
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE name = @name::text AND deleted_at IS NULL;
+
+-- name: SoftDeleteRulesByRole :exec
+UPDATE rbac_role_rules
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE role = @role::text AND deleted_at IS NULL;

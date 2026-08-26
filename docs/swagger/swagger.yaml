@@ -720,6 +720,23 @@ definitions:
         example: Монтажник
         type: string
     type: object
+  dto.RoleUpdateInput:
+    properties:
+      description:
+        example: Внешний аудит
+        type: string
+    type: object
+  dto.RoleUpsertInput:
+    properties:
+      description:
+        example: Внешний аудит
+        type: string
+      name:
+        example: auditor
+        type: string
+    required:
+    - name
+    type: object
   dto.RoutePolicyInput:
     properties:
       active:
@@ -2636,6 +2653,103 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: List roles
+      tags:
+      - RBAC
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RoleUpsertInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.Role'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a role
+      tags:
+      - RBAC
+  /rbac/roles/{name}:
+    delete:
+      parameters:
+      - description: Role name
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a role
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RoleUpdateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.Role'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a role
       tags:
       - RBAC
   /rbac/rules:

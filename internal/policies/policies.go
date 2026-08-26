@@ -284,7 +284,10 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 			{userdomain.ProcessOwner, ScopeAll},
 		},
 	},
-	rbac.ResourceRBACConfig: {},
+	rbac.ResourceRBACConfig:   {},
+	rbac.ResourceUserAdmin:    {},
+	rbac.ResourceStateAdmin:   {},
+	rbac.ResourceOrgStructure: {},
 }}
 
 // DefaultMatrix возвращает встроенную матрицу по умолчанию (копию).
@@ -337,7 +340,8 @@ func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 		return owners.ProcessOwner
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment,
-		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
+		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
 		return 0
 	}
 	return 0
@@ -357,7 +361,8 @@ func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 		return owners.Owner == userID || owners.ProcessOwner == userID || owners.ProjectOwner == userID
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment,
-		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
+		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
 		return false
 	}
 	return false
@@ -474,47 +479,56 @@ func ParseScope(s string) (Scope, bool) {
 
 //nolint:gochecknoglobals // applicability maps зон (полные: все ресурсы перечислены)
 var ownApplicable = map[rbac.Resource]bool{
-	rbac.ResourceProject:     true,
-	rbac.ResourceProcess:     true,
-	rbac.ResourceTask:        true,
-	rbac.ResourceMilestone:   false,
-	rbac.ResourceAssignment:  false,
-	rbac.ResourceState:       false,
-	rbac.ResourceResource:    true,
-	rbac.ResourceWorker:      true,
-	rbac.ResourceComment:     false,
-	rbac.ResourceUserCatalog: false,
-	rbac.ResourceRBACConfig:  false,
+	rbac.ResourceProject:      true,
+	rbac.ResourceProcess:      true,
+	rbac.ResourceTask:         true,
+	rbac.ResourceMilestone:    false,
+	rbac.ResourceAssignment:   false,
+	rbac.ResourceState:        false,
+	rbac.ResourceResource:     true,
+	rbac.ResourceWorker:       true,
+	rbac.ResourceComment:      false,
+	rbac.ResourceUserCatalog:  false,
+	rbac.ResourceRBACConfig:   false,
+	rbac.ResourceUserAdmin:    false,
+	rbac.ResourceStateAdmin:   false,
+	rbac.ResourceOrgStructure: false,
 }
 
 //nolint:gochecknoglobals // applicability maps зон (полные: все ресурсы перечислены)
 var parentApplicable = map[rbac.Resource]bool{
-	rbac.ResourceProject:     false,
-	rbac.ResourceProcess:     true,
-	rbac.ResourceTask:        true,
-	rbac.ResourceMilestone:   true,
-	rbac.ResourceAssignment:  true,
-	rbac.ResourceState:       false,
-	rbac.ResourceResource:    false,
-	rbac.ResourceWorker:      false,
-	rbac.ResourceComment:     false,
-	rbac.ResourceUserCatalog: false,
-	rbac.ResourceRBACConfig:  false,
+	rbac.ResourceProject:      false,
+	rbac.ResourceProcess:      true,
+	rbac.ResourceTask:         true,
+	rbac.ResourceMilestone:    true,
+	rbac.ResourceAssignment:   true,
+	rbac.ResourceState:        false,
+	rbac.ResourceResource:     false,
+	rbac.ResourceWorker:       false,
+	rbac.ResourceComment:      false,
+	rbac.ResourceUserCatalog:  false,
+	rbac.ResourceRBACConfig:   false,
+	rbac.ResourceUserAdmin:    false,
+	rbac.ResourceStateAdmin:   false,
+	rbac.ResourceOrgStructure: false,
 }
 
 //nolint:gochecknoglobals // applicability maps зон (полные: все ресурсы перечислены)
 var ancestorApplicable = map[rbac.Resource]bool{
-	rbac.ResourceProject:     false,
-	rbac.ResourceProcess:     true,
-	rbac.ResourceTask:        true,
-	rbac.ResourceMilestone:   true,
-	rbac.ResourceAssignment:  true,
-	rbac.ResourceState:       false,
-	rbac.ResourceResource:    false,
-	rbac.ResourceWorker:      false,
-	rbac.ResourceComment:     false,
-	rbac.ResourceUserCatalog: false,
-	rbac.ResourceRBACConfig:  false,
+	rbac.ResourceProject:      false,
+	rbac.ResourceProcess:      true,
+	rbac.ResourceTask:         true,
+	rbac.ResourceMilestone:    true,
+	rbac.ResourceAssignment:   true,
+	rbac.ResourceState:        false,
+	rbac.ResourceResource:     false,
+	rbac.ResourceWorker:       false,
+	rbac.ResourceComment:      false,
+	rbac.ResourceUserCatalog:  false,
+	rbac.ResourceRBACConfig:   false,
+	rbac.ResourceUserAdmin:    false,
+	rbac.ResourceStateAdmin:   false,
+	rbac.ResourceOrgStructure: false,
 }
 
 // ScopeApplicable сообщает, применима ли зона к ресурсу (для валидации правил).

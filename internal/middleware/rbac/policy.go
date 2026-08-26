@@ -27,6 +27,14 @@ const (
 	// ResourceRBACConfig is a virtual resource: auto-create and RBAC admin
 	// configuration (admin only, bypass).
 	ResourceRBACConfig
+
+	// ResourceUserAdmin is a virtual resource: the users admin section
+	// (page guard), granted explicitly (admin gets it via the bypass).
+	ResourceUserAdmin
+	// ResourceStateAdmin is a virtual resource: the states admin section.
+	ResourceStateAdmin
+	// ResourceOrgStructure is a virtual resource: the org structure section.
+	ResourceOrgStructure
 )
 
 // Owners is an entity's chain of owners: the project owner and the process owner.

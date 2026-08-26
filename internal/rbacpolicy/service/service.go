@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
@@ -156,7 +158,7 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 	}
 	var cells []dto.MatrixCell
 	for _, role := range names {
-		for res := rbac.ResourceProject; res <= rbac.ResourceRBACConfig; res++ {
+		for res := rbac.ResourceProject; res <= rbac.ResourceOrgStructure; res++ {
 			for act := policies.ActionView; act <= policies.ActionDelete; act++ {
 				if scope := matrix.ScopeFor(role, res, act); scope != policies.ScopeNone {
 					cells = append(cells, dto.MatrixCell{
@@ -221,7 +223,7 @@ func roleExists(roles []domain.Role, name string) bool {
 // отображения возможностей по правам, а не по ролям.
 func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission {
 	out := []dto.Permission{}
-	for res := rbac.ResourceProject; res <= rbac.ResourceRBACConfig; res++ {
+	for res := rbac.ResourceProject; res <= rbac.ResourceOrgStructure; res++ {
 		for act := policies.ActionView; act <= policies.ActionDelete; act++ {
 			scope := policies.CurrentMatrix().ScopeFor(role, res, act)
 			if scope == policies.ScopeNone {
@@ -235,4 +237,54 @@ func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission
 		}
 	}
 	return out
+}
+
+// RoleNameRe — допустимые символы имени роли (системный код доступа).
+//
+
+var RoleNameRe = regexp.MustCompile(`^[a-z0-9_-]+$`)
+
+// CreateRole создаёт роль (или оживляет удалённую) и возвращает её.
+func (s *Service) CreateRole(ctx context.Context, in dto.RoleUpsertInput) (domain.Role, error) {
+	if err := validateRoleName(in.Name); err != nil {
+		return domain.Role{}, err
+	}
+	role, err := s.repo.UpsertRole(ctx, in.Name, in.Description)
+	if err != nil {
+		return domain.Role{}, err
+	}
+	return role, nil
+}
+
+// UpdateRole обновляет описание роли.
+func (s *Service) UpdateRole(ctx context.Context, name string, in dto.RoleUpdateInput) (domain.Role, error) {
+	role, err := s.repo.UpdateRoleDescription(ctx, name, in.Description)
+	if err != nil {
+		return domain.Role{}, err
+	}
+	return role, nil
+}
+
+// DeleteRole мягко удаляет роль и её правила; назначенные пользователи
+// продолжают существовать, но теряют права (роль пропадает из матрицы).
+func (s *Service) DeleteRole(ctx context.Context, name string) error {
+	if err := s.repo.SoftDeleteRole(ctx, name); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// validateRoleName проверяет имя роли: непустое, не длиннее 32, код.
+func validateRoleName(name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return errors.BadRequest("имя роли не может быть пустым")
+	}
+	if len(name) > 32 {
+		return errors.BadRequest("имя роли не длиннее 32 символов")
+	}
+	if !RoleNameRe.MatchString(name) {
+		return errors.BadRequest("имя роли: только латиница в нижнем регистре, цифры, «-» и «_»")
+	}
+	return nil
 }
