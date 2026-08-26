@@ -1,9 +1,8 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -16,7 +15,7 @@ func (v *ProjectValidator) ValidateProject(project *domain.Project) error {
 		return err
 	}
 	if project.Priority < 0 {
-		return fmt.Errorf("priority must be positive")
+		return errors.NewValidationError("priority must be positive")
 	}
 	if err := v.ValidateRequiredDate(project.StartDate, "start_date"); err != nil {
 		return err

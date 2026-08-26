@@ -1,9 +1,8 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -19,7 +18,7 @@ func (v *AssignmentValidator) ValidateAssignment(assignment *domain.Assignment) 
 		return err
 	}
 	if assignment.Quantity < 1 {
-		return fmt.Errorf("quantity must be greater than 0")
+		return errors.NewValidationError("quantity must be greater than 0")
 	}
 	return nil
 }

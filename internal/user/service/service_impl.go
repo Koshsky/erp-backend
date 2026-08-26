@@ -57,11 +57,11 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 
 	user, err := s.FindUserByID(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("user not found")
+		return errors.NotFound("user not found")
 	}
 
 	if err = hasher.Compare(user.PasswordHash, oldPassword); err != nil {
-		return fmt.Errorf("invalid current password")
+		return errors.NewValidationError("invalid current password")
 	}
 
 	newHash, err := hasher.Hash(newPassword)
@@ -162,7 +162,7 @@ func (s *UserService) ResetPassword(ctx context.Context, id int64) (*dto.ResetPa
 
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, errors.NotFound("user not found")
 	}
 
 	raw, err := creds.RandomPassword()
@@ -200,7 +200,7 @@ func (s *UserService) FindUser(ctx context.Context, id int64) (*dto.UserResponse
 		return nil, err
 	}
 	if user == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, errors.NotFound("user not found")
 	}
 	return s.mapper.ToDTO(user), nil
 }
@@ -220,7 +220,7 @@ func (s *UserService) UpdateUser(
 
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, errors.NotFound("user not found")
 	}
 
 	if err = s.checkRoleChange(ctx, user, req.Role, callerRole, callerID); err != nil {
@@ -296,7 +296,7 @@ func (s *UserService) UpdateManager(
 	}
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, errors.NotFound("user not found")
 	}
 	if err = s.validateManager(ctx, id, managerID); err != nil {
 		return nil, err
