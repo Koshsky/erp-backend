@@ -19,7 +19,7 @@ WHERE a.deleted_at IS NULL
   AND (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
+    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
   )
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
@@ -142,7 +142,7 @@ WHERE a.deleted_at IS NULL
   AND (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
+    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
   )
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 ORDER BY a.id ASC
@@ -193,7 +193,8 @@ func (q *Queries) ListAssigments(ctx context.Context, arg ListAssigmentsParams) 
 
 const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
-       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner,
+       COALESCE(t.owner_id, 0)::bigint  AS owner_id
 FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
@@ -208,12 +209,13 @@ WHERE a.id = $1::bigint
 type OwnerChainRow struct {
 	ProjectOwner int64 `json:"project_owner"`
 	ProcessOwner int64 `json:"process_owner"`
+	OwnerID      int64 `json:"owner_id"`
 }
 
 func (q *Queries) OwnerChain(ctx context.Context, id int64) (OwnerChainRow, error) {
 	row := q.db.QueryRow(ctx, ownerChain, id)
 	var i OwnerChainRow
-	err := row.Scan(&i.ProjectOwner, &i.ProcessOwner)
+	err := row.Scan(&i.ProjectOwner, &i.ProcessOwner, &i.OwnerID)
 	return i, err
 }
 

@@ -310,19 +310,18 @@ func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) Scope {
 	return ScopeNone
 }
 
-// ownField возвращает владельца самой строки для ресурса (0 — ресурс нельзя
-// проверять зоной ScopeOwn: у сущности нет собственного владельца).
+// ownField возвращает владельца самой строки (L0 цепочки) для ресурса
+// (0 — у сущности нет собственного владельца: own неприменим).
 func ownField(res rbac.Resource, owners rbac.Owners) int64 {
 	switch res {
 	case rbac.ResourceProject:
 		return owners.ProjectOwner
 	case rbac.ResourceProcess:
 		return owners.ProcessOwner
-	case rbac.ResourceResource, rbac.ResourceWorker:
+	case rbac.ResourceTask, rbac.ResourceResource, rbac.ResourceWorker:
 		return owners.Owner
-	case rbac.ResourceTask, rbac.ResourceMilestone, rbac.ResourceAssignment,
-		rbac.ResourceState, rbac.ResourceComment,
-		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
+	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
+		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
 		return 0
 	}
 	return 0
@@ -345,17 +344,17 @@ func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 }
 
 // ancestorMatch сообщает, совпадает ли пользователь с любым из владельцев
-// по цепочке строго вверх от сущности: для задачи/вехи/назначения — владелец
-// процесса или проектa; для процесса — владелец проекта (≡ parent).
+// цепочки владения сущности (владелец строки L0 или любой вышестоящий).
+// Для процессa/вехи self-owner отсутствует (Owners.Owner = 0) — тогда
+// учитываются владельцы процесса и проекта.
 func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 	if userID == 0 {
 		return false
 	}
 	switch res {
-	case rbac.ResourceTask, rbac.ResourceMilestone, rbac.ResourceAssignment:
-		return owners.ProcessOwner == userID || owners.ProjectOwner == userID
-	case rbac.ResourceProcess:
-		return owners.ProjectOwner == userID
+	case rbac.ResourceTask, rbac.ResourceMilestone, rbac.ResourceAssignment,
+		rbac.ResourceProcess:
+		return owners.Owner == userID || owners.ProcessOwner == userID || owners.ProjectOwner == userID
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
@@ -477,7 +476,7 @@ func ParseScope(s string) (Scope, bool) {
 var ownApplicable = map[rbac.Resource]bool{
 	rbac.ResourceProject:     true,
 	rbac.ResourceProcess:     true,
-	rbac.ResourceTask:        false,
+	rbac.ResourceTask:        true,
 	rbac.ResourceMilestone:   false,
 	rbac.ResourceAssignment:  false,
 	rbac.ResourceState:       false,

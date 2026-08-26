@@ -20,7 +20,7 @@ WHERE p.deleted_at IS NULL
   AND (
     $1::text = 'all' OR
     ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND pr.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
     ($1::text = 'own' AND p.owner_id = $2::bigint)
   )
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
@@ -126,7 +126,7 @@ WHERE p.deleted_at IS NULL
   AND (
     $1::text = 'all' OR
     ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND pr.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
     ($1::text = 'own' AND p.owner_id = $2::bigint)
   )
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)

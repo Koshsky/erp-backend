@@ -164,6 +164,8 @@ func TestAuthorize_TaskMilestoneAssignment(t *testing.T) {
 					true,
 				},
 				{"rp — не совпал ни с одним владельцем", rp, policies.ActionView, processOfVP1, uVP2, false},
+				// ancestor = вся цепочка владения, включая владельца строки (self).
+				{"ancestor: владелец строки (self)", rp, policies.ActionView, rbac.Owners{Owner: uVP1}, uVP1, true},
 				{"vp sees own process's", vp, policies.ActionView, processOfVP1, uVP1, true},
 				{"vp does not see foreign process's", vp, policies.ActionView, processOfVP1, uVP2, false},
 				{"worker sees none", worker, policies.ActionView, processOfVP1, uVP1, false},

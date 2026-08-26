@@ -31,7 +31,7 @@ WHERE a.deleted_at IS NULL
   AND (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY a.id ASC
@@ -47,7 +47,7 @@ WHERE a.deleted_at IS NULL
   AND (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
@@ -70,7 +70,8 @@ WHERE id = @assignment_id
 
 -- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
-       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner,
+       COALESCE(t.owner_id, 0)::bigint  AS owner_id
 FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id

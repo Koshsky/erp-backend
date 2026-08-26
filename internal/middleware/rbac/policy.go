@@ -40,14 +40,20 @@ type Owners struct {
 	Owner        int64
 }
 
-// SharesOwner reports whether the two entities share a common owner.
-// It is used by business rules such as "a resource can only be assigned to a
-// task of its own owner".
+// SharesOwner reports whether the two entities share ownership for the
+// cross-entity business rule ("a resource can only be assigned to a task of
+// its own owner"). The access level (project/process owner) of the receiver
+// is compared against any owner of the other side (including its row owner —
+// a resource carries only a row owner). Row-owner against row-owner is NOT
+// compared: letting task.owner_id == resource.owner_id match would bypass the
+// process/project ownership check.
 func (o Owners) SharesOwner(other Owners) bool {
-	return o.shares(other.ProjectOwner) || o.shares(other.ProcessOwner) || o.shares(other.Owner)
+	return o.sharesAccess(other.ProjectOwner) ||
+		o.sharesAccess(other.ProcessOwner) ||
+		o.sharesAccess(other.Owner)
 }
 
-// shares reports whether one of o's owners equals v.
-func (o Owners) shares(v int64) bool {
-	return v != 0 && (o.ProjectOwner == v || o.ProcessOwner == v || o.Owner == v)
+// sharesAccess reports whether one of o's access-level owners equals v.
+func (o Owners) sharesAccess(v int64) bool {
+	return v != 0 && (o.ProjectOwner == v || o.ProcessOwner == v)
 }

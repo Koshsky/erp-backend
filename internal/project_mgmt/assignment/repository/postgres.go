@@ -146,5 +146,5 @@ func (r *AssignmentRepository) OwnerChain(ctx context.Context, id int64) (rbac.O
 	if err != nil {
 		return rbac.Owners{}, err
 	}
-	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner}, nil
+	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner, Owner: row.OwnerID}, nil
 }
