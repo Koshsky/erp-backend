@@ -16,7 +16,11 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE m.deleted_at IS NULL
-  AND ($1::text = 'all' OR ($1::text = 'parent' AND p.owner_id = $2::bigint) OR ($1::text = 'ancestor' AND pr.owner_id = $2::bigint))
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND pr.owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
 
@@ -108,7 +112,11 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE m.deleted_at IS NULL
-  AND ($1::text = 'all' OR ($1::text = 'parent' AND p.owner_id = $2::bigint) OR ($1::text = 'ancestor' AND pr.owner_id = $2::bigint))
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND pr.owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 ORDER BY m.id ASC
 LIMIT $5::bigint OFFSET $4::bigint

@@ -14,7 +14,11 @@ SELECT p.*
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
-  AND (@scope_view::text = 'all' OR (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint))
+  AND (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
+  )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY p.id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
@@ -24,7 +28,11 @@ SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
-  AND (@scope_view::text = 'all' OR (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint))
+  AND (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
+  )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
 -- name: FindProcess :one

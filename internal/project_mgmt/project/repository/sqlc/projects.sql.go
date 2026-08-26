@@ -16,7 +16,10 @@ const countProjects = `-- name: CountProjects :one
 SELECT COUNT(*)
 FROM projects
 WHERE deleted_at IS NULL
-  AND ($1::text = 'all' OR ($1::text = 'own' AND owner_id = $2::bigint))
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR owner_id = $3::bigint)
 `
 
@@ -120,7 +123,10 @@ const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
 WHERE deleted_at IS NULL
-  AND ($1::text = 'all' OR ($1::text = 'own' AND owner_id = $2::bigint))
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR owner_id = $3::bigint)
 ORDER BY id ASC
 LIMIT $5::bigint OFFSET $4::bigint

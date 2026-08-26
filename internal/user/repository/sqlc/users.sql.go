@@ -17,7 +17,10 @@ const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*)
 FROM users
 WHERE deleted_at IS NULL
-  AND ($1::text = 'all' OR ($1::text = 'own' AND manager_id = $2::bigint))
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND manager_id = $2::bigint)
+  )
   AND ($3::text = '' OR role = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
 `
@@ -456,7 +459,10 @@ WHERE deleted_at IS NULL
   -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
   -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
   -- себя на клиенте отдельно).
-  AND ($1::text = 'all' OR ($1::text = 'own' AND manager_id = $2::bigint))
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND manager_id = $2::bigint)
+  )
   AND ($3::text = '' OR role = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
 ORDER BY id ASC
