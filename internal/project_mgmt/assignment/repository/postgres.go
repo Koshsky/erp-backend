@@ -99,7 +99,7 @@ func (r *AssignmentRepository) ListAssignments(
 	limit, offset int,
 ) ([]domain.Assignment, error) {
 	rows, err := r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
-		SeeAll:     policies.SeeAll(role, rbac.ResourceAssignment, policies.ActionView),
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceAssignment),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -124,9 +124,9 @@ func (r *AssignmentRepository) CountAssignments(
 	return r.db.CountAssignments(
 		ctx,
 		sqlc.CountAssignmentsParams{
-			SeeAll:  policies.SeeAll(role, rbac.ResourceAssignment, policies.ActionView),
-			UserID:  userID,
-			OwnerID: ownerID,
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceAssignment),
+			UserID:    userID,
+			OwnerID:   ownerID,
 		},
 	)
 }

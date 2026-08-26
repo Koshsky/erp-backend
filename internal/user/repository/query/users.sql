@@ -5,7 +5,7 @@ WHERE deleted_at IS NULL
   -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
   -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
   -- себя на клиенте отдельно).
-  AND (@is_admin::bool OR manager_id = @user_id::bigint)
+  AND (@scope_view::text = 'all' OR (@scope_view::text = 'own' AND manager_id = @user_id::bigint))
   AND (@role_filter::text = '' OR role = @role_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
 ORDER BY id ASC
@@ -15,7 +15,7 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 SELECT COUNT(*)
 FROM users
 WHERE deleted_at IS NULL
-  AND (@is_admin::bool OR manager_id = @user_id::bigint)
+  AND (@scope_view::text = 'all' OR (@scope_view::text = 'own' AND manager_id = @user_id::bigint))
   AND (@role_filter::text = '' OR role = @role_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint);
 

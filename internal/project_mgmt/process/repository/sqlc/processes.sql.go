@@ -17,18 +17,18 @@ SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
-  AND ($1::boolean OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::text = 'all' OR ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR ($1::text = 'own' AND p.owner_id = $2::bigint))
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
 
 type CountProcessesParams struct {
-	SeeAll  bool  `json:"see_all"`
-	UserID  int64 `json:"user_id"`
-	OwnerID int64 `json:"owner_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+	OwnerID   int64  `json:"owner_id"`
 }
 
 func (q *Queries) CountProcesses(ctx context.Context, arg CountProcessesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countProcesses, arg.SeeAll, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countProcesses, arg.ScopeView, arg.UserID, arg.OwnerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -118,23 +118,23 @@ SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.crea
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
-  AND ($1::boolean OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::text = 'all' OR ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR ($1::text = 'own' AND p.owner_id = $2::bigint))
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 ORDER BY p.id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListProcesssParams struct {
-	SeeAll     bool  `json:"see_all"`
-	UserID     int64 `json:"user_id"`
-	OwnerID    int64 `json:"owner_id"`
-	PageOffset int64 `json:"page_offset"`
-	PageLimit  int64 `json:"page_limit"`
+	ScopeView  string `json:"scope_view"`
+	UserID     int64  `json:"user_id"`
+	OwnerID    int64  `json:"owner_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
 }
 
 func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]Process, error) {
 	rows, err := q.db.Query(ctx, listProcesss,
-		arg.SeeAll,
+		arg.ScopeView,
 		arg.UserID,
 		arg.OwnerID,
 		arg.PageOffset,

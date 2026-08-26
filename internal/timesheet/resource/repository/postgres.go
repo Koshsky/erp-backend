@@ -91,7 +91,7 @@ func (r *ResourceRepository) ListResources(
 	limit, offset int,
 ) ([]domain.Resource, error) {
 	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
-		SeeAll:     policies.SeeAll(role, rbac.ResourceResource, policies.ActionView),
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceResource),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -123,9 +123,9 @@ func (r *ResourceRepository) CountResources(
 	return r.db.CountResources(
 		ctx,
 		sqlc.CountResourcesParams{
-			SeeAll:  policies.SeeAll(role, rbac.ResourceResource, policies.ActionView),
-			UserID:  userID,
-			OwnerID: ownerID,
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceResource),
+			UserID:    userID,
+			OwnerID:   ownerID,
 		},
 	)
 }

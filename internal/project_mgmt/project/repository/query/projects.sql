@@ -17,7 +17,7 @@ RETURNING *;
 SELECT *
 FROM projects
 WHERE deleted_at IS NULL
-  AND (@see_all::boolean OR owner_id = @user_id::bigint)
+  AND (@scope_view::text = 'all' OR (@scope_view::text = 'own' AND owner_id = @user_id::bigint))
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint)
 ORDER BY id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
@@ -26,7 +26,7 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 SELECT COUNT(*)
 FROM projects
 WHERE deleted_at IS NULL
-  AND (@see_all::boolean OR owner_id = @user_id::bigint)
+  AND (@scope_view::text = 'all' OR (@scope_view::text = 'own' AND owner_id = @user_id::bigint))
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint);
 
 -- name: FindProject :one

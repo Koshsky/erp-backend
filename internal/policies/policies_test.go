@@ -365,3 +365,32 @@ func TestAuthorize_Timesheet(t *testing.T) {
 		})
 	}
 }
+
+func TestViewScopeCode(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		role string
+		res  rbac.Resource
+		want string
+	}{
+		{"rp project view = own", rp, rbac.ResourceProject, "own"},
+		{"dp project view = all", dp, rbac.ResourceProject, "all"},
+		{"rp process view = parent", rp, rbac.ResourceProcess, "parent"},
+		{"vp process view = all", vp, rbac.ResourceProcess, "all"},
+		{"vp task view = parent", vp, rbac.ResourceTask, "parent"},
+		{"rp task view = ancestor", rp, rbac.ResourceTask, "ancestor"},
+		{"dp task view = all", dp, rbac.ResourceTask, "all"},
+		{"vp resource view = own", vp, rbac.ResourceResource, "own"},
+		{"worker task view = none", worker, rbac.ResourceTask, ""},
+		{"admin anything = all", admin, rbac.ResourceTask, "all"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := policies.ViewScopeCode(tc.role, tc.res); got != tc.want {
+				t.Errorf("ViewScopeCode(%s, %v) = %q, want %q", tc.role, tc.res, got, tc.want)
+			}
+		})
+	}
+}

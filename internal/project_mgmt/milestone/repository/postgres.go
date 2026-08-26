@@ -85,7 +85,7 @@ func (r *MilestoneRepository) ListMilestones(
 	limit, offset int,
 ) ([]domain.Milestone, error) {
 	rows, err := r.db.ListMilestones(ctx, sqlc.ListMilestonesParams{
-		SeeAll:     policies.SeeAll(role, rbac.ResourceMilestone, policies.ActionView),
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceMilestone),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -110,9 +110,9 @@ func (r *MilestoneRepository) CountMilestones(
 	return r.db.CountMilestones(
 		ctx,
 		sqlc.CountMilestonesParams{
-			SeeAll:  policies.SeeAll(role, rbac.ResourceMilestone, policies.ActionView),
-			UserID:  userID,
-			OwnerID: ownerID,
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceMilestone),
+			UserID:    userID,
+			OwnerID:   ownerID,
 		},
 	)
 }

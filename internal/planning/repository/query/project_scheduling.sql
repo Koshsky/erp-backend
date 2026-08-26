@@ -2,8 +2,8 @@
 SELECT * FROM projects
 WHERE deleted_at IS NULL
 AND (
-    @see_all_projects::boolean OR
-    owner_id = @user_id::bigint
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
 )
 ORDER BY priority ASC;
 
@@ -13,9 +13,9 @@ FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    @see_all_processes::boolean OR
-    p.owner_id = @user_id::bigint OR
-    pr.owner_id = @user_id::bigint
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
 );
 
 -- name: ListResources :many

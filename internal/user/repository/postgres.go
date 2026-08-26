@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -122,7 +123,7 @@ func (r *UserRepository) ListUsers(
 ) ([]domain.User, error) {
 	rows, err := r.db.ListUsers(ctx, sqlc.ListUsersParams{
 		RoleFilter: roleFilter,
-		IsAdmin:    role == domain.Admin,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceWorker),
 		UserID:     userID,
 		ManagerID:  managerID,
 		PageLimit:  int64(limit),
@@ -148,7 +149,7 @@ func (r *UserRepository) CountUsers(
 ) (int64, error) {
 	return r.db.CountUsers(ctx, sqlc.CountUsersParams{
 		RoleFilter: roleFilter,
-		IsAdmin:    role == domain.Admin,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceWorker),
 		UserID:     userID,
 		ManagerID:  managerID,
 	})

@@ -82,7 +82,7 @@ func (r *ProcessRepository) ListProcesss(
 	limit, offset int,
 ) ([]domain.Process, error) {
 	rows, err := r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
-		SeeAll:     policies.SeeAll(role, rbac.ResourceProcess, policies.ActionView),
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceProcess),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -107,9 +107,9 @@ func (r *ProcessRepository) CountProcesses(
 	return r.db.CountProcesses(
 		ctx,
 		sqlc.CountProcessesParams{
-			SeeAll:  policies.SeeAll(role, rbac.ResourceProcess, policies.ActionView),
-			UserID:  userID,
-			OwnerID: ownerID,
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceProcess),
+			UserID:    userID,
+			OwnerID:   ownerID,
 		},
 	)
 }

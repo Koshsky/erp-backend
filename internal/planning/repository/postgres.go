@@ -30,8 +30,8 @@ func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRep
 
 func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
-		UserID:         userID,
-		SeeAllProjects: policies.SeeAll(role, rbac.ResourceProject, policies.ActionView),
+		UserID:    userID,
+		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProject),
 	})
 	if err != nil {
 		return nil, err
@@ -53,8 +53,8 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 
 func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
 	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
-		UserID:          userID,
-		SeeAllProcesses: policies.SeeAll(role, rbac.ResourceProcess, policies.ActionView),
+		UserID:    userID,
+		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProcess),
 	})
 	if err != nil {
 		return nil, err

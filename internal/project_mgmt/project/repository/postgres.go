@@ -90,7 +90,7 @@ func (r *ProjectRepository) ListProjects(
 	limit, offset int,
 ) ([]domain.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
-		SeeAll:     policies.SeeAll(role, rbac.ResourceProject, policies.ActionView),
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceProject),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -115,9 +115,9 @@ func (r *ProjectRepository) CountProjects(
 	return r.db.CountProjects(
 		ctx,
 		sqlc.CountProjectsParams{
-			SeeAll:  policies.SeeAll(role, rbac.ResourceProject, policies.ActionView),
-			UserID:  userID,
-			OwnerID: ownerID,
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceProject),
+			UserID:    userID,
+			OwnerID:   ownerID,
 		},
 	)
 }

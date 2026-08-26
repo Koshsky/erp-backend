@@ -82,7 +82,7 @@ func (r *TaskRepository) ListTasks(
 	limit, offset int,
 ) ([]domain.Task, error) {
 	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
-		SeeAll:     policies.SeeAll(role, rbac.ResourceTask, policies.ActionView),
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceTask),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -102,9 +102,9 @@ func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, role stri
 	return r.db.CountTasks(
 		ctx,
 		sqlc.CountTasksParams{
-			SeeAll:  policies.SeeAll(role, rbac.ResourceTask, policies.ActionView),
-			UserID:  userID,
-			OwnerID: ownerID,
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceTask),
+			UserID:    userID,
+			OwnerID:   ownerID,
 		},
 	)
 }

@@ -386,10 +386,10 @@ func Can(role string, res rbac.Resource, act Action) bool {
 	return scopeFor(role, res, act) != ScopeNone
 }
 
-// SeeAll сообщает, видит ли роль все строки списка (ScopeAll на action)
-// — флаг для листинг-запросов вместо захардкоженных списков ролей в SQL.
-func SeeAll(role string, res rbac.Resource, act Action) bool {
-	return scopeFor(role, res, act) == ScopeAll
+// ViewScopeCode возвращает строковый код зоны просмотра для листинг-запросов
+// (all|own|parent|ancestor). SQL применяет ровно эту зону к owner-цепочке.
+func ViewScopeCode(role string, res rbac.Resource) string {
+	return ScopeName(scopeFor(role, res, ActionView))
 }
 
 // scopeFor — пакетная обёртка для билдеров проверок.

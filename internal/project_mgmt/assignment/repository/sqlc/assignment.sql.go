@@ -16,18 +16,18 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE a.deleted_at IS NULL
-  AND ($1::boolean OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::text = 'all' OR ($1::text = 'parent' AND p.owner_id = $2::bigint) OR ($1::text = 'ancestor' AND pr.owner_id = $2::bigint))
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
 
 type CountAssignmentsParams struct {
-	SeeAll  bool  `json:"see_all"`
-	UserID  int64 `json:"user_id"`
-	OwnerID int64 `json:"owner_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+	OwnerID   int64  `json:"owner_id"`
 }
 
 func (q *Queries) CountAssignments(ctx context.Context, arg CountAssignmentsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countAssignments, arg.SeeAll, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countAssignments, arg.ScopeView, arg.UserID, arg.OwnerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -135,23 +135,23 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE a.deleted_at IS NULL
-  AND ($1::boolean OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND ($1::text = 'all' OR ($1::text = 'parent' AND p.owner_id = $2::bigint) OR ($1::text = 'ancestor' AND pr.owner_id = $2::bigint))
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 ORDER BY a.id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListAssigmentsParams struct {
-	SeeAll     bool  `json:"see_all"`
-	UserID     int64 `json:"user_id"`
-	OwnerID    int64 `json:"owner_id"`
-	PageOffset int64 `json:"page_offset"`
-	PageLimit  int64 `json:"page_limit"`
+	ScopeView  string `json:"scope_view"`
+	UserID     int64  `json:"user_id"`
+	OwnerID    int64  `json:"owner_id"`
+	PageOffset int64  `json:"page_offset"`
+	PageLimit  int64  `json:"page_limit"`
 }
 
 func (q *Queries) ListAssigments(ctx context.Context, arg ListAssigmentsParams) ([]Assignment, error) {
 	rows, err := q.db.Query(ctx, listAssigments,
-		arg.SeeAll,
+		arg.ScopeView,
 		arg.UserID,
 		arg.OwnerID,
 		arg.PageOffset,

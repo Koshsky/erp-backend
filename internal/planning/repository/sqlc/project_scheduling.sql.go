@@ -84,15 +84,15 @@ FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    $1::boolean OR
-    p.owner_id = $2::bigint OR
-    pr.owner_id = $2::bigint
+    $1::text = 'all' OR
+    ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
+    ($1::text = 'own' AND p.owner_id = $2::bigint)
 )
 `
 
 type ListProcessesParams struct {
-	SeeAllProcesses bool  `json:"see_all_processes"`
-	UserID          int64 `json:"user_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
 }
 
 type ListProcessesRow struct {
@@ -101,7 +101,7 @@ type ListProcessesRow struct {
 }
 
 func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([]ListProcessesRow, error) {
-	rows, err := q.db.Query(ctx, listProcesses, arg.SeeAllProcesses, arg.UserID)
+	rows, err := q.db.Query(ctx, listProcesses, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -171,19 +171,19 @@ const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
 AND (
-    $1::boolean OR
-    owner_id = $2::bigint
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint)
 )
 ORDER BY priority ASC
 `
 
 type ListProjectsParams struct {
-	SeeAllProjects bool  `json:"see_all_projects"`
-	UserID         int64 `json:"user_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
-	rows, err := q.db.Query(ctx, listProjects, arg.SeeAllProjects, arg.UserID)
+	rows, err := q.db.Query(ctx, listProjects, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
