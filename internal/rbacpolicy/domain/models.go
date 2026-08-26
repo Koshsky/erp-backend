@@ -5,28 +5,28 @@ import "time"
 
 // Role — каталог ролей.
 type Role struct {
-	ID          int64
-	Name        string
-	Description string
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 // Rule — строка матрицы прав (роль × ресурс × действие → зона владения).
 type Rule struct {
-	ID        int64
-	Role      string
-	Resource  string
-	Action    string
-	Scope     string
-	UpdatedBy *int64
-	UpdatedAt time.Time
+	ID        int64     `json:"id"`
+	Role      string    `json:"role"`
+	Resource  string    `json:"resource"`
+	Action    string    `json:"action"`
+	Scope     string    `json:"scope"`
+	UpdatedBy *int64    `json:"updated_by"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // RoutePolicy — определение маршрутной проверки (kind + параметры).
 type RoutePolicy struct {
-	Name      string
-	Kind      string
-	Params    map[string]any
-	Active    bool
-	UpdatedBy *int64
-	UpdatedAt time.Time
+	Name      string         `json:"name"`
+	Kind      string         `json:"kind"`
+	Params    map[string]any `json:"params"`
+	Active    bool           `json:"active"`
+	UpdatedBy *int64         `json:"updated_by"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
