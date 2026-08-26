@@ -3,6 +3,7 @@ package errors_test
 import (
 	stdErrors "errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -67,6 +68,34 @@ func TestFromPgInvalidParam(t *testing.T) {
 	}
 	sentinel := stdErrors.New("boom")
 	if !stdErrors.Is(errapi.FromPgInvalidParam(sentinel), sentinel) {
+		t.Errorf("сторонняя ошибка не должна мапиться")
+	}
+}
+
+func TestMapPgConstraint(t *testing.T) {
+	t.Parallel()
+	// 23505 unique (username) -> 409
+	dup := errapi.MapPgConstraint(&pgconn.PgError{Code: "23505", ConstraintName: "users_username_unique_active"})
+	if errapi.StatusCode(dup) != http.StatusConflict {
+		t.Errorf("23505: StatusCode = %d, want 409", errapi.StatusCode(dup))
+	}
+	// 23503 role fk -> 400 "неизвестная роль"
+	role := errapi.MapPgConstraint(&pgconn.PgError{Code: "23503", ConstraintName: "users_role_fk"})
+	if errapi.StatusCode(role) != http.StatusBadRequest || !strings.Contains(role.Error(), "каталоге ролей") {
+		t.Errorf("23503 role: got %v", role)
+	}
+	// 23514 check -> 400
+	chk := errapi.MapPgConstraint(&pgconn.PgError{Code: "23514", ConstraintName: "tasks_dates_check"})
+	if errapi.StatusCode(chk) != http.StatusBadRequest {
+		t.Errorf("23514: StatusCode = %d, want 400", errapi.StatusCode(chk))
+	}
+	// чужие ошибки без изменений
+	other := &pgconn.PgError{Code: "22023", Message: "x"}
+	if !stdErrors.Is(errapi.MapPgConstraint(other), other) {
+		t.Errorf("22023 не должен мапиться")
+	}
+	sentinel := stdErrors.New("boom")
+	if !stdErrors.Is(errapi.MapPgConstraint(sentinel), sentinel) {
 		t.Errorf("сторонняя ошибка не должна мапиться")
 	}
 }

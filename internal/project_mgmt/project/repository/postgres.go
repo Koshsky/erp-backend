@@ -44,7 +44,7 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errapi.Conflict("project with this code already exists")
 		}
-		return nil, err
+		return nil, errapi.MapPgConstraint(err)
 	}
 
 	mapped := mapProject(created)

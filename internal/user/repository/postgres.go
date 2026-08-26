@@ -3,11 +3,9 @@ package repository
 
 import (
 	"context"
-	stderrors "errors"
 	"log/slog"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -441,12 +439,8 @@ func (r *UserRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners,
 	return rbac.Owners{Owner: owner}, nil
 }
 
-// mapUserErr превращает нарушение FK роли (роль не в каталоге rbac_roles)
-// в 400-ошибку; остальные ошибки возвращаются как есть.
+// mapUserErr — обёртка над errapi.MapPgConstraint: понятные 4xx для
+// constraint-ошибок (уникальный логин 409, FK роли/менеджера 400, CHECK 400).
 func mapUserErr(err error) error {
-	var pgErr *pgconn.PgError
-	if stderrors.As(err, &pgErr) && pgErr.Code == "23503" && pgErr.ConstraintName == "users_role_fk" {
-		return errapi.BadRequest("неизвестная роль: её нет в каталоге ролей")
-	}
-	return err
+	return errapi.MapPgConstraint(err)
 }

@@ -38,7 +38,7 @@ func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Pr
 		OwnerID:   nullable.ToInt8(process.OwnerID),
 	})
 	if err != nil {
-		return nil, errapi.FromPgInvalidParam(err)
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapProcess(row)
@@ -65,7 +65,7 @@ func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Pr
 		EndDate:   process.EndDate,
 	})
 	if err != nil {
-		return nil, errapi.FromPgInvalidParam(err)
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapProcess(row)

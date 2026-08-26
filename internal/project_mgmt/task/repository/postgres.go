@@ -38,7 +38,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 		EndDate:   task.EndDate,
 	})
 	if err != nil {
-		return nil, errapi.FromPgInvalidParam(err)
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapTask(row)
@@ -65,7 +65,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 		EndDate:   task.EndDate,
 	})
 	if err != nil {
-		return nil, errapi.FromPgInvalidParam(err)
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapTask(row)
