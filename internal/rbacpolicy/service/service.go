@@ -239,10 +239,10 @@ func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission
 	return out
 }
 
-// RoleNameRe — допустимые символы имени роли (системный код доступа).
+// maxRoleNameLen — максимальная длина имени роли.
 //
 
-var RoleNameRe = regexp.MustCompile(`^[a-z0-9_-]+$`)
+const maxRoleNameLen = 32
 
 // CreateRole создаёт роль (или оживляет удалённую) и возвращает её.
 func (s *Service) CreateRole(ctx context.Context, in dto.RoleUpsertInput) (domain.Role, error) {
@@ -274,16 +274,22 @@ func (s *Service) DeleteRole(ctx context.Context, name string) error {
 	return s.apply(ctx)
 }
 
+// validRoleName — допустимые символы имени роли (системный код доступа):
+// латиница в нижнем регистре, цифры, «-» и «_».
+func validRoleName(name string) bool {
+	return regexp.MustCompile(`^[a-z0-9_-]+$`).MatchString(name)
+}
+
 // validateRoleName проверяет имя роли: непустое, не длиннее 32, код.
 func validateRoleName(name string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return errors.BadRequest("имя роли не может быть пустым")
 	}
-	if len(name) > 32 {
+	if len(name) > maxRoleNameLen {
 		return errors.BadRequest("имя роли не длиннее 32 символов")
 	}
-	if !RoleNameRe.MatchString(name) {
+	if !validRoleName(name) {
 		return errors.BadRequest("имя роли: только латиница в нижнем регистре, цифры, «-» и «_»")
 	}
 	return nil

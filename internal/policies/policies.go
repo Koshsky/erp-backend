@@ -34,17 +34,20 @@ const (
 
 // Строковые коды ресурсов (зеркалит V15 и kind-схемы).
 const (
-	resProject     = "project"
-	resProcess     = "process"
-	resTask        = "task"
-	resMilestone   = "milestone"
-	resAssignment  = "assignment"
-	resState       = "state"
-	resResource    = "resource"
-	resWorker      = "worker"
-	resComment     = "comment"
-	resUserCatalog = "user_catalog"
-	resRBACConfig  = "rbac_config"
+	resProject      = "project"
+	resProcess      = "process"
+	resTask         = "task"
+	resMilestone    = "milestone"
+	resAssignment   = "assignment"
+	resState        = "state"
+	resResource     = "resource"
+	resWorker       = "worker"
+	resComment      = "comment"
+	resUserCatalog  = "user_catalog"
+	resRBACConfig   = "rbac_config"
+	resUserAdmin    = "user_admin"
+	resStateAdmin   = "state_admin"
+	resOrgStructure = "org_structure"
 )
 
 // Строковые коды действий.
@@ -324,7 +327,8 @@ func ownField(res rbac.Resource, owners rbac.Owners) int64 {
 	case rbac.ResourceTask, rbac.ResourceResource, rbac.ResourceWorker:
 		return owners.Owner
 	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
-		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig:
+		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
 		return 0
 	}
 	return 0
@@ -408,17 +412,20 @@ func scopeFor(role string, res rbac.Resource, act Action) Scope {
 
 //nolint:gochecknoglobals // resource codex (стабильный словарь, зеркалит V15)
 var resourceNames = map[rbac.Resource]string{
-	rbac.ResourceProject:     resProject,
-	rbac.ResourceProcess:     resProcess,
-	rbac.ResourceTask:        resTask,
-	rbac.ResourceMilestone:   resMilestone,
-	rbac.ResourceAssignment:  resAssignment,
-	rbac.ResourceState:       resState,
-	rbac.ResourceResource:    resResource,
-	rbac.ResourceWorker:      resWorker,
-	rbac.ResourceComment:     resComment,
-	rbac.ResourceUserCatalog: resUserCatalog,
-	rbac.ResourceRBACConfig:  resRBACConfig,
+	rbac.ResourceProject:      resProject,
+	rbac.ResourceProcess:      resProcess,
+	rbac.ResourceTask:         resTask,
+	rbac.ResourceMilestone:    resMilestone,
+	rbac.ResourceAssignment:   resAssignment,
+	rbac.ResourceState:        resState,
+	rbac.ResourceResource:     resResource,
+	rbac.ResourceWorker:       resWorker,
+	rbac.ResourceComment:      resComment,
+	rbac.ResourceUserCatalog:  resUserCatalog,
+	rbac.ResourceRBACConfig:   resRBACConfig,
+	rbac.ResourceUserAdmin:    resUserAdmin,
+	rbac.ResourceStateAdmin:   resStateAdmin,
+	rbac.ResourceOrgStructure: resOrgStructure,
 }
 
 //nolint:gochecknoglobals // action codex
