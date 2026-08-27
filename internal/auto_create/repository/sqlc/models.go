@@ -22,6 +22,17 @@ type Assignment struct {
 	DeletedAt  **time.Time `json:"deleted_at"`
 }
 
+type IdempotencyKey struct {
+	Key            string    `json:"key"`
+	UserID         int64     `json:"user_id"`
+	Method         string    `json:"method"`
+	Path           string    `json:"path"`
+	ResponseStatus int32     `json:"response_status"`
+	ResponseBody   []byte    `json:"response_body"`
+	CreatedAt      time.Time `json:"created_at"`
+	ExpiresAt      time.Time `json:"expires_at"`
+}
+
 type Milestone struct {
 	ID        int64       `json:"id"`
 	ProcessID int64       `json:"process_id"`
@@ -65,6 +76,48 @@ type ProjectAutoCreate struct {
 	UpdatedAt time.Time       `json:"updated_at"`
 }
 
+type RbacRole struct {
+	ID          int64       `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	DeletedAt   **time.Time `json:"deleted_at"`
+}
+
+type RbacRoleRule struct {
+	ID        int64       `json:"id"`
+	Role      string      `json:"role"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	DeletedAt **time.Time `json:"deleted_at"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+}
+
+type RbacRoutePolicy struct {
+	Name      string          `json:"name"`
+	Kind      string          `json:"kind"`
+	Params    json.RawMessage `json:"params"`
+	Active    bool            `json:"active"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+	DeletedAt **time.Time     `json:"deleted_at"`
+	UpdatedBy pgtype.Int8     `json:"updated_by"`
+}
+
+type RefreshSession struct {
+	ID         int64       `json:"id"`
+	UserID     int64       `json:"user_id"`
+	TokenHash  string      `json:"token_hash"`
+	CreatedAt  time.Time   `json:"created_at"`
+	ExpiresAt  time.Time   `json:"expires_at"`
+	RevokedAt  **time.Time `json:"revoked_at"`
+	ReplacedBy pgtype.Int8 `json:"replaced_by"`
+}
+
 type Resource struct {
 	ID        int64       `json:"id"`
 	Title     string      `json:"title"`
@@ -98,6 +151,17 @@ type Task struct {
 	Title     string      `json:"title"`
 	StartDate time.Time   `json:"start_date"`
 	EndDate   time.Time   `json:"end_date"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	DeletedAt **time.Time `json:"deleted_at"`
+}
+
+type TaskComment struct {
+	ID        int64       `json:"id"`
+	TaskID    int64       `json:"task_id"`
+	AuthorID  int64       `json:"author_id"`
+	ParentID  pgtype.Int8 `json:"parent_id"`
+	Content   string      `json:"content"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
 	DeletedAt **time.Time `json:"deleted_at"`

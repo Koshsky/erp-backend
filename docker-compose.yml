@@ -45,9 +45,6 @@ services:
       - -user=${DATABASE_USER}
       - -password=${DATABASE_PASSWORD}
       - -locations=filesystem:/flyway/sql,filesystem:/flyway/sql/plugins,filesystem:/flyway/sql/seed
-      # Разрешаем добивать пропущенные core-миграции (напр. V12) в уже
-      # существующей БД (dev-итерации); иначе validate падает out-of-order.
-      - -outOfOrder=true
       - migrate
     depends_on:
       db:

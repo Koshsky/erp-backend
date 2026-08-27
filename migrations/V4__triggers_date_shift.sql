@@ -47,7 +47,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_projects_shift_process_dates ON projects;
 CREATE TRIGGER trg_projects_shift_process_dates
 AFTER UPDATE OF start_date, end_date ON projects
 FOR EACH ROW
@@ -103,7 +102,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_processes_shift_task_dates ON processes;
 CREATE TRIGGER trg_processes_shift_task_dates
 AFTER UPDATE OF start_date, end_date ON processes
 FOR EACH ROW
@@ -149,7 +147,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_processes_shift_milestone_dates ON processes;
 CREATE TRIGGER trg_processes_shift_milestone_dates
 AFTER UPDATE OF start_date, end_date ON processes
 FOR EACH ROW

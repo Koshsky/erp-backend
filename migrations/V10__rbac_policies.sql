@@ -1,6 +1,7 @@
 -- =============================================
 -- RUNTIME RBAC POLICIES
 -- =============================================
+-- Таблицы rbac_roles / rbac_role_rules / rbac_route_policies — в V1.
 -- Матрица прав (rbac_role_rules) и определения маршрутных проверок
 -- (rbac_route_policies) конфигурируются в рантайме: источник истины — БД,
 -- движок (интерпретация скоупов, реестр kind'ов) остаётся кодом.
@@ -12,39 +13,6 @@
 --              проект; задачи/вехи/назначения — процесс)
 --   ancestor — любой владелец в цепочке предков (просмотр задач для rp)
 -- admin — жёсткий bypass в коде (ScopeAll), в БД не хранится.
-
-CREATE TABLE rbac_roles (
-    id          BIGSERIAL PRIMARY KEY,
-    name        TEXT NOT NULL UNIQUE,
-    description TEXT NOT NULL DEFAULT '',
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ
-);
-
-CREATE TABLE rbac_role_rules (
-    id          BIGSERIAL PRIMARY KEY,
-    role        TEXT NOT NULL REFERENCES rbac_roles(name),
-    resource    TEXT NOT NULL, -- project|process|task|milestone|assignment|state|resource|worker|comment|user_catalog|rbac_config
-    action      TEXT NOT NULL, -- view|create|update|delete
-    scope       TEXT NOT NULL, -- all|own|parent|ancestor
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ,
-    updated_by  BIGINT,        -- пользователь, внёсший последнее изменение (из JWT)
-    UNIQUE (role, resource, action)
-);
-
-CREATE TABLE rbac_route_policies (
-    name        TEXT PRIMARY KEY,  -- имя, на которое ссылаются маршруты (mw.Check("project.create"))
-    kind        TEXT NOT NULL,     -- list|entity|create|owner_match|author_or
-    params      JSONB NOT NULL,    -- параметры kind'а (схема — реестр kind'ов в коде)
-    active      BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ,
-    updated_by  BIGINT
-);
 
 -- =============================================
 -- SEED: каталог ролей
@@ -179,7 +147,7 @@ INSERT INTO rbac_route_policies (name, kind, params) VALUES
     ('rbac.manage',       'entity', '{"resource":"rbac_config","action":"view","owner":"none"}');
 
 -- =============================================
--- BLOCK hard DELETE (та же защита, что и для остальных таблиц, V7)
+-- BLOCK hard DELETE (та же защита, что и для остальных таблиц, V5)
 -- =============================================
 CREATE TRIGGER block_hard_delete_on_rbac_roles
 BEFORE DELETE ON rbac_roles

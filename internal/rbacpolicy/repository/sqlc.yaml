@@ -4,7 +4,6 @@ sql:
   - engine: "postgresql"
     schema:
       - "../../../migrations/V1__initial_schema.sql"
-      - "../../../migrations/V15__rbac_policies.sql"
     queries:
       - "./query"
     gen:

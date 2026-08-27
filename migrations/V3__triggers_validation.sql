@@ -1,5 +1,8 @@
 -- =============================================
--- Truncate or soft-delete children that violate parent date boundaries.
+-- VALIDATION BOUNDARIES: явная ошибка вместо тихого soft-delete.
+-- Процесс/задача с датами вне границ родителя отвергаются с кодом 22023
+-- (invalid_parameter_value); репозитории превращают его в 400.
+-- Вехи, выходящие за границы процесса, обрезаются до границ родителя.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_processes_validate_within_project_dates()
 RETURNS TRIGGER
@@ -22,8 +25,9 @@ BEGIN
 	END IF;
 
 	IF NEW.end_date < parent_start OR NEW.start_date > parent_end THEN
-		NEW.deleted_at := now();
-		RETURN NEW;
+		RAISE EXCEPTION 'Сроки процесса (% - %) выходят за границы проекта (% - %)',
+			NEW.start_date, NEW.end_date, parent_start, parent_end
+		USING ERRCODE = '22023';
 	END IF;
 
 	IF NEW.start_date < parent_start THEN
@@ -37,7 +41,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_processes_validate_within_project_dates ON processes;
 CREATE TRIGGER trg_processes_validate_within_project_dates
 BEFORE INSERT OR UPDATE OF start_date, end_date, project_id ON processes
 FOR EACH ROW
@@ -45,7 +48,7 @@ WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_processes_validate_within_project_dates();
 
 -- =============================================
--- Truncate or soft-delete tasks that violate process date boundaries.
+-- Задачи: те же границы, родитель — процесс.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_tasks_validate_within_process_dates()
 RETURNS TRIGGER
@@ -68,8 +71,9 @@ BEGIN
 	END IF;
 
 	IF NEW.end_date < parent_start OR NEW.start_date > parent_end THEN
-		NEW.deleted_at := now();
-		RETURN NEW;
+		RAISE EXCEPTION 'Сроки задачи (% - %) выходят за границы процесса (% - %)',
+			NEW.start_date, NEW.end_date, parent_start, parent_end
+		USING ERRCODE = '22023';
 	END IF;
 
 	IF NEW.start_date < parent_start THEN
@@ -83,7 +87,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_tasks_validate_within_process_dates ON tasks;
 CREATE TRIGGER trg_tasks_validate_within_process_dates
 BEFORE INSERT OR UPDATE OF start_date, end_date, process_id ON tasks
 FOR EACH ROW
@@ -91,7 +94,7 @@ WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_tasks_validate_within_process_dates();
 
 -- =============================================
--- Truncate milestone dates that fall outside process boundaries.
+-- Вехи: обрезаем дату вехи, выходящую за границы процесса.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_milestones_validate_within_process_dates()
 RETURNS TRIGGER
@@ -124,7 +127,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_milestones_validate_within_process_dates ON milestones;
 CREATE TRIGGER trg_milestones_validate_within_process_dates
 BEFORE INSERT OR UPDATE OF date, process_id ON milestones
 FOR EACH ROW

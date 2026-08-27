@@ -3,10 +3,8 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema:
-      # V1 — базовые таблицы; V14 — task_comments. V1 не редактируем (checksum Flyway),
-      # поэтому новая таблица попадает в sqlc через дополнительный файл схемы.
+      # task_comments создаётся в V1 — отдельный файл схемы не нужен.
       - "../../../../migrations/V1__initial_schema.sql"
-      - "../../../../migrations/V14__task_comments.sql"
     queries:
       - "./query"
     gen:

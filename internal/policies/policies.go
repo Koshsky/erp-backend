@@ -144,7 +144,7 @@ func snapshot() Matrix {
 }
 
 // DefaultMatrix — встроенная матрица по умолчанию: сериализация seed'а
-// V15__rbac_policies.sql. Используется как fallback, источник reset и золотой
+// V10__rbac_policies.sql. Используется как fallback, источник reset и золотой
 // тест эквивалентности. admin и worker не перечислены явно: admin — ScopeAll
 // (инвариант), worker — ScopeNone (нет строк).
 //
