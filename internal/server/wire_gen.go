@@ -11,7 +11,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/auth/delivery"
 	repository9 "github.com/Koshsky/erp-backend/internal/auth/repository"
 	service3 "github.com/Koshsky/erp-backend/internal/auth/service"
-	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
+	"github.com/Koshsky/erp-backend/internal/auto_create"
 	delivery13 "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
 	repository13 "github.com/Koshsky/erp-backend/internal/auto_create/repository"
 	service14 "github.com/Koshsky/erp-backend/internal/auto_create/service"
@@ -34,7 +34,7 @@ import (
 	repository8 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
 	service10 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/service"
 	delivery7 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
-	postgres "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	service8 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
 	delivery6 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
 	repository3 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
@@ -134,7 +134,7 @@ func InitializeApp() (*App, error) {
 	assignmentHandler := delivery8.NewAssignmentHandler(slogLogger, assignmentService, rbacMiddleware)
 	commentService := service10.NewCommentService(slogLogger, tracer, commentRepository)
 	commentHandler := delivery9.NewCommentHandler(slogLogger, commentService, rbacMiddleware)
-	project_mgmtModule := project_mgmt.ProvideModule(taskHandler, projectHandler, processHandler, milestoneHandler, assignmentHandler, commentHandler)
+	projectmgmtModule := projectmgmt.ProvideModule(taskHandler, projectHandler, processHandler, milestoneHandler, assignmentHandler, commentHandler)
 	resourceService := service11.NewResourceService(slogLogger, tracer, resourceRepository)
 	resourceHandler := delivery10.NewResourceHandler(slogLogger, resourceService, rbacMiddleware)
 	stateRepository := repository11.NewStateRepository(slogLogger, pool)
@@ -151,7 +151,7 @@ func InitializeApp() (*App, error) {
 	serviceService := service.NewRBACService(slogLogger, ruleRepository, policyStore)
 	rbacHandler := delivery14.NewRBACHandler(slogLogger, serviceService, rbacMiddleware)
 	rbacpolicyModule := rbacpolicy.ProvideModule(rbacHandler, slogLogger)
-	v2 := ProvideModules(module, userModule, planningModule, project_mgmtModule, timesheetModule, autocreateModule, rbacpolicyModule)
+	v2 := ProvideModules(module, userModule, planningModule, projectmgmtModule, timesheetModule, autocreateModule, rbacpolicyModule)
 	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, tracer, idempotencyMiddleware, policyStore, v2)
 	if err != nil {
 		return nil, err

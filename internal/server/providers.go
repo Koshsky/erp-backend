@@ -5,7 +5,7 @@ import (
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt"
+	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	commentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
 	milestoneRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
@@ -48,7 +48,7 @@ func ProvideModules(
 	auth auth.Module,
 	user user.Module,
 	planning planning.Module,
-	project project_mgmt.Module,
+	project projectmgmt.Module,
 	timesheet timesheet.Module,
 	autoCreate autocreate.Module,
 	rbac rbacpolicy.Module,

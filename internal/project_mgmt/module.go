@@ -1,5 +1,5 @@
-// Package project_mgmt wires the project management module's providers and routes.
-package project_mgmt
+// Package projectmgmt wires the project management module's providers and routes.
+package projectmgmt
 
 import (
 	"github.com/gin-gonic/gin"
@@ -26,6 +26,8 @@ import (
 )
 
 // ProviderSet aggregates the project management module's dependencies.
+//
+//nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
 	projectRepo.NewProjectRepository,
 	projectService.NewProjectService,
@@ -84,7 +86,7 @@ func ProvideModule(
 }
 
 // RegisterPublicRoutes is a no-op: the module has no public routes.
-func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
+func (m Module) RegisterPublicRoutes(_ *gin.RouterGroup) {
 }
 
 // RegisterProtectedRoutes registers the module's routes behind authentication.
