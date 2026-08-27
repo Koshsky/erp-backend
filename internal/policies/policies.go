@@ -258,12 +258,10 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 			{userdomain.ProcessOwner, ScopeOwn},
 		},
 	},
-	// Workers: admin — все, vp — свои подчинённые (manager_id); vp создаёт в свою команду.
+	// Workers: создание сотрудников — только admin (bypass); vp — свои
+	// подчинённые (manager_id): просмотр и редактирование.
 	rbac.ResourceWorker: {
 		ActionView: {
-			{userdomain.ProcessOwner, ScopeOwn},
-		},
-		ActionCreate: {
 			{userdomain.ProcessOwner, ScopeOwn},
 		},
 		ActionUpdate: {

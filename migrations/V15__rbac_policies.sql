@@ -100,9 +100,8 @@ INSERT INTO rbac_role_rules (role, resource, action, scope) VALUES
     ('vp', 'resource', 'create', 'own'),
     ('vp', 'resource', 'update', 'own'),
     ('vp', 'resource', 'delete', 'own'),
-    -- workers: vp — свои подчинённые (own)
+    -- workers: создание сотрудников — только admin (bypass); vp — свои подчинённые (own)
     ('vp', 'worker', 'view',   'own'),
-    ('vp', 'worker', 'create', 'own'),
     ('vp', 'worker', 'update', 'own'),
     ('vp', 'worker', 'delete', 'own'),
     -- comments: прав нет в матрице — права считаются по родительской задаче

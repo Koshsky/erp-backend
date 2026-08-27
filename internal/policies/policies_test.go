@@ -337,7 +337,8 @@ func TestAuthorize_Timesheet(t *testing.T) {
 		{"vp views own employee", rbac.ResourceWorker, policies.ActionView, vp, workerOfVP, uVP1, true},
 		{"vp does not view foreign employee", rbac.ResourceWorker, policies.ActionView, vp, workerOfVP, uVP2, false},
 		{"rp does not view employees", rbac.ResourceWorker, policies.ActionView, rp, workerOfVP, uRP, false},
-		{"vp creates own employee", rbac.ResourceWorker, policies.ActionCreate, vp, workerOfVP, uVP1, true},
+		{"admin creates employee", rbac.ResourceWorker, policies.ActionCreate, admin, rbac.Owners{}, uAdmin, true},
+		{"vp cannot create employee", rbac.ResourceWorker, policies.ActionCreate, vp, workerOfVP, uVP1, false},
 		{
 			"vp cannot create employee for another",
 			rbac.ResourceWorker,
