@@ -1,0 +1,71 @@
+# CI для erp-backend.
+# Проверка «CI / Branch policy» — required status check для main/staging/dev
+# (см. scripts/branch-protection/ в erp-infra). Линт и тесты — опциональные
+# проверки, их можно добавить в required по желанию.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  # Веточная политика: main принимает PR только из staging,
+  # staging — только из dev, dev — только из feature/* и hotfix/*.
+  policy:
+    name: Branch policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR source branch
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        # на push (без PR) base_ref/head_ref пустые — попадаем в `*` и проходим
+        run: |
+          case "$BASE" in
+            main)
+              [ "$HEAD" = "staging" ] && echo "OK: main <- staging" \
+                || { echo "main принимает PR только из staging (получено: $HEAD)"; exit 1; }
+              ;;
+            staging)
+              [ "$HEAD" = "dev" ] && echo "OK: staging <- dev" \
+                || { echo "staging принимает PR только из dev (получено: $HEAD)"; exit 1; }
+              ;;
+            dev)
+              case "$HEAD" in
+                feature/*|hotfix/*) echo "OK: dev <- $HEAD" ;;
+                *) echo "dev принимает PR только из feature/* или hotfix/* (получено: $HEAD)"; exit 1 ;;
+              esac
+              ;;
+            *)
+              exit 0
+              ;;
+          esac
+
+  test:
+    name: Go tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go build ./...
+      - run: go test ./...
+
+  lint:
+    name: Golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.12.2
