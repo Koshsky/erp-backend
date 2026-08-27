@@ -1,0 +1,73 @@
+# CI for erp-backend.
+# The "CI / Branch policy" check is the required status check for main/staging/dev
+# (see scripts/branch-protection/ in erp-infra). Lint and tests are optional
+# checks; they can be added to the required set later if desired.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  # Branch policy: main accepts pull requests only from staging,
+  # staging accepts pull requests only from dev, dev accepts pull requests
+  # only from feature/* and hotfix/*.
+  policy:
+    name: Branch policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR source branch
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        # On push (no PR) base_ref/head_ref are empty — the `*` branch is
+        # matched and the check passes.
+        run: |
+          case "$BASE" in
+            main)
+              [ "$HEAD" = "staging" ] && echo "PASS: source branch 'staging' is permitted for target branch 'main'" \
+                || { echo "FAIL: target branch 'main' requires source branch 'staging'; received '$HEAD'"; exit 1; }
+              ;;
+            staging)
+              [ "$HEAD" = "dev" ] && echo "PASS: source branch 'dev' is permitted for target branch 'staging'" \
+                || { echo "FAIL: target branch 'staging' requires source branch 'dev'; received '$HEAD'"; exit 1; }
+              ;;
+            dev)
+              case "$HEAD" in
+                feature/*|hotfix/*) echo "PASS: source branch '$HEAD' is permitted for target branch 'dev'" ;;
+                *) echo "FAIL: target branch 'dev' requires a source branch matching 'feature/*' or 'hotfix/*'; received '$HEAD'"; exit 1 ;;
+              esac
+              ;;
+            *)
+              exit 0
+              ;;
+          esac
+
+  test:
+    name: Go tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go build ./...
+      - run: go test ./...
+
+  lint:
+    name: Golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.12.2
