@@ -130,7 +130,6 @@ func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 	session, err := s.findSession(ctx, refreshToken)
 	if err != nil {
 		// Неизвестный/уже отозванный токен — logout идемпотентен, это не ошибка.
-		//nolint:nilerr // идемпотентный logout: неизвестный токен — не ошибка
 		return nil
 	}
 	if err = s.sessions.RevokeSession(ctx, session.ID); err != nil {

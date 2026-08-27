@@ -16,7 +16,7 @@ import (
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
 	"github.com/Koshsky/erp-backend/internal/policies"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt"
+	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
@@ -49,7 +49,7 @@ func InitializeApp() (*App, error) {
 		user.ProviderSet,
 		auth.ProviderSet,
 		planning.ProviderSet,
-		project_mgmt.ProviderSet,
+		projectmgmt.ProviderSet,
 		timesheet.ProviderSet,
 		autocreate.ProviderSet,
 		rbacpolicy.ProviderSet,

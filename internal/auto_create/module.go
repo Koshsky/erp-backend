@@ -11,6 +11,8 @@ import (
 )
 
 // ProviderSet aggregates the auto_create module's dependencies.
+//
+//nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
 	repository.NewAutoCreateRepository,
 	service.NewAutoCreateService,
@@ -29,7 +31,7 @@ func ProvideModule(handler *delivery.AutoCreateHandler) Module {
 }
 
 // RegisterPublicRoutes is a no-op: the module has no public routes.
-func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
+func (m Module) RegisterPublicRoutes(_ *gin.RouterGroup) {
 }
 
 // RegisterProtectedRoutes registers the module's routes behind authentication.

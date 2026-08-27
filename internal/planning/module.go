@@ -11,6 +11,8 @@ import (
 )
 
 // ProviderSet aggregates the planning module's dependencies.
+//
+//nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
 	repository.NewPlanningRepository,
 	service.NewPlanningService,
@@ -29,7 +31,7 @@ func ProvideModule(handler *delivery.PlanningHandler) Module {
 }
 
 // RegisterPublicRoutes is a no-op: the planning module has no public routes.
-func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
+func (m Module) RegisterPublicRoutes(_ *gin.RouterGroup) {
 }
 
 // RegisterProtectedRoutes registers the planning routes behind authentication.

@@ -36,6 +36,8 @@ const (
 )
 
 // ProviderSet aggregates the auth module's dependencies.
+//
+//nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
 	service.NewAuthService,
 	repository.NewAuthRepository,
@@ -88,5 +90,5 @@ func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
 }
 
 // RegisterProtectedRoutes is a no-op: auth has no protected routes.
-func (m Module) RegisterProtectedRoutes(r *gin.RouterGroup) {
+func (m Module) RegisterProtectedRoutes(_ *gin.RouterGroup) {
 }

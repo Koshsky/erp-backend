@@ -27,6 +27,8 @@ const (
 )
 
 // ProviderSet aggregates the user module's dependencies.
+//
+//nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
 	repository.NewUserRepository,
 	service.NewUserService,
@@ -71,7 +73,7 @@ func (m Module) changePasswordGuard() gin.HandlerFunc {
 }
 
 // RegisterPublicRoutes is a no-op: the user module has no public routes.
-func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
+func (m Module) RegisterPublicRoutes(_ *gin.RouterGroup) {
 }
 
 // RegisterProtectedRoutes registers the user routes behind authentication.
