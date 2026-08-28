@@ -74,9 +74,20 @@ WHERE p.id = @id::bigint
 	AND p.deleted_at IS NULL
 	AND pr.deleted_at IS NULL;
 
--- name: ReorderProcesses :exec
--- Rewrites the order of the given process ids in one statement (transactional
--- guarantee comes from a single UPDATE: the caller sends the whole group).
+-- name: ReorderProcessesMark :exec
+-- Phase 1 of the two-phase reorder (runs inside one transaction with
+-- ReorderProcessesApply): park every process on a temporary offset slot so the
+-- follow-up write cannot transiently violate the partial unique index
+-- (project_id, sort_order) when values swap. The caller sends the whole group.
+UPDATE processes p
+SET sort_order = x.ord + 1000000, updated_at = NOW()
+FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE p.id = x.id AND p.deleted_at IS NULL;
+
+-- name: ReorderProcessesApply :exec
+-- Phase 2 of the two-phase reorder: write the final positions. The group is
+-- the whole active set of the project (validated by the caller), so no target
+-- slot collides with rows outside the group.
 UPDATE processes p
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)

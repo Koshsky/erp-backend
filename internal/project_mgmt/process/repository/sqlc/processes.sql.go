@@ -235,17 +235,34 @@ func (q *Queries) OwnerChain(ctx context.Context, id int64) (OwnerChainRow, erro
 	return i, err
 }
 
-const reorderProcesses = `-- name: ReorderProcesses :exec
+const reorderProcessesApply = `-- name: ReorderProcessesApply :exec
 UPDATE processes p
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
 WHERE p.id = x.id AND p.deleted_at IS NULL
 `
 
-// Rewrites the order of the given process ids in one statement (transactional
-// guarantee comes from a single UPDATE: the caller sends the whole group).
-func (q *Queries) ReorderProcesses(ctx context.Context, ids []int64) error {
-	_, err := q.db.Exec(ctx, reorderProcesses, ids)
+// Phase 2 of the two-phase reorder: write the final positions. The group is
+// the whole active set of the project (validated by the caller), so no target
+// slot collides with rows outside the group.
+func (q *Queries) ReorderProcessesApply(ctx context.Context, ids []int64) error {
+	_, err := q.db.Exec(ctx, reorderProcessesApply, ids)
+	return err
+}
+
+const reorderProcessesMark = `-- name: ReorderProcessesMark :exec
+UPDATE processes p
+SET sort_order = x.ord + 1000000, updated_at = NOW()
+FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE p.id = x.id AND p.deleted_at IS NULL
+`
+
+// Phase 1 of the two-phase reorder (runs inside one transaction with
+// ReorderProcessesApply): park every process on a temporary offset slot so the
+// follow-up write cannot transiently violate the partial unique index
+// (project_id, sort_order) when values swap. The caller sends the whole group.
+func (q *Queries) ReorderProcessesMark(ctx context.Context, ids []int64) error {
+	_, err := q.db.Exec(ctx, reorderProcessesMark, ids)
 	return err
 }
 

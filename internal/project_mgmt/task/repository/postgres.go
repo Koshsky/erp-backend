@@ -18,6 +18,7 @@ import (
 
 type TaskRepository struct {
 	logger *slog.Logger
+	pool   *pgxpool.Pool
 	db     *sqlc.Queries
 }
 
@@ -25,6 +26,7 @@ type TaskRepository struct {
 func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository {
 	return &TaskRepository{
 		logger: logger,
+		pool:   pool,
 		db:     sqlc.New(pool),
 	}
 }
@@ -130,9 +132,25 @@ func (r *TaskRepository) ListTaskIDsByProcess(ctx context.Context, processID int
 }
 
 // ReorderTasks rewrites the sort_order of the given task ids by list position
-// (1-based). The caller validates that the ids cover the whole group.
+// (1-based) in one transaction. The caller validates that the ids cover the
+// whole group. The two-phase UPDATE parks the rows on offset slots first,
+// because a single-statement value swap would transiently violate the partial
+// unique index (process_id, sort_order).
 func (r *TaskRepository) ReorderTasks(ctx context.Context, ids []int64) error {
-	return r.db.ReorderTasks(ctx, ids)
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := r.db.WithTx(tx)
+	if err = q.ReorderTasksMark(ctx, ids); err != nil {
+		return err
+	}
+	if err = q.ReorderTasksApply(ctx, ids); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

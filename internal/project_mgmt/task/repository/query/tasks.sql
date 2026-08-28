@@ -78,9 +78,20 @@ WHERE t.id = @id::bigint
 	AND p.deleted_at IS NULL
 	AND pr.deleted_at IS NULL;
 
--- name: ReorderTasks :exec
--- Rewrites the order of the given task ids in one statement (the caller sends
--- the whole group).
+-- name: ReorderTasksMark :exec
+-- Phase 1 of the two-phase reorder (runs inside one transaction with
+-- ReorderTasksApply): park every task on a temporary offset slot so the
+-- follow-up write cannot transiently violate the partial unique index
+-- (process_id, sort_order) when values swap. The caller sends the whole group.
+UPDATE tasks t
+SET sort_order = x.ord + 1000000, updated_at = NOW()
+FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE t.id = x.id AND t.deleted_at IS NULL;
+
+-- name: ReorderTasksApply :exec
+-- Phase 2 of the two-phase reorder: write the final positions. The group is
+-- the whole active set of the process (validated by the caller), so no target
+-- slot collides with rows outside the group.
 UPDATE tasks t
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
