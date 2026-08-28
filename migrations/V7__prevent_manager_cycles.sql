@@ -1,8 +1,8 @@
--- Запрет кольцевых зависимостей в иерархии руководителей (users.manager_id).
--- Триггер обходит цепочку manager_id вверх от нового руководителя; если она
--- достигает самого пользователя — кольцевая зависимость, ошибка. Запрещает и
--- прямое самоподчинение (manager_id = id). Срабатывает на любом пути записи
--- (API, SQL, миграции/сиды).
+-- Bans circular dependencies in the manager hierarchy (users.manager_id).
+-- The trigger walks the manager_id chain up from the new manager; if it
+-- reaches the user themselves — circular dependency, error. Also forbids
+-- direct self-management (manager_id = id). Fires on any write path
+-- (API, SQL, migrations/seeds).
 CREATE OR REPLACE FUNCTION prevent_manager_cycle() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -18,8 +18,8 @@ BEGIN
         RAISE EXCEPTION 'manager cannot be the user themself';
     END IF;
 
-    -- Обход вверх по цепочке руководителей (без фильтра по deleted_at, чтобы
-    -- цикл не «проскочил» через мягко удалённые записи).
+    -- Walk up the manager chain (without a deleted_at filter so the
+    -- cycle cannot "slip through" soft-deleted records).
     cur := NEW.manager_id;
     WHILE cur IS NOT NULL LOOP
         depth := depth + 1;

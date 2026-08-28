@@ -69,12 +69,12 @@ func (s *Service) AccessExpiry() time.Duration {
 }
 
 // randomTokenID returns an unpredictable token id (crypto/rand) instead of a
-// time-based one that could be guessed (AD-06: was UnixNano по текущему времени).
+// time-based one that could be guessed (AD-06: was UnixNano of the current time).
 func randomTokenID() string {
 	var buf [16]byte
 	if _, err := rand.Read(buf[:]); err != nil {
-		// crypto/rand практически не падает; деградация на текущую
-		// отметку времени допустима, чтобы не разрывать подпись токена.
+		// crypto/rand practically never fails; degrading to the current
+		// timestamp is acceptable to avoid breaking token signing.
 		return strconv.FormatInt(time.Now().UnixNano(), 10)
 	}
 	return hex.EncodeToString(buf[:])

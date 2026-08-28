@@ -7,7 +7,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/policies"
 )
 
-// Кодеки: roundtrip для каждого ресурса/действия/зоны + невалидные значения.
+// Codecs: roundtrip for each resource/action/scope + invalid values.
 func TestResourceCodecs(t *testing.T) {
 	t.Parallel()
 	for i := rbac.ResourceProject; i <= rbac.ResourceRBACConfig; i++ {
@@ -58,7 +58,7 @@ func TestScopeCodecs(t *testing.T) {
 	}
 }
 
-// Точная таблица применимости зон по ресурсу (зеркалит бэкенд ScopeApplicable).
+// Exact scope applicability table per resource (mirrors the backend ScopeApplicable).
 func TestScopeApplicableTable(t *testing.T) {
 	t.Parallel()
 	ownRes := map[rbac.Resource]bool{
@@ -131,7 +131,7 @@ func TestScopeApplicableTable(t *testing.T) {
 	}
 }
 
-// NewMatrix: последняя пара (role, resource, action) побеждает.
+// NewMatrix: the last (role, resource, action) pair wins.
 func TestNewMatrixLastWins(t *testing.T) {
 	t.Parallel()
 	m := policies.NewMatrix([]policies.MatrixRule{
@@ -146,8 +146,8 @@ func TestNewMatrixLastWins(t *testing.T) {
 	}
 }
 
-// DefaultMatrixRules ↔ NewMatrix равны встроенной матрице (reset-путь не теряет
-// ни одного правила).
+// DefaultMatrixRules ↔ NewMatrix equal the built-in matrix (the reset path loses
+// no rule).
 func TestDefaultMatrixRoundTrip(t *testing.T) {
 	t.Parallel()
 	rebuilt := policies.NewMatrix(policies.DefaultMatrixRules())
@@ -164,7 +164,7 @@ func TestDefaultMatrixRoundTrip(t *testing.T) {
 	}
 }
 
-// Валидация kind'ов: валидные собираются, невалидные — ошибка.
+// Kind validation: valid ones are built, invalid ones are an error.
 func TestValidateSpec(t *testing.T) {
 	t.Parallel()
 	valid := []policies.RouteSpec{
@@ -276,14 +276,14 @@ func TestValidateSpec(t *testing.T) {
 		}
 	}
 
-	// BuildPolicies: невалидная спецификация валит всю сборку (fail-closed).
+	// BuildPolicies: an invalid specification fails the whole build (fail-closed).
 	built, err := policies.BuildPolicies([]policies.RouteSpec{valid[0], invalid[1].spec})
 	if err == nil || len(built) != 0 {
 		t.Errorf("BuildPolicies с битой спецификацией: err=%v built=%d; want error и пусто", err, len(built))
 	}
 }
 
-// Kinds-справочник содержит все kind'ы и схемы параметров.
+// The Kinds reference contains all kinds and parameter schemas.
 func TestKinds(t *testing.T) {
 	t.Parallel()
 	infos := policies.Kinds()

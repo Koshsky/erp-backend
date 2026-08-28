@@ -1,7 +1,7 @@
 package dto
 
-// AutoCreateConfig — конфигурация автосоздания процессов/задач при вставке
-// проекта. Используется и как запрос (PUT), и как ответ (GET).
+// AutoCreateConfig — configuration for auto-creating processes/tasks when a
+// project is inserted. Used both as a request (PUT) and as a response (GET).
 type AutoCreateConfig struct {
 	Enabled   bool              `json:"enabled"`
 	Processes []ProcessTemplate `json:"processes"`

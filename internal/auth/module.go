@@ -26,8 +26,9 @@ const (
 	loginResponseDelay = 500 * time.Millisecond
 )
 
-// refresh rate limit (per IP) — стpоже общего API-лимита: refresh-токены
-// 256-бит (подбор нереален), лимит гасит злоупотребление/DoS по /auth/refresh.
+// refresh rate limit (per IP) — stricter than the global API limit: refresh
+// tokens are 256-bit (guessing is unrealistic); the limit curbs
+// abuse/DoS against /auth/refresh.
 const (
 	refreshRatePerSecond  = 2.0
 	refreshBurst          = 10

@@ -176,7 +176,8 @@ definitions:
         example: Перенести сроки?
         type: string
       parent_id:
-        description: Ответ на другой комментарий той же задачи; пусто — корневой комментарий.
+        description: Reply to another comment of the same task; empty means a root
+          comment.
         example: 3
         type: integer
     type: object
@@ -386,7 +387,7 @@ definitions:
   dto.DetailedTask:
     properties:
       comments_count:
-        description: Количество активных комментариев задачи (для бейджа на диаграмме).
+        description: Number of active comments on the task (for the badge on the diagram).
         example: 3
         type: integer
       end_date:
@@ -1063,7 +1064,7 @@ definitions:
         example: Иванович
         type: string
       name:
-        description: Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).
+        description: Full name "Last First Middle" (pre-composed, for display).
         example: Иванов Иван Иванович
         type: string
       position:
@@ -3932,7 +3933,7 @@ paths:
         in: query
         name: manager_id
         type: integer
-      - description: Включить password_hash (только admin)
+      - description: Include password_hash (admin only)
         in: query
         name: include_hash
         type: boolean

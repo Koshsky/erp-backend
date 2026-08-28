@@ -1,7 +1,7 @@
--- Конфигурируемое автосоздание процессов/задач при вставке проекта (таблица
--- project_auto_create — в V1). Конфиг — одна строка: enabled + JSONB-шаблон
---   [ { "title": "Инсталляция", "owner_id": 5, "tasks": [
---       { "title": "Осмотр объекта", "resources": [ { "resource_id": 1, "quantity": 2 } ] }, ...
+-- Configurable auto-creation of processes/tasks when a project is inserted (the
+-- project_auto_create table lives in V1). The config is a single row: enabled + a JSONB template
+--   [ { "title": "Installation", "owner_id": 5, "tasks": [
+--       { "title": "Site inspection", "resources": [ { "resource_id": 1, "quantity": 2 } ] }, ...
 --     ] }, ... ]
 CREATE OR REPLACE FUNCTION fn_project_auto_create() RETURNS trigger
 LANGUAGE plpgsql

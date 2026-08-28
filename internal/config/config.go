@@ -44,11 +44,11 @@ type Config struct {
 	RBAC          RBACConfig        `yaml:"rbac"`
 }
 
-// RBACConfig — настройки runtime-RBAC (перезагрузка правил из БД).
+// RBACConfig — runtime-RBAC settings (rules reload from the DB).
 type RBACConfig struct {
-	// RefreshInterval — период фоновой перезагрузки правил из Postgres
-	// (эвентуальная консистентность между инстансами; локальные правки
-	// применяются сразу).
+	// RefreshInterval — the background rule reload period from Postgres
+	// (eventual consistency between instances; local edits
+	// apply immediately).
 	RefreshInterval Duration `yaml:"refresh_interval"`
 }
 
@@ -83,8 +83,8 @@ type PostgresConfig struct {
 // Secrets come from environment variables (yaml:"-").
 type JWTConfig struct {
 	SecretKey string `yaml:"-"`
-	// RefreshKey остаётся legacy-совместимым: refresh-токены opaque и хранятся
-	// в БД (AD-06), ключ лишь сохраняется в окружении.
+	// RefreshKey remains legacy-compatible: refresh tokens are opaque and stored
+	// in the DB (AD-06); the key is only kept in the environment.
 	RefreshKey          string   `yaml:"-"`
 	AccessExpiry        Duration `yaml:"access_expiry"`
 	RefreshExpiry       Duration `yaml:"refresh_expiry"`
@@ -119,8 +119,8 @@ type ProfilingConfig struct {
 	Address string `yaml:"address"`
 }
 
-// MaintenanceConfig — фоновая нормализация данных (периодический запуск
-// fn_normalize_employee_states для employee_states).
+// MaintenanceConfig — background data normalization (periodic run of
+// fn_normalize_employee_states for employee_states).
 type MaintenanceConfig struct {
 	Enabled  bool     `yaml:"enabled"`
 	Interval Duration `yaml:"interval"`

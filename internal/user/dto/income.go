@@ -3,7 +3,7 @@ package dto
 import "github.com/Koshsky/erp-backend/pkg/date"
 
 // CreateUserRequest creates a user (worker with auto-generated credentials when
-// username/password_hash are empty). Креды не возвращаются наружу.
+// username/password_hash are empty). Credentials are not returned to the caller.
 type CreateUserRequest struct {
 	LastName        string     `json:"last_name"        example:"Иванов"`
 	FirstName       string     `json:"first_name"       example:"Иван"`
@@ -34,7 +34,7 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" example:"new_password"`
 }
 
-// UpdateManagerRequest explicitly sets/clears the manager (null — без руководителя).
+// UpdateManagerRequest explicitly sets/clears the manager (null — no manager).
 type UpdateManagerRequest struct {
 	ManagerID *int64 `json:"manager_id" example:"5"`
 }

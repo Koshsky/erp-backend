@@ -39,8 +39,8 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 		OwnerID: ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
-		// Идемпотентный create: активный code уже существует (ON CONFLICT
-		// ничего не вставил) — это конфликт бизнес-ключа, а не внутренняя ошибка.
+		// Idempotent create: the active code already exists (ON CONFLICT
+		// inserted nothing) — this is a business-key conflict, not an internal error.
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errapi.Conflict("resource with this code already exists")
 		}

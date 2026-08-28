@@ -58,7 +58,7 @@ func (r *AuthRepository) CreateSession(
 		UserID:     userID,
 		TokenHash:  tokenHash,
 		ExpiresAt:  expiresAt,
-		ReplacedBy: pgtype.Int8{}, // цепочка replaced_by не заполняется (детект reuse идёт по revoked_at)
+		ReplacedBy: pgtype.Int8{}, // the replaced_by chain is not filled (reuse detection is based on revoked_at)
 	})
 	if err != nil {
 		return Session{}, err

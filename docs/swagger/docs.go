@@ -5024,7 +5024,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "boolean",
-                        "description": "Включить password_hash (только admin)",
+                        "description": "Include password_hash (admin only)",
                         "name": "include_hash",
                         "in": "query"
                     },
@@ -6306,7 +6306,7 @@ const docTemplate = `{
                     "example": "Перенести сроки?"
                 },
                 "parent_id": {
-                    "description": "Ответ на другой комментарий той же задачи; пусто — корневой комментарий.",
+                    "description": "Reply to another comment of the same task; empty means a root comment.",
                     "type": "integer",
                     "example": 3
                 }
@@ -6595,7 +6595,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "comments_count": {
-                    "description": "Количество активных комментариев задачи (для бейджа на диаграмме).",
+                    "description": "Number of active comments on the task (for the badge on the diagram).",
                     "type": "integer",
                     "example": 3
                 },
@@ -7547,7 +7547,7 @@ const docTemplate = `{
                     "example": "Иванович"
                 },
                 "name": {
-                    "description": "Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).",
+                    "description": "Full name \"Last First Middle\" (pre-composed, for display).",
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },

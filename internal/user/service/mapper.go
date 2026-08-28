@@ -132,7 +132,7 @@ func timePtr(d *date.Date) *time.Time {
 	return &t
 }
 
-// normalizeMiddle превращает пустую строку отчества в nil (нет отчества).
+// normalizeMiddle converts an empty middle-name string to nil (no middle name).
 func normalizeMiddle(p *string) *string {
 	if p != nil && *p == "" {
 		return nil

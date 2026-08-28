@@ -1,9 +1,9 @@
-// Package dto — контракты API администрирования RBAC-политик.
+// Package dto — API contracts for RBAC policy administration.
 package dto
 
 import "time"
 
-// RuleInput — запись строки матрицы прав.
+// RuleInput — a permissions matrix row record.
 type RuleInput struct {
 	Role     string `json:"role"     example:"vp"     binding:"required"`
 	Resource string `json:"resource" example:"task"   binding:"required"`
@@ -11,7 +11,7 @@ type RuleInput struct {
 	Scope    string `json:"scope"    example:"parent" binding:"required"`
 }
 
-// RuleView — строка матрицы прав.
+// RuleView — a permissions matrix row.
 type RuleView struct {
 	ID        int64     `json:"id"`
 	Role      string    `json:"role"`
@@ -22,7 +22,7 @@ type RuleView struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// RoutePolicyInput — запись маршрутной проверки (kind + параметры).
+// RoutePolicyInput — a route policy record (kind + parameters).
 type RoutePolicyInput struct {
 	Name   string         `json:"name"   example:"task.create" binding:"required"`
 	Kind   string         `json:"kind"   example:"create"      binding:"required"`
@@ -30,7 +30,7 @@ type RoutePolicyInput struct {
 	Active *bool          `json:"active"`
 }
 
-// RoutePolicyView — маршрутная проверка.
+// RoutePolicyView — a route policy view.
 type RoutePolicyView struct {
 	Name      string         `json:"name"`
 	Kind      string         `json:"kind"`
@@ -40,7 +40,7 @@ type RoutePolicyView struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 }
 
-// MatrixCell — клетка эффективной матрицы (с admin-байпасом).
+// MatrixCell — an effective matrix cell (with the admin bypass).
 type MatrixCell struct {
 	Role     string `json:"role"`
 	Resource string `json:"resource"`
@@ -48,7 +48,7 @@ type MatrixCell struct {
 	Scope    string `json:"scope"`
 }
 
-// ExplainInput — параметры проверки «почему allow/deny».
+// ExplainInput — parameters of the "why allow/deny" check.
 type ExplainInput struct {
 	Role         string `form:"role"          binding:"required" example:"vp"`
 	Resource     string `form:"resource"      binding:"required" example:"task"`
@@ -59,27 +59,27 @@ type ExplainInput struct {
 	Owner        int64  `form:"owner"`
 }
 
-// ExplainResult — результат проверки.
+// ExplainResult — a check result.
 type ExplainResult struct {
 	Scope   string `json:"scope"`
 	Allowed bool   `json:"allowed"`
 }
 
-// Permission — принципиальное право роли: действие над ресурсом разрешено
-// (скоуп доступа из матрицы; по нему фронт понимает зону владения).
+// Permission — a role's principal right: an action on a resource is allowed
+// (the scope from the matrix; the frontend derives the ownership zone from it).
 type Permission struct {
 	Resource string `json:"resource" example:"project"`
 	Action   string `json:"action"   example:"create"`
 	Scope    string `json:"scope"    example:"own"`
 }
 
-// RoleUpsertInput — создание роли (имя = системный код доступа).
+// RoleUpsertInput — role creation (name = system access code).
 type RoleUpsertInput struct {
 	Name        string `json:"name"        example:"auditor"       binding:"required"`
 	Description string `json:"description" example:"Внешний аудит"`
 }
 
-// RoleUpdateInput — обновление описания роли.
+// RoleUpdateInput — role description update.
 type RoleUpdateInput struct {
 	Description string `json:"description" example:"Внешний аудит"`
 }

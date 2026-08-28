@@ -153,8 +153,8 @@ func TestAuthorize_TaskMilestoneAssignment(t *testing.T) {
 				{"admin sees any", admin, policies.ActionView, processOfVP1, uAdmin, true},
 				{"dp sees any", dp, policies.ActionView, processOfVP1, uDP, true},
 				{"rp sees own project's", rp, policies.ActionView, processOfVP1, uRP, true},
-				// ancestor = любой из владельцев по цепочке вверх: rp, совпавший
-				// с владельцем процесса, тоже видит.
+				// ancestor = any owner up the chain: rp, matching
+				// the process owner, also sees.
 				{
 					"rp — любой владелец по цепочке (владелец процесса)",
 					rp,
@@ -164,7 +164,7 @@ func TestAuthorize_TaskMilestoneAssignment(t *testing.T) {
 					true,
 				},
 				{"rp — не совпал ни с одним владельцем", rp, policies.ActionView, processOfVP1, uVP2, false},
-				// ancestor = вся цепочка владения, включая владельца строки (self).
+				// ancestor = the whole ownership chain, including the row owner (self).
 				{"ancestor: владелец строки (self)", rp, policies.ActionView, rbac.Owners{Owner: uVP1}, uVP1, true},
 				{"vp sees own process's", vp, policies.ActionView, processOfVP1, uVP1, true},
 				{"vp does not see foreign process's", vp, policies.ActionView, processOfVP1, uVP2, false},

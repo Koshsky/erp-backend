@@ -16,10 +16,10 @@ import (
 	"github.com/Koshsky/erp-backend/internal/response"
 )
 
-// refreshCookieName — HttpOnly-кука с opaque refresh-токеном (AD-05).
+// refreshCookieName — the HttpOnly cookie holding the opaque refresh token (AD-05).
 const refreshCookieName = "mvs_refresh"
 
-// refreshCookiePath ограничивает отправку куки только auth-эндпоинтами.
+// refreshCookiePath restricts sending the cookie to auth endpoints only.
 const refreshCookiePath = "/api/v1/auth"
 
 type AuthHandler struct {
@@ -37,9 +37,9 @@ func NewAuthHandler(logger *slog.Logger, svc *authservice.AuthService, cfg confi
 	}
 }
 
-// isHTTPS сообщает, идёт ли запрос по реальному https: прямой TLS либо
-// X-Forwarded-Proto/Scheme от обратного прокси (nginx на /api/ ставит
-// X-Forwarded-Proto $scheme, перезаписывая клиентский заголовок).
+// isHTTPS reports whether the request came over real https: direct TLS or
+// X-Forwarded-Proto/Scheme from the reverse proxy (nginx on /api/ sets
+// X-Forwarded-Proto $scheme, overwriting the client header).
 func isHTTPS(c *gin.Context) bool {
 	if c.Request.TLS != nil {
 		return true
@@ -51,12 +51,13 @@ func isHTTPS(c *gin.Context) bool {
 	return strings.EqualFold(proto, "https")
 }
 
-// setRefreshCookie ставит HttpOnly/SameSite=Strict refresh-куку. Флаг Secure
-// применяется только за реальным https (cfg.RefreshCookieSecure — «жёсткое
-// требование https»): по http браузер не сохранит Secure-куку, /auth/refresh
-// станет недоступен, и веб-версия будет вылетать с «Сессия истекла».
+// setRefreshCookie sets the HttpOnly/SameSite=Strict refresh cookie. The Secure
+// flag is applied only behind real https (cfg.RefreshCookieSecure — the "strict
+// https requirement"): over http the browser will not persist a Secure cookie,
+// /auth/refresh becomes unavailable and the web version keeps failing with
+// "Session expired".
 //
-//nolint:gosec // Secure управляется refresh_cookie_secure + фактическим протоколом
+//nolint:gosec // Secure is driven by refresh_cookie_secure + the actual protocol
 func (h *AuthHandler) setRefreshCookie(c *gin.Context, token string) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     refreshCookieName,
@@ -69,10 +70,10 @@ func (h *AuthHandler) setRefreshCookie(c *gin.Context, token string) {
 	})
 }
 
-// clearRefreshCookie снимает refresh-куку (logout). Secure должен совпадать с
-// тем, как кука была поставлена (браузер отождествляет куку с учётом атрибута).
+// clearRefreshCookie removes the refresh cookie (logout). Secure must match
+// how the cookie was set (the browser identifies a cookie by its attributes).
 //
-//nolint:gosec // Secure так же из refresh_cookie_secure; остальные флаги статичны.
+//nolint:gosec // Secure likewise from refresh_cookie_secure; the other flags are static.
 func (h *AuthHandler) clearRefreshCookie(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     refreshCookieName,

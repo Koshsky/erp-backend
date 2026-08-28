@@ -51,9 +51,9 @@ type CreateAssignmentParams struct {
 	Quantity   int64 `json:"quantity"`
 }
 
-// Идемпотентный create: если связка (task_id, resource_id) уже активна —
-// ничего не вставляем; наличие существующей строки возвращает вызывающий
-// код (репозиторий) через FindAssignmentByKey.
+// Idempotent create: if the (task_id, resource_id) link is already active
+// we insert nothing; an existing row is reported back to the calling
+// code (repository) via FindAssignmentByKey.
 func (q *Queries) CreateAssignment(ctx context.Context, arg CreateAssignmentParams) (Assignment, error) {
 	row := q.db.QueryRow(ctx, createAssignment, arg.TaskID, arg.ResourceID, arg.Quantity)
 	var i Assignment

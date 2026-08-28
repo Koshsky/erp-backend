@@ -2,8 +2,8 @@ package delivery
 
 import "github.com/gin-gonic/gin"
 
-// RegisterRoutes регистрирует admin-контур /rbac (весь за проверкой
-// rbac.manage — виртуальный ресурс rbac_config, только admin).
+// RegisterRoutes registers the admin /rbac area (everything sits behind the
+// rbac.manage check — the rbac_config virtual resource, admin only).
 func (h *RBACHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/rbac")
 	r.Use(h.mw.Check("rbac.manage"))

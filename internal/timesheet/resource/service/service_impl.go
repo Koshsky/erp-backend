@@ -130,12 +130,12 @@ func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if resource == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteResource(ctx, id)
@@ -155,9 +155,9 @@ func (s *ResourceService) ListMembers(ctx context.Context, resourceID int64) ([]
 
 // AddMember attaches a user to a resource. The middleware checks resource
 // management rights (admin or the resource owner); here we enforce the
-// hierarchy rule: vp может привязывать только своих прямых подчинённых
-// («вассал моего вассала не мой вассал»), admin — любого. Исключение —
-// самоподчинение: владелец может добавить себя в свой ресурс.
+// hierarchy rule: vp can attach only their direct subordinates ("a vassal of my vassal is not my vassal"),
+// admin — anyone. Exception — self-subordination: the owner can add themselves
+// to their own resource.
 func (s *ResourceService) AddMember(
 	ctx context.Context,
 	resourceID int64,

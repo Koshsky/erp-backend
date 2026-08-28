@@ -1,6 +1,6 @@
-// Package policies — единственное место с правилами доступа. Движок (rbac)
-// остаётся чистым механизмом; правила разбиты на матрицу (роль × ресурс ×
-// действие → зона владения) и маршрутные проверки (kind + параметры).
+// Package policies — the single place holding access rules. The engine (rbac)
+// stays a pure mechanism; rules are split into a matrix (role × resource ×
+// action → ownership scope) and route policies (kind + parameters).
 package policies
 
 import (
@@ -10,7 +10,7 @@ import (
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 )
 
-// Action — операция над сущностью.
+// Action — an operation on an entity.
 type Action int
 
 const (
@@ -20,19 +20,19 @@ const (
 	ActionDelete
 )
 
-// Scope — зона владения, требуемая для действия. Механизм один: «владелец
-// родительского элемента». Отсутствие правила = ScopeNone (нет доступа).
+// Scope — ownership zone required for an action. The mechanism is single: "owner of
+// the parent element". Absence of a rule = ScopeNone (no access).
 type Scope int
 
 const (
 	ScopeNone Scope = iota
 	ScopeAll
-	ScopeOwn      // владелец самой строки (проект для rp; resource/worker для vp)
-	ScopeParent   // владелец непосредственного родителя (управление на уровень вниз)
-	ScopeAncestor // владелец предка на один уровень выше родителя (просмотр задач через проект)
+	ScopeOwn      // owner of the row itself (project for rp; resource/worker for vp)
+	ScopeParent   // owner of the immediate parent (managing one level down)
+	ScopeAncestor // owner of the ancestor one level above the parent (viewing tasks through the project)
 )
 
-// Строковые коды ресурсов (зеркалит V15 и kind-схемы).
+// String resource codes (mirror V15 and the kind schemas).
 const (
 	resProject      = "project"
 	resProcess      = "process"
@@ -50,7 +50,7 @@ const (
 	resOrgStructure = "org_structure"
 )
 
-// Строковые коды действий.
+// String action codes.
 const (
 	actView   = "view"
 	actCreate = "create"
@@ -58,7 +58,7 @@ const (
 	actDelete = "delete"
 )
 
-// Строковые коды зон владения.
+// String ownership zone codes.
 const (
 	scopeAll      = "all"
 	scopeOwn      = "own"
@@ -66,13 +66,13 @@ const (
 	scopeAncestor = "ancestor"
 )
 
-// Rule связывает роль и требуемую зону доступа.
+// Rule binds a role and the required access zone.
 type Rule struct {
 	Role  string
 	Scope Scope
 }
 
-// MatrixRule — строка матрицы (для сборки из БД и дефолтов).
+// MatrixRule — a matrix row (for building from the DB and defaults).
 type MatrixRule struct {
 	Res   rbac.Resource
 	Act   Action
@@ -80,10 +80,10 @@ type MatrixRule struct {
 	Scope Scope
 }
 
-// CurrentMatrix возвращает активную матрицу (для API matrix/explain).
+// CurrentMatrix returns the active matrix (for the matrix/explain API).
 func CurrentMatrix() Matrix { return snapshot() }
 
-// DefaultMatrixRules возвращает правила встроенной матрицы (для reset).
+// DefaultMatrixRules returns the built-in matrix rules (for reset).
 func DefaultMatrixRules() []MatrixRule {
 	var out []MatrixRule
 	for res, byAction := range defaultMatrix.rules {
@@ -96,13 +96,13 @@ func DefaultMatrixRules() []MatrixRule {
 	return out
 }
 
-// Matrix — снимок матрицы прав (роль × ресурс × действие → правила).
+// Matrix — a snapshot of the permission matrix (role × resource × action → rules).
 type Matrix struct {
 	rules map[rbac.Resource]map[Action][]Rule
 }
 
-// NewMatrix собирает матрицу из правил. Пары (role, resource, action)
-// уникальны: последнее правило побеждает.
+// NewMatrix assembles a matrix from rules. (role, resource, action) pairs
+// are unique: the last rule wins.
 func NewMatrix(rules []MatrixRule) Matrix {
 	m := Matrix{rules: make(map[rbac.Resource]map[Action][]Rule)}
 	for _, r := range rules {
@@ -126,16 +126,16 @@ func NewMatrix(rules []MatrixRule) Matrix {
 	return m
 }
 
-//nolint:gochecknoglobals // live snapshot; обновляется PolicyStore из БД, fallback — DefaultMatrix
+//nolint:gochecknoglobals // live snapshot; updated by PolicyStore from the DB, fallback — DefaultMatrix
 var currentRules atomic.Pointer[Matrix]
 
-// SetMatrix атомарно заменяет активную матрицу прав.
+// SetMatrix atomically replaces the active permission matrix.
 func SetMatrix(m Matrix) {
 	currentRules.Store(&m)
 }
 
-// snapshot возвращает активную матрицу или встроенные дефолты (до первой
-// загрузки из БД и в тестах).
+// snapshot returns the active matrix or the built-in defaults (before the first
+// DB load and in tests).
 func snapshot() Matrix {
 	if m := currentRules.Load(); m != nil {
 		return *m
@@ -143,10 +143,10 @@ func snapshot() Matrix {
 	return DefaultMatrix()
 }
 
-// DefaultMatrix — встроенная матрица по умолчанию: сериализация seed'а
-// V10__rbac_policies.sql. Используется как fallback, источник reset и золотой
-// тест эквивалентности. admin и worker не перечислены явно: admin — ScopeAll
-// (инвариант), worker — ScopeNone (нет строк).
+// DefaultMatrix — the built-in default matrix: serialization of the seed
+// V10__rbac_policies.sql. Used as a fallback, a reset source, and the golden
+// equivalence test. admin and worker are not listed explicitly: admin — ScopeAll
+// (invariant), worker — ScopeNone (no rows).
 //
 //nolint:gochecknoglobals // rule registry
 var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
@@ -156,11 +156,11 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 			{userdomain.ProjectManager, ScopeOwn},
 		},
 		ActionCreate: {
-			// rp создаёт проект в свою собственность (owner по умолчанию — сам).
+			// rp creates a project into own ownership (the owner defaults to themselves).
 			{userdomain.ProjectManager, ScopeOwn},
 		},
 		ActionUpdate: {
-			// dp и admin редактируют любой проект, rp — свой.
+			// dp and admin edit any project, rp — their own.
 			{userdomain.ProjectDirector, ScopeAll},
 			{userdomain.ProjectManager, ScopeOwn},
 		},
@@ -171,7 +171,7 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 	rbac.ResourceProcess: {
 		ActionView: {
 			{userdomain.ProjectDirector, ScopeAll},
-			// rp — процессы своих проектов (parent), vp — справочно все.
+			// rp — processes of own projects (parent), vp — all for reference.
 			{userdomain.ProjectManager, ScopeParent},
 			{userdomain.ProcessOwner, ScopeAll},
 		},
@@ -234,7 +234,7 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 		},
 	},
 	// === Timesheet ===
-	// States: справочник без владельца; vp видит (для табеля), управляет только admin.
+	// States: an ownerless reference; vp sees them (for the timesheet), only admin manages them.
 	rbac.ResourceState: {
 		ActionView: {
 			{userdomain.ProcessOwner, ScopeAll},
@@ -243,7 +243,7 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 		ActionUpdate: {},
 		ActionDelete: {},
 	},
-	// Resource categories: admin — все, vp — свои (own); vp создаёт в свою собственность.
+	// Resource categories: admin — all, vp — own (own); vp creates into own ownership.
 	rbac.ResourceResource: {
 		ActionView: {
 			{userdomain.ProcessOwner, ScopeOwn},
@@ -258,8 +258,8 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 			{userdomain.ProcessOwner, ScopeOwn},
 		},
 	},
-	// Workers: создание сотрудников — только admin (bypass); vp — свои
-	// подчинённые (manager_id): просмотр и редактирование.
+	// Workers: creating employees — admin only (bypass); vp — own
+	// subordinates (manager_id): view and edit.
 	rbac.ResourceWorker: {
 		ActionView: {
 			{userdomain.ProcessOwner, ScopeOwn},
@@ -271,13 +271,13 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 			{userdomain.ProcessOwner, ScopeOwn},
 		},
 	},
-	// Comments: доступа нет в общей матрице — права считаются по родительской
-	// задаче (см. route-проверки task.comment.*: list/create по task.view,
-	// delete — автор или право обновления задачи).
+	// Comments: no access in the common matrix — rights are derived from the parent
+	// task (see task.comment.* route checks: list/create by task.view,
+	// delete — the author or the task update right).
 	rbac.ResourceComment: {},
-	// Виртуальные ресурсы: user_catalog — каталог пользователей для пикеров
-	// (dp/rp/vp + admin); rbac_config — управление автосозданием/RBAC (только
-	// admin, bypass) — строк в матрице нет.
+	// Virtual resources: user_catalog — the user catalog for pickers
+	// (dp/rp/vp + admin); rbac_config — auto-create/RBAC administration (admin
+	// only, bypass) — no rows in the matrix.
 	rbac.ResourceUserCatalog: {
 		ActionView: {
 			{userdomain.ProjectDirector, ScopeAll},
@@ -291,13 +291,13 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 	rbac.ResourceOrgStructure: {},
 }}
 
-// DefaultMatrix возвращает встроенную матрицу по умолчанию (копию).
+// DefaultMatrix returns the built-in default matrix (a copy).
 func DefaultMatrix() Matrix {
 	return defaultMatrix
 }
 
-// ScopeFor возвращает требуемую зону доступа для (role, resource, action).
-// admin получает ScopeAll (защитный инвариант, не хранится в БД).
+// ScopeFor returns the required access zone for (role, resource, action).
+// admin gets ScopeAll (a protective invariant, not stored in the DB).
 func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) Scope {
 	if role == userdomain.Admin {
 		return ScopeAll
@@ -314,8 +314,8 @@ func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) Scope {
 	return ScopeNone
 }
 
-// ownField возвращает владельца самой строки (L0 цепочки) для ресурса
-// (0 — у сущности нет собственного владельца: own неприменим).
+// ownField returns the owner of the row itself (chain L0) for a resource
+// (0 — the entity has no own owner: own is not applicable).
 func ownField(res rbac.Resource, owners rbac.Owners) int64 {
 	switch res {
 	case rbac.ResourceProject:
@@ -332,8 +332,8 @@ func ownField(res rbac.Resource, owners rbac.Owners) int64 {
 	return 0
 }
 
-// parentField возвращает владельца непосредственного родителя для ресурса
-// (0 — у ресурса нет родителя в иерархии project → process → task/…).
+// parentField returns the immediate parent owner for a resource
+// (0 — the resource has no parent in the project → process → task/… hierarchy).
 func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 	switch res {
 	case rbac.ResourceProcess:
@@ -349,10 +349,10 @@ func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 	return 0
 }
 
-// ancestorMatch сообщает, совпадает ли пользователь с любым из владельцев
-// цепочки владения сущности (владелец строки L0 или любой вышестоящий).
-// Для процессa/вехи self-owner отсутствует (Owners.Owner = 0) — тогда
-// учитываются владельцы процесса и проекта.
+// ancestorMatch reports whether the user matches any owner of the entity's
+// ownership chain (the L0 row owner or any higher one).
+// For process/milestone the self-owner is absent (Owners.Owner = 0) — then
+// the process and project owners are considered.
 func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 	if userID == 0 {
 		return false
@@ -370,8 +370,8 @@ func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 	return false
 }
 
-// Authorize сообщает, может ли пользователь выполнить действие над сущностью
-// с её владельцами.
+// Authorize reports whether the user may perform an action on an entity
+// with its owners.
 func Authorize(role string, res rbac.Resource, act Action, owners rbac.Owners, userID int64) bool {
 	switch snapshot().ScopeFor(role, res, act) {
 	case ScopeNone:
@@ -391,24 +391,24 @@ func Authorize(role string, res rbac.Resource, act Action, owners rbac.Owners, u
 	}
 }
 
-// Can сообщает, может ли роль выполнить действие в принципе
-// (грубая проверка перед загрузкой списков).
+// Can reports whether a role can perform an action at all
+// (a coarse check before loading lists).
 func Can(role string, res rbac.Resource, act Action) bool {
 	return scopeFor(role, res, act) != ScopeNone
 }
 
-// ViewScopeCode возвращает строковый код зоны просмотра для листинг-запросов
-// (all|own|parent|ancestor). SQL применяет ровно эту зону к owner-цепочке.
+// ViewScopeCode returns the string code of the view zone for listing requests
+// (all|own|parent|ancestor). SQL applies exactly this zone to the owner chain.
 func ViewScopeCode(role string, res rbac.Resource) string {
 	return ScopeName(scopeFor(role, res, ActionView))
 }
 
-// scopeFor — пакетная обёртка для билдеров проверок.
+// scopeFor — internal wrapper for the check builders.
 func scopeFor(role string, res rbac.Resource, act Action) Scope {
 	return snapshot().ScopeFor(role, res, act)
 }
 
-//nolint:gochecknoglobals // resource codex (стабильный словарь, зеркалит V15)
+//nolint:gochecknoglobals // resource codex (stable dictionary, mirrors V15)
 var resourceNames = map[rbac.Resource]string{
 	rbac.ResourceProject:      resProject,
 	rbac.ResourceProcess:      resProcess,
@@ -434,7 +434,7 @@ var actionNames = map[Action]string{
 	ActionDelete: actDelete,
 }
 
-//nolint:gochecknoglobals // scope codex («none» не хранится: отсутствие строки = нет доступа)
+//nolint:gochecknoglobals // scope codex ("none" is not stored: absence of a row = no access)
 var scopeNames = map[Scope]string{
 	ScopeNone:     "",
 	ScopeAll:      scopeAll,
@@ -443,10 +443,10 @@ var scopeNames = map[Scope]string{
 	ScopeAncestor: scopeAncestor,
 }
 
-// ResourceName возвращает строковый код ресурса ("" — неизвестен).
+// ResourceName returns the string resource code ("" — unknown).
 func ResourceName(res rbac.Resource) string { return resourceNames[res] }
 
-// ParseResource разбирает строковый код ресурса.
+// ParseResource parses a string resource code.
 func ParseResource(s string) (rbac.Resource, bool) {
 	for res, name := range resourceNames {
 		if name == s {
@@ -456,10 +456,10 @@ func ParseResource(s string) (rbac.Resource, bool) {
 	return 0, false
 }
 
-// ActionName возвращает строковый код действия ("" — неизвестно).
+// ActionName returns the string action code ("" — unknown).
 func ActionName(act Action) string { return actionNames[act] }
 
-// ParseAction разбирает строковый код действия.
+// ParseAction parses a string action code.
 func ParseAction(s string) (Action, bool) {
 	for act, name := range actionNames {
 		if name == s {
@@ -469,10 +469,10 @@ func ParseAction(s string) (Action, bool) {
 	return 0, false
 }
 
-// ScopeName возвращает строковый код зоны ("" — нет доступа, не хранится).
+// ScopeName returns the string zone code ("" — no access, not stored).
 func ScopeName(scope Scope) string { return scopeNames[scope] }
 
-// ParseScope разбирает строковый код зоны.
+// ParseScope parses a string zone code.
 func ParseScope(s string) (Scope, bool) {
 	for scope, name := range scopeNames {
 		if name == s {
@@ -482,7 +482,7 @@ func ParseScope(s string) (Scope, bool) {
 	return 0, false
 }
 
-//nolint:gochecknoglobals // applicability maps зон (полные: все ресурсы перечислены)
+//nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
 var ownApplicable = map[rbac.Resource]bool{
 	rbac.ResourceProject:      true,
 	rbac.ResourceProcess:      true,
@@ -500,7 +500,7 @@ var ownApplicable = map[rbac.Resource]bool{
 	rbac.ResourceOrgStructure: false,
 }
 
-//nolint:gochecknoglobals // applicability maps зон (полные: все ресурсы перечислены)
+//nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
 var parentApplicable = map[rbac.Resource]bool{
 	rbac.ResourceProject:      false,
 	rbac.ResourceProcess:      true,
@@ -518,7 +518,7 @@ var parentApplicable = map[rbac.Resource]bool{
 	rbac.ResourceOrgStructure: false,
 }
 
-//nolint:gochecknoglobals // applicability maps зон (полные: все ресурсы перечислены)
+//nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
 var ancestorApplicable = map[rbac.Resource]bool{
 	rbac.ResourceProject:      false,
 	rbac.ResourceProcess:      true,
@@ -536,7 +536,7 @@ var ancestorApplicable = map[rbac.Resource]bool{
 	rbac.ResourceOrgStructure: false,
 }
 
-// ScopeApplicable сообщает, применима ли зона к ресурсу (для валидации правил).
+// ScopeApplicable reports whether a zone is applicable to a resource (for rule validation).
 func ScopeApplicable(res rbac.Resource, scope Scope) bool {
 	switch scope {
 	case ScopeAll:

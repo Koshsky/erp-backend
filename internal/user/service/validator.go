@@ -31,9 +31,9 @@ func (v *UserValidator) ValidateUser(user *domain.User) error {
 	if err := v.ValidateRequiredText(user.Username, "username"); err != nil {
 		return err
 	}
-	// Роли конфигурируются в рантайме каталогом rbac_roles (V15): здесь
-	// проверяем только форму; существование роли гарантирует FK
-	// users_role_fk (V17) — нарушение отдаётся как 400 через mapUserErr.
+	// Roles are configured at runtime by the rbac_roles catalog (V15): here we
+	// only check the form; role existence is guaranteed by the FK
+	// users_role_fk (V17) — violations surface as 400 via mapUserErr.
 	if user.Role == "" {
 		return errors.NewFieldError("role", "required", "role is required")
 	}

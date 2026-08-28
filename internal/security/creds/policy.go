@@ -7,18 +7,18 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
-// minPasswordLength — минимальная длина пользовательского пароля.
+// minPasswordLength — minimum length of a user password.
 const minPasswordLength = 8
 
-// passwordPolicyMessage — требования к паролю (зеркалит frontend-правила
-// usePasswordValidation: длина, регистры, цифра, спецсимвол).
+// passwordPolicyMessage — password requirements (mirrors the frontend
+// usePasswordValidation rules: length, letter cases, digit, special character).
 //
-//nolint:gosec // сообщение политики, а не секрет
+//nolint:gosec // policy message, not a secret
 const passwordPolicyMessage = "пароль не соответствует требованиям: не менее 8 символов, строчные и заглавные буквы, цифра, спецсимвол"
 
-// ValidatePassword проверяет пользовательский пароль по политике сложности
-// (AD-09). Применяется только к пользовательским паролям (смена пароля);
-// авто-генерируемые пароли админом проходят отдельно.
+// ValidatePassword checks a user password against the complexity policy
+// (AD-09). Applied only to user passwords (password change);
+// admin auto-generated passwords are handled separately.
 func ValidatePassword(password string) error {
 	if !validPassword(password) {
 		return errors.BadRequest(passwordPolicyMessage)
@@ -43,6 +43,6 @@ func validPassword(password string) bool {
 			hasSpecial = true
 		}
 	}
-	// Пробелы/пустые строки политике не подходят: спецсимволов и букв нет.
+	// Whitespace/empty strings do not satisfy the policy: no special characters or letters.
 	return hasLower && hasUpper && hasDigit && hasSpecial && strings.TrimSpace(password) != ""
 }

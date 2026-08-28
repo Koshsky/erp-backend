@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes регистрирует вложенные маршруты комментариев в рамках
-// существующей подгруппы /task (видимость задачи проверяется политиками).
+// RegisterRoutes registers the nested comment routes within the
+// existing /task subgroup (task visibility is enforced by policies).
 func (h *CommentHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/task")
 	{

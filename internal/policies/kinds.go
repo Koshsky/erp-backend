@@ -11,32 +11,32 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
-// RouteSpec — конфигурируемое определение маршрутной проверки (kind + параметры).
-// Механизмы (билдеры) остаются кодом; выбор kind'а и параметры — данные из БД.
+// RouteSpec — configurable definition of a route policy (kind + parameters).
+// The mechanisms (builders) stay in code; the kind choice and parameters come from the DB.
 type RouteSpec struct {
 	Name   string
 	Kind   string
 	Params map[string]any
 }
 
-// KindBuilder строит проверку маршрута по параметрам (валидирует их на запись
-// и при загрузке из БД).
+// KindBuilder builds a route check from parameters (validates them on write
+// and when loading from the DB).
 type KindBuilder func(params map[string]any) (func(*rbac.CheckCtx) error, error)
 
-// ParamInfo описывает параметр kind'а (для справочника API и UI).
+// ParamInfo describes a kind parameter (for the API and UI reference).
 type ParamInfo struct {
 	Key      string `json:"key"`
 	Type     string `json:"type"`
 	Required bool   `json:"required"`
 }
 
-// KindInfo описывает kind для справочника API.
+// KindInfo describes a kind for the API reference.
 type KindInfo struct {
 	Name   string      `json:"name"`
 	Params []ParamInfo `json:"params"`
 }
 
-// Коды kind'ов маршрутных проверок.
+// Route policy kind codes.
 const (
 	kindList       = "list"
 	kindEntity     = "entity"
@@ -45,7 +45,7 @@ const (
 	kindAuthorOr   = "author_or"
 )
 
-// Ключи параметров kind'ов (JSONB).
+// Kind parameter keys (JSONB).
 const (
 	paramResource        = "resource"
 	paramQueryKey        = "query_key"
@@ -66,20 +66,20 @@ const (
 	paramRightAction     = "right_action"
 )
 
-// Типы значений параметров (справочник API).
+// Parameter value types (API reference).
 const (
 	paramTypeString     = "string"
 	paramTypeBool       = "bool"
 	paramTypeStringList = "string_list"
 )
 
-// Режимы разрешения владельца для kind'а entity.
+// Owner resolution modes for the entity kind.
 const (
-	ownerModeID   = "id"   // владелец по id из URL (по умолчанию)
-	ownerModeNone = "none" // ресурс без owner-цепочки (state, виртуальные ресурсы)
+	ownerModeID   = "id"   // owner by id from the URL (default)
+	ownerModeNone = "none" // resource without an owner chain (state, virtual resources)
 )
 
-// Ключи body/query, встречающиеся в дефолтных спецификациях.
+// body/query keys appearing in the default specifications.
 const (
 	bodyKeyProjectID  = "project_id"
 	bodyKeyProcessID  = "process_id"
@@ -90,7 +90,7 @@ const (
 	bodyKeyCommentID  = "comment_id"
 )
 
-//nolint:gochecknoglobals // kind registry (механизмы; статична)
+//nolint:gochecknoglobals // kind registry (mechanisms; static)
 var kindRegistry = map[string]KindBuilder{
 	kindList:       buildList,
 	kindEntity:     buildEntity,
@@ -99,7 +99,7 @@ var kindRegistry = map[string]KindBuilder{
 	kindAuthorOr:   buildAuthorOr,
 }
 
-//nolint:gochecknoglobals // схемы параметров kind'ов (зеркалит билдеры)
+//nolint:gochecknoglobals // kind parameter schemas (mirror the builders)
 var kindParamSchemas = map[string][]ParamInfo{
 	kindList: {
 		{Key: paramResource, Type: paramTypeString, Required: true},
@@ -108,7 +108,7 @@ var kindParamSchemas = map[string][]ParamInfo{
 	kindEntity: {
 		{Key: paramResource, Type: paramTypeString, Required: true},
 		{Key: paramAction, Type: paramTypeString, Required: true},
-		{Key: paramOwner, Type: paramTypeString, Required: false}, // "id" (по умолчанию) | "none"
+		{Key: paramOwner, Type: paramTypeString, Required: false}, // "id" (default) | "none"
 	},
 	kindCreate: {
 		{Key: paramResource, Type: paramTypeString, Required: true},
@@ -135,7 +135,7 @@ var kindParamSchemas = map[string][]ParamInfo{
 }
 
 // =============================================
-// Парсинг и валидация параметров (JSONB → типизированные значения)
+// Parameter parsing and validation (JSONB → typed values)
 // =============================================
 
 func strParam(params map[string]any, key string, required bool) (string, error) {
@@ -188,17 +188,17 @@ func strListParam(params map[string]any, key string) ([]string, error) {
 	}
 }
 
-// kindError возвращает ошибку валидации с именем kind'а.
+// kindError returns a validation error carrying the kind name.
 func kindError(kind, key string, err error) error {
 	return fmt.Errorf("params[%s].%s: %w", kind, key, err)
 }
 
 // =============================================
-// Билдеры (механизмы — код)
+// Builders (mechanisms — code)
 // =============================================
 
-// viewOrForbidden возвращает 404 для просмотра (не раскрывать существование
-// объекта) и 403 для остальных действий.
+// viewOrForbidden returns 404 for view (do not disclose whether the object
+// exists) and 403 for the other actions.
 func viewOrForbidden(act Action) error {
 	if act == ActionView {
 		return errors.ErrNotFound
@@ -206,8 +206,8 @@ func viewOrForbidden(act Action) error {
 	return errors.ErrForbidden
 }
 
-// buildList — стандартное правило листинга: матричный чек view + валидация
-// query-параметра owner (ScopeAll — любой id, иначе только свой).
+// buildList — the standard listing rule: matrix view check + validation of
+// the owner query parameter (ScopeAll — any id, otherwise one's own).
 func buildList(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	resName, err := strParam(params, paramResource, true)
 	if err != nil {
@@ -224,8 +224,8 @@ func buildList(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	return ListCheck(res, key), nil
 }
 
-// buildEntity — стандартное правило сущности по id из URL; owner:none — для
-// ресурсов без owner-цепочки (state, виртуальные ресурсы).
+// buildEntity — the standard entity-by-id-from-URL rule; owner:none is for
+// resources without an owner chain (state, virtual resources).
 func buildEntity(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	resName, err := strParam(params, paramResource, true)
 	if err != nil {
@@ -253,7 +253,7 @@ func buildEntity(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	return EntityCheck(res, act), nil
 }
 
-// noOwnerCheck — матричный чек для ресурса без владельцев (state, виртуальные).
+// noOwnerCheck — matrix check for a resource without owners (state, virtual ones).
 func noOwnerCheck(res rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
 		if !Authorize(rc.User.Role, res, act, rbac.Owners{}, rc.User.ID) {
@@ -263,9 +263,9 @@ func noOwnerCheck(res rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	}
 }
 
-// buildCreate — стандартное правило создания: по владельцу родителя из body
-// (parent_resource + parent_from) либо в свою собственность (owner_key +
-// default_self: 0 → текущий пользователь).
+// buildCreate — the standard creation rule: by the parent owner from the body
+// (parent_resource + parent_from) or into one's own ownership (owner_key +
+// default_self: 0 → the current user).
 func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	resName, err := strParam(params, paramResource, true)
 	if err != nil {
@@ -330,8 +330,8 @@ func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	}, nil
 }
 
-// createOwners возвращает конструктор владельцев для создания «в свою
-// собственность» (поле зависит от ресурса).
+// createOwners returns an owners constructor for creating "into one's own
+// ownership" (the field depends on the resource).
 func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
 	switch res {
 	case rbac.ResourceProject:
@@ -347,7 +347,7 @@ func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
 	return nil, false
 }
 
-// ownerMatchSpec — разобранные параметры kind'а owner_match.
+// ownerMatchSpec — parsed parameters of the owner_match kind.
 type ownerMatchSpec struct {
 	res         rbac.Resource
 	act         Action
@@ -358,7 +358,7 @@ type ownerMatchSpec struct {
 	exemptRoles []string
 }
 
-// parseOwnerMatch разбирает и валидирует параметры kind'а owner_match.
+// parseOwnerMatch parses and validates the owner_match kind parameters.
 func parseOwnerMatch(params map[string]any) (ownerMatchSpec, error) {
 	var spec ownerMatchSpec
 	resName, err := strParam(params, paramResource, true)
@@ -399,7 +399,7 @@ func parseOwnerMatch(params map[string]any) (ownerMatchSpec, error) {
 	return spec, nil
 }
 
-// parseResourceParam читает код ресурса из параметров kind'а.
+// parseResourceParam reads a resource code from kind parameters.
 func parseResourceParam(params map[string]any, kind, key string) (rbac.Resource, error) {
 	name, err := strParam(params, key, true)
 	if err != nil {
@@ -408,7 +408,7 @@ func parseResourceParam(params map[string]any, kind, key string) (rbac.Resource,
 	return parseResourceCode(name, kind, key)
 }
 
-// parseResourceCode разбирает строковый код ресурса с ошибкой kind'а.
+// parseResourceCode parses a string resource code, reporting failures as kind errors.
 func parseResourceCode(name, kind, key string) (rbac.Resource, error) {
 	res, ok := ParseResource(name)
 	if !ok {
@@ -417,9 +417,9 @@ func parseResourceCode(name, kind, key string) (rbac.Resource, error) {
 	return res, nil
 }
 
-// buildOwnerMatch — кросс-сущностное правило: матричный чек по владельцу
-// primary-сущности + требование общего владельца с compare-сущностью
-// (admin и роли из exempt_roles освобождены от бизнес-правила).
+// buildOwnerMatch — a cross-entity rule: matrix check against the primary
+// entity owner + a shared-owner requirement with the compare entity
+// (admin and the exempt_roles are exempt from this business rule).
 func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	spec, err := parseOwnerMatch(params)
 	if err != nil {
@@ -457,8 +457,8 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 	}, nil
 }
 
-// buildAuthorOr — дизъюнкция: автор сущности (по owner-цепочке author_resource)
-// ИЛИ право right_action на right_resource (родительскую сущность).
+// buildAuthorOr — a disjunction: the entity author (via the author_resource
+// owner chain) OR the right_action on right_resource (the parent entity).
 func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	authorResource, err := strParam(params, paramAuthorResource, true)
 	if err != nil {
@@ -499,7 +499,7 @@ func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 			return ownerErr
 		}
 		if owners.Owner != 0 && owners.Owner == rc.User.ID {
-			return nil // автор удаляет своё
+			return nil // the author deletes their own
 		}
 		if !Authorize(rc.User.Role, rightRes, rightAct, owners, rc.User.ID) {
 			return errors.ErrForbidden
@@ -508,8 +508,8 @@ func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	}, nil
 }
 
-// CommentDeleteCheck — удаление комментария: автор всегда, остальным — по праву
-// обновления задачи (обёртка kind'а author_or; сохранена для тестов).
+// CommentDeleteCheck — comment deletion: the author always, others by task
+// update right (a wrapper of the author_or kind; kept for tests).
 func CommentDeleteCheck() func(*rbac.CheckCtx) error {
 	check, err := buildAuthorOr(map[string]any{
 		paramAuthorResource: resComment,
@@ -524,10 +524,10 @@ func CommentDeleteCheck() func(*rbac.CheckCtx) error {
 }
 
 // =============================================
-// Общие механизмы (используются билдерами и тестами)
+// Shared mechanisms (used by builders and tests)
 // =============================================
 
-// ListCheck — стандартное правило листинга (см. buildList).
+// ListCheck — the standard listing rule (see buildList).
 func ListCheck(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
 		scope := scopeFor(rc.User.Role, rsrc, ActionView)
@@ -549,7 +549,7 @@ func ListCheck(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) error {
 	}
 }
 
-// parentByID резолвит владельца родителя из body по ключу (для CreateCheck).
+// parentByID resolves the parent owner from the body by key (for CreateCheck).
 func parentByID(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) (rbac.Owners, error) {
 	return func(rc *rbac.CheckCtx) (rbac.Owners, error) {
 		id, err := rc.BodyID(key)
@@ -560,8 +560,8 @@ func parentByID(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) (rbac.Owner
 	}
 }
 
-// EntityCheck — стандартное правило сущности по id из URL: матрица против
-// владельцев; denied view не раскрывает существование (404).
+// EntityCheck — the standard entity-by-id-from-URL rule: matrix against
+// owners; a denied view does not disclose existence (404).
 func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
 		id, err := rc.ParamID()
@@ -579,7 +579,7 @@ func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	}
 }
 
-// CreateCheck — стандартное правило создания по владельцу родителя из body.
+// CreateCheck — the standard creation rule by the parent owner from the body.
 func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, error)) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
 		owners, err := parent(rc)
@@ -594,10 +594,10 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 }
 
 // =============================================
-// Дефолтные маршрутные спецификации (зеркалит seed V15) и сборка
+// Default route specifications (mirror seed V15) and assembly
 // =============================================
 
-//nolint:gochecknoglobals // default route specs (механизм; статичны)
+//nolint:gochecknoglobals // default route specs (mechanism; static)
 var defaultRouteSpecs = []RouteSpec{
 	{
 		Name:   "project.list",
@@ -864,13 +864,13 @@ var defaultRouteSpecs = []RouteSpec{
 	},
 }
 
-// DefaultRouteSpecs возвращает дефолтные маршрутные спецификации.
+// DefaultRouteSpecs returns the default route specifications.
 func DefaultRouteSpecs() []RouteSpec {
 	out := make([]RouteSpec, 0, len(defaultRouteSpecs))
 	return append(out, defaultRouteSpecs...)
 }
 
-// Kinds возвращает справочник kind'ов и их параметров.
+// Kinds returns the catalog of kinds and their parameters.
 func Kinds() []KindInfo {
 	infos := make([]KindInfo, 0, len(kindRegistry))
 	for _, name := range []string{kindList, kindEntity, kindCreate, kindOwnerMatch, kindAuthorOr} {
@@ -879,8 +879,8 @@ func Kinds() []KindInfo {
 	return infos
 }
 
-// BuildPolicies собирает проверки из спецификаций (валидирует kind + параметры).
-// Ошибка в одной спецификации отменяет всю сборку — вызывающий решает (fail-closed).
+// BuildPolicies assembles checks from specifications (validates kind + parameters).
+// An error in one specification cancels the whole build — the caller decides (fail-closed).
 func BuildPolicies(specs []RouteSpec) ([]rbac.Policy, error) {
 	out := make([]rbac.Policy, 0, len(specs))
 	for _, spec := range specs {
@@ -897,7 +897,7 @@ func BuildPolicies(specs []RouteSpec) ([]rbac.Policy, error) {
 	return out, nil
 }
 
-// ValidateSpec проверяет спецификацию (kind + параметры) без сборки проверки.
+// ValidateSpec validates a specification (kind + parameters) without building the check.
 func ValidateSpec(spec RouteSpec) error {
 	builder, ok := kindRegistry[spec.Kind]
 	if !ok {

@@ -24,13 +24,13 @@ import (
 // HTTP header the client uses to mark an idempotent request.
 const headerIdempotencyKey = "Idempotency-Key"
 
-// maxKeyLen — верхний предел длины ключа (защита PK от мусорных/гигантских значений).
+// maxKeyLen — upper bound on key length (protects the PK from junk/huge values).
 const maxKeyLen = 256
 
-// keyTTL — сколько жить ключу идемпотентности до авто-очистки.
+// keyTTL — how long an idempotency key lives before auto-cleanup.
 const keyTTL = 24 * time.Hour
 
-// cleanupInterval — как часто вычищаем просроченные ключи.
+// cleanupInterval — how often expired keys are cleaned up.
 const cleanupInterval = 1 * time.Hour
 
 // Repo is the storage the middleware uses to claim, complete and release
@@ -85,15 +85,15 @@ func (m *Middleware) Handler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		key := c.GetHeader(headerIdempotencyKey)
 		if key == "" || len(key) > maxKeyLen {
-			// Без ключа (или с неоправданно длинным) — обычный неидемпотентный запрос.
+			// No key (or an unreasonably long one) — a plain non-idempotent request.
 			c.Next()
 			return
 		}
 
 		userID, err := userctx.GetUserID(c)
 		if err != nil {
-			// Авторизованного пользователя нет — привязать ключ не к кому;
-			// выполняем без идемпотентной гарантии.
+			// No authenticated user — there is nothing to bind the key to;
+			// proceed without the idempotency guarantee.
 			c.Next()
 			return
 		}
@@ -115,21 +115,21 @@ func (m *Middleware) Handler() gin.HandlerFunc {
 
 		if !claimed {
 			if result == nil {
-				// Ключ существует, но первый запрос ещё выполняется — не дублируем.
+				// The key exists but the first request is still running — do not duplicate.
 				response.Error(c, m.logger, errapi.Conflict("request already in progress"))
 				c.Abort()
 				return
 			}
-			// Повтор с тем же ключом: возвращаем сохранённый ответ.
+			// Replay with the same key: return the saved response.
 			m.logger.Debug("idempotency replay", "key", key)
 			replay(c, result.Status, result.Body)
-			// Возврат без c.Next() в gin не останавливает цепочку хендлеров,
-			// поэтому прерываем её явно, чтобы не выполнить операцию повторно.
+			// Returning without c.Next() in gin does not stop the handler chain,
+			// so we abort it explicitly to avoid executing the operation again.
 			c.Abort()
 			return
 		}
 
-		// Мы захватили ключ: выполняем операцию, перехватывая ответ.
+		// We claimed the key: execute the operation while capturing the response.
 		cw := &captureWriter{ResponseWriter: c.Writer}
 		c.Writer = cw
 		c.Next()
@@ -138,8 +138,8 @@ func (m *Middleware) Handler() gin.HandlerFunc {
 	}
 }
 
-// finalize сохраняет 2xx-ответ для replay либо освобождает ключ, чтобы ретрай
-// (4xx/5xx) выполнил операцию заново и получил свежую оценку.
+// finalize saves the 2xx response for replay or releases the key so a retry
+// (4xx/5xx) runs the operation again and gets a fresh evaluation.
 func (m *Middleware) finalize(
 	ctx context.Context,
 	cw *captureWriter,
@@ -162,8 +162,8 @@ func (m *Middleware) finalize(
 	}
 }
 
-// startCleanup запускает фоновую очистку просроченных ключей на время жизни
-// процесса (аналогично фоновой чистке rate-limit бабокетов).
+// startCleanup starts background cleanup of expired keys for the lifetime of
+// the process (similar to the background rate-limit bucket cleanup).
 func (m *Middleware) startCleanup() {
 	m.cleanupOnce.Do(func() {
 		go func() {
@@ -177,9 +177,9 @@ func (m *Middleware) startCleanup() {
 	})
 }
 
-// replay отправляет сохранённый ответ клиенту. Все ответы приложения — JSON
-// ({data,error}), поэтому Content-Type фиксируем; Idempotency-Replayed —
-// диагностический маркер для клиента.
+// replay sends the saved response to the client. All application responses are
+// JSON ({data,error}), so the Content-Type is fixed; Idempotency-Replayed is a
+// diagnostic marker for the client.
 func replay(c *gin.Context, status int, body json.RawMessage) {
 	c.Header("Content-Type", "application/json")
 	c.Header("Idempotency-Replayed", "true")
@@ -190,7 +190,7 @@ func replay(c *gin.Context, status int, body json.RawMessage) {
 	c.Data(status, "application/json", body)
 }
 
-// captureWriter перехватывает статус и тело ответа текущего запроса.
+// captureWriter intercepts the status and body of the current request's response.
 type captureWriter struct {
 	gin.ResponseWriter
 

@@ -2,9 +2,9 @@
 SELECT *
 FROM users
 WHERE deleted_at IS NULL
-  -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
-  -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
-  -- себя на клиенте отдельно).
+  -- For non-admin: only direct subordinates (manager_id = current user);
+  -- admin sees everyone. The user himself is not included here (the timesheet
+  -- adds oneself on the client separately).
   AND (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
@@ -89,8 +89,8 @@ WHERE id = @user_id
 	AND deleted_at IS NULL;
 
 -- name: OwnerChain :one
--- Владелец записи: руководитель, а при его отсутствии — сам пользователь
--- (чтобы пользователь мог видеть/менять свой табель).
+-- Record owner: the manager, or the user himself when there is none
+-- (so a user can see/edit their own timesheet).
 SELECT COALESCE(manager_id, id)::bigint AS owner_id
 FROM users
 WHERE id = @id::bigint
@@ -146,5 +146,5 @@ VALUES (@user_id, @state_id, @start_date::date, @end_date::date)
 RETURNING *;
 
 -- name: NormalizeUserStates :exec
--- Сливает смежные диапазоны одинакового (user_id, state_id) в непрерывные.
+-- Merges adjacent ranges with the same (user_id, state_id) into continuous ones.
 SELECT fn_normalize_user_states();

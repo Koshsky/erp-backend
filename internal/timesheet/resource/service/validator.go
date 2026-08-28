@@ -7,7 +7,7 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
-// maxAbsenceRange — максимальная ширина окна запроса отсутствий (в днях).
+// maxAbsenceRange is the maximum width of the absence request window (in days).
 const (
 	maxAbsenceRange = 3660
 	hoursPerDay     = 24

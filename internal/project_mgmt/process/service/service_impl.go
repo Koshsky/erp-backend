@@ -100,12 +100,12 @@ func (s *ProcessService) DeleteProcess(ctx context.Context, id int64) error {
 	process, err := s.repository.FindProcess(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if process == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteProcess(ctx, id)

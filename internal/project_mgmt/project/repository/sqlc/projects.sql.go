@@ -58,8 +58,8 @@ type CreateProjectParams struct {
 	OwnerID   pgtype.Int8 `json:"owner_id"`
 }
 
-// Идемпотентный create по бизнес-ключу code: на существующем активном code
-// ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
+// Idempotent create by business key code: if an active code already exists
+// we insert nothing; the calling code (repository) turns the conflict into 409.
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
 	row := q.db.QueryRow(ctx, createProject,
 		arg.Code,

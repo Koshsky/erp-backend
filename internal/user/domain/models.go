@@ -63,14 +63,14 @@ type User struct {
 	Role         string
 	Username     string
 	PasswordHash string
-	// Руководитель рабочего (user с ролью vp); для остальных ролей — nil.
+	// Manager of the worker (a user with the vp role); nil for other roles.
 	ManagerID       *int64
 	Position        string
 	HireDate        *time.Time
 	TerminationDate *time.Time
 }
 
-// FullName возвращает полное ФИО «Фамилия Имя Отчество» (без пустых частей).
+// FullName returns the full name "Last First Middle" (without empty parts).
 func (u *User) FullName() string {
 	parts := []string{}
 	if u.LastName != "" {

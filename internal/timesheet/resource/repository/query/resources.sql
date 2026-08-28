@@ -46,8 +46,8 @@ WHERE r.deleted_at IS NULL
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at;
 
 -- name: CreateResource :one
--- Идемпотентный create по бизнес-ключу code: на существующем активном code
--- ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
+-- Idempotent create by business key code: if an active code already exists
+-- we insert nothing; the calling code (repository) turns the conflict into 409.
 INSERT INTO resources (title, code, owner_id)
 VALUES (@title, @code, @owner_id)
 ON CONFLICT (code) WHERE deleted_at IS NULL
@@ -109,7 +109,7 @@ FROM users
 WHERE id = @user_id::bigint
   AND deleted_at IS NULL;
 
--- Отсутствия членов ресурса (состояния is_available = false) за окно.
+-- Resource member absences (states with is_available = false) for the window.
 -- name: ListResourceAbsence :many
 SELECT u.id AS user_id,
        CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), NULLIF(u.middle_name, '')) AS user_name,

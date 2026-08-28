@@ -1,16 +1,16 @@
-// Package domain — сущности конфигурируемых RBAC-политик (хранятся в Postgres).
+// Package domain — entities of configurable RBAC policies (stored in Postgres).
 package domain
 
 import "time"
 
-// Role — каталог ролей.
+// Role — a role catalog entry.
 type Role struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-// Rule — строка матрицы прав (роль × ресурс × действие → зона владения).
+// Rule — a permissions matrix row (role × resource × action → ownership scope).
 type Rule struct {
 	ID        int64     `json:"id"`
 	Role      string    `json:"role"`
@@ -21,7 +21,7 @@ type Rule struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// RoutePolicy — определение маршрутной проверки (kind + параметры).
+// RoutePolicy — a route policy definition (kind + parameters).
 type RoutePolicy struct {
 	Name      string         `json:"name"`
 	Kind      string         `json:"kind"`

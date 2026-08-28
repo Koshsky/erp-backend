@@ -79,8 +79,8 @@ type CreateResourceParams struct {
 	OwnerID int64  `json:"owner_id"`
 }
 
-// Идемпотентный create по бизнес-ключу code: на существующем активном code
-// ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
+// Idempotent create by business key code: if an active code already exists
+// we insert nothing; the calling code (repository) turns the conflict into 409.
 func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (Resource, error) {
 	row := q.db.QueryRow(ctx, createResource, arg.Title, arg.Code, arg.OwnerID)
 	var i Resource
@@ -241,7 +241,7 @@ type ListResourceAbsenceRow struct {
 	EndDate   time.Time `json:"end_date"`
 }
 
-// Отсутствия членов ресурса (состояния is_available = false) за окно.
+// Resource member absences (states with is_available = false) for the window.
 func (q *Queries) ListResourceAbsence(ctx context.Context, arg ListResourceAbsenceParams) ([]ListResourceAbsenceRow, error) {
 	rows, err := q.db.Query(ctx, listResourceAbsence, arg.ResourceID, arg.StartDate, arg.EndDate)
 	if err != nil {

@@ -13,14 +13,14 @@ import (
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
 )
 
-// reloadTimeout — бюджет одной перезагрузки правил из БД.
+// reloadTimeout — budget of a single rule reload from the DB.
 const reloadTimeout = 10 * time.Second
 
-// PolicyStore держит правила из БД в памяти и публикует их в движок:
-// матрицу — через policies.SetMatrix, маршрутные проверки — через
-// rbac.Middleware.Refresh. При недоступной БД работает на встроенных
-// дефолтах и «долечивается» по TTL. Никакая ошибка загрузки не роняет
-// сервис: применяется только валидный целостный снапшот.
+// PolicyStore keeps DB rules in memory and publishes them to the engine:
+// the matrix via policies.SetMatrix, route policies via
+// rbac.Middleware.Refresh. When the DB is unavailable it runs on the built-in
+// defaults and "heals" itself by TTL. No load error brings the service
+// down: only a valid, consistent snapshot is applied.
 type PolicyStore struct {
 	logger   *slog.Logger
 	repo     *repository.RuleRepository
@@ -45,8 +45,8 @@ func NewPolicyStore(
 	}
 }
 
-// Start выполняет стартовую загрузку (best-effort: при недоступной БД —
-// WARN и дефолты) и запускает фоновое TTL-обновление.
+// Start performs the initial load (best-effort: when the DB is unavailable —
+// a WARN and defaults) and starts the background TTL refresh.
 func (s *PolicyStore) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), reloadTimeout)
 	if err := s.Reload(ctx); err != nil {
@@ -56,9 +56,9 @@ func (s *PolicyStore) Start() {
 	go s.refreshLoop()
 }
 
-// refreshLoop периодически перезагружает правила из БД (эвентуальная
-// консистентность между инстансами; локальные мутации применяются сразу
-// через Reload из сервиса).
+// refreshLoop periodically reloads rules from the DB (eventual
+// consistency across instances; local mutations are applied immediately
+// via Reload from the service).
 func (s *PolicyStore) refreshLoop() {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
@@ -80,13 +80,13 @@ func (s *PolicyStore) refreshLoop() {
 	}
 }
 
-// Stop останавливает фоновое обновление (для graceful shutdown).
+// Stop stops the background refresh (for graceful shutdown).
 func (s *PolicyStore) Stop() {
 	close(s.stop)
 }
 
-// Reload перечитывает правила из БД и публикует их в движок. При любой
-// ошибке (включая пустой набор маршрутных проверок) снапшот не меняется.
+// Reload re-reads rules from the DB and publishes them to the engine. On any
+// error (including an empty route policy set) the snapshot stays unchanged.
 func (s *PolicyStore) Reload(ctx context.Context) error {
 	rules, err := s.repo.ListActiveRules(ctx)
 	if err != nil {
@@ -116,7 +116,7 @@ func (s *PolicyStore) Reload(ctx context.Context) error {
 	return nil
 }
 
-// rulesToMatrix преобразует строки БД в матрицу, валидируя кодеки.
+// rulesToMatrix converts DB rows into a matrix, validating the codecs.
 func rulesToMatrix(rules []domain.Rule) (policies.Matrix, error) {
 	rows := make([]policies.MatrixRule, 0, len(rules))
 	for _, r := range rules {
@@ -161,8 +161,8 @@ func rulesToMatrix(rules []domain.Rule) (policies.Matrix, error) {
 	return policies.NewMatrix(rows), nil
 }
 
-// routePoliciesToSpecs преобразует определения маршрутных проверок в
-// спецификации движка (валидация kind и параметров — в BuildPolicies).
+// routePoliciesToSpecs converts route policy definitions into engine
+// specifications (kind and parameter validation happens in BuildPolicies).
 func routePoliciesToSpecs(routes []domain.RoutePolicy) []policies.RouteSpec {
 	specs := make([]policies.RouteSpec, 0, len(routes))
 	for _, p := range routes {

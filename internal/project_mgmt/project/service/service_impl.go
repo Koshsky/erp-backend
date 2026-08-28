@@ -110,12 +110,12 @@ func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if project == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteProject(ctx, id)

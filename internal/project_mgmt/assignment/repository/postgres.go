@@ -38,9 +38,9 @@ func (r *AssignmentRepository) CreateAssignment(
 		Quantity:   int64(assignment.Quantity),
 	})
 	if err != nil {
-		// Идемпотентный create: на существующей активной связке
-		// (task_id, resource_id) INSERT ... ON CONFLICT DO NOTHING не вставил
-		// строку, RETURNING вернул пусто. Возвращаем уже существующую запись.
+		// Idempotent create: for an already-active (task_id, resource_id) pair,
+		// INSERT ... ON CONFLICT DO NOTHING inserts no row and RETURNING comes
+		// back empty. Return the already existing record.
 		if errors.Is(err, pgx.ErrNoRows) {
 			existing, ferr := r.db.FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
 				TaskID:     assignment.TaskID,

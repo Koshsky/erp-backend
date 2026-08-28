@@ -39,8 +39,8 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 		Priority:  int64(project.Priority),
 	})
 	if err != nil {
-		// Идемпотентный create: активный code уже существует (ON CONFLICT
-		// ничего не вставил) — это не внутренняя ошибка, а конфликт ключа.
+		// Idempotent create: the active code already exists (ON CONFLICT inserted
+		// nothing) — this is not an internal error but a key conflict.
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errapi.Conflict("project with this code already exists")
 		}

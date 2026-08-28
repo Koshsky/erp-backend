@@ -9,8 +9,8 @@ WHERE deleted_at IS NULL
 	AND id = @state_id::bigint;
 
 -- name: CreateState :one
--- Идемпотентный create по бизнес-ключу code: на существующем code ничего не
--- вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
+-- Idempotent create by business key code: if the code already exists we
+-- insert nothing; the calling code (repository) turns the conflict into 409.
 INSERT INTO states (code, name, is_available)
 VALUES (@code, @name, @is_available)
 ON CONFLICT ON CONSTRAINT states_code_key

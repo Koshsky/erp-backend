@@ -16,9 +16,9 @@ const (
 	usernameLength = 10
 )
 
-// cyrToLat — простая транслитерация кириллицы в латиницу (для login по фамилии).
+// cyrToLat — simple Cyrillic-to-Latin transliteration (for a login built from the last name).
 //
-//nolint:gochecknoglobals // статичная таблица
+//nolint:gochecknoglobals // static lookup table
 var cyrToLat = map[rune]string{
 	'а': "a", 'б': "b", 'в': "v", 'г': "g", 'д': "d", 'е': "e", 'ё': "e",
 	'ж': "zh", 'з': "z", 'и': "i", 'й': "y", 'к': "k", 'л': "l", 'м': "m",
@@ -27,7 +27,7 @@ var cyrToLat = map[rune]string{
 	'ъ': "", 'ы': "y", 'ь': "", 'э': "e", 'ю': "yu", 'я': "ya",
 }
 
-// Transliterate возвращает латинскую транслитерацию строки в нижнем регистре.
+// Transliterate returns the lowercase Latin transliteration of a string.
 func Transliterate(s string) string {
 	return transliterate(strings.ToLower(strings.TrimSpace(s)))
 }

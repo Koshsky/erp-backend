@@ -456,9 +456,9 @@ const listUsers = `-- name: ListUsers :many
 SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
-  -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
-  -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
-  -- себя на клиенте отдельно).
+  -- For non-admin: only direct subordinates (manager_id = current user);
+  -- admin sees everyone. The user himself is not included here (the timesheet
+  -- adds oneself on the client separately).
   AND (
     $1::text = 'all' OR
     ($1::text = 'own' AND manager_id = $2::bigint)
@@ -524,7 +524,7 @@ const normalizeUserStates = `-- name: NormalizeUserStates :exec
 SELECT fn_normalize_user_states()
 `
 
-// Сливает смежные диапазоны одинакового (user_id, state_id) в непрерывные.
+// Merges adjacent ranges with the same (user_id, state_id) into continuous ones.
 func (q *Queries) NormalizeUserStates(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, normalizeUserStates)
 	return err
@@ -537,8 +537,8 @@ WHERE id = $1::bigint
 	AND deleted_at IS NULL
 `
 
-// Владелец записи: руководитель, а при его отсутствии — сам пользователь
-// (чтобы пользователь мог видеть/менять свой табель).
+// Record owner: the manager, or the user himself when there is none
+// (so a user can see/edit their own timesheet).
 func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
 	row := q.db.QueryRow(ctx, ownerChain, id)
 	var owner_id int64

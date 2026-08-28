@@ -27,8 +27,8 @@ const defaultShutdownTimeout = 5 * time.Second
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// Внимание (AD-14): host — плейсхолдер до появления домена; при появлении
-// прод-домена заменить его здесь (вместе с AD-03/AD-11).
+// Note (AD-14): host is a placeholder until a domain appears; once the
+// production domain exists, replace it here (along with AD-03/AD-11).
 //	@host		localhost
 //	@schemes	https
 //	@BasePath	/api/v1

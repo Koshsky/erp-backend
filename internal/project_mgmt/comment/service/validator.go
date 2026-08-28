@@ -8,7 +8,7 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
-// maxCommentContentLen — максимальная длина текста комментария (символов).
+// maxCommentContentLen is the maximum comment text length (in characters).
 const maxCommentContentLen = 4000
 
 type CommentValidator struct {

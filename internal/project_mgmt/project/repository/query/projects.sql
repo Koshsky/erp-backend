@@ -1,6 +1,6 @@
 -- name: CreateProject :one
--- Идемпотентный create по бизнес-ключу code: на существующем активном code
--- ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
+-- Idempotent create by business key code: if an active code already exists
+-- we insert nothing; the calling code (repository) turns the conflict into 409.
 INSERT INTO projects (code, start_date, end_date, priority, owner_id)
 VALUES (
   @code::text,

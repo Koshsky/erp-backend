@@ -16,8 +16,8 @@ import (
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
-// change-password limit (per user) — защита от брутфорса старого пароля.
-// Задержка uniform, чтобы не раскрывать результат по времени ответа.
+// change-password limit (per user) — brute-force protection for the old password.
+// A uniform delay so the result is not leaked through response timing.
 const (
 	changePasswordRatePerSecond  = 0.5
 	changePasswordBurst          = 3
@@ -47,8 +47,8 @@ func ProvideModule(handler *delivery.UserHandler, logger *slog.Logger) Module {
 	return Module{handler: handler, logger: logger}
 }
 
-// changePasswordGuard возвращает per-user (по JWT id) лимитер для
-// /user/change-password; uniform задержка применяется до лимитера.
+// changePasswordGuard returns a per-user (by JWT id) limiter for
+// /user/change-password; the uniform delay is applied before the limiter.
 func (m Module) changePasswordGuard() gin.HandlerFunc {
 	limiter := ratelimit.New(ratelimit.Config{
 		RequestsPerSecond: changePasswordRatePerSecond,
@@ -58,8 +58,8 @@ func (m Module) changePasswordGuard() gin.HandlerFunc {
 		Key: func(c *gin.Context) string {
 			id, err := userctx.GetUserID(c)
 			if err != nil {
-				// На защищённом пути userctx обязан быть; на любой промах —
-				// общий bucket, чтобы не плодить неограниченные лимитеры.
+				// userctx must be present on the protected route; on any miss —
+				// a shared bucket, so unbounded limiters are not created.
 				return "unknown"
 			}
 			return strconv.FormatInt(id, 10)

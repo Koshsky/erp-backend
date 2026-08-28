@@ -1,13 +1,13 @@
 -- Initial schema for enterprise resource planning.
--- Полная схема: все таблицы создаются один раз, все CHECK/FK-ограничения
--- объявлены инлайн. Никаких последующих ALTER TABLE не требуется.
+-- Complete schema: all tables are created once, all CHECK/FK constraints
+-- are declared inline. No subsequent ALTER TABLE is required.
 
--- EXCLUDE-констрейнт user_states опирается на btree_gist.
+-- The user_states EXCLUDE constraint relies on btree_gist.
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 -- =============================================
--- Роли рантайма (каталог ролей RBAC).
--- Создаётся до users: users.role ссылается на rbac_roles(name).
+-- Runtime roles (the RBAC role catalog).
+-- Created before users: users.role references rbac_roles(name).
 -- =============================================
 CREATE TABLE rbac_roles (
     id          BIGSERIAL PRIMARY KEY,
@@ -18,25 +18,25 @@ CREATE TABLE rbac_roles (
     deleted_at  TIMESTAMPTZ
 );
 
--- Люди (единая таблица). Рабочий — это пользователь с ролью worker; профиль
--- рабочего (должность, даты, руководитель) хранится прямо на users.
+-- People (a single table). A worker is a user with the worker role; the worker's
+-- profile (position, dates, manager) is stored directly on users.
 CREATE TABLE users (
 	id BIGSERIAL PRIMARY KEY,
 	last_name TEXT NOT NULL,
 	first_name TEXT NOT NULL,
-	-- Отчество необязательное.
+	-- Patronymic is optional.
 	middle_name TEXT DEFAULT NULL,
-	-- Роль из каталога rbac_roles (admin/dp/rp/vp/worker + рантайм-роли).
+	-- Role from the rbac_roles catalog (admin/dp/rp/vp/worker + runtime roles).
 	role TEXT NOT NULL REFERENCES rbac_roles(name),
 	username TEXT NOT NULL,
 	password_hash TEXT NOT NULL,
-	-- Руководитель рабочего (user с ролью vp); для остальных ролей — NULL.
+	-- The worker's manager (a user with the vp role); NULL for other roles.
 	manager_id BIGINT REFERENCES users(id),
-	-- Должность — свободный текст (не тип ресурса).
+	-- Position is free text (not a resource type).
 	position TEXT NOT NULL DEFAULT '',
-	-- NULL означает "в штате с начала времён"; до hire_date рабочий не учитывается.
+	-- NULL means "on staff since the beginning of time"; before hire_date the worker is not counted.
 	hire_date DATE DEFAULT NULL,
-	-- NULL означает "работает поныне"; после termination_date рабочий не учитывается.
+	-- NULL means "still employed"; after termination_date the worker is not counted.
 	termination_date DATE DEFAULT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -108,9 +108,9 @@ CREATE TABLE states (
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- Состояния рабочего (только неприсутствие): одна строка = интервал [start_date, end_date].
--- Отсутствие строк — присутствие. Жёстко удаляются (журнал).
--- EXCLUDE запрещает пересечение состояний одного рабочего (одно состояние в день).
+-- Worker states (absence only): one row = interval [start_date, end_date].
+-- Missing rows mean present; rows are hard-deleted (audit log).
+-- The EXCLUDE constraint forbids overlapping states per worker (one state per day).
 CREATE TABLE user_states (
 	id BIGSERIAL PRIMARY KEY,
 	user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -126,8 +126,8 @@ CREATE TABLE user_states (
 	)
 );
 
--- Перечень пользователей ресурса: у ресурса перечислены его работники.
--- UNIQUE(user_id) — рабочий входит не более чем в один ресурс; членство необязательно.
+-- Resource user list: the resource enumerates its workers.
+-- UNIQUE(user_id) — a worker belongs to at most one resource; membership is optional.
 CREATE TABLE resource_members (
 	resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
 	user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -158,7 +158,7 @@ CREATE TABLE milestones (
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- Конфигурация автосоздания процессов/задач при вставке проекта (V8).
+-- Auto-creation config for processes/tasks on project insert (V8).
 CREATE TABLE project_auto_create (
 	id BIGSERIAL PRIMARY KEY,
 	enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -167,8 +167,8 @@ CREATE TABLE project_auto_create (
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Серверные refresh-сессии (ротация/отзыв refresh-токенов).
--- Храним только SHA-256 токена; сам opaque-токен живёт в HttpOnly-куке.
+-- Server-side refresh sessions (refresh-token rotation/revocation).
+-- Only the SHA-256 of the token is stored; the opaque token lives in an HttpOnly cookie.
 CREATE TABLE refresh_sessions (
     id          BIGSERIAL PRIMARY KEY,
     user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -176,12 +176,12 @@ CREATE TABLE refresh_sessions (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at  TIMESTAMPTZ NOT NULL,
     revoked_at  TIMESTAMPTZ,
-    -- Цепочка ротации: id сессии, которой эта была заменена (для детекта повторного использования).
+    -- Rotation chain: id of the session this one replaced (to detect reuse).
     replaced_by BIGINT REFERENCES refresh_sessions(id)
 );
 
--- Idempotency keys: идемпотентные create-эндпоинты.
--- PK (key, user_id, method, path): изоляция по клиенту/маршруту.
+-- Idempotency keys: idempotent create endpoints.
+-- PK (key, user_id, method, path): isolation per client/route.
 CREATE TABLE idempotency_keys (
     key             TEXT NOT NULL,
     user_id         BIGINT NOT NULL,
@@ -194,13 +194,13 @@ CREATE TABLE idempotency_keys (
     PRIMARY KEY (key, user_id, method, path)
 );
 
--- Комментарии к задачам: цепочки обсуждений (ответы на ответы — через parent_id).
+-- Task comments: discussion threads (replies to replies via parent_id).
 CREATE TABLE task_comments (
 	id BIGSERIAL PRIMARY KEY,
 	task_id BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-	-- Отправитель комментария (автор берётся из контекста авторизации).
+	-- Comment author (taken from the auth context).
 	author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-	-- Ответ на другой комментарий той же задачи; NULL — корневой комментарий.
+	-- Reply to another comment on the same task; NULL — a root comment.
 	parent_id BIGINT REFERENCES task_comments(id) ON DELETE CASCADE,
 	content TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -208,9 +208,9 @@ CREATE TABLE task_comments (
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- Матрица прав (rbac_role_rules) и определения маршрутных проверок
--- (rbac_route_policies) конфигурируются в рантайме: источник истины — БД,
--- движок (интерпретация скоупов, реестр kind'ов) остаётся кодом.
+-- The rights matrix (rbac_role_rules) and route-policy definitions
+-- (rbac_route_policies) are configured at runtime: the source of truth is the DB,
+-- while the engine (scope interpretation, kind registry) stays in code.
 CREATE TABLE rbac_role_rules (
     id          BIGSERIAL PRIMARY KEY,
     role        TEXT NOT NULL REFERENCES rbac_roles(name),
@@ -220,14 +220,14 @@ CREATE TABLE rbac_role_rules (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at  TIMESTAMPTZ,
-    updated_by  BIGINT,        -- пользователь, внёсший последнее изменение (из JWT)
+    updated_by  BIGINT,        -- user who made the last change (from JWT)
     UNIQUE (role, resource, action)
 );
 
 CREATE TABLE rbac_route_policies (
-    name        TEXT PRIMARY KEY,  -- имя, на которое ссылаются маршруты (mw.Check("project.create"))
+    name        TEXT PRIMARY KEY,  -- name routes reference (mw.Check("project.create"))
     kind        TEXT NOT NULL,     -- list|entity|create|owner_match|author_or
-    params      JSONB NOT NULL,    -- параметры kind'а (схема — реестр kind'ов в коде)
+    params      JSONB NOT NULL,    -- kind params (schema — the kind registry in code)
     active      BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),

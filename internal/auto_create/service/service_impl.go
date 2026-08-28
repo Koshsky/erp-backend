@@ -41,7 +41,7 @@ func (s *AutoCreateService) GetConfig(ctx context.Context) (*dto.AutoCreateConfi
 }
 
 // SaveConfig replaces the auto-create config; validates shape and that all
-// referenced owners/resources exist (иначе автосоздание проекта упадёт на FK).
+// referenced owners/resources exist (otherwise the auto-created project would fail on an FK).
 func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateConfig) error {
 	ctx, end := s.tracer.Start(ctx, "autocreate.SaveConfig")
 	defer end(nil)
