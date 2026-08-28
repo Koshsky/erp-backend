@@ -38,11 +38,12 @@ type KindInfo struct {
 
 // Route policy kind codes.
 const (
-	kindList       = "list"
-	kindEntity     = "entity"
-	kindCreate     = "create"
-	kindOwnerMatch = "owner_match"
-	kindAuthorOr   = "author_or"
+	kindList         = "list"
+	kindEntity       = "entity"
+	kindCreate       = "create"
+	kindOwnerMatch   = "owner_match"
+	kindAuthorOr     = "author_or"
+	kindParentAction = "parent_action"
 )
 
 // Kind parameter keys (JSONB).
@@ -92,11 +93,12 @@ const (
 
 //nolint:gochecknoglobals // kind registry (mechanisms; static)
 var kindRegistry = map[string]KindBuilder{
-	kindList:       buildList,
-	kindEntity:     buildEntity,
-	kindCreate:     buildCreate,
-	kindOwnerMatch: buildOwnerMatch,
-	kindAuthorOr:   buildAuthorOr,
+	kindList:         buildList,
+	kindEntity:       buildEntity,
+	kindCreate:       buildCreate,
+	kindOwnerMatch:   buildOwnerMatch,
+	kindAuthorOr:     buildAuthorOr,
+	kindParentAction: buildParentAction,
 }
 
 //nolint:gochecknoglobals // kind parameter schemas (mirror the builders)
@@ -131,6 +133,12 @@ var kindParamSchemas = map[string][]ParamInfo{
 		{Key: paramAuthorIDParam, Type: paramTypeString, Required: true},
 		{Key: paramRightResource, Type: paramTypeString, Required: true},
 		{Key: paramRightAction, Type: paramTypeString, Required: true},
+	},
+	kindParentAction: {
+		{Key: paramResource, Type: paramTypeString, Required: true},
+		{Key: paramAction, Type: paramTypeString, Required: true},
+		{Key: paramParentResource, Type: paramTypeString, Required: true},
+		{Key: paramParentFrom, Type: paramTypeString, Required: true},
 	},
 }
 
@@ -508,6 +516,57 @@ func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	}, nil
 }
 
+// buildParentAction — an action on a child entity authorized by the parent
+// entity from the body: used by bulk endpoints without a :id path parameter
+// (/task/order, /process/order), whose request carries the parent id
+// (process_id / project_id). Matches the matrix for the child entity against
+// the parent's owner chain.
+func buildParentAction(params map[string]any) (func(*rbac.CheckCtx) error, error) {
+	resName, err := strParam(params, paramResource, true)
+	if err != nil {
+		return nil, kindError(kindParentAction, paramResource, err)
+	}
+	res, ok := ParseResource(resName)
+	if !ok {
+		return nil, kindError(kindParentAction, paramResource, fmt.Errorf("неизвестный ресурс %q", resName))
+	}
+	actName, err := strParam(params, paramAction, true)
+	if err != nil {
+		return nil, kindError(kindParentAction, paramAction, err)
+	}
+	act, ok := ParseAction(actName)
+	if !ok {
+		return nil, kindError(kindParentAction, paramAction, fmt.Errorf("неизвестное действие %q", actName))
+	}
+	parentResName, err := strParam(params, paramParentResource, true)
+	if err != nil {
+		return nil, kindError(kindParentAction, paramParentResource, err)
+	}
+	parentRes, ok := ParseResource(parentResName)
+	if !ok {
+		return nil, kindError(kindParentAction, paramParentResource, fmt.Errorf("неизвестный ресурс %q", parentResName))
+	}
+	parentFrom, err := strParam(params, paramParentFrom, true)
+	if err != nil {
+		return nil, kindError(kindParentAction, paramParentFrom, err)
+	}
+
+	return func(rc *rbac.CheckCtx) error {
+		parentID, bodyErr := rc.BodyID(parentFrom)
+		if bodyErr != nil {
+			return bodyErr
+		}
+		owners, ownerErr := rc.Owners(parentRes, parentID)
+		if ownerErr != nil {
+			return ownerErr
+		}
+		if !Authorize(rc.User.Role, res, act, owners, rc.User.ID) {
+			return errors.ErrForbidden
+		}
+		return nil
+	}, nil
+}
+
 // CommentDeleteCheck — comment deletion: the author always, others by task
 // update right (a wrapper of the author_or kind; kept for tests).
 func CommentDeleteCheck() func(*rbac.CheckCtx) error {
@@ -653,6 +712,18 @@ var defaultRouteSpecs = []RouteSpec{
 		Kind:   kindEntity,
 		Params: map[string]any{paramResource: resProcess, paramAction: actDelete, paramOwner: ownerModeID},
 	},
+	{
+		// Bulk reorder: the request carries the parent project id in the body
+		// (no :id path param) — authorized via the project owner chain.
+		Name: "process.order",
+		Kind: kindParentAction,
+		Params: map[string]any{
+			paramResource:       resProcess,
+			paramAction:         actUpdate,
+			paramParentResource: resProject,
+			paramParentFrom:     bodyKeyProjectID,
+		},
+	},
 	{Name: "task.list", Kind: kindList, Params: map[string]any{paramResource: resTask, paramQueryKey: bodyKeyOwnerID}},
 	{
 		Name:   "task.view",
@@ -677,6 +748,18 @@ var defaultRouteSpecs = []RouteSpec{
 		Name:   "task.delete",
 		Kind:   kindEntity,
 		Params: map[string]any{paramResource: resTask, paramAction: actDelete, paramOwner: ownerModeID},
+	},
+	{
+		// Bulk reorder: the request carries the parent process id in the body
+		// (no :id path param) — authorized via the process owner chain.
+		Name: "task.order",
+		Kind: kindParentAction,
+		Params: map[string]any{
+			paramResource:       resTask,
+			paramAction:         actUpdate,
+			paramParentResource: resProcess,
+			paramParentFrom:     bodyKeyProcessID,
+		},
 	},
 	{
 		Name:   "milestone.list",
@@ -873,7 +956,7 @@ func DefaultRouteSpecs() []RouteSpec {
 // Kinds returns the catalog of kinds and their parameters.
 func Kinds() []KindInfo {
 	infos := make([]KindInfo, 0, len(kindRegistry))
-	for _, name := range []string{kindList, kindEntity, kindCreate, kindOwnerMatch, kindAuthorOr} {
+	for _, name := range []string{kindList, kindEntity, kindCreate, kindOwnerMatch, kindAuthorOr, kindParentAction} {
 		infos = append(infos, KindInfo{Name: name, Params: kindParamSchemas[name]})
 	}
 	return infos

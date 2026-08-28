@@ -83,6 +83,8 @@ INSERT INTO rbac_role_rules (role, resource, action, scope) VALUES
 -- SEED: route policies (name → kind + params)
 -- =============================================
 INSERT INTO rbac_route_policies (name, kind, params) VALUES
+    ('process.order', 'parent_action', '{"resource":"process","action":"update","parent_resource":"project","parent_from":"project_id"}'),
+    ('task.order',    'parent_action', '{"resource":"task","action":"update","parent_resource":"process","parent_from":"process_id"}'),
     -- projects
     ('project.list',    'list',   '{"resource":"project","query_key":"owner_id"}'),
     ('project.view',    'entity', '{"resource":"project","action":"view","owner":"id"}'),

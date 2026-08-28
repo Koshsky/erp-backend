@@ -197,6 +197,26 @@ func TestValidateSpec(t *testing.T) {
 			"author_resource": "comment", "author_id_param": "comment_id",
 			"right_resource": "task", "right_action": "update",
 		}},
+		{
+			Name: "b.task.order",
+			Kind: "parent_action",
+			Params: map[string]any{
+				"resource":        "task",
+				"action":          "update",
+				"parent_resource": "process",
+				"parent_from":     "process_id",
+			},
+		},
+		{
+			Name: "b.process.order",
+			Kind: "parent_action",
+			Params: map[string]any{
+				"resource":        "process",
+				"action":          "update",
+				"parent_resource": "project",
+				"parent_from":     "project_id",
+			},
+		},
 	}
 	for _, spec := range valid {
 		if err := policies.ValidateSpec(spec); err != nil {
@@ -246,6 +266,24 @@ func TestValidateSpec(t *testing.T) {
 			"right_resource": "task", "right_action": "edit",
 		}}},
 		{
+			"parent_action: parent_from без parent_resource",
+			policies.RouteSpec{Name: "x", Kind: "parent_action", Params: map[string]any{
+				"resource": "task", "action": "update", "parent_from": "process_id",
+			}},
+		},
+		{
+			"parent_action: неизвестный родитель",
+			policies.RouteSpec{Name: "x", Kind: "parent_action", Params: map[string]any{
+				"resource": "task", "action": "update", "parent_resource": "nope", "parent_from": "process_id",
+			}},
+		},
+		{
+			"parent_action: неизвестное действие",
+			policies.RouteSpec{Name: "x", Kind: "parent_action", Params: map[string]any{
+				"resource": "task", "action": "edit", "parent_resource": "process", "parent_from": "process_id",
+			}},
+		},
+		{
 			"имя с пробелами",
 			policies.RouteSpec{
 				Name:   " x ",
@@ -287,8 +325,8 @@ func TestValidateSpec(t *testing.T) {
 func TestKinds(t *testing.T) {
 	t.Parallel()
 	infos := policies.Kinds()
-	if len(infos) != 5 {
-		t.Fatalf("Kinds() = %d; want 5", len(infos))
+	if len(infos) != 6 {
+		t.Fatalf("Kinds() = %d; want 6", len(infos))
 	}
 	seen := map[string]bool{}
 	for _, k := range infos {
@@ -297,7 +335,7 @@ func TestKinds(t *testing.T) {
 			t.Errorf("kind %s без схемы параметров", k.Name)
 		}
 	}
-	for _, name := range []string{"list", "entity", "create", "owner_match", "author_or"} {
+	for _, name := range []string{"list", "entity", "create", "owner_match", "author_or", "parent_action"} {
 		if !seen[name] {
 			t.Errorf("в Kinds() нет kind'а %s", name)
 		}

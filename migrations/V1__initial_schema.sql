@@ -232,7 +232,7 @@ CREATE TABLE rbac_role_rules (
 
 CREATE TABLE rbac_route_policies (
     name        TEXT PRIMARY KEY,  -- name routes reference (mw.Check("project.create"))
-    kind        TEXT NOT NULL,     -- list|entity|create|owner_match|author_or
+    kind        TEXT NOT NULL,     -- list|entity|create|owner_match|author_or|parent_action
     params      JSONB NOT NULL,    -- kind params (schema — the kind registry in code)
     active      BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
