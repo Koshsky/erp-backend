@@ -20,7 +20,7 @@ type ProjectService interface {
 		project dto.CreateProjectRequest,
 		userID int64,
 		role string,
-	) (*dto.ProjectResponse, error)
+	) (*dto.CreateProjectResponse, error)
 	UpdateProject(ctx context.Context, id int64, project dto.UpdateProjectRequest) (*dto.ProjectResponse, error)
 	DeleteProject(ctx context.Context, id int64) error
 }

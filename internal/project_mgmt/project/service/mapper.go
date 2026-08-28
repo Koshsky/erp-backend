@@ -38,6 +38,30 @@ func (m *ProjectMapper) ToDTOs(projects []domain.Project) []dto.ProjectResponse 
 	return responses
 }
 
+// ToCreateDTO builds the create response: the project plus what the
+// auto-create template added to it (counts fetched after the insert).
+func (m *ProjectMapper) ToCreateDTO(
+	project *domain.Project,
+	counts domain.AutoCreatedCounts,
+) *dto.CreateProjectResponse {
+	if project == nil {
+		return nil
+	}
+	return &dto.CreateProjectResponse{
+		ID:        project.ID,
+		OwnerID:   project.OwnerID,
+		Code:      project.Code,
+		StartDate: date.From(project.StartDate),
+		EndDate:   date.From(project.EndDate),
+		Priority:  project.Priority,
+		AutoCreated: dto.AutoCreatedCounts{
+			Processes:   counts.Processes,
+			Tasks:       counts.Tasks,
+			Assignments: counts.Assignments,
+		},
+	}
+}
+
 func (m *ProjectMapper) ToDomainFromCreate(req dto.CreateProjectRequest) domain.Project {
 	return domain.Project{
 		OwnerID:   req.OwnerID,

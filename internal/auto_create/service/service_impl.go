@@ -77,11 +77,42 @@ func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateC
 	return s.repository.UpsertConfig(ctx, cfg)
 }
 
+// Limits protecting project creation from a pathological template: the DB
+// trigger (V8) applies the whole template atomically inside the project INSERT
+// transaction, so an unbounded template is a self-inflicted DoS on every new
+// project. The frontend mirrors these limits in its own validation.
+const (
+	maxProcesses             = 20
+	maxTasksPerProcess       = 50
+	maxResourcesPerTask      = 10
+	maxAssignmentsTotal      = 500
+	maxQuantityPerAssignment = 99
+)
+
 func validateConfig(cfg *dto.AutoCreateConfig) error {
+	if len(cfg.Processes) > maxProcesses {
+		return errors.NewValidationError(fmt.Sprintf(
+			"слишком много процессов: максимум %d", maxProcesses,
+		))
+	}
+	totalAssignments := 0
 	for pi, p := range cfg.Processes {
+		if len(p.Tasks) > maxTasksPerProcess {
+			return errors.NewValidationError(fmt.Sprintf(
+				"процесс %d: слишком много задач: максимум %d", pi+1, maxTasksPerProcess,
+			))
+		}
 		if err := validateProcess(p, pi); err != nil {
 			return err
 		}
+		for _, t := range p.Tasks {
+			totalAssignments += len(t.Resources)
+		}
+	}
+	if totalAssignments > maxAssignmentsTotal {
+		return errors.NewValidationError(fmt.Sprintf(
+			"слишком много назначений ресурсов: максимум %d", maxAssignmentsTotal,
+		))
 	}
 	return nil
 }
@@ -104,6 +135,12 @@ func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 			fmt.Sprintf("процесс «%s», задача %d: название не заполнено", processTitle, ti+1),
 		)
 	}
+	if len(t.Resources) > maxResourcesPerTask {
+		return errors.NewValidationError(
+			fmt.Sprintf("процесс «%s», задача %d: слишком много ресурсов: максимум %d",
+				processTitle, ti+1, maxResourcesPerTask),
+		)
+	}
 	seen := make(map[int64]struct{}, len(t.Resources))
 	for ri, res := range t.Resources {
 		if err := validateResource(t.Title, res, ri, seen); err != nil {
@@ -122,6 +159,14 @@ func validateResource(taskTitle string, res dto.ResourceBinding, ri int, seen ma
 	if res.Quantity <= 0 {
 		return errors.NewValidationError(
 			fmt.Sprintf("задача «%s», ресурс %d: количество должно быть больше 0", taskTitle, ri+1),
+		)
+	}
+	if res.Quantity > maxQuantityPerAssignment {
+		return errors.NewValidationError(
+			fmt.Sprintf(
+				"задача «%s», ресурс %d: количество не должно превышать %d",
+				taskTitle, ri+1, maxQuantityPerAssignment,
+			),
 		)
 	}
 	if _, dup := seen[res.ResourceID]; dup {

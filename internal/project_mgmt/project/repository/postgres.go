@@ -44,7 +44,7 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errapi.Conflict("project with this code already exists")
 		}
-		return nil, errapi.MapPgConstraint(err)
+		return nil, mapProjectCreateError(err)
 	}
 
 	mapped := mapProject(created)
@@ -131,6 +131,21 @@ func mapProject(row sqlc.Project) domain.Project {
 		EndDate:   row.EndDate,
 		Priority:  int(row.Priority),
 	}
+}
+
+// AutoCreatedCounts returns what the auto-create trigger (V8) created for the
+// project on insert (processes/tasks/assignments). All zero when the template
+// is disabled or empty.
+func (r *ProjectRepository) AutoCreatedCounts(ctx context.Context, projectID int64) (domain.AutoCreatedCounts, error) {
+	row, err := r.db.CountAutoCreatedEntities(ctx, projectID)
+	if err != nil {
+		return domain.AutoCreatedCounts{}, err
+	}
+	return domain.AutoCreatedCounts{
+		Processes:   row.Processes,
+		Tasks:       row.Tasks,
+		Assignments: row.Assignments,
+	}, nil
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

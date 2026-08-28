@@ -65,3 +65,20 @@ SELECT COALESCE(owner_id, 0)::bigint AS owner_id
 FROM projects
 WHERE id = @id::bigint
 	AND deleted_at IS NULL;
+
+-- name: CountAutoCreatedEntities :one
+-- The auto-create trigger (V8) fills a project with processes/tasks/assignments
+-- from the template on insert. Counts reflect what the trigger effectively
+-- created (all zero when the template is disabled or empty).
+SELECT
+  (SELECT COUNT(*) FROM processes
+     WHERE project_id = @project_id::bigint AND deleted_at IS NULL) AS processes,
+  (SELECT COUNT(*) FROM tasks t
+     JOIN processes p ON p.id = t.process_id
+     WHERE p.project_id = @project_id::bigint
+       AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS tasks,
+  (SELECT COUNT(*) FROM assignments a
+     JOIN tasks t ON t.id = a.task_id
+     JOIN processes p ON p.id = t.process_id
+     WHERE p.project_id = @project_id::bigint
+       AND a.deleted_at IS NULL AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS assignments;

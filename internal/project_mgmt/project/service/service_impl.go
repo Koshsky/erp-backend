@@ -32,13 +32,14 @@ func NewProjectService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.P
 }
 
 // CreateProject creates a project. The middleware checked permissions; here
-// only owner normalization: rp always becomes the owner.
+// only owner normalization: rp always becomes the owner. The response also
+// reports what the auto-create template (DB trigger V8) added to the project.
 func (s *ProjectService) CreateProject(
 	ctx context.Context,
 	req dto.CreateProjectRequest,
 	userID int64,
 	role string,
-) (*dto.ProjectResponse, error) {
+) (*dto.CreateProjectResponse, error) {
 	ctx, end := s.tracer.Start(ctx, "project.CreateProject")
 	defer end(nil)
 
@@ -57,7 +58,12 @@ func (s *ProjectService) CreateProject(
 		return nil, err
 	}
 
-	return s.mapper.ToDTO(created), nil
+	counts, err := s.repository.AutoCreatedCounts(ctx, created.ID)
+	if err != nil {
+		// Non-critical feedback: the project itself was created fine.
+		s.logger.WarnContext(ctx, "auto-create counts unavailable", "project_id", created.ID, "error", err)
+	}
+	return s.mapper.ToCreateDTO(created, counts), nil
 }
 
 func (s *ProjectService) FindProject(ctx context.Context, id int64) (*dto.ProjectResponse, error) {

@@ -12,6 +12,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAutoCreatedEntities = `-- name: CountAutoCreatedEntities :one
+SELECT
+  (SELECT COUNT(*) FROM processes
+     WHERE project_id = $1::bigint AND deleted_at IS NULL) AS processes,
+  (SELECT COUNT(*) FROM tasks t
+     JOIN processes p ON p.id = t.process_id
+     WHERE p.project_id = $1::bigint
+       AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS tasks,
+  (SELECT COUNT(*) FROM assignments a
+     JOIN tasks t ON t.id = a.task_id
+     JOIN processes p ON p.id = t.process_id
+     WHERE p.project_id = $1::bigint
+       AND a.deleted_at IS NULL AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS assignments
+`
+
+type CountAutoCreatedEntitiesRow struct {
+	Processes   int64 `json:"processes"`
+	Tasks       int64 `json:"tasks"`
+	Assignments int64 `json:"assignments"`
+}
+
+// The auto-create trigger (V8) fills a project with processes/tasks/assignments
+// from the template on insert. Counts reflect what the trigger effectively
+// created (all zero when the template is disabled or empty).
+func (q *Queries) CountAutoCreatedEntities(ctx context.Context, projectID int64) (CountAutoCreatedEntitiesRow, error) {
+	row := q.db.QueryRow(ctx, countAutoCreatedEntities, projectID)
+	var i CountAutoCreatedEntitiesRow
+	err := row.Scan(&i.Processes, &i.Tasks, &i.Assignments)
+	return i, err
+}
+
 const countProjects = `-- name: CountProjects :one
 SELECT COUNT(*)
 FROM projects

@@ -99,6 +99,15 @@ definitions:
           $ref: '#/definitions/dto.ProcessTemplate'
         type: array
     type: object
+  dto.AutoCreatedCounts:
+    properties:
+      assignments:
+        type: integer
+      processes:
+        type: integer
+      tasks:
+        type: integer
+    type: object
   dto.AvailabilityPeriod:
     properties:
       available:
@@ -240,6 +249,23 @@ definitions:
       start_date:
         example: "2026-01-01"
         format: date
+        type: string
+    type: object
+  dto.CreateProjectResponse:
+    properties:
+      auto_created:
+        $ref: '#/definitions/dto.AutoCreatedCounts'
+      code:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        type: integer
+      priority:
+        type: integer
+      start_date:
         type: string
     type: object
   dto.CreateResourceRequest:
@@ -2290,7 +2316,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProjectResponse'
+                  $ref: '#/definitions/dto.CreateProjectResponse'
                 error:
                   type: object
               type: object

@@ -2059,7 +2059,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProjectResponse"
+                                            "$ref": "#/definitions/dto.CreateProjectResponse"
                                         },
                                         "error": {
                                             "type": "object"
@@ -6197,6 +6197,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AutoCreatedCounts": {
+            "type": "object",
+            "properties": {
+                "assignments": {
+                    "type": "integer"
+                },
+                "processes": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.AvailabilityPeriod": {
             "type": "object",
             "properties": {
@@ -6391,6 +6405,32 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                }
+            }
+        },
+        "dto.CreateProjectResponse": {
+            "type": "object",
+            "properties": {
+                "auto_created": {
+                    "$ref": "#/definitions/dto.AutoCreatedCounts"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
                 }
             }
         },
