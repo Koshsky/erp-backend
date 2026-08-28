@@ -6084,6 +6084,12 @@ const docTemplate = `{
         "dto.AdminUserResponse": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "description": "Account registration time (email/username created at).",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-08-28T07:00:00Z"
+                },
                 "first_name": {
                     "type": "string",
                     "example": "Иван"

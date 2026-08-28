@@ -119,6 +119,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 			Position:        u.Position,
 			HireDate:        u.HireDate,
 			TerminationDate: u.TerminationDate,
+			CreatedAt:       u.CreatedAt,
 			PasswordHash:    hash,
 		})
 	}

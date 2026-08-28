@@ -1,6 +1,10 @@
 package dto
 
-import "github.com/Koshsky/erp-backend/pkg/date"
+import (
+	"time"
+
+	"github.com/Koshsky/erp-backend/pkg/date"
+)
 
 // UserResponse — user data (incl. worker profile fields).
 type UserResponse struct {
@@ -18,6 +22,8 @@ type UserResponse struct {
 	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`
 	// PasswordHash never serializes in the regular response (only AdminUserResponse).
 	PasswordHash string `json:"-"`
+	// CreatedAt never serializes in the regular response (only AdminUserResponse).
+	CreatedAt time.Time `json:"-"`
 }
 
 // CreateUserResult — the created user; password is returned once,
@@ -38,9 +44,11 @@ type AdminUserResponse struct {
 	Role            string     `json:"role"                    example:"worker"`
 	ManagerID       *int64     `json:"manager_id"              example:"5"`
 	Position        string     `json:"position"                example:"Инженер 2 категории"`
-	HireDate        *date.Date `json:"hire_date"               example:"2024-01-15"           format:"date"`
-	TerminationDate *date.Date `json:"termination_date"        example:"2026-12-31"           format:"date"`
-	PasswordHash    string     `json:"password_hash,omitempty" example:"$2a$10$..."`
+	HireDate        *date.Date `json:"hire_date"               example:"2024-01-15"     format:"date"`
+	TerminationDate *date.Date `json:"termination_date"        example:"2026-12-31"     format:"date"`
+	// Account registration time (email/username created at).
+	CreatedAt    time.Time `json:"created_at" example:"2026-08-28T07:00:00Z" format:"date-time"`
+	PasswordHash string    `json:"password_hash,omitempty" example:"$2a$10$..."`
 }
 
 // ResetPasswordResponse — newly generated password (shown once).

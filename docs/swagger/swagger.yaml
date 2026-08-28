@@ -17,6 +17,11 @@ definitions:
     type: object
   dto.AdminUserResponse:
     properties:
+      created_at:
+        description: Account registration time (email/username created at).
+        example: "2026-08-28T07:00:00Z"
+        format: date-time
+        type: string
       first_name:
         example: Иван
         type: string

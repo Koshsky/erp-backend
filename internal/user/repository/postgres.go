@@ -397,6 +397,7 @@ func mapUser(row sqlc.User) domain.User {
 		Position:        row.Position,
 		HireDate:        fromDate(row.HireDate),
 		TerminationDate: fromDate(row.TerminationDate),
+		CreatedAt:       row.CreatedAt,
 	}
 }
 

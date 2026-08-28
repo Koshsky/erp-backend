@@ -31,6 +31,7 @@ func (m *UserMapper) ToDTO(user *domain.User) *dto.UserResponse {
 		HireDate:        datePtr(user.HireDate),
 		TerminationDate: datePtr(user.TerminationDate),
 		PasswordHash:    user.PasswordHash,
+		CreatedAt:       user.CreatedAt,
 	}
 }
 

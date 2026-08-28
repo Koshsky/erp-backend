@@ -68,6 +68,8 @@ type User struct {
 	Position        string
 	HireDate        *time.Time
 	TerminationDate *time.Time
+	// Account registration time.
+	CreatedAt time.Time
 }
 
 // FullName returns the full name "Last First Middle" (without empty parts).
