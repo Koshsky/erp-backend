@@ -148,6 +148,33 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	response.NoContent(c)
 }
 
+// ReorderProcesses handles the request to reorder all processes of one project.
+//
+//	@Tags			Processes
+//	@Summary		Reorder processes
+//	@Description	Rewrite the order of all active processes of a project (the request carries the complete ordered id list)
+//	@Security		ApiKeyAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			order	body	dto.ReorderProcessRequest	true	"New process order"
+//	@Success		204
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Router			/process/order [put]
+func (h *ProcessHandler) ReorderProcesses(c *gin.Context) {
+	var order dto.ReorderProcessRequest
+	if err := c.ShouldBindJSON(&order); err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.ReorderProcesses(c.Request.Context(), order); err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.NoContent(c)
+}
+
 // UpdateProcess handles the request to update a process.
 //
 //	@Tags			Processes

@@ -33,22 +33,26 @@ AND deleted_at IS NULL;
 -- name: ListProcessesByProjectIDs :many
 SELECT * FROM processes
 WHERE project_id = ANY(@project_ids::bigint[])
-AND deleted_at IS NULL;
+AND deleted_at IS NULL
+ORDER BY sort_order ASC, id ASC;
 
 -- name: ListMilestonesByProcessIDs :many
 SELECT * FROM milestones
 WHERE process_id = ANY(@process_ids::bigint[])
-AND deleted_at IS NULL;
+AND deleted_at IS NULL
+ORDER BY id ASC;
 
 -- name: ListTasksByProcessIDs :many
 SELECT * FROM tasks
 WHERE process_id = ANY(@process_ids::bigint[])
-AND deleted_at IS NULL;
+AND deleted_at IS NULL
+ORDER BY sort_order ASC, id ASC;
 
 -- name: ListAssignmentsByTaskIDs :many
 SELECT * FROM assignments
 WHERE task_id = ANY(@task_ids::bigint[])
-AND deleted_at IS NULL;
+AND deleted_at IS NULL
+ORDER BY id ASC;
 
 -- name: ListTaskCommentCountsByTaskIDs :many
 SELECT task_id, COUNT(*)::bigint AS comments_count

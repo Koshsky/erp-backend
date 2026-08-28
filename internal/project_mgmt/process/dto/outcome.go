@@ -9,4 +9,13 @@ type ProcessResponse struct {
 	Title     string    `json:"title"      example:"Инсталляция"`
 	StartDate date.Date `json:"start_date" example:"2026-01-01"  format:"date"`
 	EndDate   date.Date `json:"end_date"   example:"2026-02-01"  format:"date"`
+	// Order of the process within its project (ascending display order).
+	Order int `json:"order" example:"1"`
+}
+
+// ReorderProcessRequest — the complete ordered list of the project's active
+// processes; the server rewrites their order values from the list positions.
+type ReorderProcessRequest struct {
+	ProjectID int64   `json:"project_id" example:"1"`
+	IDs       []int64 `json:"ids"`
 }

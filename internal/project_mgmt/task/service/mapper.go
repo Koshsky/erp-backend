@@ -23,6 +23,7 @@ func (m *TaskMapper) ToDTO(task *domain.Task) *dto.TaskResponse {
 		StartDate: date.From(task.StartDate),
 		EndDate:   date.From(task.EndDate),
 		ProcessID: task.ProcessID,
+		Order:     task.SortOrder,
 	}
 }
 

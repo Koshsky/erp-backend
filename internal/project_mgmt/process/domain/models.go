@@ -9,4 +9,5 @@ type Process struct {
 	Title     string    `json:"title"`
 	StartDate time.Time `json:"start_date"`
 	EndDate   time.Time `json:"end_date"`
+	SortOrder int       `json:"order"`
 }

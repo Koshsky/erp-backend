@@ -65,6 +65,10 @@ CREATE TABLE processes (
 	title TEXT NOT NULL,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
+	-- Order of the process within its project (unique per project, see V2). 
+	-- Ascending display order; a distinct order column (not id) so rows can be
+	-- reordered without rewriting their identity.
+	sort_order INTEGER NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	deleted_at TIMESTAMPTZ DEFAULT NULL,
@@ -78,6 +82,8 @@ CREATE TABLE tasks (
 	title TEXT NOT NULL,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
+	-- Order of the task within its process (unique per process, see V2).
+	sort_order INTEGER NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	deleted_at TIMESTAMPTZ DEFAULT NULL,

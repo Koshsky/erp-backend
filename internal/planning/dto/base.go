@@ -19,6 +19,8 @@ type Process struct {
 	OwnerID     *int64    `json:"owner_id"     example:"1"`
 	ProjectID   int64     `json:"project_id"   example:"1"`
 	ProjectCode string    `json:"project_code" example:"КО_001"`
+	// Order of the process within its project (ascending display order).
+	Order int `json:"order" example:"1"`
 }
 
 type Task struct {
@@ -28,6 +30,8 @@ type Task struct {
 	EndDate   date.Date `json:"end_date"   example:"2026-02-01"              format:"date"`
 	ProcessID int64     `json:"process_id" example:"1"`
 	OwnerID   *int64    `json:"owner_id"   example:"1"`
+	// Order of the task within its process (ascending display order).
+	Order int `json:"order" example:"1"`
 }
 
 type Resource struct {

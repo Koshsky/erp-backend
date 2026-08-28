@@ -367,6 +367,10 @@ definitions:
         items:
           $ref: '#/definitions/dto.Milestone'
         type: array
+      order:
+        description: Order of the process within its project (ascending display order).
+        example: 1
+        type: integer
       owner_id:
         example: 1
         type: integer
@@ -426,6 +430,10 @@ definitions:
         format: date
         type: string
       id:
+        example: 1
+        type: integer
+      order:
+        description: Order of the task within its process (ascending display order).
         example: 1
         type: integer
       owner_id:
@@ -532,6 +540,10 @@ definitions:
       id:
         example: 1
         type: integer
+      order:
+        description: Order of the process within its project (ascending display order).
+        example: 1
+        type: integer
       owner_id:
         example: 1
         type: integer
@@ -563,6 +575,10 @@ definitions:
         format: date
         type: string
       id:
+        example: 1
+        type: integer
+      order:
+        description: Order of the process within its project (ascending display order).
         example: 1
         type: integer
       owner_id:
@@ -634,6 +650,26 @@ definitions:
         type: integer
       start_date:
         type: string
+    type: object
+  dto.ReorderProcessRequest:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+      project_id:
+        example: 1
+        type: integer
+    type: object
+  dto.ReorderTaskRequest:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+      process_id:
+        example: 1
+        type: integer
     type: object
   dto.ResetPasswordResponse:
     properties:
@@ -880,6 +916,10 @@ definitions:
       end_date:
         type: string
       id:
+        type: integer
+      order:
+        description: Order of the task within its process (ascending display order).
+        example: 1
         type: integer
       owner_id:
         type: integer
@@ -2242,6 +2282,47 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update process
+      tags:
+      - Processes
+  /process/order:
+    put:
+      consumes:
+      - application/json
+      description: Rewrite the order of all active processes of a project (the request
+        carries the complete ordered id list)
+      parameters:
+      - description: New process order
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReorderProcessRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Reorder processes
       tags:
       - Processes
   /project:
@@ -3677,6 +3758,47 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Delete task comment
+      tags:
+      - Tasks
+  /task/order:
+    put:
+      consumes:
+      - application/json
+      description: Rewrite the order of all active tasks of a process (the request
+        carries the complete ordered id list)
+      parameters:
+      - description: New task order
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReorderTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Reorder tasks
       tags:
       - Tasks
   /timesheet/calendar:

@@ -18,4 +18,5 @@ type TaskService interface {
 	CreateTask(ctx context.Context, task dto.CreateTaskRequest) (*dto.TaskResponse, error)
 	DeleteTask(ctx context.Context, id int64) error
 	UpdateTask(ctx context.Context, id int64, task dto.UpdateTaskRequest) (*dto.TaskResponse, error)
+	ReorderTasks(ctx context.Context, req dto.ReorderTaskRequest) error
 }

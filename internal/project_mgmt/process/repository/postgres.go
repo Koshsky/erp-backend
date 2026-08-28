@@ -124,7 +124,20 @@ func mapProcess(row sqlc.Process) domain.Process {
 		Title:     row.Title,
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
+		SortOrder: int(row.SortOrder),
 	}
+}
+
+// ListProcessIDsByProject returns the active process ids of a project in their
+// display order — to validate a reorder request covers the whole group.
+func (r *ProcessRepository) ListProcessIDsByProject(ctx context.Context, projectID int64) ([]int64, error) {
+	return r.db.ListProcessIdsByProject(ctx, projectID)
+}
+
+// ReorderProcesses rewrites the sort_order of the given process ids by list
+// position (1-based). The caller validates that the ids cover the whole group.
+func (r *ProcessRepository) ReorderProcesses(ctx context.Context, ids []int64) error {
+	return r.db.ReorderProcesses(ctx, ids)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

@@ -1688,6 +1688,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/process/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rewrite the order of all active processes of a project (the request carries the complete ordered id list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Processes"
+                ],
+                "summary": "Reorder processes",
+                "parameters": [
+                    {
+                        "description": "New process order",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReorderProcessRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/process/{id}": {
             "get": {
                 "security": [
@@ -3957,6 +4029,78 @@ const docTemplate = `{
                                 }
                             ]
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/task/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rewrite the order of all active tasks of a process (the request carries the complete ordered id list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Reorder tasks",
+                "parameters": [
+                    {
+                        "description": "New task order",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReorderTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -6571,6 +6715,11 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.Milestone"
                     }
                 },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
+                    "type": "integer",
+                    "example": 1
+                },
                 "owner_id": {
                     "type": "integer",
                     "example": 1
@@ -6651,6 +6800,11 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the task within its process (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6801,6 +6955,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
+                    "type": "integer",
+                    "example": 1
+                },
                 "owner_id": {
                     "type": "integer",
                     "example": 1
@@ -6844,6 +7003,11 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6945,6 +7109,36 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ReorderProcessRequest": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.ReorderTaskRequest": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -7296,6 +7490,11 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "order": {
+                    "description": "Order of the task within its process (ascending display order).",
+                    "type": "integer",
+                    "example": 1
                 },
                 "owner_id": {
                     "type": "integer"

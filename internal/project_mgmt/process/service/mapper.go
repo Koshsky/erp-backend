@@ -23,6 +23,7 @@ func (m *ProcessMapper) ToDTO(process *domain.Process) *dto.ProcessResponse {
 		Title:     process.Title,
 		StartDate: date.From(process.StartDate),
 		EndDate:   date.From(process.EndDate),
+		Order:     process.SortOrder,
 	}
 }
 

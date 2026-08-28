@@ -51,6 +51,7 @@ type Process struct {
 	Title     string      `json:"title"`
 	StartDate time.Time   `json:"start_date"`
 	EndDate   time.Time   `json:"end_date"`
+	SortOrder int32       `json:"sort_order"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
 	DeletedAt **time.Time `json:"deleted_at"`
@@ -151,6 +152,7 @@ type Task struct {
 	Title     string      `json:"title"`
 	StartDate time.Time   `json:"start_date"`
 	EndDate   time.Time   `json:"end_date"`
+	SortOrder int32       `json:"sort_order"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
 	DeletedAt **time.Time `json:"deleted_at"`

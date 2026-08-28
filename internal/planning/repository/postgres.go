@@ -69,6 +69,7 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, ro
 			ProjectCode: row.ProjectCode,
 			StartDate:   date.From(row.Process.StartDate),
 			EndDate:     date.From(row.Process.EndDate),
+			Order:       int(row.Process.SortOrder),
 		}
 	}
 	return processes, nil
@@ -91,6 +92,7 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 			ProjectID: row.ProjectID,
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
+			Order:     int(row.SortOrder),
 		}
 	}
 	return groupByKey(processes, func(p dto.Process) int64 { return p.ProjectID }), nil
@@ -113,6 +115,7 @@ func (r *PlanningRepository) ListTasksByProcessIDs(
 			Title:     row.Title,
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
+			Order:     int(row.SortOrder),
 		}
 	}
 	return groupByKey(tasks, func(t dto.Task) int64 { return t.ProcessID }), nil

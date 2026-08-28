@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -123,4 +124,34 @@ func (s *TaskService) ListTasks(
 		return nil, 0, err
 	}
 	return s.mapper.ToDTOs(rows), total, nil
+}
+
+// ReorderTasks applies a new order to all active tasks of a process: the
+// request carries the complete ordered id list, the server validates it covers
+// the whole group and rewrites sort_order by list position.
+func (s *TaskService) ReorderTasks(
+	ctx context.Context,
+	req dto.ReorderTaskRequest,
+) error {
+	ctx, end := s.tracer.Start(ctx, "task.ReorderTasks")
+	defer end(nil)
+
+	if len(req.IDs) == 0 {
+		return errors.NewValidationError("список id задач пуст")
+	}
+	if err := order.RejectDuplicateIDs("задач", req.IDs); err != nil {
+		return err
+	}
+
+	current, err := s.repository.ListTaskIDsByProcess(ctx, req.ProcessID)
+	if err != nil {
+		return err
+	}
+	if !order.SameIDSet(req.IDs, current) {
+		return errors.NewValidationError(
+			"список должен содержать все активные задачи процесса без изменений состава",
+		)
+	}
+
+	return s.repository.ReorderTasks(ctx, req.IDs)
 }

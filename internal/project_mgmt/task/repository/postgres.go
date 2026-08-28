@@ -119,7 +119,20 @@ func mapTask(row sqlc.Task) domain.Task {
 		Title:     row.Title,
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
+		SortOrder: int(row.SortOrder),
 	}
+}
+
+// ListTaskIDsByProcess returns the active task ids of a process in their
+// display order — to validate a reorder request covers the whole group.
+func (r *TaskRepository) ListTaskIDsByProcess(ctx context.Context, processID int64) ([]int64, error) {
+	return r.db.ListTaskIdsByProcess(ctx, processID)
+}
+
+// ReorderTasks rewrites the sort_order of the given task ids by list position
+// (1-based). The caller validates that the ids cover the whole group.
+func (r *TaskRepository) ReorderTasks(ctx context.Context, ids []int64) error {
+	return r.db.ReorderTasks(ctx, ids)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -109,6 +110,36 @@ func (s *ProcessService) DeleteProcess(ctx context.Context, id int64) error {
 	}
 
 	return s.repository.DeleteProcess(ctx, id)
+}
+
+// ReorderProcesses applies a new order to all active processes of a project:
+// the request carries the complete ordered id list, the server validates it
+// covers the whole group and rewrites sort_order by list position.
+func (s *ProcessService) ReorderProcesses(
+	ctx context.Context,
+	req dto.ReorderProcessRequest,
+) error {
+	ctx, end := s.tracer.Start(ctx, "process.ReorderProcesses")
+	defer end(nil)
+
+	if len(req.IDs) == 0 {
+		return errors.NewValidationError("список id процессов пуст")
+	}
+	if err := order.RejectDuplicateIDs("процессов", req.IDs); err != nil {
+		return err
+	}
+
+	current, err := s.repository.ListProcessIDsByProject(ctx, req.ProjectID)
+	if err != nil {
+		return err
+	}
+	if !order.SameIDSet(req.IDs, current) {
+		return errors.NewValidationError(
+			"список должен содержать все активные процессы проекта без изменений состава",
+		)
+	}
+
+	return s.repository.ReorderProcesses(ctx, req.IDs)
 }
 
 func (s *ProcessService) ListProcesses(

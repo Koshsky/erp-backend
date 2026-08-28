@@ -19,4 +19,6 @@ type ProcessRepository interface {
 		limit, offset int,
 	) ([]domain.Process, error)
 	CountProcesses(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
+	ListProcessIDsByProject(ctx context.Context, projectID int64) ([]int64, error)
+	ReorderProcesses(ctx context.Context, ids []int64) error
 }
