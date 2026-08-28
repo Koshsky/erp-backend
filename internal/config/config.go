@@ -182,5 +182,12 @@ func applyEnv(cfg *Config) error {
 		return fmt.Errorf("JWT_REFRESH_KEY is required")
 	}
 
+	// TRACING_ENDPOINT overrides the OTLP exporter endpoint (dev: host-run air
+	// reaches the in-docker Jaeger collector via its published port; kept empty
+	// in the full-stack docker run, which uses the in-network "jaeger:4317").
+	if endpoint := getEnv("TRACING_ENDPOINT", ""); endpoint != "" {
+		cfg.Tracing.ExporterEndpoint = endpoint
+	}
+
 	return nil
 }
