@@ -11,6 +11,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/auto_create/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
 type AutoCreateService struct {
@@ -121,10 +122,23 @@ func validateProcess(p dto.ProcessTemplate, pi int) error {
 	if strings.TrimSpace(p.Title) == "" {
 		return errors.NewValidationError(fmt.Sprintf("процесс %d: название не заполнено", pi+1))
 	}
+	if err := validateTemplateColor(p.Color, fmt.Sprintf("процесс %d", pi+1)); err != nil {
+		return err
+	}
 	for ti, t := range p.Tasks {
 		if err := validateTask(p.Title, t, ti); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// validateTemplateColor validates an optional #RRGGBB color of a template
+// entry (process/task); the prefix names the entry in the user-facing message.
+func validateTemplateColor(color *string, prefix string) error {
+	v := &validator.Validator{}
+	if err := v.ValidateOptionalColor(color, "color"); err != nil {
+		return errors.NewValidationError(fmt.Sprintf("%s: %s", prefix, err.Error()))
 	}
 	return nil
 }
@@ -134,6 +148,9 @@ func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 		return errors.NewValidationError(
 			fmt.Sprintf("процесс «%s», задача %d: название не заполнено", processTitle, ti+1),
 		)
+	}
+	if err := validateTemplateColor(t.Color, fmt.Sprintf("процесс «%s», задача %d", processTitle, ti+1)); err != nil {
+		return err
 	}
 	if len(t.Resources) > maxResourcesPerTask {
 		return errors.NewValidationError(

@@ -42,6 +42,7 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 			ID:        row.ID,
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Code:      row.Code,
+			Color:     nullable.StringPtr(row.Color),
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
 			Priority:  int(row.Priority),
@@ -64,6 +65,7 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, ro
 		processes[i] = dto.Process{
 			ID:          row.Process.ID,
 			Title:       row.Process.Title,
+			Color:       nullable.StringPtr(row.Process.Color),
 			OwnerID:     nullable.Int64Ptr(row.Process.OwnerID),
 			ProjectID:   row.Process.ProjectID,
 			ProjectCode: row.ProjectCode,
@@ -88,6 +90,7 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 		processes[i] = dto.Process{
 			ID:        row.ID,
 			Title:     row.Title,
+			Color:     nullable.StringPtr(row.Color),
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			ProjectID: row.ProjectID,
 			StartDate: date.From(row.StartDate),
@@ -113,6 +116,7 @@ func (r *PlanningRepository) ListTasksByProcessIDs(
 			ProcessID: row.ProcessID,
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Title:     row.Title,
+			Color:     nullable.StringPtr(row.Color),
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
 			Order:     int(row.SortOrder),
@@ -136,6 +140,7 @@ func (r *PlanningRepository) ListMilestonesByProcessIDs(
 			ProcessID: row.ProcessID,
 			Title:     row.Title,
 			Content:   row.Content,
+			Color:     nullable.StringPtr(row.Color),
 			Date:      date.From(row.Date),
 		}
 	}
@@ -202,6 +207,7 @@ func (r *PlanningRepository) ListResources(ctx context.Context) ([]dto.Resource,
 			ID:    row.ID,
 			Title: row.Title,
 			Code:  row.Code,
+			Color: nullable.StringPtr(row.Color),
 		}
 		result = append(result, r)
 	}

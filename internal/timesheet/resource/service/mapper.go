@@ -22,6 +22,7 @@ func (m *ResourceMapper) ToDTO(resource *domain.Resource) *dto.ResourceResponse 
 		ID:             resource.ID,
 		Code:           resource.Code,
 		Title:          resource.Title,
+		Color:          resource.Color,
 		OwnerID:        resource.OwnerID,
 		EmployeesCount: resource.EmployeesCount,
 	}
@@ -43,6 +44,7 @@ func (m *ResourceMapper) ToDomainFromCreate(req dto.CreateResourceRequest) domai
 	return domain.Resource{
 		Code:    req.Code,
 		Title:   req.Title,
+		Color:   req.Color,
 		OwnerID: req.OwnerID,
 	}
 }
@@ -57,6 +59,13 @@ func (m *ResourceMapper) ApplyUpdateToDomain(resource *domain.Resource, req dto.
 	}
 	if req.Title != nil {
 		resource.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			resource.Color = nil
+		} else {
+			resource.Color = req.Color
+		}
 	}
 	if req.OwnerID != nil {
 		resource.OwnerID = req.OwnerID

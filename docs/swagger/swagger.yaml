@@ -197,6 +197,9 @@ definitions:
     type: object
   dto.CreateMilestoneRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Приедут с России1
         type: string
@@ -213,6 +216,9 @@ definitions:
     type: object
   dto.CreateProcessRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -236,6 +242,9 @@ definitions:
       code:
         example: КО_001
         type: string
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -257,6 +266,8 @@ definitions:
         $ref: '#/definitions/dto.AutoCreatedCounts'
       code:
         type: string
+      color:
+        type: string
       end_date:
         type: string
       id:
@@ -272,6 +283,9 @@ definitions:
     properties:
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       owner_id:
         example: 3
@@ -294,6 +308,9 @@ definitions:
     type: object
   dto.CreateTaskRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -356,6 +373,9 @@ definitions:
     type: object
   dto.DetailedProcess:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -394,6 +414,9 @@ definitions:
     type: object
   dto.DetailedProject:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -421,6 +444,9 @@ definitions:
     type: object
   dto.DetailedTask:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       comments_count:
         description: Number of active comments on the task (for the badge on the diagram).
         example: 3
@@ -483,6 +509,9 @@ definitions:
     type: object
   dto.Milestone:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Начало работ по проекту
         type: string
@@ -502,6 +531,9 @@ definitions:
     type: object
   dto.MilestoneResponse:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Приедут с России1
         type: string
@@ -533,6 +565,9 @@ definitions:
     type: object
   dto.Process:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -570,6 +605,9 @@ definitions:
     type: object
   dto.ProcessResponse:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -597,17 +635,25 @@ definitions:
     type: object
   dto.ProcessTemplate:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       owner_id:
+        example: 5
         type: integer
       tasks:
         items:
           $ref: '#/definitions/dto.TaskTemplate'
         type: array
       title:
+        example: Инсталляция
         type: string
     type: object
   dto.Project:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -639,6 +685,8 @@ definitions:
   dto.ProjectResponse:
     properties:
       code:
+        type: string
+      color:
         type: string
       end_date:
         type: string
@@ -684,6 +732,9 @@ definitions:
         type: integer
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       id:
         example: 1
@@ -774,6 +825,9 @@ definitions:
     properties:
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       employees_count:
         example: 4
@@ -913,6 +967,8 @@ definitions:
     type: object
   dto.TaskResponse:
     properties:
+      color:
+        type: string
       end_date:
         type: string
       id:
@@ -932,11 +988,15 @@ definitions:
     type: object
   dto.TaskTemplate:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       resources:
         items:
           $ref: '#/definitions/dto.ResourceBinding'
         type: array
       title:
+        example: Пуско-наладочные работы
         type: string
     type: object
   dto.UpdateAssignmentRequest:
@@ -959,6 +1019,9 @@ definitions:
     type: object
   dto.UpdateMilestoneRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Приедут с России1
         type: string
@@ -975,6 +1038,9 @@ definitions:
     type: object
   dto.UpdateProcessRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -998,6 +1064,9 @@ definitions:
       code:
         example: "1"
         type: string
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -1017,6 +1086,9 @@ definitions:
     properties:
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       owner_id:
         example: 3
@@ -1039,6 +1111,9 @@ definitions:
     type: object
   dto.UpdateTaskRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date

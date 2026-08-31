@@ -6,6 +6,7 @@ type Resource struct {
 	ID             int64
 	Title          string
 	Code           string
+	Color          *string
 	OwnerID        *int64
 	EmployeesCount int
 }

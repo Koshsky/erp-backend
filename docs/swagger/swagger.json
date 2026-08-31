@@ -6476,6 +6476,10 @@
         "dto.CreateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6498,6 +6502,10 @@
         "dto.CreateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6529,6 +6537,10 @@
                     "type": "string",
                     "example": "КО_001"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6558,6 +6570,9 @@
                 "code": {
                     "type": "string"
                 },
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
@@ -6581,6 +6596,10 @@
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -6612,6 +6631,10 @@
         "dto.CreateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6697,6 +6720,10 @@
         "dto.DetailedProcess": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6749,6 +6776,10 @@
         "dto.DetailedProject": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6786,6 +6817,10 @@
         "dto.DetailedTask": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "comments_count": {
                     "description": "Number of active comments on the task (for the badge on the diagram).",
                     "type": "integer",
@@ -6874,6 +6909,10 @@
         "dto.Milestone": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Начало работ по проекту"
@@ -6900,6 +6939,10 @@
         "dto.MilestoneResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6943,6 +6986,10 @@
         "dto.Process": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6994,6 +7041,10 @@
         "dto.ProcessResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7030,8 +7081,13 @@
         "dto.ProcessTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "owner_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 5
                 },
                 "tasks": {
                     "type": "array",
@@ -7040,13 +7096,18 @@
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Инсталляция"
                 }
             }
         },
         "dto.Project": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7090,6 +7151,9 @@
             "type": "object",
             "properties": {
                 "code": {
+                    "type": "string"
+                },
+                "color": {
                     "type": "string"
                 },
                 "end_date": {
@@ -7158,6 +7222,10 @@
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "id": {
                     "type": "integer",
@@ -7283,6 +7351,10 @@
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "employees_count": {
                     "type": "integer",
@@ -7482,6 +7554,9 @@
         "dto.TaskResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
@@ -7510,6 +7585,10 @@
         "dto.TaskTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "resources": {
                     "type": "array",
                     "items": {
@@ -7517,7 +7596,8 @@
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
                 }
             }
         },
@@ -7550,6 +7630,10 @@
         "dto.UpdateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -7572,6 +7656,10 @@
         "dto.UpdateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7603,6 +7691,10 @@
                     "type": "string",
                     "example": "1"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7629,6 +7721,10 @@
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -7660,6 +7756,10 @@
         "dto.UpdateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",

@@ -20,6 +20,7 @@ func (m *MilestoneMapper) ToDTO(milestone *domain.Milestone) *dto.MilestoneRespo
 		ID:        milestone.ID,
 		Title:     milestone.Title,
 		Content:   milestone.Content,
+		Color:     milestone.Color,
 		Date:      date.From(milestone.Date),
 		ProcessID: milestone.ProcessID,
 	}
@@ -41,6 +42,7 @@ func (m *MilestoneMapper) ToDomainFromCreate(req dto.CreateMilestoneRequest) dom
 	return domain.Milestone{
 		Title:     req.Title,
 		Content:   req.Content,
+		Color:     req.Color,
 		Date:      req.Date.Time(),
 		ProcessID: req.ProcessID,
 	}
@@ -52,6 +54,13 @@ func (m *MilestoneMapper) ApplyUpdateToDomain(milestone *domain.Milestone, req d
 	}
 	if req.Content != nil {
 		milestone.Content = *req.Content
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			milestone.Color = nil
+		} else {
+			milestone.Color = req.Color
+		}
 	}
 	if req.Date != nil {
 		milestone.Date = req.Date.Time()

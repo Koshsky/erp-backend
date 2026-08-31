@@ -45,7 +45,7 @@ func (q *Queries) ListAssignmentsByTaskIDs(ctx context.Context, taskIds []int64)
 }
 
 const listMilestonesByProcessIDs = `-- name: ListMilestonesByProcessIDs :many
-SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at FROM milestones
+SELECT id, process_id, title, content, color, date, created_at, updated_at, deleted_at FROM milestones
 WHERE process_id = ANY($1::bigint[])
 AND deleted_at IS NULL
 ORDER BY id ASC
@@ -65,6 +65,7 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 			&i.ProcessID,
 			&i.Title,
 			&i.Content,
+			&i.Color,
 			&i.Date,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -81,7 +82,7 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 }
 
 const listProcesses = `-- name: ListProcesses :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.deleted_at, pr.code AS project_code
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.deleted_at, pr.code AS project_code
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
@@ -117,6 +118,7 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 			&i.Process.ProjectID,
 			&i.Process.OwnerID,
 			&i.Process.Title,
+			&i.Process.Color,
 			&i.Process.StartDate,
 			&i.Process.EndDate,
 			&i.Process.SortOrder,
@@ -136,7 +138,7 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 }
 
 const listProcessesByProjectIDs = `-- name: ListProcessesByProjectIDs :many
-SELECT id, project_id, owner_id, title, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM processes
+SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM processes
 WHERE project_id = ANY($1::bigint[])
 AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC
@@ -156,6 +158,7 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 			&i.ProjectID,
 			&i.OwnerID,
 			&i.Title,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
 			&i.SortOrder,
@@ -174,7 +177,7 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
 AND (
     $1::text = 'all' OR
@@ -201,6 +204,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.ID,
 			&i.OwnerID,
 			&i.Code,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
 			&i.Priority,
@@ -219,7 +223,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 }
 
 const listProjectsByIDs = `-- name: ListProjectsByIDs :many
-SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE id = ANY($1::bigint[])
 AND deleted_at IS NULL
 `
@@ -237,6 +241,7 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project
 			&i.ID,
 			&i.OwnerID,
 			&i.Code,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
 			&i.Priority,
@@ -255,7 +260,7 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project
 }
 
 const listResources = `-- name: ListResources :many
-SELECT id, title, code, owner_id, created_at, updated_at, deleted_at FROM resources
+SELECT id, title, code, color, owner_id, created_at, updated_at, deleted_at FROM resources
 WHERE deleted_at IS NULL
 `
 
@@ -272,6 +277,7 @@ func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
 			&i.ID,
 			&i.Title,
 			&i.Code,
+			&i.Color,
 			&i.OwnerID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -321,7 +327,7 @@ func (q *Queries) ListTaskCommentCountsByTaskIDs(ctx context.Context, taskIds []
 }
 
 const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
-SELECT id, process_id, owner_id, title, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM tasks
+SELECT id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM tasks
 WHERE process_id = ANY($1::bigint[])
 AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC
@@ -341,6 +347,7 @@ func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64)
 			&i.ProcessID,
 			&i.OwnerID,
 			&i.Title,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
 			&i.SortOrder,

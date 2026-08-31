@@ -7,6 +7,7 @@ type TaskResponse struct {
 	ProcessID int64     `json:"process_id"`
 	OwnerID   *int64    `json:"owner_id"`
 	Title     string    `json:"title"`
+	Color     *string   `json:"color"`
 	StartDate date.Date `json:"start_date"`
 	EndDate   date.Date `json:"end_date"`
 	// Order of the task within its process (ascending display order).

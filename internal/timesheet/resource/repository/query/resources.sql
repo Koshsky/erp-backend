@@ -1,5 +1,5 @@
 -- name: ListResources :many
-SELECT r.id, r.code, r.title, r.owner_id,
+SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
@@ -10,7 +10,7 @@ WHERE r.deleted_at IS NULL
     (@scope_view::text = 'own' AND r.owner_id = @user_id::bigint)
   )
   AND (@owner_id::bigint = 0 OR r.owner_id = @owner_id::bigint)
-GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 
@@ -25,31 +25,31 @@ WHERE deleted_at IS NULL
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint);
 
 -- name: ListResourcesByOwnerID :many
-SELECT r.id, r.code, r.title, r.owner_id,
+SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.owner_id = @owner_id::bigint
-GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC;
 
 -- name: FindResource :one
-SELECT r.id, r.code, r.title, r.owner_id,
+SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.id = @resource_id::bigint
-GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at;
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at;
 
 -- name: CreateResource :one
 -- Idempotent create by business key code: if an active code already exists
 -- we insert nothing; the calling code (repository) turns the conflict into 409.
-INSERT INTO resources (title, code, owner_id)
-VALUES (@title, @code, @owner_id)
+INSERT INTO resources (title, code, color, owner_id)
+VALUES (@title, @code, @color, @owner_id)
 ON CONFLICT (code) WHERE deleted_at IS NULL
 DO NOTHING
 RETURNING *;
@@ -64,6 +64,7 @@ UPDATE resources
 SET
 	title = @title,
 	code = @code,
+	color = @color,
 	owner_id = @owner_id,
 	updated_at = NOW()
 WHERE id = @resource_id

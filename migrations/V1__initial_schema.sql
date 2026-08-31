@@ -48,6 +48,8 @@ CREATE TABLE projects (
 	id BIGSERIAL PRIMARY KEY,
 	owner_id BIGINT REFERENCES users(id),
 	code TEXT NOT NULL,
+	-- Optional entity color (#RRGGBB, NULL — standard color on the frontend).
+	color TEXT,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
 	priority INTEGER NOT NULL,
@@ -63,6 +65,8 @@ CREATE TABLE processes (
 	project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
 	owner_id BIGINT REFERENCES users(id),
 	title TEXT NOT NULL,
+	-- Optional entity color (#RRGGBB, NULL — standard color on the frontend).
+	color TEXT,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
 	-- Order of the process within its project (unique per project, see V2). 
@@ -80,6 +84,8 @@ CREATE TABLE tasks (
 	process_id BIGINT NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
 	owner_id BIGINT REFERENCES users(id),
 	title TEXT NOT NULL,
+	-- Optional entity color (#RRGGBB, NULL — standard color on the frontend).
+	color TEXT,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
 	-- Order of the task within its process (unique per process, see V2).
@@ -95,6 +101,8 @@ CREATE TABLE resources (
 	id BIGSERIAL PRIMARY KEY,
 	title TEXT NOT NULL,
 	code TEXT NOT NULL,
+	-- Optional resource color (#RRGGBB, NULL — standard color on the frontend).
+	color TEXT,
 	-- Resource owner (user account) is required.
 	owner_id BIGINT NOT NULL REFERENCES users(id),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -158,6 +166,8 @@ CREATE TABLE milestones (
 	process_id BIGINT NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
 	title TEXT NOT NULL,
 	content TEXT NOT NULL,
+	-- Optional entity color (#RRGGBB, NULL — standard color on the frontend).
+	color TEXT,
 	date DATE NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

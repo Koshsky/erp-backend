@@ -20,6 +20,7 @@ func (m *ProjectMapper) ToDTO(project *domain.Project) *dto.ProjectResponse {
 		ID:        project.ID,
 		OwnerID:   project.OwnerID,
 		Code:      project.Code,
+		Color:     project.Color,
 		StartDate: date.From(project.StartDate),
 		EndDate:   date.From(project.EndDate),
 		Priority:  project.Priority,
@@ -51,6 +52,7 @@ func (m *ProjectMapper) ToCreateDTO(
 		ID:        project.ID,
 		OwnerID:   project.OwnerID,
 		Code:      project.Code,
+		Color:     project.Color,
 		StartDate: date.From(project.StartDate),
 		EndDate:   date.From(project.EndDate),
 		Priority:  project.Priority,
@@ -66,6 +68,7 @@ func (m *ProjectMapper) ToDomainFromCreate(req dto.CreateProjectRequest) domain.
 	return domain.Project{
 		OwnerID:   req.OwnerID,
 		Code:      req.Code,
+		Color:     req.Color,
 		StartDate: req.StartDate.Time(),
 		EndDate:   req.EndDate.Time(),
 		Priority:  req.Priority,
@@ -82,6 +85,13 @@ func (m *ProjectMapper) ApplyUpdateToDomain(project *domain.Project, req dto.Upd
 	}
 	if req.Code != nil {
 		project.Code = *req.Code
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			project.Color = nil
+		} else {
+			project.Color = req.Color
+		}
 	}
 	if req.StartDate != nil {
 		project.StartDate = req.StartDate.Time()

@@ -16,6 +16,9 @@ func (v *ProcessValidator) ValidateProcess(process *domain.Process) error {
 	if err := v.ValidateRequiredText(process.Title, "title"); err != nil {
 		return err
 	}
+	if err := v.ValidateOptionalColor(process.Color, "color"); err != nil {
+		return err
+	}
 	if err := v.ValidateRequiredDate(process.StartDate, "start_date"); err != nil {
 		return err
 	}

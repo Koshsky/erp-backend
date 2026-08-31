@@ -6479,6 +6479,10 @@ const docTemplate = `{
         "dto.CreateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6501,6 +6505,10 @@ const docTemplate = `{
         "dto.CreateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6532,6 +6540,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "КО_001"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6561,6 +6573,9 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
@@ -6584,6 +6599,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -6615,6 +6634,10 @@ const docTemplate = `{
         "dto.CreateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6700,6 +6723,10 @@ const docTemplate = `{
         "dto.DetailedProcess": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6752,6 +6779,10 @@ const docTemplate = `{
         "dto.DetailedProject": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6789,6 +6820,10 @@ const docTemplate = `{
         "dto.DetailedTask": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "comments_count": {
                     "description": "Number of active comments on the task (for the badge on the diagram).",
                     "type": "integer",
@@ -6877,6 +6912,10 @@ const docTemplate = `{
         "dto.Milestone": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Начало работ по проекту"
@@ -6903,6 +6942,10 @@ const docTemplate = `{
         "dto.MilestoneResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6946,6 +6989,10 @@ const docTemplate = `{
         "dto.Process": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6997,6 +7044,10 @@ const docTemplate = `{
         "dto.ProcessResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7033,8 +7084,13 @@ const docTemplate = `{
         "dto.ProcessTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "owner_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 5
                 },
                 "tasks": {
                     "type": "array",
@@ -7043,13 +7099,18 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Инсталляция"
                 }
             }
         },
         "dto.Project": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7093,6 +7154,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
+                    "type": "string"
+                },
+                "color": {
                     "type": "string"
                 },
                 "end_date": {
@@ -7161,6 +7225,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "id": {
                     "type": "integer",
@@ -7286,6 +7354,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "employees_count": {
                     "type": "integer",
@@ -7485,6 +7557,9 @@ const docTemplate = `{
         "dto.TaskResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
@@ -7513,6 +7588,10 @@ const docTemplate = `{
         "dto.TaskTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "resources": {
                     "type": "array",
                     "items": {
@@ -7520,7 +7599,8 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
                 }
             }
         },
@@ -7553,6 +7633,10 @@ const docTemplate = `{
         "dto.UpdateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -7575,6 +7659,10 @@ const docTemplate = `{
         "dto.UpdateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7606,6 +7694,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "1"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7632,6 +7724,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -7663,6 +7759,10 @@ const docTemplate = `{
         "dto.UpdateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",

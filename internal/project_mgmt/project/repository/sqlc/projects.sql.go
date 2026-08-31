@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -68,25 +69,27 @@ func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (i
 }
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (code, start_date, end_date, priority, owner_id)
+INSERT INTO projects (code, start_date, end_date, priority, owner_id, color)
 VALUES (
   $1::text,
   $2::date,
   $3::date,
   $4::bigint,
-  $5
+  $5,
+  $6
 )
 ON CONFLICT (code) WHERE deleted_at IS NULL
 DO NOTHING
-RETURNING id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
 `
 
 type CreateProjectParams struct {
-	Code      string      `json:"code"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	Priority  int64       `json:"priority"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
+	Code      string         `json:"code"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	Priority  int64          `json:"priority"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Color     sql.NullString `json:"color"`
 }
 
 // Idempotent create by business key code: if an active code already exists
@@ -98,12 +101,14 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.EndDate,
 		arg.Priority,
 		arg.OwnerID,
+		arg.Color,
 	)
 	var i Project
 	err := row.Scan(
 		&i.ID,
 		&i.OwnerID,
 		&i.Code,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
 		&i.Priority,
@@ -127,7 +132,7 @@ func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
 }
 
 const findProject = `-- name: FindProject :one
-SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
 WHERE deleted_at IS NULL
   AND id = $1::bigint
@@ -140,6 +145,7 @@ func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, er
 		&i.ID,
 		&i.OwnerID,
 		&i.Code,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
 		&i.Priority,
@@ -151,7 +157,7 @@ func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, er
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
 FROM projects
 WHERE deleted_at IS NULL
   AND (
@@ -190,6 +196,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.ID,
 			&i.OwnerID,
 			&i.Code,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
 			&i.Priority,
@@ -225,28 +232,31 @@ const updateProject = `-- name: UpdateProject :one
 UPDATE projects
 SET
 	code = $1,
-	priority = $2::bigint,
-	start_date = $3,
-	end_date = $4,
-  owner_id = $5,
+	color = $2,
+	priority = $3::bigint,
+	start_date = $4,
+	end_date = $5,
+  owner_id = $6,
 	updated_at = NOW()
 WHERE deleted_at IS NULL
-	AND id = $6::bigint
-RETURNING id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at
+	AND id = $7::bigint
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
 `
 
 type UpdateProjectParams struct {
-	Code      string      `json:"code"`
-	Priority  int64       `json:"priority"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	ProjectID int64       `json:"project_id"`
+	Code      string         `json:"code"`
+	Color     sql.NullString `json:"color"`
+	Priority  int64          `json:"priority"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	ProjectID int64          `json:"project_id"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
 	row := q.db.QueryRow(ctx, updateProject,
 		arg.Code,
+		arg.Color,
 		arg.Priority,
 		arg.StartDate,
 		arg.EndDate,
@@ -258,6 +268,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		&i.ID,
 		&i.OwnerID,
 		&i.Code,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
 		&i.Priority,

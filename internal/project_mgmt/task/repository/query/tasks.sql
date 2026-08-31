@@ -1,9 +1,10 @@
 -- name: CreateTask :one
-INSERT INTO tasks (process_id, owner_id, title, start_date, end_date, sort_order)
+INSERT INTO tasks (process_id, owner_id, title, color, start_date, end_date, sort_order)
 VALUES (
 	@process_id,
 	@owner_id,
 	@title,
+	@color,
 	@start_date,
 	@end_date,
 	-- New task goes to the end of its process group.
@@ -53,6 +54,7 @@ SET
 	process_id = @process_id,
 	owner_id = @owner_id,
 	title = @title,
+	color = @color,
 	start_date = @start_date,
 	end_date = @end_date,
 	updated_at = NOW()

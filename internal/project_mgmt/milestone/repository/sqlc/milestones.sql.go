@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -38,16 +39,17 @@ func (q *Queries) CountMilestones(ctx context.Context, arg CountMilestonesParams
 }
 
 const createMilestone = `-- name: CreateMilestone :one
-INSERT INTO milestones (process_id, title, content, date)
-VALUES ($1, $2, $3, $4)
-RETURNING id, process_id, title, content, date, created_at, updated_at, deleted_at
+INSERT INTO milestones (process_id, title, content, color, date)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, process_id, title, content, color, date, created_at, updated_at, deleted_at
 `
 
 type CreateMilestoneParams struct {
-	ProcessID int64     `json:"process_id"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	Date      time.Time `json:"date"`
+	ProcessID int64          `json:"process_id"`
+	Title     string         `json:"title"`
+	Content   string         `json:"content"`
+	Color     sql.NullString `json:"color"`
+	Date      time.Time      `json:"date"`
 }
 
 func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams) (Milestone, error) {
@@ -55,6 +57,7 @@ func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams
 		arg.ProcessID,
 		arg.Title,
 		arg.Content,
+		arg.Color,
 		arg.Date,
 	)
 	var i Milestone
@@ -63,6 +66,7 @@ func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams
 		&i.ProcessID,
 		&i.Title,
 		&i.Content,
+		&i.Color,
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -84,7 +88,7 @@ func (q *Queries) DeleteMilestone(ctx context.Context, milestoneID int64) error 
 }
 
 const findMilestone = `-- name: FindMilestone :one
-SELECT id, process_id, title, content, date, created_at, updated_at, deleted_at
+SELECT id, process_id, title, content, color, date, created_at, updated_at, deleted_at
 FROM milestones
 WHERE id = $1
 	AND deleted_at IS NULL
@@ -98,6 +102,7 @@ func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milesto
 		&i.ProcessID,
 		&i.Title,
 		&i.Content,
+		&i.Color,
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -107,7 +112,7 @@ func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milesto
 }
 
 const listMilestones = `-- name: ListMilestones :many
-SELECT m.id, m.process_id, m.title, m.content, m.date, m.created_at, m.updated_at, m.deleted_at
+SELECT m.id, m.process_id, m.title, m.content, m.color, m.date, m.created_at, m.updated_at, m.deleted_at
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
@@ -150,6 +155,7 @@ func (q *Queries) ListMilestones(ctx context.Context, arg ListMilestonesParams) 
 			&i.ProcessID,
 			&i.Title,
 			&i.Content,
+			&i.Color,
 			&i.Date,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -195,19 +201,21 @@ SET
 	process_id = $1,
 	title = $2,
 	content = $3,
-	date = $4,
+	color = $4,
+	date = $5,
 	updated_at = NOW()
-WHERE id = $5
+WHERE id = $6
 	AND deleted_at IS NULL
-RETURNING id, process_id, title, content, date, created_at, updated_at, deleted_at
+RETURNING id, process_id, title, content, color, date, created_at, updated_at, deleted_at
 `
 
 type UpdateMilestoneParams struct {
-	ProcessID   int64     `json:"process_id"`
-	Title       string    `json:"title"`
-	Content     string    `json:"content"`
-	Date        time.Time `json:"date"`
-	MilestoneID int64     `json:"milestone_id"`
+	ProcessID   int64          `json:"process_id"`
+	Title       string         `json:"title"`
+	Content     string         `json:"content"`
+	Color       sql.NullString `json:"color"`
+	Date        time.Time      `json:"date"`
+	MilestoneID int64          `json:"milestone_id"`
 }
 
 func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams) (Milestone, error) {
@@ -215,6 +223,7 @@ func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams
 		arg.ProcessID,
 		arg.Title,
 		arg.Content,
+		arg.Color,
 		arg.Date,
 		arg.MilestoneID,
 	)
@@ -224,6 +233,7 @@ func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams
 		&i.ProcessID,
 		&i.Title,
 		&i.Content,
+		&i.Color,
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,

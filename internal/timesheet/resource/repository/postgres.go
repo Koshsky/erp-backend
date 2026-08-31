@@ -36,6 +36,7 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 	row, err := r.db.CreateResource(ctx, sqlc.CreateResourceParams{
 		Title:   resource.Title,
 		Code:    resource.Code,
+		Color:   nullable.ToString(resource.Color),
 		OwnerID: ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
@@ -60,6 +61,7 @@ func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*domai
 		ID:             row.ID,
 		Title:          row.Title,
 		Code:           row.Code,
+		Color:          nullable.StringPtr(row.Color),
 		OwnerID:        &row.OwnerID,
 		EmployeesCount: int(row.EmployeesCount),
 	}, nil
@@ -70,6 +72,7 @@ func (r *ResourceRepository) UpdateResource(ctx context.Context, resource domain
 		ResourceID: resource.ID,
 		Title:      resource.Title,
 		Code:       resource.Code,
+		Color:      nullable.ToString(resource.Color),
 		OwnerID:    ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
@@ -107,6 +110,7 @@ func (r *ResourceRepository) ListResources(
 			ID:             row.ID,
 			Title:          row.Title,
 			Code:           row.Code,
+			Color:          nullable.StringPtr(row.Color),
 			OwnerID:        &row.OwnerID,
 			EmployeesCount: int(row.EmployeesCount),
 		})
@@ -142,6 +146,7 @@ func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID
 			ID:             row.ID,
 			Title:          row.Title,
 			Code:           row.Code,
+			Color:          nullable.StringPtr(row.Color),
 			OwnerID:        &row.OwnerID,
 			EmployeesCount: int(row.EmployeesCount),
 		})
@@ -160,6 +165,7 @@ func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Re
 		ID:             row.ID,
 		Title:          row.Title,
 		Code:           row.Code,
+		Color:          nullable.StringPtr(row.Color),
 		OwnerID:        &row.OwnerID,
 		EmployeesCount: int(count),
 	}, nil

@@ -36,6 +36,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 		ProcessID: task.ProcessID,
 		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
+		Color:     nullable.ToString(task.Color),
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -63,6 +64,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 		ProcessID: task.ProcessID,
 		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
+		Color:     nullable.ToString(task.Color),
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -119,6 +121,7 @@ func mapTask(row sqlc.Task) domain.Task {
 		ProcessID: row.ProcessID,
 		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		Title:     row.Title,
+		Color:     nullable.StringPtr(row.Color),
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
 		SortOrder: int(row.SortOrder),

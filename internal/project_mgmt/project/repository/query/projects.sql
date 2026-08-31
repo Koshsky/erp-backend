@@ -1,13 +1,14 @@
 -- name: CreateProject :one
 -- Idempotent create by business key code: if an active code already exists
 -- we insert nothing; the calling code (repository) turns the conflict into 409.
-INSERT INTO projects (code, start_date, end_date, priority, owner_id)
+INSERT INTO projects (code, start_date, end_date, priority, owner_id, color)
 VALUES (
   @code::text,
   @start_date::date,
   @end_date::date,
   @priority::bigint,
-  @owner_id
+  @owner_id,
+  @color
 )
 ON CONFLICT (code) WHERE deleted_at IS NULL
 DO NOTHING
@@ -45,6 +46,7 @@ WHERE deleted_at IS NULL
 UPDATE projects
 SET
 	code = @code,
+	color = @color,
 	priority = @priority::bigint,
 	start_date = @start_date,
 	end_date = @end_date,

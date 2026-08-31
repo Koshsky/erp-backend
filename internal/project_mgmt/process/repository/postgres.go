@@ -35,6 +35,7 @@ func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Pr
 	row, err := r.db.CreateProcess(ctx, sqlc.CreateProcessParams{
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
+		Color:     nullable.ToString(process.Color),
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
 		OwnerID:   nullable.ToInt8(process.OwnerID),
@@ -63,6 +64,7 @@ func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Pr
 		OwnerID:   nullable.ToInt8(process.OwnerID),
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
+		Color:     nullable.ToString(process.Color),
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
 	})
@@ -124,6 +126,7 @@ func mapProcess(row sqlc.Process) domain.Process {
 		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		ProjectID: row.ProjectID,
 		Title:     row.Title,
+		Color:     nullable.StringPtr(row.Color),
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
 		SortOrder: int(row.SortOrder),

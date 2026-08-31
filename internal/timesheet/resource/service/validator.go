@@ -21,6 +21,9 @@ func (v *ResourceValidator) ValidateResource(resource *domain.Resource) error {
 	if err := v.ValidateRequiredText(resource.Code, "code"); err != nil {
 		return err
 	}
+	if err := v.ValidateOptionalColor(resource.Color, "color"); err != nil {
+		return err
+	}
 	return v.ValidateRequiredText(resource.Title, "title")
 }
 

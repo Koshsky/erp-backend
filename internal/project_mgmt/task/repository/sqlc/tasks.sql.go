@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -41,25 +42,27 @@ func (q *Queries) CountTasks(ctx context.Context, arg CountTasksParams) (int64, 
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (process_id, owner_id, title, start_date, end_date, sort_order)
+INSERT INTO tasks (process_id, owner_id, title, color, start_date, end_date, sort_order)
 VALUES (
 	$1,
 	$2,
 	$3,
 	$4,
 	$5,
+	$6,
 	-- New task goes to the end of its process group.
 	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks WHERE process_id = $1)
 )
-RETURNING id, process_id, owner_id, title, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+RETURNING id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 `
 
 type CreateTaskParams struct {
-	ProcessID int64       `json:"process_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
+	ProcessID int64          `json:"process_id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Title     string         `json:"title"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -67,6 +70,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.ProcessID,
 		arg.OwnerID,
 		arg.Title,
+		arg.Color,
 		arg.StartDate,
 		arg.EndDate,
 	)
@@ -76,6 +80,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.ProcessID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
 		&i.SortOrder,
@@ -99,7 +104,7 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
 }
 
 const findTask = `-- name: FindTask :one
-SELECT id, process_id, owner_id, title, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+SELECT id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 FROM tasks
 WHERE deleted_at IS NULL
 	AND id = $1::bigint
@@ -113,6 +118,7 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 		&i.ProcessID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
 		&i.SortOrder,
@@ -154,7 +160,7 @@ func (q *Queries) ListTaskIdsByProcess(ctx context.Context, processID int64) ([]
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT t.id, t.process_id, t.owner_id, t.title, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at, t.deleted_at
+SELECT t.id, t.process_id, t.owner_id, t.title, t.color, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at, t.deleted_at
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
@@ -198,6 +204,7 @@ func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, e
 			&i.ProcessID,
 			&i.OwnerID,
 			&i.Title,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
 			&i.SortOrder,
@@ -278,21 +285,23 @@ SET
 	process_id = $1,
 	owner_id = $2,
 	title = $3,
-	start_date = $4,
-	end_date = $5,
+	color = $4,
+	start_date = $5,
+	end_date = $6,
 	updated_at = NOW()
-WHERE id = $6
+WHERE id = $7
 	AND deleted_at IS NULL
-RETURNING id, process_id, owner_id, title, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+RETURNING id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 `
 
 type UpdateTaskParams struct {
-	ProcessID int64       `json:"process_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	TaskID    int64       `json:"task_id"`
+	ProcessID int64          `json:"process_id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Title     string         `json:"title"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	TaskID    int64          `json:"task_id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -300,6 +309,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.ProcessID,
 		arg.OwnerID,
 		arg.Title,
+		arg.Color,
 		arg.StartDate,
 		arg.EndDate,
 		arg.TaskID,
@@ -310,6 +320,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.ProcessID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
 		&i.SortOrder,

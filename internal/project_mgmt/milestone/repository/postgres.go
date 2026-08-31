@@ -11,6 +11,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type MilestoneRepository struct {
@@ -34,6 +35,7 @@ func (r *MilestoneRepository) CreateMilestone(
 		ProcessID: milestone.ProcessID,
 		Title:     milestone.Title,
 		Content:   milestone.Content,
+		Color:     nullable.ToString(milestone.Color),
 		Date:      milestone.Date,
 	})
 	if err != nil {
@@ -64,6 +66,7 @@ func (r *MilestoneRepository) UpdateMilestone(
 		Date:        milestone.Date,
 		Title:       milestone.Title,
 		Content:     milestone.Content,
+		Color:       nullable.ToString(milestone.Color),
 	})
 	if err != nil {
 		return nil, err
@@ -123,6 +126,7 @@ func mapMilestone(row sqlc.Milestone) domain.Milestone {
 		ProcessID: row.ProcessID,
 		Title:     row.Title,
 		Content:   row.Content,
+		Color:     nullable.StringPtr(row.Color),
 		Date:      row.Date,
 	}
 }

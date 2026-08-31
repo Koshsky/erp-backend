@@ -34,6 +34,7 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 	created, err := r.db.CreateProject(ctx, sqlc.CreateProjectParams{
 		Code:      project.Code,
 		OwnerID:   nullable.ToInt8(project.OwnerID),
+		Color:     nullable.ToString(project.Color),
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
 		Priority:  int64(project.Priority),
@@ -66,6 +67,7 @@ func (r *ProjectRepository) UpdateProject(ctx context.Context, project domain.Pr
 		ProjectID: project.ID,
 		OwnerID:   nullable.ToInt8(project.OwnerID),
 		Code:      project.Code,
+		Color:     nullable.ToString(project.Color),
 		Priority:  int64(project.Priority),
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
@@ -127,6 +129,7 @@ func mapProject(row sqlc.Project) domain.Project {
 		ID:        row.ID,
 		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		Code:      row.Code,
+		Color:     nullable.StringPtr(row.Color),
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
 		Priority:  int(row.Priority),

@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -66,28 +67,35 @@ func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) 
 }
 
 const createResource = `-- name: CreateResource :one
-INSERT INTO resources (title, code, owner_id)
-VALUES ($1, $2, $3)
+INSERT INTO resources (title, code, color, owner_id)
+VALUES ($1, $2, $3, $4)
 ON CONFLICT (code) WHERE deleted_at IS NULL
 DO NOTHING
-RETURNING id, title, code, owner_id, created_at, updated_at, deleted_at
+RETURNING id, title, code, color, owner_id, created_at, updated_at, deleted_at
 `
 
 type CreateResourceParams struct {
-	Title   string `json:"title"`
-	Code    string `json:"code"`
-	OwnerID int64  `json:"owner_id"`
+	Title   string         `json:"title"`
+	Code    string         `json:"code"`
+	Color   sql.NullString `json:"color"`
+	OwnerID int64          `json:"owner_id"`
 }
 
 // Idempotent create by business key code: if an active code already exists
 // we insert nothing; the calling code (repository) turns the conflict into 409.
 func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (Resource, error) {
-	row := q.db.QueryRow(ctx, createResource, arg.Title, arg.Code, arg.OwnerID)
+	row := q.db.QueryRow(ctx, createResource,
+		arg.Title,
+		arg.Code,
+		arg.Color,
+		arg.OwnerID,
+	)
 	var i Resource
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
 		&i.Code,
+		&i.Color,
 		&i.OwnerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -109,25 +117,26 @@ func (q *Queries) DeleteResource(ctx context.Context, resourceID int64) error {
 }
 
 const findResource = `-- name: FindResource :one
-SELECT r.id, r.code, r.title, r.owner_id,
+SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.id = $1::bigint
-GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 `
 
 type FindResourceRow struct {
-	ID             int64       `json:"id"`
-	Code           string      `json:"code"`
-	Title          string      `json:"title"`
-	OwnerID        int64       `json:"owner_id"`
-	EmployeesCount int64       `json:"employees_count"`
-	CreatedAt      time.Time   `json:"created_at"`
-	UpdatedAt      time.Time   `json:"updated_at"`
-	DeletedAt      **time.Time `json:"deleted_at"`
+	ID             int64          `json:"id"`
+	Code           string         `json:"code"`
+	Title          string         `json:"title"`
+	Color          sql.NullString `json:"color"`
+	OwnerID        int64          `json:"owner_id"`
+	EmployeesCount int64          `json:"employees_count"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      **time.Time    `json:"deleted_at"`
 }
 
 func (q *Queries) FindResource(ctx context.Context, resourceID int64) (FindResourceRow, error) {
@@ -137,6 +146,7 @@ func (q *Queries) FindResource(ctx context.Context, resourceID int64) (FindResou
 		&i.ID,
 		&i.Code,
 		&i.Title,
+		&i.Color,
 		&i.OwnerID,
 		&i.EmployeesCount,
 		&i.CreatedAt,
@@ -271,7 +281,7 @@ func (q *Queries) ListResourceAbsence(ctx context.Context, arg ListResourceAbsen
 }
 
 const listResources = `-- name: ListResources :many
-SELECT r.id, r.code, r.title, r.owner_id,
+SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
@@ -282,7 +292,7 @@ WHERE r.deleted_at IS NULL
     ($1::text = 'own' AND r.owner_id = $2::bigint)
   )
   AND ($3::bigint = 0 OR r.owner_id = $3::bigint)
-GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
@@ -296,14 +306,15 @@ type ListResourcesParams struct {
 }
 
 type ListResourcesRow struct {
-	ID             int64       `json:"id"`
-	Code           string      `json:"code"`
-	Title          string      `json:"title"`
-	OwnerID        int64       `json:"owner_id"`
-	EmployeesCount int64       `json:"employees_count"`
-	CreatedAt      time.Time   `json:"created_at"`
-	UpdatedAt      time.Time   `json:"updated_at"`
-	DeletedAt      **time.Time `json:"deleted_at"`
+	ID             int64          `json:"id"`
+	Code           string         `json:"code"`
+	Title          string         `json:"title"`
+	Color          sql.NullString `json:"color"`
+	OwnerID        int64          `json:"owner_id"`
+	EmployeesCount int64          `json:"employees_count"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      **time.Time    `json:"deleted_at"`
 }
 
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
@@ -325,6 +336,7 @@ func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([
 			&i.ID,
 			&i.Code,
 			&i.Title,
+			&i.Color,
 			&i.OwnerID,
 			&i.EmployeesCount,
 			&i.CreatedAt,
@@ -342,26 +354,27 @@ func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([
 }
 
 const listResourcesByOwnerID = `-- name: ListResourcesByOwnerID :many
-SELECT r.id, r.code, r.title, r.owner_id,
+SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
     r.created_at, r.updated_at, r.deleted_at
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
 	AND r.owner_id = $1::bigint
-GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC
 `
 
 type ListResourcesByOwnerIDRow struct {
-	ID             int64       `json:"id"`
-	Code           string      `json:"code"`
-	Title          string      `json:"title"`
-	OwnerID        int64       `json:"owner_id"`
-	EmployeesCount int64       `json:"employees_count"`
-	CreatedAt      time.Time   `json:"created_at"`
-	UpdatedAt      time.Time   `json:"updated_at"`
-	DeletedAt      **time.Time `json:"deleted_at"`
+	ID             int64          `json:"id"`
+	Code           string         `json:"code"`
+	Title          string         `json:"title"`
+	Color          sql.NullString `json:"color"`
+	OwnerID        int64          `json:"owner_id"`
+	EmployeesCount int64          `json:"employees_count"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      **time.Time    `json:"deleted_at"`
 }
 
 func (q *Queries) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]ListResourcesByOwnerIDRow, error) {
@@ -377,6 +390,7 @@ func (q *Queries) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]
 			&i.ID,
 			&i.Code,
 			&i.Title,
+			&i.Color,
 			&i.OwnerID,
 			&i.EmployeesCount,
 			&i.CreatedAt,
@@ -428,24 +442,27 @@ UPDATE resources
 SET
 	title = $1,
 	code = $2,
-	owner_id = $3,
+	color = $3,
+	owner_id = $4,
 	updated_at = NOW()
-WHERE id = $4
+WHERE id = $5
     AND deleted_at IS NULL
-RETURNING id, title, code, owner_id, created_at, updated_at, deleted_at
+RETURNING id, title, code, color, owner_id, created_at, updated_at, deleted_at
 `
 
 type UpdateResourceParams struct {
-	Title      string `json:"title"`
-	Code       string `json:"code"`
-	OwnerID    int64  `json:"owner_id"`
-	ResourceID int64  `json:"resource_id"`
+	Title      string         `json:"title"`
+	Code       string         `json:"code"`
+	Color      sql.NullString `json:"color"`
+	OwnerID    int64          `json:"owner_id"`
+	ResourceID int64          `json:"resource_id"`
 }
 
 func (q *Queries) UpdateResource(ctx context.Context, arg UpdateResourceParams) (Resource, error) {
 	row := q.db.QueryRow(ctx, updateResource,
 		arg.Title,
 		arg.Code,
+		arg.Color,
 		arg.OwnerID,
 		arg.ResourceID,
 	)
@@ -454,6 +471,7 @@ func (q *Queries) UpdateResource(ctx context.Context, arg UpdateResourceParams) 
 		&i.ID,
 		&i.Title,
 		&i.Code,
+		&i.Color,
 		&i.OwnerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,

@@ -6,6 +6,7 @@ type ProjectResponse struct {
 	ID        int64     `json:"id"`
 	OwnerID   *int64    `json:"owner_id"`
 	Code      string    `json:"code"`
+	Color     *string   `json:"color"`
 	StartDate date.Date `json:"start_date"`
 	EndDate   date.Date `json:"end_date"`
 	Priority  int       `json:"priority"`
@@ -25,6 +26,7 @@ type CreateProjectResponse struct {
 	ID          int64             `json:"id"`
 	OwnerID     *int64            `json:"owner_id"`
 	Code        string            `json:"code"`
+	Color       *string           `json:"color"`
 	StartDate   date.Date         `json:"start_date"`
 	EndDate     date.Date         `json:"end_date"`
 	Priority    int               `json:"priority"`
