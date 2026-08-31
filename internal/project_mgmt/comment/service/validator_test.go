@@ -9,7 +9,7 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
-// maxCommentContentLen — зеркало лимита сервиса (см. comment/service/validator.go).
+// maxCommentContentLen mirrors the service limit (see comment/service/validator.go).
 const maxCommentContentLen = 4000
 
 func TestCommentValidator(t *testing.T) {

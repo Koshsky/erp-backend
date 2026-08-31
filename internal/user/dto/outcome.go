@@ -1,11 +1,15 @@
 package dto
 
-import "github.com/Koshsky/erp-backend/pkg/date"
+import (
+	"time"
+
+	"github.com/Koshsky/erp-backend/pkg/date"
+)
 
 // UserResponse — user data (incl. worker profile fields).
 type UserResponse struct {
 	ID int64 `json:"id" example:"1"`
-	// Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).
+	// Full name "Last First Middle" (pre-composed, for display).
 	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
 	LastName        string     `json:"last_name"        example:"Иванов"`
 	FirstName       string     `json:"first_name"       example:"Иван"`
@@ -16,34 +20,38 @@ type UserResponse struct {
 	Position        string     `json:"position"         example:"Инженер 2 категории"`
 	HireDate        *date.Date `json:"hire_date"        example:"2024-01-15"           format:"date"`
 	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`
-	// PasswordHash never serializes in the regular response (только AdminUserResponse).
+	// PasswordHash never serializes in the regular response (only AdminUserResponse).
 	PasswordHash string `json:"-"`
+	// CreatedAt never serializes in the regular response (only AdminUserResponse).
+	CreatedAt time.Time `json:"-"`
 }
 
-// CreateUserResult — созданный пользователь; password возвращается один раз,
-// если креды были сгенерированы автоматически.
+// CreateUserResult — the created user; password is returned once,
+// if credentials were generated automatically.
 type CreateUserResult struct {
 	User     UserResponse `json:"user"`
 	Password string       `json:"password,omitempty"`
 }
 
-// AdminUserResponse — пользователь для админ-страницы (включая хеш пароля).
+// AdminUserResponse — user for the admin page (including the password hash).
 type AdminUserResponse struct {
-	ID              int64      `json:"id"                      example:"1"`
-	Name            string     `json:"name"                    example:"Иванов Иван Иванович"`
-	LastName        string     `json:"last_name"               example:"Иванов"`
-	FirstName       string     `json:"first_name"              example:"Иван"`
-	MiddleName      *string    `json:"middle_name"             example:"Иванович"`
-	Username        string     `json:"username"                example:"worker_1"`
-	Role            string     `json:"role"                    example:"worker"`
-	ManagerID       *int64     `json:"manager_id"              example:"5"`
-	Position        string     `json:"position"                example:"Инженер 2 категории"`
-	HireDate        *date.Date `json:"hire_date"               example:"2024-01-15"           format:"date"`
-	TerminationDate *date.Date `json:"termination_date"        example:"2026-12-31"           format:"date"`
-	PasswordHash    string     `json:"password_hash,omitempty" example:"$2a$10$..."`
+	ID              int64      `json:"id"               example:"1"`
+	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
+	LastName        string     `json:"last_name"        example:"Иванов"`
+	FirstName       string     `json:"first_name"       example:"Иван"`
+	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
+	Username        string     `json:"username"         example:"worker_1"`
+	Role            string     `json:"role"             example:"worker"`
+	ManagerID       *int64     `json:"manager_id"       example:"5"`
+	Position        string     `json:"position"         example:"Инженер 2 категории"`
+	HireDate        *date.Date `json:"hire_date"        example:"2024-01-15"           format:"date"`
+	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`
+	// Account registration time (email/username created at).
+	CreatedAt    time.Time `json:"created_at"              example:"2026-08-28T07:00:00Z" format:"date-time"`
+	PasswordHash string    `json:"password_hash,omitempty" example:"$2a$10$..."`
 }
 
-// ResetPasswordResponse — новый сгенерированный пароль (показывается один раз).
+// ResetPasswordResponse — newly generated password (shown once).
 type ResetPasswordResponse struct {
 	Password string `json:"password" example:"Xy9kLm2QrT8wAb3z"`
 }

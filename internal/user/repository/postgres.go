@@ -239,9 +239,9 @@ func (r *UserRepository) SetStateRange(
 		return err
 	}
 
-	// Сливаем смежные/пересекающиеся диапазоны того же состояния в непрерывный:
-	// fn_normalize_user_states() схлопывает соседние интервалы одинакового
-	// (user_id, state_id) сразу в рамках этой транзакции.
+	// Merge adjacent/overlapping ranges of the same state into a continuous one:
+	// fn_normalize_user_states() collapses neighboring intervals with the same
+	// (user_id, state_id) right within this transaction.
 	if err = q.NormalizeUserStates(ctx); err != nil {
 		return err
 	}
@@ -397,6 +397,7 @@ func mapUser(row sqlc.User) domain.User {
 		Position:        row.Position,
 		HireDate:        fromDate(row.HireDate),
 		TerminationDate: fromDate(row.TerminationDate),
+		CreatedAt:       row.CreatedAt,
 	}
 }
 
@@ -439,8 +440,8 @@ func (r *UserRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners,
 	return rbac.Owners{Owner: owner}, nil
 }
 
-// mapUserErr — обёртка над errapi.MapPgConstraint: понятные 4xx для
-// constraint-ошибок (уникальный логин 409, FK роли/менеджера 400, CHECK 400).
+// mapUserErr — a wrapper over errapi.MapPgConstraint: clear 4xx for
+// constraint errors (unique login 409, role/manager FK 400, CHECK 400).
 func mapUserErr(err error) error {
 	return errapi.MapPgConstraint(err)
 }

@@ -228,7 +228,7 @@ INSERT INTO rbac_roles (name, description)
 VALUES ($1::text, $2::text)
 ON CONFLICT (name) DO UPDATE
 SET description = EXCLUDED.description,
-    deleted_at = NULL, -- upsert «оживляет» soft-deleted роль
+    deleted_at = NULL, -- upsert "revives" a soft-deleted role
     updated_at = NOW()
 RETURNING id, name, description
 `
@@ -259,7 +259,7 @@ SET kind = EXCLUDED.kind,
     params = EXCLUDED.params,
     active = EXCLUDED.active,
     updated_by = EXCLUDED.updated_by,
-    deleted_at = NULL, -- upsert «оживляет» soft-deleted строку (reset)
+    deleted_at = NULL, -- upsert "revives" a soft-deleted row (reset)
     updated_at = NOW()
 RETURNING name, kind, params, active, updated_by, updated_at
 `
@@ -307,7 +307,7 @@ VALUES ($1::text, $2::text, $3::text, $4::text, $5)
 ON CONFLICT (role, resource, action) DO UPDATE
 SET scope = EXCLUDED.scope,
     updated_by = EXCLUDED.updated_by,
-    deleted_at = NULL, -- upsert «оживляет» soft-deleted строку (reset/повторная выдача права)
+    deleted_at = NULL, -- upsert "revives" a soft-deleted row (reset/re-grant of a permission)
     updated_at = NOW()
 RETURNING id, role, resource, action, scope, updated_by, updated_at
 `

@@ -1,8 +1,8 @@
 -- =============================================
--- VALIDATION BOUNDARIES: явная ошибка вместо тихого soft-delete.
--- Процесс/задача с датами вне границ родителя отвергаются с кодом 22023
--- (invalid_parameter_value); репозитории превращают его в 400.
--- Вехи, выходящие за границы процесса, обрезаются до границ родителя.
+-- VALIDATION BOUNDARIES: an explicit error instead of a silent soft-delete.
+-- A process/task whose dates fall outside the parent's bounds is rejected with code 22023
+-- (invalid_parameter_value); repositories turn it into 400.
+-- Milestones outside the process bounds are clamped to the parent's bounds.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_processes_validate_within_project_dates()
 RETURNS TRIGGER
@@ -48,7 +48,7 @@ WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_processes_validate_within_project_dates();
 
 -- =============================================
--- Задачи: те же границы, родитель — процесс.
+-- Tasks: the same bounds, parent — process.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_tasks_validate_within_process_dates()
 RETURNS TRIGGER
@@ -94,7 +94,7 @@ WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_tasks_validate_within_process_dates();
 
 -- =============================================
--- Вехи: обрезаем дату вехи, выходящую за границы процесса.
+-- Milestones: clamp the milestone date to the process bounds.
 -- =============================================
 CREATE OR REPLACE FUNCTION fn_milestones_validate_within_process_dates()
 RETURNS TRIGGER

@@ -151,6 +151,33 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	response.NoContent(c)
 }
 
+// ReorderTasks handles the request to reorder all tasks of one process.
+//
+//	@Tags			Tasks
+//	@Summary		Reorder tasks
+//	@Description	Rewrite the order of all active tasks of a process (the request carries the complete ordered id list)
+//	@Security		ApiKeyAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			order	body	dto.ReorderTaskRequest	true	"New task order"
+//	@Success		204
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Router			/task/order [put]
+func (h *TaskHandler) ReorderTasks(c *gin.Context) {
+	var order dto.ReorderTaskRequest
+	if err := c.ShouldBindJSON(&order); err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.ReorderTasks(c.Request.Context(), order); err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.NoContent(c)
+}
+
 // UpdateTask handles the request to update a task.
 //
 //	@Tags			Tasks

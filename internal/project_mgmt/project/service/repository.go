@@ -19,4 +19,5 @@ type ProjectRepository interface {
 		limit, offset int,
 	) ([]domain.Project, error)
 	CountProjects(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
+	AutoCreatedCounts(ctx context.Context, projectID int64) (domain.AutoCreatedCounts, error)
 }

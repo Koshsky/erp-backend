@@ -14,6 +14,9 @@ func (v *ProjectValidator) ValidateProject(project *domain.Project) error {
 	if err := v.ValidateRequiredText(project.Code, "code"); err != nil {
 		return err
 	}
+	if err := v.ValidateOptionalColor(project.Color, "color"); err != nil {
+		return err
+	}
 	if project.Priority < 0 {
 		return errors.NewValidationError("priority must be positive")
 	}

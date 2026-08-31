@@ -81,8 +81,8 @@ func TestCheckEntity(t *testing.T) {
 		{"no user → 401", "", "/1", "task.view", false, http.StatusUnauthorized},
 		{"bad id → 400", testAdmin, "/abc", "task.view", true, http.StatusBadRequest},
 		{"not found → 404", testAdmin, "/10", "task.view", true, http.StatusNotFound},
-		// rp (id 2) — владелец процесса задачи (owners {Project:1, Process:2}):
-		// ancestor = любой владелец по цепочке вверх → доступ есть.
+		// rp (id 2) — owner of the task's process (owners {Project:1, Process:2}):
+		// ancestor = any owner up the chain → access is granted.
 		{"rp — владелец процесса (ancestor) → 200", testRP, "/1", "task.view", true, http.StatusOK},
 		{"rp update → 403 (view-only)", testRP, "/1", "task.update", true, http.StatusForbidden},
 		{"vp views own process → 200", testVP, "/1", "task.view", true, http.StatusOK},
@@ -123,7 +123,7 @@ func TestCheckAssignmentCreate(t *testing.T) {
 		body       string
 		wantStatus int
 	}{
-		// vp (id 2) — владелец процесса задачи (owners {Project:1, Process:2}).
+		// vp (id 2) — owner of the task's process (owners {Project:1, Process:2}).
 		{
 			"vp: task and resource share the owner",
 			testVP,
@@ -132,7 +132,7 @@ func TestCheckAssignmentCreate(t *testing.T) {
 			http.StatusCreated,
 		},
 		{"vp: foreign resource → 403", testVP, 2, `{"task_id":1,"resource_id":5,"quantity":1}`, http.StatusForbidden},
-		// admin — полный доступ (ScopeAll), бизнес-правило владельцев не применяется.
+		// admin — full access (ScopeAll), the owners business rule does not apply.
 		{
 			"admin: foreign resource → 201",
 			testAdmin,

@@ -25,7 +25,7 @@ type UserService struct {
 	tracer     *tracingpkg.Tracer
 }
 
-// maxManagerDepth — страховка от зацикливания при обходе иерархии руководителей.
+// maxManagerDepth — guard against an infinite loop while walking the manager hierarchy.
 const maxManagerDepth = 1000
 
 // NewUserService builds the UserService service.
@@ -49,8 +49,8 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	ctx, end := s.tracer.Start(ctx, "user.ChangePassword")
 	defer end(nil)
 
-	// Политика сложности — до проверки старого пароля (AD-09): формат нового
-	// пароля не раскрывает ничего о текущем.
+	// Complexity policy — checked before the old password (AD-09): the format of
+	// the new password reveals nothing about the current one.
 	if err := creds.ValidatePassword(newPassword); err != nil {
 		return err
 	}
@@ -124,9 +124,9 @@ func (s *UserService) createUserInternal(
 	return &dto.CreateUserResult{User: *s.mapper.ToDTO(created), Password: generated}, nil
 }
 
-// generateUsername строит уникальный login: транслитерация фамилии
-// (last_name); при занятости добавляет числовой суффикс; если фамилию
-// транслитерировать нечего — падение на prefix+случайный суффикс.
+// generateUsername builds a unique login: transliteration of the last name
+// (last_name); if taken, appends a numeric suffix; if there is nothing to
+// transliterate — falls back to prefix+random suffix.
 func (s *UserService) generateUsername(ctx context.Context, name, role string) (string, error) {
 	prefix := "user_"
 	if role == userdomain.Worker {
@@ -313,10 +313,10 @@ func (s *UserService) UpdateManager(
 	return s.mapper.ToDTO(updated), nil
 }
 
-// validateManager проверяет, что назначение руководителя допустимо: не является
-// самим пользователем, руководитель существует и активен, а назначение не
-// создаёт кольцевой зависимости (обход вверх по цепочке manager_id).
-// managerID == nil — сброс, допустимо.
+// validateManager checks that the manager assignment is valid: it is not the
+// user themself, the manager exists and is active, and the assignment does not
+// create a circular dependency (walking up the manager_id chain).
+// managerID == nil — clearing, allowed.
 func (s *UserService) validateManager(ctx context.Context, userID int64, managerID *int64) error {
 	if managerID == nil {
 		return nil

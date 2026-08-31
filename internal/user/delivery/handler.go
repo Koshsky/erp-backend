@@ -62,7 +62,7 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 //	@Param			limit			query		int		false	"Page size (default 50, max 500)"
 //	@Param			role			query		string	false	"Filter by role (e.g. worker)"
 //	@Param			manager_id		query		int		false	"Filter by manager (admin)"
-//	@Param			include_hash	query		bool	false	"Включить password_hash (только admin)"
+//	@Param			include_hash	query		bool	false	"Include password_hash (admin only)"
 //	@Param			offset			query		int		false	"Page offset"
 //	@Success		200				{object}	response.SuccessResponse{data=response.Page{items=[]dto.AdminUserResponse},error=nil}
 //	@Failure		400				{object}	response.ErrorResponse{data=nil}
@@ -119,6 +119,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 			Position:        u.Position,
 			HireDate:        u.HireDate,
 			TerminationDate: u.TerminationDate,
+			CreatedAt:       u.CreatedAt,
 			PasswordHash:    hash,
 		})
 	}
@@ -177,9 +178,9 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	// Создание сотрудников — только admin (worker.create у vp убран из
-	// матрицы). Защитный блок ниже остаётся как оборона от устаревших правил
-	// в БД: если vp всё же получит доступ, чужой manager_id игнорируется.
+	// Creating workers is admin-only (worker.create was removed from the vp
+	// matrix). The guard below remains as defense against stale rules in the
+	// DB: if a vp still gets access, a foreign manager_id is ignored.
 	if user.Role == domain.ProcessOwner {
 		req.ManagerID = &user.ID
 	}
@@ -350,8 +351,8 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 
 	err := h.service.ChangePassword(c.Request.Context(), userID, req.OldPassword, req.NewPassword)
 	if err != nil {
-		// Нарушение политики пароля — отдельный 400 с текстом требований;
-		// остальные ошибки (старый пароль неверен) — generic 400, не раскрываем.
+		// Password policy violation — a separate 400 with the requirements text;
+		// other errors (wrong old password) — generic 400, do not disclose.
 		if stderrors.Is(err, errors.ErrBadRequest) {
 			response.Error(c, h.logger, err)
 			return

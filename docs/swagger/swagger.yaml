@@ -17,6 +17,11 @@ definitions:
     type: object
   dto.AdminUserResponse:
     properties:
+      created_at:
+        description: Account registration time (email/username created at).
+        example: "2026-08-28T07:00:00Z"
+        format: date-time
+        type: string
       first_name:
         example: Иван
         type: string
@@ -93,6 +98,15 @@ definitions:
         items:
           $ref: '#/definitions/dto.ProcessTemplate'
         type: array
+    type: object
+  dto.AutoCreatedCounts:
+    properties:
+      assignments:
+        type: integer
+      processes:
+        type: integer
+      tasks:
+        type: integer
     type: object
   dto.AvailabilityPeriod:
     properties:
@@ -176,12 +190,16 @@ definitions:
         example: Перенести сроки?
         type: string
       parent_id:
-        description: Ответ на другой комментарий той же задачи; пусто — корневой комментарий.
+        description: Reply to another comment of the same task; empty means a root
+          comment.
         example: 3
         type: integer
     type: object
   dto.CreateMilestoneRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Приедут с России1
         type: string
@@ -198,6 +216,9 @@ definitions:
     type: object
   dto.CreateProcessRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -221,6 +242,9 @@ definitions:
       code:
         example: КО_001
         type: string
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -236,10 +260,32 @@ definitions:
         format: date
         type: string
     type: object
+  dto.CreateProjectResponse:
+    properties:
+      auto_created:
+        $ref: '#/definitions/dto.AutoCreatedCounts'
+      code:
+        type: string
+      color:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        type: integer
+      priority:
+        type: integer
+      start_date:
+        type: string
+    type: object
   dto.CreateResourceRequest:
     properties:
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       owner_id:
         example: 3
@@ -262,6 +308,9 @@ definitions:
     type: object
   dto.CreateTaskRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -324,6 +373,9 @@ definitions:
     type: object
   dto.DetailedProcess:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -335,6 +387,10 @@ definitions:
         items:
           $ref: '#/definitions/dto.Milestone'
         type: array
+      order:
+        description: Order of the process within its project (ascending display order).
+        example: 1
+        type: integer
       owner_id:
         example: 1
         type: integer
@@ -358,6 +414,9 @@ definitions:
     type: object
   dto.DetailedProject:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -385,8 +444,11 @@ definitions:
     type: object
   dto.DetailedTask:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       comments_count:
-        description: Количество активных комментариев задачи (для бейджа на диаграмме).
+        description: Number of active comments on the task (for the badge on the diagram).
         example: 3
         type: integer
       end_date:
@@ -394,6 +456,10 @@ definitions:
         format: date
         type: string
       id:
+        example: 1
+        type: integer
+      order:
+        description: Order of the task within its process (ascending display order).
         example: 1
         type: integer
       owner_id:
@@ -443,6 +509,9 @@ definitions:
     type: object
   dto.Milestone:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Начало работ по проекту
         type: string
@@ -462,6 +531,9 @@ definitions:
     type: object
   dto.MilestoneResponse:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Приедут с России1
         type: string
@@ -493,11 +565,18 @@ definitions:
     type: object
   dto.Process:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
         type: string
       id:
+        example: 1
+        type: integer
+      order:
+        description: Order of the process within its project (ascending display order).
         example: 1
         type: integer
       owner_id:
@@ -526,11 +605,18 @@ definitions:
     type: object
   dto.ProcessResponse:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
         type: string
       id:
+        example: 1
+        type: integer
+      order:
+        description: Order of the process within its project (ascending display order).
         example: 1
         type: integer
       owner_id:
@@ -549,17 +635,25 @@ definitions:
     type: object
   dto.ProcessTemplate:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       owner_id:
+        example: 5
         type: integer
       tasks:
         items:
           $ref: '#/definitions/dto.TaskTemplate'
         type: array
       title:
+        example: Инсталляция
         type: string
     type: object
   dto.Project:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -592,6 +686,8 @@ definitions:
     properties:
       code:
         type: string
+      color:
+        type: string
       end_date:
         type: string
       id:
@@ -602,6 +698,26 @@ definitions:
         type: integer
       start_date:
         type: string
+    type: object
+  dto.ReorderProcessRequest:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+      project_id:
+        example: 1
+        type: integer
+    type: object
+  dto.ReorderTaskRequest:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+      process_id:
+        example: 1
+        type: integer
     type: object
   dto.ResetPasswordResponse:
     properties:
@@ -616,6 +732,9 @@ definitions:
         type: integer
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       id:
         example: 1
@@ -706,6 +825,9 @@ definitions:
     properties:
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       employees_count:
         example: 4
@@ -845,9 +967,15 @@ definitions:
     type: object
   dto.TaskResponse:
     properties:
+      color:
+        type: string
       end_date:
         type: string
       id:
+        type: integer
+      order:
+        description: Order of the task within its process (ascending display order).
+        example: 1
         type: integer
       owner_id:
         type: integer
@@ -860,11 +988,15 @@ definitions:
     type: object
   dto.TaskTemplate:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       resources:
         items:
           $ref: '#/definitions/dto.ResourceBinding'
         type: array
       title:
+        example: Пуско-наладочные работы
         type: string
     type: object
   dto.UpdateAssignmentRequest:
@@ -887,6 +1019,9 @@ definitions:
     type: object
   dto.UpdateMilestoneRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       content:
         example: Приедут с России1
         type: string
@@ -903,6 +1038,9 @@ definitions:
     type: object
   dto.UpdateProcessRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -926,6 +1064,9 @@ definitions:
       code:
         example: "1"
         type: string
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -945,6 +1086,9 @@ definitions:
     properties:
       code:
         example: М
+        type: string
+      color:
+        example: '#0f83c4'
         type: string
       owner_id:
         example: 3
@@ -967,6 +1111,9 @@ definitions:
     type: object
   dto.UpdateTaskRequest:
     properties:
+      color:
+        example: '#0f83c4'
+        type: string
       end_date:
         example: "2026-02-01"
         format: date
@@ -1063,7 +1210,7 @@ definitions:
         example: Иванович
         type: string
       name:
-        description: Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).
+        description: Full name "Last First Middle" (pre-composed, for display).
         example: Иванов Иван Иванович
         type: string
       position:
@@ -2212,6 +2359,47 @@ paths:
       summary: Update process
       tags:
       - Processes
+  /process/order:
+    put:
+      consumes:
+      - application/json
+      description: Rewrite the order of all active processes of a project (the request
+        carries the complete ordered id list)
+      parameters:
+      - description: New process order
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReorderProcessRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Reorder processes
+      tags:
+      - Processes
   /project:
     get:
       description: Get a list of all projects
@@ -2284,7 +2472,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.ProjectResponse'
+                  $ref: '#/definitions/dto.CreateProjectResponse'
                 error:
                   type: object
               type: object
@@ -3647,6 +3835,47 @@ paths:
       summary: Delete task comment
       tags:
       - Tasks
+  /task/order:
+    put:
+      consumes:
+      - application/json
+      description: Rewrite the order of all active tasks of a process (the request
+        carries the complete ordered id list)
+      parameters:
+      - description: New task order
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReorderTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Reorder tasks
+      tags:
+      - Tasks
   /timesheet/calendar:
     get:
       description: Get per-day resource availability (capacity/unavailable/available)
@@ -3932,7 +4161,7 @@ paths:
         in: query
         name: manager_id
         type: integer
-      - description: Включить password_hash (только admin)
+      - description: Include password_hash (admin only)
         in: query
         name: include_hash
         type: boolean

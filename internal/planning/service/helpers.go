@@ -174,6 +174,7 @@ func (s *PlanningService) buildTaskResources(
 			ID:           assignment.ResourceID,
 			Title:        res.Title,
 			Code:         res.Code,
+			Color:        res.Color,
 			Quantity:     assignment.Quantity,
 			AssignmentID: assignment.ID,
 		})

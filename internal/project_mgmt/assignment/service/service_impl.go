@@ -104,12 +104,12 @@ func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) erro
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if assignment == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteAssignment(ctx, id)

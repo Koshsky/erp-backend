@@ -37,8 +37,8 @@ func (m *CommentMapper) ToDTOs(comments []domain.Comment) []dto.CommentResponse 
 	return responses
 }
 
-// ToDomainFromCreate собирает комментарий из запроса: автор всегда берётся из
-// контекста авторизации (authorID), а не из тела запроса.
+// ToDomainFromCreate builds a comment from the request: the author always
+// comes from the authorization context (authorID), not from the request body.
 func (m *CommentMapper) ToDomainFromCreate(taskID int64, req dto.CreateCommentRequest, authorID int64) domain.Comment {
 	return domain.Comment{
 		TaskID:   taskID,

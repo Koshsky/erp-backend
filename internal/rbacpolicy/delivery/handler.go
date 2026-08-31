@@ -14,7 +14,7 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
-// RBACHandler — HTTP-слой администрирования политик (все маршруты admin-only).
+// RBACHandler is the HTTP layer for policy administration (all routes are admin-only).
 type RBACHandler struct {
 	logger  *slog.Logger
 	service *service.Service

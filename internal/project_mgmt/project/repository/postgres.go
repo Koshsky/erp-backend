@@ -34,17 +34,18 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 	created, err := r.db.CreateProject(ctx, sqlc.CreateProjectParams{
 		Code:      project.Code,
 		OwnerID:   nullable.ToInt8(project.OwnerID),
+		Color:     nullable.ToString(project.Color),
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
 		Priority:  int64(project.Priority),
 	})
 	if err != nil {
-		// Идемпотентный create: активный code уже существует (ON CONFLICT
-		// ничего не вставил) — это не внутренняя ошибка, а конфликт ключа.
+		// Idempotent create: the active code already exists (ON CONFLICT inserted
+		// nothing) — this is not an internal error but a key conflict.
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errapi.Conflict("project with this code already exists")
 		}
-		return nil, errapi.MapPgConstraint(err)
+		return nil, mapProjectCreateError(err)
 	}
 
 	mapped := mapProject(created)
@@ -66,6 +67,7 @@ func (r *ProjectRepository) UpdateProject(ctx context.Context, project domain.Pr
 		ProjectID: project.ID,
 		OwnerID:   nullable.ToInt8(project.OwnerID),
 		Code:      project.Code,
+		Color:     nullable.ToString(project.Color),
 		Priority:  int64(project.Priority),
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
@@ -127,10 +129,26 @@ func mapProject(row sqlc.Project) domain.Project {
 		ID:        row.ID,
 		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		Code:      row.Code,
+		Color:     nullable.StringPtr(row.Color),
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
 		Priority:  int(row.Priority),
 	}
+}
+
+// AutoCreatedCounts returns what the auto-create trigger (V8) created for the
+// project on insert (processes/tasks/assignments). All zero when the template
+// is disabled or empty.
+func (r *ProjectRepository) AutoCreatedCounts(ctx context.Context, projectID int64) (domain.AutoCreatedCounts, error) {
+	row, err := r.db.CountAutoCreatedEntities(ctx, projectID)
+	if err != nil {
+		return domain.AutoCreatedCounts{}, err
+	}
+	return domain.AutoCreatedCounts{
+		Processes:   row.Processes,
+		Tasks:       row.Tasks,
+		Assignments: row.Assignments,
+	}, nil
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

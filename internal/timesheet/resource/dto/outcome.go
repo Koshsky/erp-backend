@@ -3,11 +3,12 @@ package dto
 import "github.com/Koshsky/erp-backend/pkg/date"
 
 type ResourceResponse struct {
-	ID             int64  `json:"id"              example:"1"`
-	Code           string `json:"code"            example:"М"`
-	Title          string `json:"title"           example:"Монтажник"`
-	OwnerID        *int64 `json:"owner_id"        example:"3"`
-	EmployeesCount int    `json:"employees_count" example:"4"`
+	ID             int64   `json:"id"              example:"1"`
+	Code           string  `json:"code"            example:"М"`
+	Title          string  `json:"title"           example:"Монтажник"`
+	Color          *string `json:"color"           example:"#0f83c4"`
+	OwnerID        *int64  `json:"owner_id"        example:"3"`
+	EmployeesCount int     `json:"employees_count" example:"4"`
 }
 
 // ResourceMemberResponse is a user attached to a resource.

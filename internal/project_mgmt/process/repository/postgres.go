@@ -18,6 +18,7 @@ import (
 
 type ProcessRepository struct {
 	logger *slog.Logger
+	pool   *pgxpool.Pool
 	db     *sqlc.Queries
 }
 
@@ -25,6 +26,7 @@ type ProcessRepository struct {
 func NewProcessRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProcessRepository {
 	return &ProcessRepository{
 		logger: logger,
+		pool:   pool,
 		db:     sqlc.New(pool),
 	}
 }
@@ -33,6 +35,7 @@ func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Pr
 	row, err := r.db.CreateProcess(ctx, sqlc.CreateProcessParams{
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
+		Color:     nullable.ToString(process.Color),
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
 		OwnerID:   nullable.ToInt8(process.OwnerID),
@@ -61,6 +64,7 @@ func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Pr
 		OwnerID:   nullable.ToInt8(process.OwnerID),
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
+		Color:     nullable.ToString(process.Color),
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
 	})
@@ -122,9 +126,39 @@ func mapProcess(row sqlc.Process) domain.Process {
 		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		ProjectID: row.ProjectID,
 		Title:     row.Title,
+		Color:     nullable.StringPtr(row.Color),
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
+		SortOrder: int(row.SortOrder),
 	}
+}
+
+// ListProcessIDsByProject returns the active process ids of a project in their
+// display order — to validate a reorder request covers the whole group.
+func (r *ProcessRepository) ListProcessIDsByProject(ctx context.Context, projectID int64) ([]int64, error) {
+	return r.db.ListProcessIdsByProject(ctx, projectID)
+}
+
+// ReorderProcesses rewrites the sort_order of the given process ids by list
+// position (1-based) in one transaction. The caller validates that the ids
+// cover the whole group. The two-phase UPDATE parks the rows on offset slots
+// first, because a single-statement value swap would transiently violate the
+// partial unique index (project_id, sort_order).
+func (r *ProcessRepository) ReorderProcesses(ctx context.Context, ids []int64) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := r.db.WithTx(tx)
+	if err = q.ReorderProcessesMark(ctx, ids); err != nil {
+		return err
+	}
+	if err = q.ReorderProcessesApply(ctx, ids); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

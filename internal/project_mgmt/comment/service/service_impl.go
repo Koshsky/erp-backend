@@ -35,8 +35,8 @@ func NewCommentService(
 	}
 }
 
-// CreateComment создаёт комментарий задачи: автор (authorID) приходит из
-// контекста авторизации, parent_id — ответ на комментарий той же задачи.
+// CreateComment creates a task comment: the author (authorID) comes from the
+// authorization context, and parent_id is a reply to a comment of the same task.
 func (s *CommentService) CreateComment(
 	ctx context.Context,
 	taskID int64,
@@ -65,8 +65,8 @@ func (s *CommentService) CreateComment(
 	return s.mapper.ToDTO(created), nil
 }
 
-// findValidParent проверяет, что комментарий-родитель существует и принадлежит
-// той же задаче (ответы не могут ссылаться на комментарии чужих задач).
+// findValidParent checks that the parent comment exists and belongs to the
+// same task (replies cannot reference comments of other tasks).
 func (s *CommentService) findValidParent(ctx context.Context, taskID int64, parentID int64) (*domain.Comment, error) {
 	parent, err := s.repository.FindComment(ctx, parentID)
 	if err != nil {
@@ -102,12 +102,12 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID int64) err
 	comment, err := s.repository.FindComment(ctx, commentID)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if comment == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteComment(ctx, commentID)

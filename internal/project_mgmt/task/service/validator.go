@@ -16,6 +16,9 @@ func (v *TaskValidator) ValidateTask(task *domain.Task) error {
 	if err := v.ValidateRequiredText(task.Title, "title"); err != nil {
 		return err
 	}
+	if err := v.ValidateOptionalColor(task.Color, "color"); err != nil {
+		return err
+	}
 	if err := v.ValidateRequiredDate(task.StartDate, "start_date"); err != nil {
 		return err
 	}

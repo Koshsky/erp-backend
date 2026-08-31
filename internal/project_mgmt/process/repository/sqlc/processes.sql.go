@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -40,23 +41,27 @@ func (q *Queries) CountProcesses(ctx context.Context, arg CountProcessesParams) 
 }
 
 const createProcess = `-- name: CreateProcess :one
-INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
+INSERT INTO processes (project_id, title, start_date, end_date, owner_id, color, sort_order)
 VALUES (
 	$1::bigint,
 	$2::text,
 	$3::date,
 	$4::date,
-	$5
+	$5,
+	$6,
+	-- New process goes to the end of its project group.
+	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM processes WHERE project_id = $1::bigint)
 )
-RETURNING id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
+RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 `
 
 type CreateProcessParams struct {
-	ProjectID int64       `json:"project_id"`
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
+	ProjectID int64          `json:"project_id"`
+	Title     string         `json:"title"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Color     sql.NullString `json:"color"`
 }
 
 func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (Process, error) {
@@ -66,6 +71,7 @@ func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (P
 		arg.StartDate,
 		arg.EndDate,
 		arg.OwnerID,
+		arg.Color,
 	)
 	var i Process
 	err := row.Scan(
@@ -73,8 +79,10 @@ func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (P
 		&i.ProjectID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -95,7 +103,7 @@ func (q *Queries) DeleteProcess(ctx context.Context, processID int64) error {
 }
 
 const findProcess = `-- name: FindProcess :one
-SELECT id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
+SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 FROM processes
 WHERE id = $1::bigint
 	AND deleted_at IS NULL
@@ -109,8 +117,10 @@ func (q *Queries) FindProcess(ctx context.Context, id int64) (Process, error) {
 		&i.ProjectID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -118,8 +128,38 @@ func (q *Queries) FindProcess(ctx context.Context, id int64) (Process, error) {
 	return i, err
 }
 
+const listProcessIdsByProject = `-- name: ListProcessIdsByProject :many
+SELECT id
+FROM processes
+WHERE project_id = $1::bigint
+	AND deleted_at IS NULL
+ORDER BY sort_order ASC, id ASC
+`
+
+// Active process ids of a project — to validate a reorder request covers the
+// whole group.
+func (q *Queries) ListProcessIdsByProject(ctx context.Context, projectID int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, listProcessIdsByProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProcesss = `-- name: ListProcesss :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.start_date, p.end_date, p.created_at, p.updated_at, p.deleted_at
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.deleted_at
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
@@ -130,7 +170,7 @@ WHERE p.deleted_at IS NULL
     ($1::text = 'own' AND p.owner_id = $2::bigint)
   )
   AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
-ORDER BY p.id ASC
+ORDER BY p.sort_order ASC, p.id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
 
@@ -162,8 +202,10 @@ func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]P
 			&i.ProjectID,
 			&i.OwnerID,
 			&i.Title,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
+			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -200,32 +242,66 @@ func (q *Queries) OwnerChain(ctx context.Context, id int64) (OwnerChainRow, erro
 	return i, err
 }
 
+const reorderProcessesApply = `-- name: ReorderProcessesApply :exec
+UPDATE processes p
+SET sort_order = x.ord, updated_at = NOW()
+FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE p.id = x.id AND p.deleted_at IS NULL
+`
+
+// Phase 2 of the two-phase reorder: write the final positions. The group is
+// the whole active set of the project (validated by the caller), so no target
+// slot collides with rows outside the group.
+func (q *Queries) ReorderProcessesApply(ctx context.Context, ids []int64) error {
+	_, err := q.db.Exec(ctx, reorderProcessesApply, ids)
+	return err
+}
+
+const reorderProcessesMark = `-- name: ReorderProcessesMark :exec
+UPDATE processes p
+SET sort_order = x.ord + 1000000, updated_at = NOW()
+FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE p.id = x.id AND p.deleted_at IS NULL
+`
+
+// Phase 1 of the two-phase reorder (runs inside one transaction with
+// ReorderProcessesApply): park every process on a temporary offset slot so the
+// follow-up write cannot transiently violate the partial unique index
+// (project_id, sort_order) when values swap. The caller sends the whole group.
+func (q *Queries) ReorderProcessesMark(ctx context.Context, ids []int64) error {
+	_, err := q.db.Exec(ctx, reorderProcessesMark, ids)
+	return err
+}
+
 const updateProcess = `-- name: UpdateProcess :one
 UPDATE processes
 SET
 	title = $1,
-	start_date = $2,
-	end_date = $3,
-	project_id = COALESCE($4, project_id),
-	owner_id = COALESCE($5, owner_id),
+	color = $2,
+	start_date = $3,
+	end_date = $4,
+	project_id = COALESCE($5, project_id),
+	owner_id = COALESCE($6, owner_id),
 	updated_at = NOW()
 WHERE deleted_at IS NULL
-	AND id = $6::bigint
-RETURNING id, project_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
+	AND id = $7::bigint
+RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 `
 
 type UpdateProcessParams struct {
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	ProjectID int64       `json:"project_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	ProcessID int64       `json:"process_id"`
+	Title     string         `json:"title"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	ProjectID int64          `json:"project_id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	ProcessID int64          `json:"process_id"`
 }
 
 func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (Process, error) {
 	row := q.db.QueryRow(ctx, updateProcess,
 		arg.Title,
+		arg.Color,
 		arg.StartDate,
 		arg.EndDate,
 		arg.ProjectID,
@@ -238,8 +314,10 @@ func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (P
 		&i.ProjectID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

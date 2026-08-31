@@ -105,7 +105,7 @@ func (h *ProjectHandler) FindProject(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			project	body		dto.CreateProjectRequest	true	"Project data"
-//	@Success		201		{object}	response.SuccessResponse{data=dto.ProjectResponse,error=nil}
+//	@Success		201		{object}	response.SuccessResponse{data=dto.CreateProjectResponse,error=nil}
 //	@Failure		400		{object}	response.ErrorResponse{data=nil}
 //	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/project [post]

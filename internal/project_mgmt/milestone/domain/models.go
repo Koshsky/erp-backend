@@ -7,5 +7,6 @@ type Milestone struct {
 	ProcessID int64     `json:"process_id"`
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
+	Color     *string   `json:"color"`
 	Date      time.Time `json:"date"`
 }

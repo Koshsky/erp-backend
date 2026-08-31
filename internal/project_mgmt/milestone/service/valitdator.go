@@ -19,5 +19,8 @@ func (v *MilestoneValidator) ValidateMilestone(milestone *domain.Milestone) erro
 	if err := v.ValidateRequiredText(milestone.Content, "content"); err != nil {
 		return err
 	}
+	if err := v.ValidateOptionalColor(milestone.Color, "color"); err != nil {
+		return err
+	}
 	return v.ValidateRequiredDate(milestone.Date, "date")
 }

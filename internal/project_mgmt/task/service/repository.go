@@ -13,4 +13,6 @@ type TaskRepository interface {
 	DeleteTask(ctx context.Context, id int64) error
 	ListTasks(ctx context.Context, userID int64, role string, ownerID int64, limit, offset int) ([]domain.Task, error)
 	CountTasks(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
+	ListTaskIDsByProcess(ctx context.Context, processID int64) ([]int64, error)
+	ReorderTasks(ctx context.Context, ids []int64) error
 }

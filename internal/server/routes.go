@@ -10,8 +10,8 @@
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// Внимание (AD-14): host — плейсхолдер до появления домена; при появлении
-// прод-домена заменить его здесь (вместе с AD-03/AD-11).
+// Note (AD-14): host is a placeholder until a domain appears; once the
+// production domain exists, replace it here (along with AD-03/AD-11).
 //	@host		localhost
 //	@schemes	https
 //	@BasePath	/api/v1
@@ -49,8 +49,8 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	api.Use(a.tracer.GinSpan("middleware.ratelimit.public"))
 	api.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
 
-	// Health: liveness-probe без авторизации. Фронтенд проверяет им
-	// доступность бэкенда перед офлайн-синхронизацией (вместо статики).
+	// Health: liveness probe without authorization. The frontend uses it to
+	// check backend availability before offline sync (instead of static files).
 	api.GET("/health", a.health)
 
 	for _, m := range a.modules {
@@ -60,10 +60,10 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	protected := router.Group("/api/v1")
 	protected.Use(a.tracer.GinSpan("middleware.auth"))
 	protected.Use(a.authMw.RequireAuth())
-	// Idempotency-Key: pass-through без заголовка; с заголовком — идемпотентный
-	// create (replay-безопасно). Монтируется глобально на protected, т.к. ключ
-	// скоуплен по (key, user_id, method, path) и активен только при наличии
-	// Idempotency-Key в заголовке.
+	// Idempotency-Key: pass-through without a header; with a header — idempotent
+	// create (replay-safe). Mounted globally on protected, since the key is
+	// scoped by (key, user_id, method, path) and active only when an
+	// Idempotency-Key header is present.
 	protected.Use(a.tracer.GinSpan("middleware.idempotency"))
 	protected.Use(a.idemMw.Handler())
 	protected.Use(a.tracer.GinSpan("middleware.ratelimit.user"))
@@ -85,7 +85,7 @@ func (a *App) userKey(c *gin.Context) string {
 	return strconv.FormatInt(id, 10)
 }
 
-// health отвечает 200 с состоянием статус-пробы «ok».
+// health responds 200 with the liveness-probe status "ok".
 func (a *App) health(c *gin.Context) {
 	response.OK(c, gin.H{"status": "ok"})
 }

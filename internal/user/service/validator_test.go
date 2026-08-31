@@ -8,9 +8,9 @@ import (
 	"github.com/Koshsky/erp-backend/internal/user/service"
 )
 
-// Роли конфигурируются каталогом rbac_roles: валидируется только форма,
-// существование проверяет FK (V17) — поэтому новая роль проходит, а пустая
-// и слишком длинная — нет.
+// Roles are configured by the rbac_roles catalog: only the form is validated,
+// existence is checked by the FK (V17) — so a new role passes, while an empty
+// or overly long one does not.
 func TestValidateUserRole(t *testing.T) {
 	t.Parallel()
 	v := &service.UserValidator{}

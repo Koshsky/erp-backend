@@ -1688,6 +1688,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/process/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rewrite the order of all active processes of a project (the request carries the complete ordered id list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Processes"
+                ],
+                "summary": "Reorder processes",
+                "parameters": [
+                    {
+                        "description": "New process order",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReorderProcessRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/process/{id}": {
             "get": {
                 "security": [
@@ -2059,7 +2131,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProjectResponse"
+                                            "$ref": "#/definitions/dto.CreateProjectResponse"
                                         },
                                         "error": {
                                             "type": "object"
@@ -3997,6 +4069,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/task/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rewrite the order of all active tasks of a process (the request carries the complete ordered id list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Reorder tasks",
+                "parameters": [
+                    {
+                        "description": "New task order",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReorderTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/task/{id}": {
             "get": {
                 "security": [
@@ -5024,7 +5168,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "boolean",
-                        "description": "Включить password_hash (только admin)",
+                        "description": "Include password_hash (admin only)",
                         "name": "include_hash",
                         "in": "query"
                     },
@@ -6084,6 +6228,12 @@ const docTemplate = `{
         "dto.AdminUserResponse": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "description": "Account registration time (email/username created at).",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-08-28T07:00:00Z"
+                },
                 "first_name": {
                     "type": "string",
                     "example": "Иван"
@@ -6188,6 +6338,20 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.ProcessTemplate"
                     }
+                }
+            }
+        },
+        "dto.AutoCreatedCounts": {
+            "type": "object",
+            "properties": {
+                "assignments": {
+                    "type": "integer"
+                },
+                "processes": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "integer"
                 }
             }
         },
@@ -6306,7 +6470,7 @@ const docTemplate = `{
                     "example": "Перенести сроки?"
                 },
                 "parent_id": {
-                    "description": "Ответ на другой комментарий той же задачи; пусто — корневой комментарий.",
+                    "description": "Reply to another comment of the same task; empty means a root comment.",
                     "type": "integer",
                     "example": 3
                 }
@@ -6315,6 +6479,10 @@ const docTemplate = `{
         "dto.CreateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6337,6 +6505,10 @@ const docTemplate = `{
         "dto.CreateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6368,6 +6540,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "КО_001"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6388,12 +6564,45 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateProjectResponse": {
+            "type": "object",
+            "properties": {
+                "auto_created": {
+                    "$ref": "#/definitions/dto.AutoCreatedCounts"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "color": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateResourceRequest": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -6425,6 +6634,10 @@ const docTemplate = `{
         "dto.CreateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6510,6 +6723,10 @@ const docTemplate = `{
         "dto.DetailedProcess": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6524,6 +6741,11 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.Milestone"
                     }
+                },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
+                    "type": "integer",
+                    "example": 1
                 },
                 "owner_id": {
                     "type": "integer",
@@ -6557,6 +6779,10 @@ const docTemplate = `{
         "dto.DetailedProject": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6594,8 +6820,12 @@ const docTemplate = `{
         "dto.DetailedTask": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "comments_count": {
-                    "description": "Количество активных комментариев задачи (для бейджа на диаграмме).",
+                    "description": "Number of active comments on the task (for the badge on the diagram).",
                     "type": "integer",
                     "example": 3
                 },
@@ -6605,6 +6835,11 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the task within its process (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6677,6 +6912,10 @@ const docTemplate = `{
         "dto.Milestone": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Начало работ по проекту"
@@ -6703,6 +6942,10 @@ const docTemplate = `{
         "dto.MilestoneResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6746,12 +6989,21 @@ const docTemplate = `{
         "dto.Process": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6792,12 +7044,21 @@ const docTemplate = `{
         "dto.ProcessResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6823,8 +7084,13 @@ const docTemplate = `{
         "dto.ProcessTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "owner_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 5
                 },
                 "tasks": {
                     "type": "array",
@@ -6833,13 +7099,18 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Инсталляция"
                 }
             }
         },
         "dto.Project": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6885,6 +7156,9 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
@@ -6899,6 +7173,36 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ReorderProcessRequest": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.ReorderTaskRequest": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -6921,6 +7225,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "id": {
                     "type": "integer",
@@ -7046,6 +7354,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "employees_count": {
                     "type": "integer",
@@ -7245,11 +7557,19 @@ const docTemplate = `{
         "dto.TaskResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
+                },
+                "order": {
+                    "description": "Order of the task within its process (ascending display order).",
+                    "type": "integer",
+                    "example": 1
                 },
                 "owner_id": {
                     "type": "integer"
@@ -7268,6 +7588,10 @@ const docTemplate = `{
         "dto.TaskTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "resources": {
                     "type": "array",
                     "items": {
@@ -7275,7 +7599,8 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
                 }
             }
         },
@@ -7308,6 +7633,10 @@ const docTemplate = `{
         "dto.UpdateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -7330,6 +7659,10 @@ const docTemplate = `{
         "dto.UpdateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7361,6 +7694,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "1"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7387,6 +7724,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -7418,6 +7759,10 @@ const docTemplate = `{
         "dto.UpdateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7547,7 +7892,7 @@ const docTemplate = `{
                     "example": "Иванович"
                 },
                 "name": {
-                    "description": "Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).",
+                    "description": "Full name \"Last First Middle\" (pre-composed, for display).",
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },

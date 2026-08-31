@@ -11,6 +11,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/auto_create/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
 type AutoCreateService struct {
@@ -41,7 +42,7 @@ func (s *AutoCreateService) GetConfig(ctx context.Context) (*dto.AutoCreateConfi
 }
 
 // SaveConfig replaces the auto-create config; validates shape and that all
-// referenced owners/resources exist (иначе автосоздание проекта упадёт на FK).
+// referenced owners/resources exist (otherwise the auto-created project would fail on an FK).
 func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateConfig) error {
 	ctx, end := s.tracer.Start(ctx, "autocreate.SaveConfig")
 	defer end(nil)
@@ -77,11 +78,42 @@ func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateC
 	return s.repository.UpsertConfig(ctx, cfg)
 }
 
+// Limits protecting project creation from a pathological template: the DB
+// trigger (V8) applies the whole template atomically inside the project INSERT
+// transaction, so an unbounded template is a self-inflicted DoS on every new
+// project. The frontend mirrors these limits in its own validation.
+const (
+	maxProcesses             = 20
+	maxTasksPerProcess       = 50
+	maxResourcesPerTask      = 10
+	maxAssignmentsTotal      = 500
+	maxQuantityPerAssignment = 99
+)
+
 func validateConfig(cfg *dto.AutoCreateConfig) error {
+	if len(cfg.Processes) > maxProcesses {
+		return errors.NewValidationError(fmt.Sprintf(
+			"слишком много процессов: максимум %d", maxProcesses,
+		))
+	}
+	totalAssignments := 0
 	for pi, p := range cfg.Processes {
+		if len(p.Tasks) > maxTasksPerProcess {
+			return errors.NewValidationError(fmt.Sprintf(
+				"процесс %d: слишком много задач: максимум %d", pi+1, maxTasksPerProcess,
+			))
+		}
 		if err := validateProcess(p, pi); err != nil {
 			return err
 		}
+		for _, t := range p.Tasks {
+			totalAssignments += len(t.Resources)
+		}
+	}
+	if totalAssignments > maxAssignmentsTotal {
+		return errors.NewValidationError(fmt.Sprintf(
+			"слишком много назначений ресурсов: максимум %d", maxAssignmentsTotal,
+		))
 	}
 	return nil
 }
@@ -89,6 +121,9 @@ func validateConfig(cfg *dto.AutoCreateConfig) error {
 func validateProcess(p dto.ProcessTemplate, pi int) error {
 	if strings.TrimSpace(p.Title) == "" {
 		return errors.NewValidationError(fmt.Sprintf("процесс %d: название не заполнено", pi+1))
+	}
+	if err := validateTemplateColor(p.Color, fmt.Sprintf("процесс %d", pi+1)); err != nil {
+		return err
 	}
 	for ti, t := range p.Tasks {
 		if err := validateTask(p.Title, t, ti); err != nil {
@@ -98,10 +133,29 @@ func validateProcess(p dto.ProcessTemplate, pi int) error {
 	return nil
 }
 
+// validateTemplateColor validates an optional #RRGGBB color of a template
+// entry (process/task); the prefix names the entry in the user-facing message.
+func validateTemplateColor(color *string, prefix string) error {
+	v := &validator.Validator{}
+	if err := v.ValidateOptionalColor(color, "color"); err != nil {
+		return errors.NewValidationError(fmt.Sprintf("%s: %s", prefix, err.Error()))
+	}
+	return nil
+}
+
 func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 	if strings.TrimSpace(t.Title) == "" {
 		return errors.NewValidationError(
 			fmt.Sprintf("процесс «%s», задача %d: название не заполнено", processTitle, ti+1),
+		)
+	}
+	if err := validateTemplateColor(t.Color, fmt.Sprintf("процесс «%s», задача %d", processTitle, ti+1)); err != nil {
+		return err
+	}
+	if len(t.Resources) > maxResourcesPerTask {
+		return errors.NewValidationError(
+			fmt.Sprintf("процесс «%s», задача %d: слишком много ресурсов: максимум %d",
+				processTitle, ti+1, maxResourcesPerTask),
 		)
 	}
 	seen := make(map[int64]struct{}, len(t.Resources))
@@ -122,6 +176,14 @@ func validateResource(taskTitle string, res dto.ResourceBinding, ri int, seen ma
 	if res.Quantity <= 0 {
 		return errors.NewValidationError(
 			fmt.Sprintf("задача «%s», ресурс %d: количество должно быть больше 0", taskTitle, ri+1),
+		)
+	}
+	if res.Quantity > maxQuantityPerAssignment {
+		return errors.NewValidationError(
+			fmt.Sprintf(
+				"задача «%s», ресурс %d: количество не должно превышать %d",
+				taskTitle, ri+1, maxQuantityPerAssignment,
+			),
 		)
 	}
 	if _, dup := seen[res.ResourceID]; dup {

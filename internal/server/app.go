@@ -108,9 +108,9 @@ func (a *App) Start() error {
 	// a common IP bucket and block their neighbors.
 	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
-	// Корневой span запроса (trace): method/path/status/duration + user_id.
+	// Root request span (trace): method/path/status/duration + user_id.
 	router.Use(a.tracer.HTTPRootSpan())
-	// Резервное текстовое логирование запросов (независимо от трейсинга).
+	// Fallback text request logging (independent of tracing).
 	router.Use(a.requestLog())
 	// Register routes
 	a.registerRoutes(router)
@@ -192,8 +192,8 @@ func (a *App) Stop(ctx context.Context) error {
 	return nil
 }
 
-// requestLog пишет в лог сводку по каждому HTTP-запросу (метод, путь, статус,
-// длительность) — независимый от трейсинга резерв для текстовых логов.
+// requestLog writes a summary of every HTTP request (method, path, status,
+// duration) to the log — a tracing-independent fallback for text logs.
 func (a *App) requestLog() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

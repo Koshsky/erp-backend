@@ -14,8 +14,8 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
-// Service — администрирование RBAC-политик (валидация + запись в БД +
-// немедленное применение через PolicyStore).
+// Service — RBAC policy administration (validation + DB writes +
+// immediate application through the PolicyStore).
 type Service struct {
 	logger *slog.Logger
 	repo   *repository.RuleRepository
@@ -37,8 +37,8 @@ func (s *Service) ListRules(ctx context.Context) ([]domain.Rule, error) {
 	return s.repo.ListActiveRules(ctx)
 }
 
-// UpsertRule валидирует и записывает строку матрицы, затем применяет
-// изменения немедленно.
+// UpsertRule validates and writes a matrix row, then applies the
+// changes immediately.
 func (s *Service) UpsertRule(ctx context.Context, in dto.RuleInput, updatedBy int64) error {
 	if in.Role == "" {
 		return errors.BadRequest("role обязательна")
@@ -74,7 +74,7 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.RuleInput, updatedBy in
 	return s.apply(ctx)
 }
 
-// DeleteRule мягко удаляет строку матрицы.
+// DeleteRule softly deletes a matrix row.
 func (s *Service) DeleteRule(ctx context.Context, id int64) error {
 	if err := s.repo.SoftDeleteRule(ctx, id); err != nil {
 		return err
@@ -87,8 +87,8 @@ func (s *Service) ListRoutePolicies(ctx context.Context) ([]domain.RoutePolicy, 
 	return s.repo.ListActiveRoutePolicies(ctx)
 }
 
-// UpsertRoutePolicy валидирует (kind + параметры по схеме) и записывает
-// маршрутную проверку.
+// UpsertRoutePolicy validates (kind + parameters against the schema) and writes
+// the route policy.
 func (s *Service) UpsertRoutePolicy(ctx context.Context, in dto.RoutePolicyInput, updatedBy int64) error {
 	if err := policies.ValidateSpec(policies.RouteSpec{Name: in.Name, Kind: in.Kind, Params: in.Params}); err != nil {
 		return errors.BadRequest(err.Error())
@@ -106,7 +106,7 @@ func (s *Service) UpsertRoutePolicy(ctx context.Context, in dto.RoutePolicyInput
 	return s.apply(ctx)
 }
 
-// DeleteRoutePolicy мягко удаляет маршрутную проверку по имени.
+// DeleteRoutePolicy softly deletes a route policy by name.
 func (s *Service) DeleteRoutePolicy(ctx context.Context, name string) error {
 	if err := s.repo.SoftDeleteRoutePolicy(ctx, name); err != nil {
 		return err
@@ -114,8 +114,8 @@ func (s *Service) DeleteRoutePolicy(ctx context.Context, name string) error {
 	return s.apply(ctx)
 }
 
-// Reset возвращает правила и маршрутные проверки к встроенным дефолтам
-// (запасной люк после ошибочных правок).
+// Reset restores rules and route policies to the built-in defaults
+// (an escape hatch after erroneous edits).
 func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 	if err := s.repo.SoftDeleteAllRules(ctx); err != nil {
 		return err
@@ -143,9 +143,9 @@ func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 	return s.apply(ctx)
 }
 
-// EffectiveMatrix возвращает эффективную матрицу (с admin-байпасом) для API.
+// EffectiveMatrix returns the effective matrix (with the admin bypass) for the API.
 func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error) {
-	_ = ctx // матрица и роли читаются из памяти/БД без доп. запросов
+	_ = ctx // matrix and roles are read from memory/DB without extra queries
 	roles, err := s.repo.ListActiveRoles(ctx)
 	if err != nil {
 		return nil, err
@@ -172,12 +172,12 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 	return cells, nil
 }
 
-// Kinds возвращает справочник kind'ов маршрутных проверок.
+// Kinds returns the catalog of route policy kinds.
 func (s *Service) Kinds() []policies.KindInfo {
 	return policies.Kinds()
 }
 
-// Explain отвечает «почему allow/deny» для отладки правил из БД.
+// Explain answers "why allow/deny" for debugging DB-backed rules.
 func (s *Service) Explain(_ context.Context, in dto.ExplainInput) (dto.ExplainResult, error) {
 	res, ok := policies.ParseResource(in.Resource)
 	if !ok {
@@ -196,7 +196,7 @@ func (s *Service) Explain(_ context.Context, in dto.ExplainInput) (dto.ExplainRe
 	return dto.ExplainResult{Scope: policies.ScopeName(scope), Allowed: allowed}, nil
 }
 
-// apply применяет текущее состояние БД в движок.
+// apply applies the current DB state to the engine.
 func (s *Service) apply(ctx context.Context) error {
 	if err := s.store.Reload(ctx); err != nil {
 		s.logger.ErrorContext(
@@ -218,9 +218,9 @@ func roleExists(roles []domain.Role, name string) bool {
 	return false
 }
 
-// MyPermissions возвращает принципиальные права роли (все разрешённые
-// действия, ScopeFor != none; admin — всё). Используется фронтом для
-// отображения возможностей по правам, а не по ролям.
+// MyPermissions returns the role's principal permissions (all allowed
+// actions with ScopeFor != none; admin — everything). Used by the frontend to
+// display capabilities by permissions rather than by roles.
 func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission {
 	out := []dto.Permission{}
 	for res := rbac.ResourceProject; res <= rbac.ResourceOrgStructure; res++ {
@@ -239,12 +239,12 @@ func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission
 	return out
 }
 
-// maxRoleNameLen — максимальная длина имени роли.
+// maxRoleNameLen — maximum role name length.
 //
 
 const maxRoleNameLen = 32
 
-// CreateRole создаёт роль (или оживляет удалённую) и возвращает её.
+// CreateRole creates a role (or revives a deleted one) and returns it.
 func (s *Service) CreateRole(ctx context.Context, in dto.RoleUpsertInput) (domain.Role, error) {
 	if err := validateRoleName(in.Name); err != nil {
 		return domain.Role{}, err
@@ -256,7 +256,7 @@ func (s *Service) CreateRole(ctx context.Context, in dto.RoleUpsertInput) (domai
 	return role, nil
 }
 
-// UpdateRole обновляет описание роли.
+// UpdateRole updates the role description.
 func (s *Service) UpdateRole(ctx context.Context, name string, in dto.RoleUpdateInput) (domain.Role, error) {
 	role, err := s.repo.UpdateRoleDescription(ctx, name, in.Description)
 	if err != nil {
@@ -265,8 +265,8 @@ func (s *Service) UpdateRole(ctx context.Context, name string, in dto.RoleUpdate
 	return role, nil
 }
 
-// DeleteRole мягко удаляет роль и её правила; назначенные пользователи
-// продолжают существовать, но теряют права (роль пропадает из матрицы).
+// DeleteRole softly deletes a role and its rules; assigned users
+// keep existing but lose permissions (the role disappears from the matrix).
 func (s *Service) DeleteRole(ctx context.Context, name string) error {
 	if err := s.repo.SoftDeleteRole(ctx, name); err != nil {
 		return err
@@ -274,13 +274,13 @@ func (s *Service) DeleteRole(ctx context.Context, name string) error {
 	return s.apply(ctx)
 }
 
-// validRoleName — допустимые символы имени роли (системный код доступа):
-// латиница в нижнем регистре, цифры, «-» и «_».
+// validRoleName — allowed characters of a role name (system access code):
+// lowercase latin letters, digits, "-" and "_".
 func validRoleName(name string) bool {
 	return regexp.MustCompile(`^[a-z0-9_-]+$`).MatchString(name)
 }
 
-// validateRoleName проверяет имя роли: непустое, не длиннее 32, код.
+// validateRoleName validates a role name: non-empty, no longer than 32, a code.
 func validateRoleName(name string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {

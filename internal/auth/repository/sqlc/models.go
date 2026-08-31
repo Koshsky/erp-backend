@@ -36,6 +36,7 @@ type Milestone struct {
 	ProcessID int64       `json:"process_id"`
 	Title     string      `json:"title"`
 	Content   string      `json:"content"`
+	Color     pgtype.Text `json:"color"`
 	Date      pgtype.Date `json:"date"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
@@ -47,8 +48,10 @@ type Process struct {
 	ProjectID int64       `json:"project_id"`
 	OwnerID   pgtype.Int8 `json:"owner_id"`
 	Title     string      `json:"title"`
+	Color     pgtype.Text `json:"color"`
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
+	SortOrder int32       `json:"sort_order"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
 	DeletedAt **time.Time `json:"deleted_at"`
@@ -58,6 +61,7 @@ type Project struct {
 	ID        int64       `json:"id"`
 	OwnerID   pgtype.Int8 `json:"owner_id"`
 	Code      string      `json:"code"`
+	Color     pgtype.Text `json:"color"`
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
 	Priority  int32       `json:"priority"`
@@ -120,6 +124,7 @@ type Resource struct {
 	ID        int64       `json:"id"`
 	Title     string      `json:"title"`
 	Code      string      `json:"code"`
+	Color     pgtype.Text `json:"color"`
 	OwnerID   int64       `json:"owner_id"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
@@ -147,8 +152,10 @@ type Task struct {
 	ProcessID int64       `json:"process_id"`
 	OwnerID   pgtype.Int8 `json:"owner_id"`
 	Title     string      `json:"title"`
+	Color     pgtype.Text `json:"color"`
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
+	SortOrder int32       `json:"sort_order"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
 	DeletedAt **time.Time `json:"deleted_at"`

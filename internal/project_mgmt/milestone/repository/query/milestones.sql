@@ -1,6 +1,6 @@
 -- name: CreateMilestone :one
-INSERT INTO milestones (process_id, title, content, date)
-VALUES (@process_id, @title, @content, @date)
+INSERT INTO milestones (process_id, title, content, color, date)
+VALUES (@process_id, @title, @content, @color, @date)
 RETURNING *;
 
 -- name: ListMilestones :many
@@ -43,6 +43,7 @@ SET
 	process_id = @process_id,
 	title = @title,
 	content = @content,
+	color = @color,
 	date = @date,
 	updated_at = NOW()
 WHERE id = @milestone_id

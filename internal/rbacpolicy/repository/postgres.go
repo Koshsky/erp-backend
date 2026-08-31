@@ -13,7 +13,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository/sqlc"
 )
 
-// RuleRepository — доступ к конфигурируемым RBAC-политикам в Postgres.
+// RuleRepository — access to configurable RBAC policies in Postgres.
 type RuleRepository struct {
 	logger *slog.Logger
 	pool   *pgxpool.Pool
@@ -92,7 +92,7 @@ func (r *RuleRepository) SoftDeleteRule(ctx context.Context, id int64) error {
 	return r.db.SoftDeleteRule(ctx, id)
 }
 
-// SoftDeleteAllRules marks every matrix row as deleted (для reset).
+// SoftDeleteAllRules marks every matrix row as deleted (for reset).
 func (r *RuleRepository) SoftDeleteAllRules(ctx context.Context) error {
 	return r.db.SoftDeleteAllRules(ctx)
 }
@@ -160,7 +160,7 @@ func (r *RuleRepository) SoftDeleteRoutePolicy(ctx context.Context, name string)
 	return r.db.SoftDeleteRoutePolicy(ctx, name)
 }
 
-// SoftDeleteAllRoutePolicies marks every route policy as deleted (для reset).
+// SoftDeleteAllRoutePolicies marks every route policy as deleted (for reset).
 func (r *RuleRepository) SoftDeleteAllRoutePolicies(ctx context.Context) error {
 	return r.db.SoftDeleteAllRoutePolicies(ctx)
 }
@@ -180,7 +180,7 @@ func fromInt8(v pgtype.Int8) *int64 {
 	return &out
 }
 
-// UpsertRole создаёт роль (или «оживляет» soft-deleted по имени).
+// UpsertRole creates a role (or revives a soft-deleted one by name).
 func (r *RuleRepository) UpsertRole(ctx context.Context, name, description string) (domain.Role, error) {
 	row, err := r.db.UpsertRole(ctx, sqlc.UpsertRoleParams{Name: name, Description: description})
 	if err != nil {
@@ -189,7 +189,7 @@ func (r *RuleRepository) UpsertRole(ctx context.Context, name, description strin
 	return domain.Role{ID: row.ID, Name: row.Name, Description: row.Description}, nil
 }
 
-// UpdateRoleDescription обновляет описание роли.
+// UpdateRoleDescription updates the role description.
 func (r *RuleRepository) UpdateRoleDescription(ctx context.Context, name, description string) (domain.Role, error) {
 	row, err := r.db.UpdateRoleDescription(ctx, sqlc.UpdateRoleDescriptionParams{Name: name, Description: description})
 	if err != nil {
@@ -198,7 +198,7 @@ func (r *RuleRepository) UpdateRoleDescription(ctx context.Context, name, descri
 	return domain.Role{ID: row.ID, Name: row.Name, Description: row.Description}, nil
 }
 
-// SoftDeleteRole мягко удаляет роль вместе с её правилами.
+// SoftDeleteRole softly deletes a role together with its rules.
 func (r *RuleRepository) SoftDeleteRole(ctx context.Context, name string) error {
 	if err := r.db.SoftDeleteRole(ctx, name); err != nil {
 		return err
