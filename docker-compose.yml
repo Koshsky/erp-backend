@@ -45,6 +45,7 @@ services:
       - -user=${DATABASE_USER}
       - -password=${DATABASE_PASSWORD}
       - -locations=filesystem:/flyway/sql,filesystem:/flyway/sql/plugins,filesystem:/flyway/sql/seed
+      - -outOfOrder=true
       - migrate
     depends_on:
       db:

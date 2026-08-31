@@ -861,6 +861,23 @@ var defaultRouteSpecs = []RouteSpec{
 		Params: map[string]any{paramResource: resUserCatalog, paramAction: actView, paramOwner: ownerModeNone},
 	},
 	{
+		// User profile mutations (an employee IS a system user): gated by the
+		// user_admin virtual resource — admin by default, grantable via the matrix.
+		Name:   "user_admin.create",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resUserAdmin, paramAction: actCreate, paramOwner: ownerModeNone},
+	},
+	{
+		Name:   "user_admin.update",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resUserAdmin, paramAction: actUpdate, paramOwner: ownerModeNone},
+	},
+	{
+		Name:   "user_admin.delete",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resUserAdmin, paramAction: actDelete, paramOwner: ownerModeNone},
+	},
+	{
 		Name:   "resource.list",
 		Kind:   kindList,
 		Params: map[string]any{paramResource: resResource, paramQueryKey: bodyKeyOwnerID},
