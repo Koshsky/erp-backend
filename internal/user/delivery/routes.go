@@ -15,6 +15,8 @@ func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup, changePasswordGuar
 		// profile mutations are gated by the user-admin rights (user_admin.*,
 		// admin by default; grantable via the RBAC matrix), not by worker.*:
 		// editing employees happens only through the admin users section.
+		// Role assignment stays an admin-only invariant in the service:
+		// non-admin user_admin.create holders may create workers only.
 		r.GET("", h.mw.Check("worker.list"), h.ListUsers)
 		r.POST("", h.mw.Check("user_admin.create"), h.CreateUser)
 		r.GET("/:id", h.mw.Check("worker.view"), h.FindUser)

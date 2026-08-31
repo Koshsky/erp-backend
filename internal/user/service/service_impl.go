@@ -73,14 +73,17 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 }
 
 // CreateUserWithCreds creates a user and returns the generated password (if any)
-// for the admin UI. The password is shown exactly once.
+// for the admin UI. The password is shown exactly once. Role assignment on
+// creation is admin-only (user_admin.create is grantable, but role escalation
+// stays an admin privilege — non-admin callers may only create workers).
 func (s *UserService) CreateUserWithCreds(
 	ctx context.Context,
 	req dto.CreateUserRequest,
+	callerRole string,
 ) (*dto.CreateUserResult, error) {
 	ctx, end := s.tracer.Start(ctx, "user.CreateUser")
 	defer end(nil)
-	return s.createUserInternal(ctx, req)
+	return s.createUserInternal(ctx, req, callerRole)
 }
 
 // createUserInternal creates a user; when credentials are missing they are
@@ -88,8 +91,19 @@ func (s *UserService) CreateUserWithCreds(
 func (s *UserService) createUserInternal(
 	ctx context.Context,
 	req dto.CreateUserRequest,
+	callerRole string,
 ) (*dto.CreateUserResult, error) {
 	var generated string
+	// Non-admin holders of user_admin.create may only create workers (an empty
+	// role defaults to worker); the other roles require the admin bypass.
+	if callerRole != userdomain.Admin {
+		if req.Role == "" {
+			req.Role = userdomain.Worker
+		}
+		if req.Role != userdomain.Worker {
+			return nil, errors.ErrForbidden
+		}
+	}
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Username == "" {
 		username, err := s.generateUsername(ctx, req.LastName, req.Role)
@@ -205,9 +219,9 @@ func (s *UserService) FindUser(ctx context.Context, id int64) (*dto.UserResponse
 	return s.mapper.ToDTO(user), nil
 }
 
-// UpdateUser updates a user. callerRole/callerID guard sensitive fields:
-// role and manager_id change only by admin; an admin cannot change their own
-// role and cannot remove the last active admin.
+// UpdateUser updates a user. Role assignment is the only admin-only business
+// rule (escalation protection via checkRoleChange); manager_id and profile
+// fields are covered by the user_admin.update right.
 func (s *UserService) UpdateUser(
 	ctx context.Context,
 	id int64,
@@ -227,9 +241,6 @@ func (s *UserService) UpdateUser(
 		return nil, err
 	}
 	if req.ManagerID != nil {
-		if callerRole != userdomain.Admin {
-			return nil, errors.ErrForbidden
-		}
 		if err = s.validateManager(ctx, id, req.ManagerID); err != nil {
 			return nil, err
 		}
@@ -280,20 +291,17 @@ func (s *UserService) checkRoleChange(
 	return nil
 }
 
-// UpdateManager explicitly sets (or clears) a user's manager. Only admin; the
-// manager cannot be the user themself.
+// UpdateManager explicitly sets (or clears) a user's manager. Covered by the
+// user_admin.update right (grantable); the manager cannot be the user themself
+// and cycles are rejected.
 func (s *UserService) UpdateManager(
 	ctx context.Context,
 	id int64,
 	managerID *int64,
-	callerRole string,
 ) (*dto.UserResponse, error) {
 	ctx, end := s.tracer.Start(ctx, "user.UpdateManager")
 	defer end(nil)
 
-	if callerRole != userdomain.Admin {
-		return nil, errors.ErrForbidden
-	}
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
 		return nil, errors.NotFound("user not found")

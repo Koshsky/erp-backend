@@ -178,14 +178,8 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	// Creating workers is admin-only (worker.create was removed from the vp
-	// matrix). The guard below remains as defense against stale rules in the
-	// DB: if a vp still gets access, a foreign manager_id is ignored.
-	if user.Role == domain.ProcessOwner {
-		req.ManagerID = &user.ID
-	}
 
-	created, err := h.service.CreateUserWithCreds(c.Request.Context(), req)
+	created, err := h.service.CreateUserWithCreds(c.Request.Context(), req, user.Role)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
@@ -289,13 +283,7 @@ func (h *UserHandler) UpdateManager(c *gin.Context) {
 		return
 	}
 
-	user, err := userctx.GetUser(c)
-	if err != nil {
-		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
-		return
-	}
-
-	updated, err := h.service.UpdateManager(c.Request.Context(), id, body.ManagerID, user.Role)
+	updated, err := h.service.UpdateManager(c.Request.Context(), id, body.ManagerID)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return

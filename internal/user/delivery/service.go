@@ -18,7 +18,11 @@ type UserService interface {
 		limit, offset int,
 	) ([]dto.UserResponse, int64, error)
 	FindUser(ctx context.Context, id int64) (*dto.UserResponse, error)
-	CreateUserWithCreds(ctx context.Context, req dto.CreateUserRequest) (*dto.CreateUserResult, error)
+	CreateUserWithCreds(
+		ctx context.Context,
+		req dto.CreateUserRequest,
+		callerRole string,
+	) (*dto.CreateUserResult, error)
 	ResetPassword(ctx context.Context, id int64) (*dto.ResetPasswordResponse, error)
 	DeleteUser(ctx context.Context, id int64) error
 	ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error
@@ -33,7 +37,6 @@ type UserService interface {
 		ctx context.Context,
 		id int64,
 		managerID *int64,
-		callerRole string,
 	) (*dto.UserResponse, error)
 
 	ListStates(ctx context.Context, userID int64, start, end date.Date) ([]dto.UserStateResponse, error)
