@@ -35,19 +35,19 @@ type CreateUserResult struct {
 
 // AdminUserResponse — user for the admin page (including the password hash).
 type AdminUserResponse struct {
-	ID              int64      `json:"id"                      example:"1"`
-	Name            string     `json:"name"                    example:"Иванов Иван Иванович"`
-	LastName        string     `json:"last_name"               example:"Иванов"`
-	FirstName       string     `json:"first_name"              example:"Иван"`
-	MiddleName      *string    `json:"middle_name"             example:"Иванович"`
-	Username        string     `json:"username"                example:"worker_1"`
-	Role            string     `json:"role"                    example:"worker"`
-	ManagerID       *int64     `json:"manager_id"              example:"5"`
-	Position        string     `json:"position"                example:"Инженер 2 категории"`
-	HireDate        *date.Date `json:"hire_date"               example:"2024-01-15"     format:"date"`
-	TerminationDate *date.Date `json:"termination_date"        example:"2026-12-31"     format:"date"`
+	ID              int64      `json:"id"               example:"1"`
+	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
+	LastName        string     `json:"last_name"        example:"Иванов"`
+	FirstName       string     `json:"first_name"       example:"Иван"`
+	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
+	Username        string     `json:"username"         example:"worker_1"`
+	Role            string     `json:"role"             example:"worker"`
+	ManagerID       *int64     `json:"manager_id"       example:"5"`
+	Position        string     `json:"position"         example:"Инженер 2 категории"`
+	HireDate        *date.Date `json:"hire_date"        example:"2024-01-15"           format:"date"`
+	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"           format:"date"`
 	// Account registration time (email/username created at).
-	CreatedAt    time.Time `json:"created_at" example:"2026-08-28T07:00:00Z" format:"date-time"`
+	CreatedAt    time.Time `json:"created_at"              example:"2026-08-28T07:00:00Z" format:"date-time"`
 	PasswordHash string    `json:"password_hash,omitempty" example:"$2a$10$..."`
 }
 
