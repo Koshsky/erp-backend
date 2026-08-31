@@ -36,6 +36,7 @@ var (
 	ErrForbidden  = stderrors.New("forbidden")
 	ErrBadRequest = stderrors.New("bad request")
 	ErrValidation = stderrors.New("validation failed")
+	ErrConflict   = stderrors.New("conflict")
 )
 
 // now returns the RFC3339 UTC timestamp used in error envelopes.
@@ -76,6 +77,18 @@ func BadRequest(msg string) error {
 	}
 }
 
+// Conflict returns a 409 error wrapping ErrConflict; used when a create
+// collides with an already-existing unique business key (e.g. project code).
+func Conflict(msg string) error {
+	return &DomainError{
+		Status:    http.StatusConflict,
+		Message:   msg,
+		Cause:     ErrConflict,
+		Code:      CodeConflict,
+		Timestamp: now(),
+	}
+}
+
 // Entity-specific not-found errors for stable sentinel matching in services.
 var (
 	ErrProjectNotFound    = NotFound("project not found")
@@ -86,4 +99,5 @@ var (
 	ErrAssignmentNotFound = NotFound("assignment not found")
 	ErrUserNotFound       = NotFound("user not found")
 	ErrStateNotFound      = NotFound("state not found")
+	ErrCommentNotFound    = NotFound("comment not found")
 )

@@ -10,9 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type UserRepository struct {
@@ -73,7 +75,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 		TerminationDate: toDate(user.TerminationDate),
 	})
 	if err != nil {
-		return nil, err
+		return nil, mapUserErr(err)
 	}
 
 	mapped := mapUser(row)
@@ -105,7 +107,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 		TerminationDate: toDate(user.TerminationDate),
 	})
 	if err != nil {
-		return nil, err
+		return nil, mapUserErr(err)
 	}
 
 	mapped := mapUser(row)
@@ -122,7 +124,7 @@ func (r *UserRepository) ListUsers(
 ) ([]domain.User, error) {
 	rows, err := r.db.ListUsers(ctx, sqlc.ListUsersParams{
 		RoleFilter: roleFilter,
-		IsAdmin:    role == domain.Admin,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceWorker),
 		UserID:     userID,
 		ManagerID:  managerID,
 		PageLimit:  int64(limit),
@@ -148,7 +150,7 @@ func (r *UserRepository) CountUsers(
 ) (int64, error) {
 	return r.db.CountUsers(ctx, sqlc.CountUsersParams{
 		RoleFilter: roleFilter,
-		IsAdmin:    role == domain.Admin,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceWorker),
 		UserID:     userID,
 		ManagerID:  managerID,
 	})
@@ -234,6 +236,13 @@ func (r *UserRepository) SetStateRange(
 		StartDate: start,
 		EndDate:   end,
 	}); err != nil {
+		return err
+	}
+
+	// Сливаем смежные/пересекающиеся диапазоны того же состояния в непрерывный:
+	// fn_normalize_user_states() схлопывает соседние интервалы одинакового
+	// (user_id, state_id) сразу в рамках этой транзакции.
+	if err = q.NormalizeUserStates(ctx); err != nil {
 		return err
 	}
 
@@ -428,4 +437,10 @@ func (r *UserRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners,
 		return rbac.Owners{}, err
 	}
 	return rbac.Owners{Owner: owner}, nil
+}
+
+// mapUserErr — обёртка над errapi.MapPgConstraint: понятные 4xx для
+// constraint-ошибок (уникальный логин 409, FK роли/менеджера 400, CHECK 400).
+func mapUserErr(err error) error {
+	return errapi.MapPgConstraint(err)
 }

@@ -1,11 +1,15 @@
 package rbac
 
-import "log/slog"
+import (
+	"log/slog"
 
-func ProvideMiddleware(logger *slog.Logger, data Data, policies []Policy) *Middleware {
-	byName := make(map[string]Policy, len(policies))
-	for _, p := range policies {
-		byName[p.Name] = p
-	}
-	return &Middleware{logger: logger, data: data, byName: byName}
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
+)
+
+// ProvideMiddleware строит движок со стартовым набором политик (дефолты).
+// На рантайме набор обновляет PolicyStore через Middleware.Refresh.
+func ProvideMiddleware(logger *slog.Logger, tracer *tracingpkg.Tracer, data Data, policies []Policy) *Middleware {
+	m := &Middleware{logger: logger, tracer: tracer, data: data}
+	m.Refresh(policies)
+	return m
 }

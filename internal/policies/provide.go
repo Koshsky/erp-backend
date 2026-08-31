@@ -2,7 +2,13 @@ package policies
 
 import "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 
-// ProvideAll returns all policies.
+// ProvideAll возвращает политики по умолчанию — стартовый снапшот и fallback
+// при недоступной/пустой БД. На рантайме реальный набор поставляется
+// PolicyStore через rbac.Middleware.Refresh.
 func ProvideAll() []rbac.Policy {
-	return All()
+	policies, err := BuildPolicies(DefaultRouteSpecs())
+	if err != nil {
+		panic("policies: invalid default spec: " + err.Error())
+	}
+	return policies
 }

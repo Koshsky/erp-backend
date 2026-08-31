@@ -5,19 +5,22 @@ import (
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/planning/repository"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 )
 
 type PlanningService struct {
 	logger     *slog.Logger
+	tracer     *tracingpkg.Tracer
 	repository PlanningRepository
 }
 
 // NewPlanningService builds the PlanningService service.
-func NewPlanningService(logger *slog.Logger, r *repo.PlanningRepository) *PlanningService {
+func NewPlanningService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.PlanningRepository) *PlanningService {
 	return &PlanningService{
 		logger:     logger,
+		tracer:     tracer,
 		repository: r,
 	}
 }
@@ -27,6 +30,9 @@ func (s *PlanningService) GetProjectPlanning(
 	userID int64,
 	role string,
 ) (*dto.ProjectPlanning, error) {
+	ctx, end := s.tracer.Start(ctx, "planning.GetProjectPlanning")
+	defer end(nil)
+
 	projects, err := s.repository.ListProjects(ctx, userID, role)
 	if err != nil {
 		return nil, err
@@ -42,6 +48,9 @@ func (s *PlanningService) GetProcessPlanning(
 	userID int64,
 	role string,
 ) (*dto.ProcessPlanning, error) {
+	ctx, end := s.tracer.Start(ctx, "planning.GetProcessPlanning")
+	defer end(nil)
+
 	projects, err := s.repository.ListProjects(ctx, userID, role)
 	if err != nil {
 		return nil, err
@@ -74,6 +83,9 @@ func (s *PlanningService) GetTaskPlanning(
 	userID int64,
 	role string,
 ) (*dto.TaskPlanning, error) {
+	ctx, end := s.tracer.Start(ctx, "planning.GetTaskPlanning")
+	defer end(nil)
+
 	processes, err := s.loadProcesses(ctx, userID, role)
 	if err != nil {
 		return nil, err
@@ -85,10 +97,10 @@ func (s *PlanningService) GetTaskPlanning(
 		}, nil
 	}
 
-	milestones, tasks, assignments, resourcesMap, err := s.loadAllData(ctx, processes)
+	milestones, tasks, assignments, resourcesMap, commentCounts, err := s.loadAllData(ctx, processes)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.buildPlanning(processes, milestones, tasks, assignments, resourcesMap), nil
+	return s.buildPlanning(processes, milestones, tasks, assignments, resourcesMap, commentCounts), nil
 }

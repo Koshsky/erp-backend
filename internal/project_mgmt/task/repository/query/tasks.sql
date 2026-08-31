@@ -9,7 +9,12 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.deleted_at IS NULL
-  AND (@role::text IN ('admin', 'dp') OR t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)
+  AND (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@scope_view::text = 'own' AND t.owner_id = @user_id::bigint)
+  )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY t.id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
@@ -20,7 +25,12 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.deleted_at IS NULL
-  AND (@role::text IN ('admin', 'dp') OR t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)
+  AND (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@scope_view::text = 'own' AND t.owner_id = @user_id::bigint)
+  )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
 -- name: FindTask :one
@@ -50,7 +60,8 @@ WHERE id = @task_id
 
 -- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
-       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner,
+       COALESCE(t.owner_id, 0)::bigint  AS owner_id
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id

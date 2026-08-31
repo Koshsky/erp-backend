@@ -1,7 +1,20 @@
 -- name: CreateAssignment :one
+-- Идемпотентный create: если связка (task_id, resource_id) уже активна —
+-- ничего не вставляем; наличие существующей строки возвращает вызывающий
+-- код (репозиторий) через FindAssignmentByKey.
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES (@task_id, @resource_id, @quantity::bigint)
+ON CONFLICT (task_id, resource_id) WHERE deleted_at IS NULL
+DO NOTHING
 RETURNING *;
+
+-- name: FindAssignmentByKey :one
+SELECT *
+FROM assignments
+WHERE task_id = @task_id::bigint
+	AND resource_id = @resource_id::bigint
+	AND deleted_at IS NULL
+LIMIT 1;
 
 -- name: FindAssignment :one
 SELECT *
@@ -15,7 +28,11 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE a.deleted_at IS NULL
-  AND (@role::text IN ('admin', 'dp') OR t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)
+  AND (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+  )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY a.id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
@@ -27,7 +44,11 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE a.deleted_at IS NULL
-  AND (@role::text IN ('admin', 'dp') OR t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)
+  AND (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+  )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
 -- name: UpdateAssignment :one
@@ -49,7 +70,8 @@ WHERE id = @assignment_id
 
 -- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
-       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner,
+       COALESCE(t.owner_id, 0)::bigint  AS owner_id
 FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id

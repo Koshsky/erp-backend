@@ -5,12 +5,14 @@ import (
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt"
+	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
+	commentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
 	milestoneRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	processRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 	"github.com/Koshsky/erp-backend/internal/user"
@@ -27,6 +29,7 @@ func ProvideRBACData(
 	assignment *assignmentRepo.AssignmentRepository,
 	resource *resourceRepo.ResourceRepository,
 	user *userRepo.UserRepository,
+	comment *commentRepo.CommentRepository,
 ) rbacMW.Data {
 	return rbacMW.Data{
 		ProjectOwners:    project.OwnerChain,
@@ -36,6 +39,7 @@ func ProvideRBACData(
 		AssignmentOwners: assignment.OwnerChain,
 		ResourceOwners:   resource.OwnerChain,
 		WorkerOwners:     user.OwnerChain,
+		CommentOwners:    comment.OwnerChain,
 	}
 }
 
@@ -44,9 +48,10 @@ func ProvideModules(
 	auth auth.Module,
 	user user.Module,
 	planning planning.Module,
-	project project_mgmt.Module,
+	project projectmgmt.Module,
 	timesheet timesheet.Module,
 	autoCreate autocreate.Module,
+	rbac rbacpolicy.Module,
 ) []Module {
-	return []Module{auth, user, planning, project, timesheet, autoCreate}
+	return []Module{auth, user, planning, project, timesheet, autoCreate, rbac}
 }

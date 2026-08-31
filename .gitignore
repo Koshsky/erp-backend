@@ -34,6 +34,7 @@ logs/
 temp/
 # Enterprise-плагин и личный seed (не отслеживаются; каталоги держат .gitkeep)
 migrations/plugins/*.sql
+migrations/seed/*.sql
 
 # Локальный код-ревью (не хранится в репо)
 CODE_REVIEW.md

@@ -1,6 +1,0 @@
--- Why auditing is needed
---     Track changes - who changed data and when
---     Roll back mistakes - you can see what was there before the change
---     Security - detect unauthorized actions
---     Compliance with requirements (GDPR, ISO, etc.)
---     Analysis - understand the change history of an object

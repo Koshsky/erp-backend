@@ -22,6 +22,7 @@ const (
 	CodeInvalidCredentials
 	CodeInvalidToken
 	CodeValidation
+	CodeConflict
 )
 
 // String returns the wire representation of the code.
@@ -45,6 +46,8 @@ func (c Code) String() string {
 		return "INVALID_TOKEN"
 	case CodeValidation:
 		return "VALIDATION_ERROR"
+	case CodeConflict:
+		return "CONFLICT"
 	default:
 		return "INTERNAL_ERROR"
 	}
@@ -67,6 +70,8 @@ func CodeFor(status int) Code {
 		return CodeForbidden
 	case http.StatusNotFound:
 		return CodeNotFound
+	case http.StatusConflict:
+		return CodeConflict
 	case http.StatusTooManyRequests:
 		return CodeTooManyRequests
 	default:

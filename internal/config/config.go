@@ -40,6 +40,16 @@ type Config struct {
 	UserRateLimit RateLimitConfig   `yaml:"user_rate_limiting"`
 	Profiling     ProfilingConfig   `yaml:"profiling"`
 	Maintenance   MaintenanceConfig `yaml:"maintenance"`
+	Tracing       TracingConfig     `yaml:"tracing"`
+	RBAC          RBACConfig        `yaml:"rbac"`
+}
+
+// RBACConfig — настройки runtime-RBAC (перезагрузка правил из БД).
+type RBACConfig struct {
+	// RefreshInterval — период фоновой перезагрузки правил из Postgres
+	// (эвентуальная консистентность между инстансами; локальные правки
+	// применяются сразу).
+	RefreshInterval Duration `yaml:"refresh_interval"`
 }
 
 // HTTPServerConfig is the HTTP server settings.
@@ -114,6 +124,15 @@ type ProfilingConfig struct {
 type MaintenanceConfig struct {
 	Enabled  bool     `yaml:"enabled"`
 	Interval Duration `yaml:"interval"`
+}
+
+// TracingConfig — OpenTelemetry distributed tracing settings (OTLP/gRPC
+// exporter, by default the in-stack Jaeger collector).
+type TracingConfig struct {
+	Enabled          bool    `yaml:"enabled"`
+	ExporterEndpoint string  `yaml:"exporter_endpoint"`
+	ServiceName      string  `yaml:"service_name"`
+	SamplerRatio     float64 `yaml:"sampler_ratio"`
 }
 
 // RateLimitConfig is the per-client rate limiting settings.

@@ -3,6 +3,7 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema:
+      # task_comments создаётся в V1 — отдельный файл схемы не нужен.
       - "../../../migrations/V1__initial_schema.sql"
     queries:
       - "./query"

@@ -18,18 +18,23 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.deleted_at IS NULL
-  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($1::text = 'own' AND t.owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 `
 
 type CountTasksParams struct {
-	Role    string `json:"role"`
-	UserID  int64  `json:"user_id"`
-	OwnerID int64  `json:"owner_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+	OwnerID   int64  `json:"owner_id"`
 }
 
 func (q *Queries) CountTasks(ctx context.Context, arg CountTasksParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countTasks, arg.Role, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countTasks, arg.ScopeView, arg.UserID, arg.OwnerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -114,14 +119,19 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.deleted_at IS NULL
-  AND ($1::text IN ('admin', 'dp') OR t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($1::text = 'own' AND t.owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
 ORDER BY t.id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListTasksParams struct {
-	Role       string `json:"role"`
+	ScopeView  string `json:"scope_view"`
 	UserID     int64  `json:"user_id"`
 	OwnerID    int64  `json:"owner_id"`
 	PageOffset int64  `json:"page_offset"`
@@ -130,7 +140,7 @@ type ListTasksParams struct {
 
 func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listTasks,
-		arg.Role,
+		arg.ScopeView,
 		arg.UserID,
 		arg.OwnerID,
 		arg.PageOffset,
@@ -166,7 +176,8 @@ func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, e
 
 const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
-       COALESCE(p.owner_id, 0)::bigint  AS process_owner
+       COALESCE(p.owner_id, 0)::bigint  AS process_owner,
+       COALESCE(t.owner_id, 0)::bigint  AS owner_id
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
@@ -179,12 +190,13 @@ WHERE t.id = $1::bigint
 type OwnerChainRow struct {
 	ProjectOwner int64 `json:"project_owner"`
 	ProcessOwner int64 `json:"process_owner"`
+	OwnerID      int64 `json:"owner_id"`
 }
 
 func (q *Queries) OwnerChain(ctx context.Context, id int64) (OwnerChainRow, error) {
 	row := q.db.QueryRow(ctx, ownerChain, id)
 	var i OwnerChainRow
-	err := row.Scan(&i.ProjectOwner, &i.ProcessOwner)
+	err := row.Scan(&i.ProjectOwner, &i.ProcessOwner, &i.OwnerID)
 	return i, err
 }
 

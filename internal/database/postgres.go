@@ -9,9 +9,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/config"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 )
 
-func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger) (*pgxpool.Pool, error) {
+func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger, tracer *tracingpkg.Tracer) (*pgxpool.Pool, error) {
 	const op = "initDBPool"
 
 	cfg, err := pgxpool.ParseConfig(pgCfg.URL)
@@ -25,6 +26,12 @@ func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger) (*pgxpool.Pool
 	cfg.MaxConnIdleTime = time.Duration(pgCfg.MaxConnIdleTime)
 	cfg.HealthCheckPeriod = time.Duration(pgCfg.HealthCheckPeriod)
 	cfg.ConnConfig.ConnectTimeout = time.Duration(pgCfg.ConnectTimeout)
+
+	// Instrument every SQL query (Exec/Query/QueryRow across all repositories)
+	// with an OpenTelemetry span. The tracer is a no-op when tracing is off.
+	if tracer != nil {
+		cfg.ConnConfig.Tracer = tracingpkg.NewQueryTracer(tracer.Unwrap())
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgCfg.ConnectTimeout))
 	defer cancel()

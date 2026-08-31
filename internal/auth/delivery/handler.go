@@ -3,6 +3,7 @@ package delivery
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	authservice "github.com/Koshsky/erp-backend/internal/auth/service"
@@ -36,24 +37,40 @@ func NewAuthHandler(logger *slog.Logger, svc *authservice.AuthService, cfg confi
 	}
 }
 
-// setRefreshCookie ставит HttpOnly/SameSite=Strict refresh-куку.
+// isHTTPS сообщает, идёт ли запрос по реальному https: прямой TLS либо
+// X-Forwarded-Proto/Scheme от обратного прокси (nginx на /api/ ставит
+// X-Forwarded-Proto $scheme, перезаписывая клиентский заголовок).
+func isHTTPS(c *gin.Context) bool {
+	if c.Request.TLS != nil {
+		return true
+	}
+	proto := c.GetHeader("X-Forwarded-Proto")
+	if proto == "" {
+		proto = c.GetHeader("X-Forwarded-Scheme")
+	}
+	return strings.EqualFold(proto, "https")
+}
+
+// setRefreshCookie ставит HttpOnly/SameSite=Strict refresh-куку. Флаг Secure
+// применяется только за реальным https (cfg.RefreshCookieSecure — «жёсткое
+// требование https»): по http браузер не сохранит Secure-куку, /auth/refresh
+// станет недоступен, и веб-версия будет вылетать с «Сессия истекла».
 //
-// — true, для нативного http-dev — false; HttpOnly/SameSite статичны.
-//
-//nolint:gosec // Secure управляется refresh_cookie_secure (config.yaml): за https
+//nolint:gosec // Secure управляется refresh_cookie_secure + фактическим протоколом
 func (h *AuthHandler) setRefreshCookie(c *gin.Context, token string) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     refreshCookieName,
 		Value:    token,
 		Path:     refreshCookiePath,
 		HttpOnly: true,
-		Secure:   h.cfg.RefreshCookieSecure,
+		Secure:   h.cfg.RefreshCookieSecure && isHTTPS(c),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(time.Duration(h.cfg.RefreshExpiry).Seconds()),
 	})
 }
 
-// clearRefreshCookie снимает refresh-куку (logout).
+// clearRefreshCookie снимает refresh-куку (logout). Secure должен совпадать с
+// тем, как кука была поставлена (браузер отождествляет куку с учётом атрибута).
 //
 //nolint:gosec // Secure так же из refresh_cookie_secure; остальные флаги статичны.
 func (h *AuthHandler) clearRefreshCookie(c *gin.Context) {
@@ -62,7 +79,7 @@ func (h *AuthHandler) clearRefreshCookie(c *gin.Context) {
 		Value:    "",
 		Path:     refreshCookiePath,
 		HttpOnly: true,
-		Secure:   h.cfg.RefreshCookieSecure,
+		Secure:   h.cfg.RefreshCookieSecure && isHTTPS(c),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})

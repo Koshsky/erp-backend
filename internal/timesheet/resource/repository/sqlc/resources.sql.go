@@ -45,18 +45,21 @@ const countResources = `-- name: CountResources :one
 SELECT COUNT(*)
 FROM resources
 WHERE deleted_at IS NULL
-  AND ($1::text = 'admin' OR owner_id = $2::bigint)
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR owner_id = $3::bigint)
 `
 
 type CountResourcesParams struct {
-	Role    string `json:"role"`
-	UserID  int64  `json:"user_id"`
-	OwnerID int64  `json:"owner_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+	OwnerID   int64  `json:"owner_id"`
 }
 
 func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countResources, arg.Role, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countResources, arg.ScopeView, arg.UserID, arg.OwnerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -65,6 +68,8 @@ func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) 
 const createResource = `-- name: CreateResource :one
 INSERT INTO resources (title, code, owner_id)
 VALUES ($1, $2, $3)
+ON CONFLICT (code) WHERE deleted_at IS NULL
+DO NOTHING
 RETURNING id, title, code, owner_id, created_at, updated_at, deleted_at
 `
 
@@ -74,6 +79,8 @@ type CreateResourceParams struct {
 	OwnerID int64  `json:"owner_id"`
 }
 
+// Идемпотентный create по бизнес-ключу code: на существующем активном code
+// ничего не вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
 func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (Resource, error) {
 	row := q.db.QueryRow(ctx, createResource, arg.Title, arg.Code, arg.OwnerID)
 	var i Resource
@@ -270,7 +277,10 @@ SELECT r.id, r.code, r.title, r.owner_id,
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE r.deleted_at IS NULL
-  AND ($1::text = 'admin' OR r.owner_id = $2::bigint)
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND r.owner_id = $2::bigint)
+  )
   AND ($3::bigint = 0 OR r.owner_id = $3::bigint)
 GROUP BY r.id, r.code, r.title, r.owner_id, r.created_at, r.updated_at, r.deleted_at
 ORDER BY r.id ASC
@@ -278,7 +288,7 @@ LIMIT $5::bigint OFFSET $4::bigint
 `
 
 type ListResourcesParams struct {
-	Role       string `json:"role"`
+	ScopeView  string `json:"scope_view"`
 	UserID     int64  `json:"user_id"`
 	OwnerID    int64  `json:"owner_id"`
 	PageOffset int64  `json:"page_offset"`
@@ -298,7 +308,7 @@ type ListResourcesRow struct {
 
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
 	rows, err := q.db.Query(ctx, listResources,
-		arg.Role,
+		arg.ScopeView,
 		arg.UserID,
 		arg.OwnerID,
 		arg.PageOffset,

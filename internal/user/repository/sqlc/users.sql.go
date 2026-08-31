@@ -17,13 +17,16 @@ const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*)
 FROM users
 WHERE deleted_at IS NULL
-  AND ($1::bool OR manager_id = $2::bigint)
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND manager_id = $2::bigint)
+  )
   AND ($3::text = '' OR role = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
 `
 
 type CountUsersParams struct {
-	IsAdmin    bool   `json:"is_admin"`
+	ScopeView  string `json:"scope_view"`
 	UserID     int64  `json:"user_id"`
 	RoleFilter string `json:"role_filter"`
 	ManagerID  int64  `json:"manager_id"`
@@ -31,7 +34,7 @@ type CountUsersParams struct {
 
 func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countUsers,
-		arg.IsAdmin,
+		arg.ScopeView,
 		arg.UserID,
 		arg.RoleFilter,
 		arg.ManagerID,
@@ -456,7 +459,10 @@ WHERE deleted_at IS NULL
   -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
   -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
   -- себя на клиенте отдельно).
-  AND ($1::bool OR manager_id = $2::bigint)
+  AND (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND manager_id = $2::bigint)
+  )
   AND ($3::text = '' OR role = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
 ORDER BY id ASC
@@ -464,7 +470,7 @@ LIMIT $6::bigint OFFSET $5::bigint
 `
 
 type ListUsersParams struct {
-	IsAdmin    bool   `json:"is_admin"`
+	ScopeView  string `json:"scope_view"`
 	UserID     int64  `json:"user_id"`
 	RoleFilter string `json:"role_filter"`
 	ManagerID  int64  `json:"manager_id"`
@@ -474,7 +480,7 @@ type ListUsersParams struct {
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
 	rows, err := q.db.Query(ctx, listUsers,
-		arg.IsAdmin,
+		arg.ScopeView,
 		arg.UserID,
 		arg.RoleFilter,
 		arg.ManagerID,
@@ -512,6 +518,16 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const normalizeUserStates = `-- name: NormalizeUserStates :exec
+SELECT fn_normalize_user_states()
+`
+
+// Сливает смежные диапазоны одинакового (user_id, state_id) в непрерывные.
+func (q *Queries) NormalizeUserStates(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, normalizeUserStates)
+	return err
 }
 
 const ownerChain = `-- name: OwnerChain :one

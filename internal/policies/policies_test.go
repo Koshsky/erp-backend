@@ -153,7 +153,19 @@ func TestAuthorize_TaskMilestoneAssignment(t *testing.T) {
 				{"admin sees any", admin, policies.ActionView, processOfVP1, uAdmin, true},
 				{"dp sees any", dp, policies.ActionView, processOfVP1, uDP, true},
 				{"rp sees own project's", rp, policies.ActionView, processOfVP1, uRP, true},
-				{"rp view only foreign project", rp, policies.ActionView, processOfVP1, uVP1, false},
+				// ancestor = любой из владельцев по цепочке вверх: rp, совпавший
+				// с владельцем процесса, тоже видит.
+				{
+					"rp — любой владелец по цепочке (владелец процесса)",
+					rp,
+					policies.ActionView,
+					processOfVP1,
+					uVP1,
+					true,
+				},
+				{"rp — не совпал ни с одним владельцем", rp, policies.ActionView, processOfVP1, uVP2, false},
+				// ancestor = вся цепочка владения, включая владельца строки (self).
+				{"ancestor: владелец строки (self)", rp, policies.ActionView, rbac.Owners{Owner: uVP1}, uVP1, true},
 				{"vp sees own process's", vp, policies.ActionView, processOfVP1, uVP1, true},
 				{"vp does not see foreign process's", vp, policies.ActionView, processOfVP1, uVP2, false},
 				{"worker sees none", worker, policies.ActionView, processOfVP1, uVP1, false},
@@ -325,7 +337,8 @@ func TestAuthorize_Timesheet(t *testing.T) {
 		{"vp views own employee", rbac.ResourceWorker, policies.ActionView, vp, workerOfVP, uVP1, true},
 		{"vp does not view foreign employee", rbac.ResourceWorker, policies.ActionView, vp, workerOfVP, uVP2, false},
 		{"rp does not view employees", rbac.ResourceWorker, policies.ActionView, rp, workerOfVP, uRP, false},
-		{"vp creates own employee", rbac.ResourceWorker, policies.ActionCreate, vp, workerOfVP, uVP1, true},
+		{"admin creates employee", rbac.ResourceWorker, policies.ActionCreate, admin, rbac.Owners{}, uAdmin, true},
+		{"vp cannot create employee", rbac.ResourceWorker, policies.ActionCreate, vp, workerOfVP, uVP1, false},
 		{
 			"vp cannot create employee for another",
 			rbac.ResourceWorker,
@@ -361,6 +374,35 @@ func TestAuthorize_Timesheet(t *testing.T) {
 			t.Parallel()
 			if got := policies.Authorize(tc.role, tc.res, tc.act, tc.owners, tc.userID); got != tc.allowed {
 				t.Errorf("policies.Authorize(%s, %v, %v) = %v, want %v", tc.role, tc.res, tc.act, got, tc.allowed)
+			}
+		})
+	}
+}
+
+func TestViewScopeCode(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		role string
+		res  rbac.Resource
+		want string
+	}{
+		{"rp project view = own", rp, rbac.ResourceProject, "own"},
+		{"dp project view = all", dp, rbac.ResourceProject, "all"},
+		{"rp process view = parent", rp, rbac.ResourceProcess, "parent"},
+		{"vp process view = all", vp, rbac.ResourceProcess, "all"},
+		{"vp task view = parent", vp, rbac.ResourceTask, "parent"},
+		{"rp task view = ancestor", rp, rbac.ResourceTask, "ancestor"},
+		{"dp task view = all", dp, rbac.ResourceTask, "all"},
+		{"vp resource view = own", vp, rbac.ResourceResource, "own"},
+		{"worker task view = none", worker, rbac.ResourceTask, ""},
+		{"admin anything = all", admin, rbac.ResourceTask, "all"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := policies.ViewScopeCode(tc.role, tc.res); got != tc.want {
+				t.Errorf("ViewScopeCode(%s, %v) = %q, want %q", tc.role, tc.res, got, tc.want)
 			}
 		})
 	}

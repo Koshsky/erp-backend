@@ -4,6 +4,7 @@
 CREATE UNIQUE INDEX idx_users_username_active ON users(username) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX idx_projects_code_active ON projects(code) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX idx_resources_title_active ON resources(title) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX idx_resources_code_active ON resources(code) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX idx_assignments_unique_active
 ON assignments(task_id, resource_id) WHERE deleted_at IS NULL;
 
@@ -45,11 +46,22 @@ WHERE deleted_at IS NULL;
 -- =============================================
 -- 5. INDICES FOR dates
 -- =============================================
+CREATE INDEX idx_user_states_dates ON user_states (start_date, end_date);
 CREATE INDEX idx_tasks_dates ON tasks(start_date, end_date);
 CREATE INDEX idx_milestones_date ON milestones(date);
 
+-- =============================================
+-- 6. INDICES FOR auth / idempotency / comments
+-- =============================================
+CREATE INDEX refresh_sessions_user_idx    ON refresh_sessions (user_id);
+CREATE INDEX refresh_sessions_expires_idx ON refresh_sessions (expires_at);
+CREATE INDEX idx_idempotency_keys_expires ON idempotency_keys (expires_at);
+CREATE INDEX idx_task_comments_task_id ON task_comments(task_id);
+CREATE INDEX idx_task_comments_task_created ON task_comments(task_id, created_at) WHERE deleted_at IS NULL;
+CREATE INDEX idx_task_comments_parent_id ON task_comments(parent_id) WHERE deleted_at IS NULL;
+
 -- -- =============================================
--- -- 6. OPTIONAL: full-text search
+-- -- 7. OPTIONAL: full-text search
 -- -- =============================================
 -- If you want to enable full-text search on certain text fields, you can create GIN indices on those fields. For example:
 -- CREATE INDEX idx_projects_code_trgm ON projects USING GIN (code gin_trgm_ops);

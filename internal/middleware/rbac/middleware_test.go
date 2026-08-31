@@ -11,6 +11,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -64,7 +65,7 @@ func testData() rbac.Data {
 
 func TestCheckEntity(t *testing.T) {
 	t.Parallel()
-	mw := rbac.ProvideMiddleware(nil, testData(), []rbac.Policy{
+	mw := rbac.ProvideMiddleware(nil, tracingpkg.New(nil), testData(), []rbac.Policy{
 		{Name: "task.view", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionView)},
 		{Name: "task.update", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionUpdate)},
 	})
@@ -80,7 +81,9 @@ func TestCheckEntity(t *testing.T) {
 		{"no user → 401", "", "/1", "task.view", false, http.StatusUnauthorized},
 		{"bad id → 400", testAdmin, "/abc", "task.view", true, http.StatusBadRequest},
 		{"not found → 404", testAdmin, "/10", "task.view", true, http.StatusNotFound},
-		{"rp views foreign project → 404", testRP, "/1", "task.view", true, http.StatusNotFound},
+		// rp (id 2) — владелец процесса задачи (owners {Project:1, Process:2}):
+		// ancestor = любой владелец по цепочке вверх → доступ есть.
+		{"rp — владелец процесса (ancestor) → 200", testRP, "/1", "task.view", true, http.StatusOK},
 		{"rp update → 403 (view-only)", testRP, "/1", "task.update", true, http.StatusForbidden},
 		{"vp views own process → 200", testVP, "/1", "task.view", true, http.StatusOK},
 		{"vp updates own → 200", testVP, "/1", "task.update", true, http.StatusOK},
@@ -109,29 +112,53 @@ func TestCheckEntity(t *testing.T) {
 
 func TestCheckAssignmentCreate(t *testing.T) {
 	t.Parallel()
-	mw := rbac.ProvideMiddleware(nil, testData(), []rbac.Policy{
+	mw := rbac.ProvideMiddleware(nil, tracingpkg.New(nil), testData(), []rbac.Policy{
 		{Name: "assignment.create", Check: createAssignmentForTest},
-	})
-
-	router := gin.New()
-	router.Use(setUser(testVP, 2))
-	router.POST("/assignment", mw.Check("assignment.create"), func(c *gin.Context) {
-		c.JSON(http.StatusCreated, gin.H{"ok": true})
 	})
 
 	cases := []struct {
 		name       string
+		role       string
+		userID     int64
 		body       string
 		wantStatus int
 	}{
-		{"task and resource share the owner", `{"task_id":1,"resource_id":2,"quantity":1}`, http.StatusCreated},
-		{"foreign resource → 403", `{"task_id":1,"resource_id":5,"quantity":1}`, http.StatusForbidden},
-		{"missing task → 404", `{"task_id":10,"resource_id":2,"quantity":1}`, http.StatusNotFound},
-		{"malformed body → 400", `not-json`, http.StatusBadRequest},
+		// vp (id 2) — владелец процесса задачи (owners {Project:1, Process:2}).
+		{
+			"vp: task and resource share the owner",
+			testVP,
+			2,
+			`{"task_id":1,"resource_id":2,"quantity":1}`,
+			http.StatusCreated,
+		},
+		{"vp: foreign resource → 403", testVP, 2, `{"task_id":1,"resource_id":5,"quantity":1}`, http.StatusForbidden},
+		// admin — полный доступ (ScopeAll), бизнес-правило владельцев не применяется.
+		{
+			"admin: foreign resource → 201",
+			testAdmin,
+			1,
+			`{"task_id":1,"resource_id":5,"quantity":1}`,
+			http.StatusCreated,
+		},
+		{
+			"admin: unowned resource → 201",
+			testAdmin,
+			1,
+			`{"task_id":1,"resource_id":7,"quantity":1}`,
+			http.StatusCreated,
+		},
+		{"missing task → 404", testVP, 2, `{"task_id":10,"resource_id":2,"quantity":1}`, http.StatusNotFound},
+		{"malformed body → 400", testVP, 2, `not-json`, http.StatusBadRequest},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			router := gin.New()
+			router.Use(setUser(tc.role, tc.userID))
+			router.POST("/assignment", mw.Check("assignment.create"), func(c *gin.Context) {
+				c.JSON(http.StatusCreated, gin.H{"ok": true})
+			})
+
 			req := httptest.NewRequest(http.MethodPost, "/assignment", strings.NewReader(tc.body))
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
@@ -143,7 +170,7 @@ func TestCheckAssignmentCreate(t *testing.T) {
 }
 
 // createAssignmentForTest mirrors the internal/policies rule: the matrix check
-// by the task plus the shared-owner business rule.
+// by the task plus the shared-owner business rule (admin exempt).
 func createAssignmentForTest(rc *rbac.CheckCtx) error {
 	taskID, err := rc.BodyID("task_id")
 	if err != nil {
@@ -162,12 +189,14 @@ func createAssignmentForTest(rc *rbac.CheckCtx) error {
 		return errors.ErrForbidden
 	}
 
-	resourceOwners, err := rc.Owners(rbac.ResourceResource, resourceID)
-	if err != nil {
-		return err
-	}
-	if !taskOwners.SharesOwner(resourceOwners) {
-		return errors.ErrForbidden
+	if rc.User.Role != testAdmin {
+		resourceOwners, ownerErr := rc.Owners(rbac.ResourceResource, resourceID)
+		if ownerErr != nil {
+			return ownerErr
+		}
+		if !taskOwners.SharesOwner(resourceOwners) {
+			return errors.ErrForbidden
+		}
 	}
 	return nil
 }

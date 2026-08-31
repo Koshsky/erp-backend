@@ -3,16 +3,20 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 type ResourceRepository struct {
@@ -35,6 +39,11 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 		OwnerID: ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
+		// Идемпотентный create: активный code уже существует (ON CONFLICT
+		// ничего не вставил) — это конфликт бизнес-ключа, а не внутренняя ошибка.
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errapi.Conflict("resource with this code already exists")
+		}
 		return nil, err
 	}
 
@@ -82,7 +91,7 @@ func (r *ResourceRepository) ListResources(
 	limit, offset int,
 ) ([]domain.Resource, error) {
 	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
-		Role:       role,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceResource),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -111,7 +120,14 @@ func (r *ResourceRepository) CountResources(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountResources(ctx, sqlc.CountResourcesParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountResources(
+		ctx,
+		sqlc.CountResourcesParams{
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceResource),
+			UserID:    userID,
+			OwnerID:   ownerID,
+		},
+	)
 }
 
 func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error) {

@@ -23,11 +23,12 @@ func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, role 
 	return processes, nil
 }
 
-// loadAllData load milestones, tasks, assignments and resources for the given processes.
+// loadAllData load milestones, tasks, assignments, resources and comment counts
+// for the given processes.
 func (s *PlanningService) loadAllData(
 	ctx context.Context,
 	processes []dto.Process,
-) (map[int64][]dto.Milestone, map[int64][]dto.Task, map[int64][]dto.Assignment, map[int64]dto.Resource, error) {
+) (map[int64][]dto.Milestone, map[int64][]dto.Task, map[int64][]dto.Assignment, map[int64]dto.Resource, map[int64]int64, error) {
 	processIDs := make([]int64, len(processes))
 	for i, p := range processes {
 		processIDs[i] = p.ID
@@ -35,28 +36,33 @@ func (s *PlanningService) loadAllData(
 
 	milestones, err := s.repository.ListMilestonesByProcessIDs(ctx, processIDs)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	tasks, err := s.repository.ListTasksByProcessIDs(ctx, processIDs)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	taskIDs := s.collectTaskIDs(tasks)
 
 	assignments, err := s.repository.ListAssignmentsByTaskIDs(ctx, taskIDs)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
+	}
+
+	commentCounts, err := s.repository.ListTaskCommentCountsByTaskIDs(ctx, taskIDs)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
 	}
 
 	resourcesList, err := s.repository.ListResources(ctx)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	resourcesMap := s.buildResourceMap(resourcesList)
 
-	return milestones, tasks, assignments, resourcesMap, nil
+	return milestones, tasks, assignments, resourcesMap, commentCounts, nil
 }
 
 // collectTaskIDs collects all task IDs from the tasks map.
@@ -86,6 +92,7 @@ func (s *PlanningService) buildPlanning(
 	tasks map[int64][]dto.Task,
 	assignments map[int64][]dto.Assignment,
 	resourcesMap map[int64]dto.Resource,
+	commentCounts map[int64]int64,
 ) *dto.TaskPlanning {
 	planning := &dto.TaskPlanning{
 		Processes: make([]dto.DetailedProcess, 0, len(processes)),
@@ -98,6 +105,7 @@ func (s *PlanningService) buildPlanning(
 			tasks,
 			assignments,
 			resourcesMap,
+			commentCounts,
 		)
 		planning.Processes = append(planning.Processes, detailedProcess)
 	}
@@ -112,11 +120,12 @@ func (s *PlanningService) buildDetailedProcess(
 	tasks map[int64][]dto.Task,
 	assignments map[int64][]dto.Assignment,
 	resourcesMap map[int64]dto.Resource,
+	commentCounts map[int64]int64,
 ) dto.DetailedProcess {
 	// Use the generic getSlice function
 	processTasks := getSlice(tasks, process.ID)
 	processMilestones := getSlice(milestones, process.ID)
-	detailedTasks := s.buildDetailedTasks(processTasks, assignments, resourcesMap)
+	detailedTasks := s.buildDetailedTasks(processTasks, assignments, resourcesMap, commentCounts)
 
 	return dto.DetailedProcess{
 		Process:    process,
@@ -130,6 +139,7 @@ func (s *PlanningService) buildDetailedTasks(
 	tasks []dto.Task,
 	assignments map[int64][]dto.Assignment,
 	resourcesMap map[int64]dto.Resource,
+	commentCounts map[int64]int64,
 ) []dto.DetailedTask {
 	detailedTasks := make([]dto.DetailedTask, 0, len(tasks))
 
@@ -138,8 +148,9 @@ func (s *PlanningService) buildDetailedTasks(
 		resources := s.buildTaskResources(taskAssignments, resourcesMap)
 
 		detailedTasks = append(detailedTasks, dto.DetailedTask{
-			Task:      task,
-			Resources: resources,
+			Task:          task,
+			Resources:     resources,
+			CommentsCount: commentCounts[task.ID],
 		})
 	}
 

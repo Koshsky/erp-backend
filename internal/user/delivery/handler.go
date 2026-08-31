@@ -177,7 +177,9 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	// vp создаёт рабочего в свою команду: чужой manager_id игнорируется.
+	// Создание сотрудников — только admin (worker.create у vp убран из
+	// матрицы). Защитный блок ниже остаётся как оборона от устаревших правил
+	// в БД: если vp всё же получит доступ, чужой manager_id игнорируется.
 	if user.Role == domain.ProcessOwner {
 		req.ManagerID = &user.ID
 	}

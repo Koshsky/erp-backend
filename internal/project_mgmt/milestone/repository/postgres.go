@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
 )
@@ -84,7 +85,7 @@ func (r *MilestoneRepository) ListMilestones(
 	limit, offset int,
 ) ([]domain.Milestone, error) {
 	rows, err := r.db.ListMilestones(ctx, sqlc.ListMilestonesParams{
-		Role:       role,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceMilestone),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -106,7 +107,14 @@ func (r *MilestoneRepository) CountMilestones(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountMilestones(ctx, sqlc.CountMilestonesParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountMilestones(
+		ctx,
+		sqlc.CountMilestonesParams{
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceMilestone),
+			UserID:    userID,
+			OwnerID:   ownerID,
+		},
+	)
 }
 
 func mapMilestone(row sqlc.Milestone) domain.Milestone {

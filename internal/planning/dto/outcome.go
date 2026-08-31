@@ -29,4 +29,6 @@ type DetailedTask struct {
 	Task
 
 	Resources []Resource `json:"resources"`
+	// Количество активных комментариев задачи (для бейджа на диаграмме).
+	CommentsCount int64 `json:"comments_count" example:"3"`
 }

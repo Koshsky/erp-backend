@@ -2,8 +2,8 @@
 SELECT * FROM projects
 WHERE deleted_at IS NULL
 AND (
-    @role::text IN ('admin', 'dp') OR
-    owner_id = @user_id::bigint
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
 )
 ORDER BY priority ASC;
 
@@ -13,9 +13,10 @@ FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    @role::text IN ('admin', 'dp', 'vp') OR
-    p.owner_id = @user_id::bigint OR
-    pr.owner_id = @user_id::bigint
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
 );
 
 -- name: ListResources :many
@@ -48,3 +49,10 @@ AND deleted_at IS NULL;
 SELECT * FROM assignments
 WHERE task_id = ANY(@task_ids::bigint[])
 AND deleted_at IS NULL;
+
+-- name: ListTaskCommentCountsByTaskIDs :many
+SELECT task_id, COUNT(*)::bigint AS comments_count
+FROM task_comments
+WHERE task_id = ANY(@task_ids::bigint[])
+AND deleted_at IS NULL
+GROUP BY task_id;

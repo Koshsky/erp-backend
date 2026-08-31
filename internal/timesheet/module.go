@@ -17,6 +17,8 @@ import (
 )
 
 // ProviderSet aggregates the timesheet module's dependencies.
+//
+//nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
 	resourceRepo.NewResourceRepository,
 	resourceService.NewResourceService,
@@ -54,7 +56,7 @@ func ProvideModule(
 }
 
 // RegisterPublicRoutes is a no-op: the module has no public routes.
-func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
+func (m Module) RegisterPublicRoutes(_ *gin.RouterGroup) {
 }
 
 // RegisterProtectedRoutes registers the module's routes behind authentication.

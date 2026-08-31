@@ -14,8 +14,10 @@ server:
 jwt:
   access_expiry: 15m
   refresh_expiry: 168h
-  # Refresh-кука ставится только с флагом Secure. True — за https (nginx-стек);
-  # для нативного dev на http (make dev) — false, иначе браузер не пришлёт куку.
+  # Refresh-кука: HttpOnly, SameSite=Strict. Флаг Secure применяется только за
+  # реальным https (True — жёсткое требование https); по фактическому http
+  # (нативный dev, прямой http-доступ) он снимается автоматически, иначе
+  # браузер не сохранит куку и автопродление access-токена не заработает.
   refresh_cookie_secure: true
   issuer: mvs-erp
 
@@ -78,5 +80,17 @@ profiling:
   address: "127.0.0.1:6060"
 
 maintenance:
-  enabled: true
+  enabled: false
   interval: 5m
+
+tracing:
+  enabled: true
+  # OTLP/gRPC endpoint — in-stack Jaeger collector (see docker-compose.yml).
+  exporter_endpoint: "jaeger:4317"
+  service_name: "erp-backend"
+  sampler_ratio: 1.0
+
+rbac:
+  # Период фоновой перезагрузки правил из Postgres (эвентуальная
+  # консистентность между инстансами; локальные правки применяются сразу).
+  refresh_interval: 30s

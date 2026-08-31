@@ -11,3 +11,12 @@ func ProvideJWTConfig(cfg *Config) JWTConfig { return cfg.JWT }
 
 // ProvideProfilingConfig extracts the profiling settings.
 func ProvideProfilingConfig(cfg *Config) ProfilingConfig { return cfg.Profiling }
+
+// ProvideTracingConfig extracts the OpenTelemetry tracing settings.
+func ProvideTracingConfig(cfg *Config) TracingConfig { return cfg.Tracing }
+
+// ProvideRBACConfig extracts the RBAC settings.
+func ProvideRBACConfig(cfg *Config) RBACConfig { return cfg.RBAC }
+
+// ProvideRBACRefreshInterval extracts the RBAC rules refresh interval.
+func ProvideRBACRefreshInterval(cfg *Config) Duration { return cfg.RBAC.RefreshInterval }

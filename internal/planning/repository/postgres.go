@@ -7,8 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
@@ -28,8 +30,8 @@ func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRep
 
 func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
-		UserID: userID,
-		Role:   role,
+		UserID:    userID,
+		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProject),
 	})
 	if err != nil {
 		return nil, err
@@ -51,8 +53,8 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 
 func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
 	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
-		UserID: userID,
-		Role:   role,
+		UserID:    userID,
+		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProcess),
 	})
 	if err != nil {
 		return nil, err
@@ -155,6 +157,22 @@ func (r *PlanningRepository) ListAssignmentsByTaskIDs(
 		}
 	}
 	return groupByKey(assignments, func(a dto.Assignment) int64 { return a.TaskID }), nil
+}
+
+// ListTaskCommentCountsByTaskIDs returns the number of active comments per task.
+func (r *PlanningRepository) ListTaskCommentCountsByTaskIDs(
+	ctx context.Context,
+	taskIDs []int64,
+) (map[int64]int64, error) {
+	rows, err := r.db.ListTaskCommentCountsByTaskIDs(ctx, taskIDs)
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[int64]int64, len(rows))
+	for _, row := range rows {
+		counts[row.TaskID] = row.CommentsCount
+	}
+	return counts, nil
 }
 
 // groupByKey groups items by the key returned by the key function.

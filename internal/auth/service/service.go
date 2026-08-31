@@ -15,6 +15,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/auth/repository"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
@@ -25,6 +26,7 @@ type AuthService struct {
 	users    UserService
 	jwt      *jwt.Service
 	sessions *repository.AuthRepository
+	tracer   *tracingpkg.Tracer
 }
 
 // NewAuthService builds the auth service.
@@ -32,15 +34,20 @@ func NewAuthService(
 	users *userservice.UserService,
 	jwtService *jwt.Service,
 	sessions *repository.AuthRepository,
+	tracer *tracingpkg.Tracer,
 ) *AuthService {
 	return &AuthService{
 		users:    users,
 		jwt:      jwtService,
 		sessions: sessions,
+		tracer:   tracer,
 	}
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.SessionResult, error) {
+	ctx, end := s.tracer.Start(ctx, "auth.Login")
+	defer end(nil)
+
 	username = strings.TrimSpace(username)
 
 	user, err := s.users.FindUserByUsername(ctx, username)
@@ -69,6 +76,9 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.SessionResult, error) {
+	ctx, end := s.tracer.Start(ctx, "auth.RefreshToken")
+	defer end(nil)
+
 	session, err := s.findSession(ctx, refreshToken)
 	if err != nil {
 		return nil, err
@@ -111,13 +121,15 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 
 // Logout отзывает сессию по refresh-токену (идемпотентно).
 func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
+	ctx, end := s.tracer.Start(ctx, "auth.Logout")
+	defer end(nil)
+
 	if refreshToken == "" {
 		return nil
 	}
 	session, err := s.findSession(ctx, refreshToken)
 	if err != nil {
 		// Неизвестный/уже отозванный токен — logout идемпотентен, это не ошибка.
-		//nolint:nilerr // идемпотентный logout: неизвестный токен — не ошибка
 		return nil
 	}
 	if err = s.sessions.RevokeSession(ctx, session.ID); err != nil {

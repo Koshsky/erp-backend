@@ -7,7 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -35,7 +38,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 		EndDate:   task.EndDate,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapTask(row)
@@ -62,7 +65,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 		EndDate:   task.EndDate,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapTask(row)
@@ -81,7 +84,7 @@ func (r *TaskRepository) ListTasks(
 	limit, offset int,
 ) ([]domain.Task, error) {
 	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
-		Role:       role,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceTask),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -98,7 +101,14 @@ func (r *TaskRepository) ListTasks(
 }
 
 func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, role string, ownerID int64) (int64, error) {
-	return r.db.CountTasks(ctx, sqlc.CountTasksParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountTasks(
+		ctx,
+		sqlc.CountTasksParams{
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceTask),
+			UserID:    userID,
+			OwnerID:   ownerID,
+		},
+	)
 }
 
 func mapTask(row sqlc.Task) domain.Task {
@@ -118,5 +128,5 @@ func (r *TaskRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners,
 	if err != nil {
 		return rbac.Owners{}, err
 	}
-	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner}, nil
+	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner, Owner: row.OwnerID}, nil
 }

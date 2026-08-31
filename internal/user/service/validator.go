@@ -10,8 +10,10 @@ import (
 )
 
 // maxDayRange is the maximum calendar range width per request (in days).
+// maxRoleLen is the maximum role name length (RBAC catalog).
 const (
 	maxDayRange = 730
+	maxRoleLen  = 32
 	hoursPerDay = 24
 )
 
@@ -29,10 +31,14 @@ func (v *UserValidator) ValidateUser(user *domain.User) error {
 	if err := v.ValidateRequiredText(user.Username, "username"); err != nil {
 		return err
 	}
-	switch user.Role {
-	case domain.Admin, domain.ProjectDirector, domain.ProjectManager, domain.ProcessOwner, domain.Worker:
-	default:
-		return fmt.Errorf("unsupported role: %s", user.Role)
+	// Роли конфигурируются в рантайме каталогом rbac_roles (V15): здесь
+	// проверяем только форму; существование роли гарантирует FK
+	// users_role_fk (V17) — нарушение отдаётся как 400 через mapUserErr.
+	if user.Role == "" {
+		return errors.NewFieldError("role", "required", "role is required")
+	}
+	if len(user.Role) > maxRoleLen {
+		return errors.NewFieldError("role", "too_long", "role is too long")
 	}
 	if user.ManagerID != nil {
 		if err := v.ValidatePositiveID(*user.ManagerID, "manager_id"); err != nil {

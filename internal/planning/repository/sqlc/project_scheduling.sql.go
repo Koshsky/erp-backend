@@ -84,15 +84,16 @@ FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.deleted_at IS NULL
 AND (
-    $1::text IN ('admin', 'dp', 'vp') OR
-    p.owner_id = $2::bigint OR
-    pr.owner_id = $2::bigint
+    $1::text = 'all' OR
+    ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($1::text = 'own' AND p.owner_id = $2::bigint)
 )
 `
 
 type ListProcessesParams struct {
-	Role   string `json:"role"`
-	UserID int64  `json:"user_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
 }
 
 type ListProcessesRow struct {
@@ -101,7 +102,7 @@ type ListProcessesRow struct {
 }
 
 func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([]ListProcessesRow, error) {
-	rows, err := q.db.Query(ctx, listProcesses, arg.Role, arg.UserID)
+	rows, err := q.db.Query(ctx, listProcesses, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -171,19 +172,19 @@ const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
 AND (
-    $1::text IN ('admin', 'dp') OR
-    owner_id = $2::bigint
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint)
 )
 ORDER BY priority ASC
 `
 
 type ListProjectsParams struct {
-	Role   string `json:"role"`
-	UserID int64  `json:"user_id"`
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
-	rows, err := q.db.Query(ctx, listProjects, arg.Role, arg.UserID)
+	rows, err := q.db.Query(ctx, listProjects, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -271,6 +272,39 @@ func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
 			&i.UpdatedAt,
 			&i.DeletedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTaskCommentCountsByTaskIDs = `-- name: ListTaskCommentCountsByTaskIDs :many
+SELECT task_id, COUNT(*)::bigint AS comments_count
+FROM task_comments
+WHERE task_id = ANY($1::bigint[])
+AND deleted_at IS NULL
+GROUP BY task_id
+`
+
+type ListTaskCommentCountsByTaskIDsRow struct {
+	TaskID        int64 `json:"task_id"`
+	CommentsCount int64 `json:"comments_count"`
+}
+
+func (q *Queries) ListTaskCommentCountsByTaskIDs(ctx context.Context, taskIds []int64) ([]ListTaskCommentCountsByTaskIDsRow, error) {
+	rows, err := q.db.Query(ctx, listTaskCommentCountsByTaskIDs, taskIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTaskCommentCountsByTaskIDsRow{}
+	for rows.Next() {
+		var i ListTaskCommentCountsByTaskIDsRow
+		if err := rows.Scan(&i.TaskID, &i.CommentsCount); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

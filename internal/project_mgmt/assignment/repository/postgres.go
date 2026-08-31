@@ -3,11 +3,14 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
@@ -35,6 +38,20 @@ func (r *AssignmentRepository) CreateAssignment(
 		Quantity:   int64(assignment.Quantity),
 	})
 	if err != nil {
+		// Идемпотентный create: на существующей активной связке
+		// (task_id, resource_id) INSERT ... ON CONFLICT DO NOTHING не вставил
+		// строку, RETURNING вернул пусто. Возвращаем уже существующую запись.
+		if errors.Is(err, pgx.ErrNoRows) {
+			existing, ferr := r.db.FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
+				TaskID:     assignment.TaskID,
+				ResourceID: assignment.ResourceID,
+			})
+			if ferr != nil {
+				return nil, ferr
+			}
+			mapped := mapAssignment(existing)
+			return &mapped, nil
+		}
 		return nil, err
 	}
 
@@ -82,7 +99,7 @@ func (r *AssignmentRepository) ListAssignments(
 	limit, offset int,
 ) ([]domain.Assignment, error) {
 	rows, err := r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
-		Role:       role,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceAssignment),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -104,7 +121,14 @@ func (r *AssignmentRepository) CountAssignments(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountAssignments(ctx, sqlc.CountAssignmentsParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountAssignments(
+		ctx,
+		sqlc.CountAssignmentsParams{
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceAssignment),
+			UserID:    userID,
+			OwnerID:   ownerID,
+		},
+	)
 }
 
 func mapAssignment(row sqlc.Assignment) domain.Assignment {
@@ -122,5 +146,5 @@ func (r *AssignmentRepository) OwnerChain(ctx context.Context, id int64) (rbac.O
 	if err != nil {
 		return rbac.Owners{}, err
 	}
-	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner}, nil
+	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner, Owner: row.OwnerID}, nil
 }

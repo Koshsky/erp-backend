@@ -10,15 +10,18 @@ import (
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
+	"github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/logger"
 	authMw "github.com/Koshsky/erp-backend/internal/middleware/auth"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
 	"github.com/Koshsky/erp-backend/internal/policies"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt"
+	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
+	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/internal/user"
 )
 
@@ -27,10 +30,15 @@ func InitializeApp() (*App, error) {
 	wire.Build(
 		config.ProvideConfig,
 		logger.ProvideLogger,
+		tracingpkg.ProvideTracer,
+		config.ProvideTracingConfig,
 		database.ProvidePostgresDB,
 		config.ProvidePostgresConfig,
 		config.ProvideJWTConfig,
 		config.ProvideProfilingConfig,
+		config.ProvideRBACRefreshInterval,
+		idempotency.ProvideIdempotencyRepository,
+		idempotency.ProvideIdempotencyMiddleware,
 		jwt.ProvideJWTService,
 		authMw.ProvideAuthMiddleware,
 		rbacMW.ProvideMiddleware,
@@ -41,9 +49,10 @@ func InitializeApp() (*App, error) {
 		user.ProviderSet,
 		auth.ProviderSet,
 		planning.ProviderSet,
-		project_mgmt.ProviderSet,
+		projectmgmt.ProviderSet,
 		timesheet.ProviderSet,
 		autocreate.ProviderSet,
+		rbacpolicy.ProviderSet,
 
 		ProvideModules,
 		New,

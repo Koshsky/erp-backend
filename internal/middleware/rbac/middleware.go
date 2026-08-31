@@ -7,9 +7,11 @@ import (
 	"io"
 	"log/slog"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
@@ -35,6 +37,7 @@ type Data struct {
 	AssignmentOwners ResolveByID
 	ResourceOwners   ResolveByID
 	WorkerOwners     ResolveByID
+	CommentOwners    ResolveByID
 }
 
 // resolve returns the resolver for a resource (nil — the resource has no owner).
@@ -54,8 +57,11 @@ func (d Data) resolve(rsrc Resource) ResolveByID {
 		return d.ResourceOwners
 	case ResourceWorker:
 		return d.WorkerOwners
-	case ResourceState:
-		// States have no owner.
+	case ResourceComment:
+		return d.CommentOwners
+	case ResourceState, ResourceUserCatalog, ResourceRBACConfig,
+		ResourceUserAdmin, ResourceStateAdmin, ResourceOrgStructure:
+		// States and virtual resources have no owner.
 		return nil
 	default:
 		return nil
@@ -128,17 +134,30 @@ func (rc *CheckCtx) Owners(rsrc Resource, id int64) (Owners, error) {
 // Middleware is the policy engine.
 type Middleware struct {
 	logger *slog.Logger
+	tracer *tracingpkg.Tracer
 	data   Data
-	byName map[string]Policy
+	byName atomic.Pointer[map[string]Policy]
 }
 
-// Check runs the policy by name.
+// Check runs the policy by name, wrapped in its own trace span. An unknown
+// name denies with 403 + ERROR log (политика могла быть удалена/испорчена в
+// БД; отказ без раскрытия деталей вместо паники).
 func (m *Middleware) Check(name string) gin.HandlerFunc {
-	policy, ok := m.byName[name]
-	if !ok {
-		panic("rbac: unknown policy " + name)
-	}
 	return func(c *gin.Context) {
+		ctx, end := m.tracer.Start(c.Request.Context(), "rbac."+name)
+		c.Request = c.Request.WithContext(ctx)
+		defer end(nil)
+
+		byName := m.byName.Load()
+		policy, ok := (*byName)[name]
+		if !ok {
+			if m.logger != nil {
+				m.logger.Error("rbac: policy not found", "policy", name)
+			}
+			response.Error(c, m.logger, errors.ErrForbidden)
+			c.Abort()
+			return
+		}
 		user, found := getUser(c)
 		if !found {
 			return
@@ -156,6 +175,16 @@ func (m *Middleware) Check(name string) gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+// Refresh атомарно заменяет набор маршрутных проверок (вызывается PolicyStore
+// после каждой перезагрузки правил из БД).
+func (m *Middleware) Refresh(policies []Policy) {
+	byName := make(map[string]Policy, len(policies))
+	for _, p := range policies {
+		byName[p.Name] = p
+	}
+	m.byName.Store(&byName)
 }
 
 // abort writes the policy error as an HTTP response.

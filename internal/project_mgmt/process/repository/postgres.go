@@ -7,7 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -35,7 +38,7 @@ func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Pr
 		OwnerID:   nullable.ToInt8(process.OwnerID),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapProcess(row)
@@ -62,7 +65,7 @@ func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Pr
 		EndDate:   process.EndDate,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
 	mapped := mapProcess(row)
@@ -81,7 +84,7 @@ func (r *ProcessRepository) ListProcesss(
 	limit, offset int,
 ) ([]domain.Process, error) {
 	rows, err := r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
-		Role:       role,
+		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceProcess),
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -103,7 +106,14 @@ func (r *ProcessRepository) CountProcesses(
 	role string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountProcesses(ctx, sqlc.CountProcessesParams{Role: role, UserID: userID, OwnerID: ownerID})
+	return r.db.CountProcesses(
+		ctx,
+		sqlc.CountProcessesParams{
+			ScopeView: policies.ViewScopeCode(role, rbac.ResourceProcess),
+			UserID:    userID,
+			OwnerID:   ownerID,
+		},
+	)
 }
 
 func mapProcess(row sqlc.Process) domain.Process {

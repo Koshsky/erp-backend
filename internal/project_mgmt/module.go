@@ -1,5 +1,5 @@
-// Package project_mgmt wires the project management module's providers and routes.
-package project_mgmt
+// Package projectmgmt wires the project management module's providers and routes.
+package projectmgmt
 
 import (
 	"github.com/gin-gonic/gin"
@@ -8,6 +8,9 @@ import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	assignmentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
+	commentDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/delivery"
+	commentRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
+	commentService "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/service"
 	milestoneDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
 	milestoneRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	milestoneService "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
@@ -23,6 +26,8 @@ import (
 )
 
 // ProviderSet aggregates the project management module's dependencies.
+//
+//nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
 	projectRepo.NewProjectRepository,
 	projectService.NewProjectService,
@@ -35,6 +40,10 @@ var ProviderSet = wire.NewSet(
 	taskRepo.NewTaskRepository,
 	taskService.NewTaskService,
 	taskDelivery.NewTaskHandler,
+
+	commentRepo.NewCommentRepository,
+	commentService.NewCommentService,
+	commentDelivery.NewCommentHandler,
 
 	milestoneRepo.NewMilestoneRepository,
 	milestoneService.NewMilestoneService,
@@ -54,6 +63,7 @@ type Module struct {
 	process    *processDelivery.ProcessHandler
 	milestone  *milestoneDelivery.MilestoneHandler
 	assignment *delivery.AssignmentHandler
+	comment    *commentDelivery.CommentHandler
 }
 
 // ProvideModule builds the project management module.
@@ -63,6 +73,7 @@ func ProvideModule(
 	process *processDelivery.ProcessHandler,
 	milestone *milestoneDelivery.MilestoneHandler,
 	assignment *delivery.AssignmentHandler,
+	comment *commentDelivery.CommentHandler,
 ) Module {
 	return Module{
 		task:       task,
@@ -70,11 +81,12 @@ func ProvideModule(
 		process:    process,
 		milestone:  milestone,
 		assignment: assignment,
+		comment:    comment,
 	}
 }
 
 // RegisterPublicRoutes is a no-op: the module has no public routes.
-func (m Module) RegisterPublicRoutes(r *gin.RouterGroup) {
+func (m Module) RegisterPublicRoutes(_ *gin.RouterGroup) {
 }
 
 // RegisterProtectedRoutes registers the module's routes behind authentication.
@@ -84,4 +96,5 @@ func (m Module) RegisterProtectedRoutes(r *gin.RouterGroup) {
 	m.process.RegisterRoutes(r)
 	m.milestone.RegisterRoutes(r)
 	m.assignment.RegisterRoutes(r)
+	m.comment.RegisterRoutes(r)
 }

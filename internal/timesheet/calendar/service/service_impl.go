@@ -10,6 +10,7 @@ import (
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
@@ -22,13 +23,15 @@ const (
 type CalendarService struct {
 	logger     *slog.Logger
 	repository CalendarRepository
+	tracer     *tracingpkg.Tracer
 }
 
 // NewCalendarService builds the CalendarService service.
-func NewCalendarService(logger *slog.Logger, r *repo.CalendarRepository) *CalendarService {
+func NewCalendarService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.CalendarRepository) *CalendarService {
 	return &CalendarService{
 		logger:     logger,
 		repository: r,
+		tracer:     tracer,
 	}
 }
 
@@ -39,6 +42,9 @@ func (s *CalendarService) GetCalendar(
 	ctx context.Context,
 	start, end date.Date,
 ) (*dto.CalendarPlanning, error) {
+	ctx, finish := s.tracer.Start(ctx, "calendar.GetCalendar")
+	defer finish(nil)
+
 	startT, endT := start.Time(), end.Time()
 	if endT.Before(startT) {
 		return nil, fmt.Errorf("end_date must be greater than or equal to start_date")
