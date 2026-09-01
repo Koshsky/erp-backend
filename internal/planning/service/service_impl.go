@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log/slog"
+	"sort"
 
 	repo "github.com/Koshsky/erp-backend/internal/planning/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
@@ -51,30 +52,51 @@ func (s *PlanningService) GetProcessPlanning(
 	ctx, end := s.tracer.Start(ctx, "planning.GetProcessPlanning")
 	defer end(nil)
 
-	projects, err := s.repository.ListProjects(ctx, userID, role)
+	// Scoped by process.view (ListProcesses): a role with the right sees its
+	// processes even when it has no project.view (e.g. vp). The processes are
+	// grouped under their parent projects, which are re-fetched by ids.
+	processes, err := s.repository.ListProcesses(ctx, userID, role)
 	if err != nil {
 		return nil, err
 	}
-	projectIDs := make([]int64, len(projects))
-	for i, project := range projects {
-		projectIDs[i] = project.ID
+	grouped := make(map[int64][]dto.Process)
+	for _, p := range processes {
+		grouped[p.ProjectID] = append(grouped[p.ProjectID], p)
 	}
-	processes, err := s.repository.ListProcessesByProjectIDs(ctx, projectIDs)
+	projectIDs := make([]int64, 0, len(grouped))
+	for projectID := range grouped {
+		projectIDs = append(projectIDs, projectID)
+	}
+	projects, err := s.repository.ListProjectsByIDs(ctx, projectIDs)
 	if err != nil {
 		return nil, err
 	}
-
-	planning := dto.ProcessPlanning{
-		Projects: make([]dto.DetailedProject, len(projects)),
+	byID := make(map[int64]dto.Project, len(projects))
+	for _, p := range projects {
+		byID[p.ID] = p
 	}
 
-	for i, p := range projects {
-		planning.Projects[i] = dto.DetailedProject{
-			Project:   p,
-			Processes: processes[p.ID],
+	planning := dto.ProcessPlanning{Projects: make([]dto.DetailedProject, 0, len(byID))}
+	for projectID, ps := range grouped {
+		parent, ok := byID[projectID]
+		if !ok {
+			// The parent project is not visible (deleted/omitted) — the process
+			// is not shown either (it cannot be positioned without a project).
+			continue
 		}
+		planning.Projects = append(planning.Projects, dto.DetailedProject{
+			Project:   parent,
+			Processes: ps,
+		})
 	}
-
+	// Same ordering as the projects aggregate: by priority, then id.
+	sort.Slice(planning.Projects, func(i, j int) bool {
+		a, b := planning.Projects[i].Project, planning.Projects[j].Project
+		if a.Priority != b.Priority {
+			return a.Priority < b.Priority
+		}
+		return a.ID < b.ID
+	})
 	return &planning, nil
 }
 

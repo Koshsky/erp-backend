@@ -52,6 +52,29 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 	return projetcs, nil
 }
 
+// ListProjectsByIDs returns full project rows by ids (for attaching parent
+// context to process-scoped aggregates: /planning/processes).
+func (r *PlanningRepository) ListProjectsByIDs(ctx context.Context, ids []int64) ([]dto.Project, error) {
+	rows, err := r.db.ListProjectsByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	projects := make([]dto.Project, len(rows))
+	for i, row := range rows {
+		projects[i] = dto.Project{
+			ID:        row.ID,
+			OwnerID:   nullable.Int64Ptr(row.OwnerID),
+			Code:      row.Code,
+			Color:     nullable.StringPtr(row.Color),
+			StartDate: date.From(row.StartDate),
+			EndDate:   date.From(row.EndDate),
+			Priority:  int(row.Priority),
+		}
+	}
+	return projects, nil
+}
+
+// ListProcesses — process-scoped list (process.view matrix).
 func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
 	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
 		UserID:    userID,
