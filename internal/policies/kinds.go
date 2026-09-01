@@ -947,6 +947,24 @@ var defaultRouteSpecs = []RouteSpec{
 		Kind:   kindEntity,
 		Params: map[string]any{paramResource: resState, paramAction: actDelete, paramOwner: ownerModeNone},
 	},
+	// Planning aggregates (/planning/*): gated by the view matrix of the
+	// underlying domain. The list kind checks the view right; row scoping
+	// stays in the SQL via ViewScopeCode (no owner query param is exposed).
+	{
+		Name:   "planning.projects",
+		Kind:   kindList,
+		Params: map[string]any{paramResource: resProject, paramQueryKey: bodyKeyOwnerID},
+	},
+	{
+		Name:   "planning.processes",
+		Kind:   kindList,
+		Params: map[string]any{paramResource: resProcess, paramQueryKey: bodyKeyOwnerID},
+	},
+	{
+		Name:   "planning.tasks",
+		Kind:   kindList,
+		Params: map[string]any{paramResource: resTask, paramQueryKey: bodyKeyOwnerID},
+	},
 	{
 		Name:   "autocreate.list",
 		Kind:   kindEntity,

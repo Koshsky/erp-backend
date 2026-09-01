@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
@@ -15,13 +16,19 @@ import (
 type PlanningHandler struct {
 	logger  *slog.Logger
 	service MilestoneService
+	mw      *rbac.Middleware
 }
 
 // NewPlanningHandler builds the planning handler.
-func NewPlanningHandler(logger *slog.Logger, svc *planningservice.PlanningService) *PlanningHandler {
+func NewPlanningHandler(
+	logger *slog.Logger,
+	svc *planningservice.PlanningService,
+	mw *rbac.Middleware,
+) *PlanningHandler {
 	return &PlanningHandler{
 		logger:  logger,
 		service: svc,
+		mw:      mw,
 	}
 }
 

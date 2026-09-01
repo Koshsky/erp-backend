@@ -120,7 +120,7 @@ func InitializeApp() (*App, error) {
 	userModule := user.ProvideModule(userHandler, slogLogger)
 	planningRepository := repository10.NewPlanningRepository(slogLogger, pool)
 	planningService := service4.NewPlanningService(slogLogger, tracer, planningRepository)
-	planningHandler := delivery3.NewPlanningHandler(slogLogger, planningService)
+	planningHandler := delivery3.NewPlanningHandler(slogLogger, planningService, rbacMiddleware)
 	planningModule := planning.ProvideModule(planningHandler)
 	taskService := service5.NewTaskService(slogLogger, tracer, taskRepository)
 	taskHandler := delivery4.NewTaskHandler(slogLogger, taskService, rbacMiddleware)
