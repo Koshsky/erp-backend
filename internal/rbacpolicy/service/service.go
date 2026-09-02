@@ -223,7 +223,7 @@ func roleExists(roles []domain.Role, name string) bool {
 // display capabilities by permissions rather than by roles.
 func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission {
 	out := []dto.Permission{}
-	for res := rbac.ResourceProject; res <= rbac.ResourceOrgStructure; res++ {
+	for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
 		for act := policies.ActionView; act <= policies.ActionDelete; act++ {
 			scope := policies.CurrentMatrix().ScopeFor(role, res, act)
 			if scope == policies.ScopeNone {

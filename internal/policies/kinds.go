@@ -349,7 +349,8 @@ func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
 	case rbac.ResourceProcess, rbac.ResourceTask, rbac.ResourceMilestone,
 		rbac.ResourceAssignment, rbac.ResourceState, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return nil, false
 	}
 	return nil, false
@@ -979,6 +980,13 @@ var defaultRouteSpecs = []RouteSpec{
 		Name:   "rbac.manage",
 		Kind:   kindEntity,
 		Params: map[string]any{paramResource: resRBACConfig, paramAction: actView, paramOwner: ownerModeNone},
+	},
+	// Audit-log admin section: virtual resource, admin only (bypass). No rows
+	// in the matrix — the page and the /audit/* routes are admin-only.
+	{
+		Name:   "audit.view",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resAudit, paramAction: actView, paramOwner: ownerModeNone},
 	},
 }
 

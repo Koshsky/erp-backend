@@ -48,6 +48,7 @@ const (
 	resUserAdmin    = "user_admin"
 	resStateAdmin   = "state_admin"
 	resOrgStructure = "org_structure"
+	resAudit        = "audit"
 )
 
 // String action codes.
@@ -289,6 +290,7 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 	rbac.ResourceUserAdmin:    {},
 	rbac.ResourceStateAdmin:   {},
 	rbac.ResourceOrgStructure: {},
+	rbac.ResourceAudit:        {},
 }}
 
 // DefaultMatrix returns the built-in default matrix (a copy).
@@ -326,7 +328,8 @@ func ownField(res rbac.Resource, owners rbac.Owners) int64 {
 		return owners.Owner
 	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
 		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return 0
 	}
 	return 0
@@ -343,7 +346,8 @@ func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return 0
 	}
 	return 0
@@ -364,7 +368,8 @@ func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return false
 	}
 	return false
@@ -424,6 +429,7 @@ var resourceNames = map[rbac.Resource]string{
 	rbac.ResourceUserAdmin:    resUserAdmin,
 	rbac.ResourceStateAdmin:   resStateAdmin,
 	rbac.ResourceOrgStructure: resOrgStructure,
+	rbac.ResourceAudit:        resAudit,
 }
 
 //nolint:gochecknoglobals // action codex
@@ -498,6 +504,7 @@ var ownApplicable = map[rbac.Resource]bool{
 	rbac.ResourceUserAdmin:    false,
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
+	rbac.ResourceAudit:        false,
 }
 
 //nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
@@ -516,6 +523,7 @@ var parentApplicable = map[rbac.Resource]bool{
 	rbac.ResourceUserAdmin:    false,
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
+	rbac.ResourceAudit:        false,
 }
 
 //nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
@@ -534,6 +542,7 @@ var ancestorApplicable = map[rbac.Resource]bool{
 	rbac.ResourceUserAdmin:    false,
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
+	rbac.ResourceAudit:        false,
 }
 
 // ScopeApplicable reports whether a zone is applicable to a resource (for rule validation).

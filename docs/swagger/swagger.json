@@ -447,6 +447,189 @@
                 }
             }
         },
+        "/audit/events": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a paged list of audit events (all CRUD mutations + auth events).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Audit"
+                ],
+                "summary": "List audit events",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by actor user id",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by actor login or full name (case-insensitive substring)",
+                        "name": "user",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by entity (project, user, auth, ...)",
+                        "name": "entity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by action (create, update, delete, login, ...)",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by HTTP status group (2xx/3xx/4xx/5xx) or exact code",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Lower bound (RFC3339, inclusive)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Upper bound (RFC3339, inclusive)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Substring search on path / actor email",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by the ID shown in the ID column (entity_id or actor_user_id)",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by exact actor IP (e.g. 172.18.0.1)",
+                        "name": "ip",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.Page"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.AuditEventView"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticate user; the refresh token goes into an HttpOnly cookie",
@@ -6301,6 +6484,69 @@
                 "task_id": {
                     "type": "integer",
                     "example": 1
+                }
+            }
+        },
+        "dto.AuditEventView": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "create"
+                },
+                "actor_email": {
+                    "type": "string",
+                    "example": "admin@example.ru"
+                },
+                "actor_ip": {
+                    "type": "string",
+                    "example": "172.18.0.1"
+                },
+                "actor_name": {
+                    "type": "string",
+                    "example": "Иванов Иван"
+                },
+                "actor_role": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "actor_user_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "duration_ms": {
+                    "type": "integer",
+                    "example": 15
+                },
+                "entity": {
+                    "type": "string",
+                    "example": "project"
+                },
+                "entity_id": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "method": {
+                    "type": "string",
+                    "example": "POST"
+                },
+                "path": {
+                    "type": "string",
+                    "example": "/api/v1/project"
+                },
+                "request_body": {},
+                "response_body": {},
+                "status": {
+                    "type": "integer",
+                    "example": 201
+                },
+                "ts": {
+                    "type": "string",
+                    "example": "2026-09-02T10:00:00.000Z"
                 }
             }
         },

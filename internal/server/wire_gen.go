@@ -7,11 +7,13 @@
 package server
 
 import (
+	"github.com/Koshsky/erp-backend/internal/audit"
+	delivery15 "github.com/Koshsky/erp-backend/internal/audit/delivery"
 	auth2 "github.com/Koshsky/erp-backend/internal/auth"
 	"github.com/Koshsky/erp-backend/internal/auth/delivery"
 	repository9 "github.com/Koshsky/erp-backend/internal/auth/repository"
 	service3 "github.com/Koshsky/erp-backend/internal/auth/service"
-	"github.com/Koshsky/erp-backend/internal/auto_create"
+	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	delivery13 "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
 	repository13 "github.com/Koshsky/erp-backend/internal/auto_create/repository"
 	service14 "github.com/Koshsky/erp-backend/internal/auto_create/service"
@@ -26,29 +28,29 @@ import (
 	repository10 "github.com/Koshsky/erp-backend/internal/planning/repository"
 	service4 "github.com/Koshsky/erp-backend/internal/planning/service"
 	"github.com/Koshsky/erp-backend/internal/policies"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt"
+	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
 	delivery8 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
-	repository5 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
+	repository6 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	service9 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
 	delivery9 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/delivery"
 	repository8 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
 	service10 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/service"
 	delivery7 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
+	postgres "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	service8 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
 	delivery6 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
-	repository3 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
+	repository4 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	service7 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/service"
 	delivery5 "github.com/Koshsky/erp-backend/internal/project_mgmt/project/delivery"
-	repository2 "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
+	repository3 "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	service6 "github.com/Koshsky/erp-backend/internal/project_mgmt/project/service"
 	delivery4 "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
-	repository4 "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
+	repository5 "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	service5 "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	delivery14 "github.com/Koshsky/erp-backend/internal/rbacpolicy/delivery"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
+	repository2 "github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
+	service2 "github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
@@ -56,7 +58,7 @@ import (
 	repository12 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
 	service13 "github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
 	delivery10 "github.com/Koshsky/erp-backend/internal/timesheet/resource/delivery"
-	repository6 "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
+	repository7 "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 	service11 "github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
 	delivery11 "github.com/Koshsky/erp-backend/internal/timesheet/state/delivery"
 	repository11 "github.com/Koshsky/erp-backend/internal/timesheet/state/repository"
@@ -64,8 +66,8 @@ import (
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/internal/user"
 	delivery2 "github.com/Koshsky/erp-backend/internal/user/delivery"
-	repository7 "github.com/Koshsky/erp-backend/internal/user/repository"
-	service2 "github.com/Koshsky/erp-backend/internal/user/service"
+	"github.com/Koshsky/erp-backend/internal/user/repository"
+	"github.com/Koshsky/erp-backend/internal/user/service"
 )
 
 // Injectors from wire.go:
@@ -97,21 +99,25 @@ func InitializeApp() (*App, error) {
 	profilerProfiler := profiler.ProvideProfiler(profilingConfig, slogLogger)
 	idempotencyRepository := idempotency.ProvideIdempotencyRepository(pool)
 	idempotencyMiddleware := idempotency.ProvideIdempotencyMiddleware(idempotencyRepository, slogLogger, tracer)
-	ruleRepository := repository.NewRuleRepository(slogLogger, pool)
-	projectRepository := repository2.NewProjectRepository(slogLogger, pool)
-	processRepository := repository3.NewProcessRepository(slogLogger, pool)
-	taskRepository := repository4.NewTaskRepository(slogLogger, pool)
+	auditConfig := config.ProvideAuditConfig(configConfig)
+	userRepository := repository.NewUserRepository(slogLogger, pool)
+	userService := service.NewUserService(slogLogger, tracer, userRepository)
+	client := audit.NewClient(slogLogger, auditConfig, userService)
+	sender := audit.NewSender(slogLogger, client, auditConfig)
+	auditMiddleware := audit.NewMiddleware(slogLogger, auditConfig, sender)
+	ruleRepository := repository2.NewRuleRepository(slogLogger, pool)
+	projectRepository := repository3.NewProjectRepository(slogLogger, pool)
+	processRepository := repository4.NewProcessRepository(slogLogger, pool)
+	taskRepository := repository5.NewTaskRepository(slogLogger, pool)
 	milestoneRepository := postgres.NewMilestoneRepository(slogLogger, pool)
-	assignmentRepository := repository5.NewAssignmentRepository(slogLogger, pool)
-	resourceRepository := repository6.NewResourceRepository(slogLogger, pool)
-	userRepository := repository7.NewUserRepository(slogLogger, pool)
+	assignmentRepository := repository6.NewAssignmentRepository(slogLogger, pool)
+	resourceRepository := repository7.NewResourceRepository(slogLogger, pool)
 	commentRepository := repository8.NewCommentRepository(slogLogger, pool)
 	data := ProvideRBACData(projectRepository, processRepository, taskRepository, milestoneRepository, assignmentRepository, resourceRepository, userRepository, commentRepository)
 	v := policies.ProvideAll()
 	rbacMiddleware := rbac.ProvideMiddleware(slogLogger, tracer, data, v)
 	duration := config.ProvideRBACRefreshInterval(configConfig)
-	policyStore := service.NewPolicyStore(slogLogger, ruleRepository, rbacMiddleware, duration)
-	userService := service2.NewUserService(slogLogger, tracer, userRepository)
+	policyStore := service2.NewPolicyStore(slogLogger, ruleRepository, rbacMiddleware, duration)
 	authRepository := repository9.NewAuthRepository(pool)
 	authService := service3.NewAuthService(userService, jwtService, authRepository, tracer)
 	authHandler := delivery.NewAuthHandler(slogLogger, authService, jwtConfig)
@@ -148,11 +154,13 @@ func InitializeApp() (*App, error) {
 	autoCreateService := service14.NewAutoCreateService(slogLogger, tracer, autoCreateRepository)
 	autoCreateHandler := delivery13.NewAutoCreateHandler(slogLogger, autoCreateService, rbacMiddleware)
 	autocreateModule := autocreate.ProvideModule(autoCreateHandler)
-	serviceService := service.NewRBACService(slogLogger, ruleRepository, policyStore)
+	serviceService := service2.NewRBACService(slogLogger, ruleRepository, policyStore)
 	rbacHandler := delivery14.NewRBACHandler(slogLogger, serviceService, rbacMiddleware)
 	rbacpolicyModule := rbacpolicy.ProvideModule(rbacHandler, slogLogger)
-	v2 := ProvideModules(module, userModule, planningModule, projectmgmtModule, timesheetModule, autocreateModule, rbacpolicyModule)
-	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, tracer, idempotencyMiddleware, policyStore, v2)
+	auditHandler := delivery15.NewAuditHandler(slogLogger, client, rbacMiddleware)
+	auditModule := audit.ProvideModule(auditHandler, auditConfig)
+	v2 := ProvideModules(module, userModule, planningModule, projectmgmtModule, timesheetModule, autocreateModule, rbacpolicyModule, auditModule)
+	app, err := New(configConfig, slogLogger, pool, middleware, profilerProfiler, tracer, idempotencyMiddleware, auditMiddleware, policyStore, v2)
 	if err != nil {
 		return nil, err
 	}

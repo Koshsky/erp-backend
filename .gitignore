@@ -1,4 +1,5 @@
 .env
+.dsh-project-memory
 
 vendor/
 build/

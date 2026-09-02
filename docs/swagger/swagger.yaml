@@ -76,6 +76,53 @@ definitions:
         example: 1
         type: integer
     type: object
+  dto.AuditEventView:
+    properties:
+      action:
+        example: create
+        type: string
+      actor_email:
+        example: admin@example.ru
+        type: string
+      actor_ip:
+        example: 172.18.0.1
+        type: string
+      actor_name:
+        example: Иванов Иван
+        type: string
+      actor_role:
+        example: admin
+        type: string
+      actor_user_id:
+        example: 3
+        type: integer
+      duration_ms:
+        example: 15
+        type: integer
+      entity:
+        example: project
+        type: string
+      entity_id:
+        example: 12
+        type: integer
+      id:
+        example: 42
+        type: integer
+      method:
+        example: POST
+        type: string
+      path:
+        example: /api/v1/project
+        type: string
+      request_body: {}
+      response_body: {}
+      status:
+        example: 201
+        type: integer
+      ts:
+        example: "2026-09-02T10:00:00.000Z"
+        type: string
+    type: object
   dto.AuthResponse:
     properties:
       access_token:
@@ -1555,6 +1602,112 @@ paths:
       summary: Update an assignment
       tags:
       - Assignments
+  /audit/events:
+    get:
+      description: Returns a paged list of audit events (all CRUD mutations + auth
+        events).
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by actor user id
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by actor login or full name (case-insensitive substring)
+        in: query
+        name: user
+        type: string
+      - description: Filter by entity (project, user, auth, ...)
+        in: query
+        name: entity
+        type: string
+      - description: Filter by action (create, update, delete, login, ...)
+        in: query
+        name: action
+        type: string
+      - description: Filter by HTTP status group (2xx/3xx/4xx/5xx) or exact code
+        in: query
+        name: status
+        type: string
+      - description: Lower bound (RFC3339, inclusive)
+        in: query
+        name: from
+        type: string
+      - description: Upper bound (RFC3339, inclusive)
+        in: query
+        name: to
+        type: string
+      - description: Substring search on path / actor email
+        in: query
+        name: search
+        type: string
+      - description: Filter by the ID shown in the ID column (entity_id or actor_user_id)
+        in: query
+        name: id
+        type: string
+      - description: Filter by exact actor IP (e.g. 172.18.0.1)
+        in: query
+        name: ip
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.AuditEventView'
+                        type: array
+                    type: object
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List audit events
+      tags:
+      - Audit
   /auth/login:
     post:
       consumes:

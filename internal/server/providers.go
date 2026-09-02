@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Koshsky/erp-backend/internal/audit"
 	"github.com/Koshsky/erp-backend/internal/auth"
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -52,6 +53,7 @@ func ProvideModules(
 	timesheet timesheet.Module,
 	autoCreate autocreate.Module,
 	rbac rbacpolicy.Module,
+	audit audit.Module,
 ) []Module {
-	return []Module{auth, user, planning, project, timesheet, autoCreate, rbac}
+	return []Module{auth, user, planning, project, timesheet, autoCreate, rbac, audit}
 }

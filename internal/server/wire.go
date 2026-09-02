@@ -6,6 +6,7 @@ package server
 import (
 	"github.com/google/wire"
 
+	"github.com/Koshsky/erp-backend/internal/audit"
 	"github.com/Koshsky/erp-backend/internal/auth"
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	"github.com/Koshsky/erp-backend/internal/config"
@@ -23,6 +24,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/timesheet"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/internal/user"
+	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 )
 
 // InitializeApp builds the whole application dependency graph.
@@ -37,6 +39,7 @@ func InitializeApp() (*App, error) {
 		config.ProvideJWTConfig,
 		config.ProvideProfilingConfig,
 		config.ProvideRBACRefreshInterval,
+		config.ProvideAuditConfig,
 		idempotency.ProvideIdempotencyRepository,
 		idempotency.ProvideIdempotencyMiddleware,
 		jwt.ProvideJWTService,
@@ -45,6 +48,9 @@ func InitializeApp() (*App, error) {
 		policies.ProvideAll,
 		profiler.ProvideProfiler,
 		ProvideRBACData,
+		// The audit client consumes the user service to resolve the `user`
+		// filter (login/full name) and to enrich actor display names.
+		wire.Bind(new(audit.UserLookup), new(*userservice.UserService)),
 
 		user.ProviderSet,
 		auth.ProviderSet,
@@ -53,6 +59,7 @@ func InitializeApp() (*App, error) {
 		timesheet.ProviderSet,
 		autocreate.ProviderSet,
 		rbacpolicy.ProviderSet,
+		audit.ProviderSet,
 
 		ProvideModules,
 		New,
