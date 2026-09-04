@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -93,12 +94,12 @@ func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 	task, err := s.repository.FindTask(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if task == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteTask(ctx, id)
@@ -107,20 +108,50 @@ func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 func (s *TaskService) ListTasks(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.TaskResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "task.ListTasks")
 	defer end(nil)
 
-	rows, err := s.repository.ListTasks(ctx, userID, role, ownerID, limit, offset)
+	rows, err := s.repository.ListTasks(ctx, userID, viewScope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountTasks(ctx, userID, role, ownerID)
+	total, err := s.repository.CountTasks(ctx, userID, viewScope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}
 	return s.mapper.ToDTOs(rows), total, nil
+}
+
+// ReorderTasks applies a new order to all active tasks of a process: the
+// request carries the complete ordered id list, the server validates it covers
+// the whole group and rewrites sort_order by list position.
+func (s *TaskService) ReorderTasks(
+	ctx context.Context,
+	req dto.ReorderTaskRequest,
+) error {
+	ctx, end := s.tracer.Start(ctx, "task.ReorderTasks")
+	defer end(nil)
+
+	if len(req.IDs) == 0 {
+		return errors.NewValidationError("список id задач пуст")
+	}
+	if err := order.RejectDuplicateIDs("задач", req.IDs); err != nil {
+		return err
+	}
+
+	current, err := s.repository.ListTaskIDsByProcess(ctx, req.ProcessID)
+	if err != nil {
+		return err
+	}
+	if !order.SameIDSet(req.IDs, current) {
+		return errors.NewValidationError(
+			"список должен содержать все активные задачи процесса без изменений состава",
+		)
+	}
+
+	return s.repository.ReorderTasks(ctx, req.IDs)
 }

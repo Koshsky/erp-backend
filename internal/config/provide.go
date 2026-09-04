@@ -20,3 +20,6 @@ func ProvideRBACConfig(cfg *Config) RBACConfig { return cfg.RBAC }
 
 // ProvideRBACRefreshInterval extracts the RBAC rules refresh interval.
 func ProvideRBACRefreshInterval(cfg *Config) Duration { return cfg.RBAC.RefreshInterval }
+
+// ProvideAuditConfig extracts the audit-log capture settings (Loki storage).
+func ProvideAuditConfig(cfg *Config) AuditConfig { return cfg.Audit }

@@ -2,14 +2,14 @@
 SELECT *
 FROM users
 WHERE deleted_at IS NULL
-  -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
-  -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
-  -- себя на клиенте отдельно).
+  -- For non-admin: only direct subordinates (manager_id = current user);
+  -- admin sees everyone. The user himself is not included here (the timesheet
+  -- adds oneself on the client separately).
   AND (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
   )
-  AND (@role_filter::text = '' OR role = @role_filter::text)
+  AND (@preset_filter::text = '' OR preset = @preset_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
 ORDER BY id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
@@ -22,7 +22,7 @@ WHERE deleted_at IS NULL
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
   )
-  AND (@role_filter::text = '' OR role = @role_filter::text)
+  AND (@preset_filter::text = '' OR preset = @preset_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint);
 
 -- name: ListAllUsers :many
@@ -54,8 +54,8 @@ SELECT EXISTS(
 );
 
 -- name: CreateUser :one
-INSERT INTO users (last_name, first_name, middle_name, username, role, password_hash, manager_id, position, hire_date, termination_date)
-VALUES (@last_name, @first_name, @middle_name, @username, @role, @password_hash, @manager_id, @position, @hire_date, @termination_date)
+INSERT INTO users (last_name, first_name, middle_name, username, preset, password_hash, manager_id, position, hire_date, termination_date)
+VALUES (@last_name, @first_name, @middle_name, @username, @preset, @password_hash, @manager_id, @position, @hire_date, @termination_date)
 RETURNING *;
 
 -- name: UpdateUser :one
@@ -65,7 +65,7 @@ SET
 	first_name = @first_name,
 	middle_name = @middle_name,
 	username = @username,
-	role = @role,
+	preset = @preset,
 	password_hash = @password_hash,
 	manager_id = @manager_id,
 	position = @position,
@@ -82,6 +82,12 @@ SET password_hash = @password_hash, updated_at = NOW()
 WHERE id = @user_id
 	AND deleted_at IS NULL;
 
+-- name: InsertUserPermission :exec
+-- Individual permission override created together with the user account
+-- (same table/semantics as rbacpolicy's user_permissions).
+INSERT INTO user_permissions (user_id, resource, action, scope, granted, updated_by)
+VALUES (@user_id::bigint, @resource::text, @action::text, @scope::text, @granted, @updated_by);
+
 -- name: DeleteUser :exec
 UPDATE users
 SET deleted_at = NOW(), updated_at = NOW()
@@ -89,8 +95,8 @@ WHERE id = @user_id
 	AND deleted_at IS NULL;
 
 -- name: OwnerChain :one
--- Владелец записи: руководитель, а при его отсутствии — сам пользователь
--- (чтобы пользователь мог видеть/менять свой табель).
+-- Record owner: the manager, or the user himself when there is none
+-- (so a user can see/edit their own timesheet).
 SELECT COALESCE(manager_id, id)::bigint AS owner_id
 FROM users
 WHERE id = @id::bigint
@@ -146,5 +152,5 @@ VALUES (@user_id, @state_id, @start_date::date, @end_date::date)
 RETURNING *;
 
 -- name: NormalizeUserStates :exec
--- Сливает смежные диапазоны одинакового (user_id, state_id) в непрерывные.
+-- Merges adjacent ranges with the same (user_id, state_id) into continuous ones.
 SELECT fn_normalize_user_states();

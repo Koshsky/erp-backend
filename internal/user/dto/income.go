@@ -2,19 +2,31 @@ package dto
 
 import "github.com/Koshsky/erp-backend/pkg/date"
 
+// UserPermissionInput — an individual permission override of a created user:
+// an explicit grant (granted=true, scope) or revoke (granted=false, scope ignored).
+type UserPermissionInput struct {
+	Resource string `json:"resource" example:"task"   binding:"required"`
+	Action   string `json:"action"   example:"view"   binding:"required"`
+	Scope    string `json:"scope"    example:"parent"`
+	Granted  bool   `json:"granted"  example:"true"`
+}
+
 // CreateUserRequest creates a user (worker with auto-generated credentials when
-// username/password_hash are empty). Креды не возвращаются наружу.
+// username/password_hash are empty). Credentials are not returned to the caller.
 type CreateUserRequest struct {
 	LastName        string     `json:"last_name"        example:"Иванов"`
 	FirstName       string     `json:"first_name"       example:"Иван"`
 	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
-	Role            string     `json:"role"             example:"worker"`
+	Preset          *string    `json:"preset"           example:"worker"`
 	Username        string     `json:"username"         example:"worker_1"`
 	PasswordHash    string     `json:"password_hash"    example:""`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	Position        string     `json:"position"         example:"Инженер 2 категории"`
 	HireDate        *date.Date `json:"hire_date"        example:"2025-01-10"          format:"date"`
 	TerminationDate *date.Date `json:"termination_date" example:"2026-12-31"          format:"date"`
+	// Individual permission overrides created together with the user
+	// (admin-only, same validation as /rbac/users/{id}/permissions).
+	Permissions []UserPermissionInput `json:"permissions"`
 }
 
 type UpdateUserRequest struct {
@@ -22,7 +34,7 @@ type UpdateUserRequest struct {
 	FirstName       *string    `json:"first_name"       example:"Иван"`
 	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
 	Username        *string    `json:"username"         example:"ivanov"`
-	Role            *string    `json:"role"             example:"worker"`
+	Preset          *string    `json:"preset"           example:"worker"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	Position        *string    `json:"position"         example:"Инженер 2 категории"`
 	HireDate        *date.Date `json:"hire_date"        example:"2025-01-10"          format:"date"`
@@ -34,7 +46,7 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" example:"new_password"`
 }
 
-// UpdateManagerRequest explicitly sets/clears the manager (null — без руководителя).
+// UpdateManagerRequest explicitly sets/clears the manager (null — no manager).
 type UpdateManagerRequest struct {
 	ManagerID *int64 `json:"manager_id" example:"5"`
 }

@@ -1,8 +1,8 @@
--- Нормализация user_states.
--- Сливает смежные и пересекающиеся диапазоны одного (рабочий, состояние)
--- в непрерывные: [1..9] + [10..20] одного состояния -> [1..20].
--- Пересечения уже запрещены EXCLUDE-констрейнтом, поэтому здесь ключевой
--- случай — касающиеся диапазоны (end_date + 1 >= next.start_date).
+-- Normalization of user_states.
+-- Merges adjacent and overlapping ranges of the same (worker, state)
+-- into continuous ones: [1..9] + [10..20] of the same state -> [1..20].
+-- Overlaps are already forbidden by the EXCLUDE constraint, so the key case
+-- here is touching ranges (end_date + 1 >= next.start_date).
 CREATE OR REPLACE FUNCTION fn_normalize_user_states() RETURNS void
 LANGUAGE plpgsql
 AS $$

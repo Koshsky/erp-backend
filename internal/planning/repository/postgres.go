@@ -7,10 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
@@ -28,10 +26,10 @@ func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRep
 	}
 }
 
-func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {
+func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, viewScope string) ([]dto.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
 		UserID:    userID,
-		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProject),
+		ScopeView: viewScope,
 	})
 	if err != nil {
 		return nil, err
@@ -42,6 +40,7 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 			ID:        row.ID,
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Code:      row.Code,
+			Color:     nullable.StringPtr(row.Color),
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
 			Priority:  int(row.Priority),
@@ -51,10 +50,33 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, rol
 	return projetcs, nil
 }
 
-func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
+// ListProjectsByIDs returns full project rows by ids (for attaching parent
+// context to process-scoped aggregates: /planning/processes).
+func (r *PlanningRepository) ListProjectsByIDs(ctx context.Context, ids []int64) ([]dto.Project, error) {
+	rows, err := r.db.ListProjectsByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	projects := make([]dto.Project, len(rows))
+	for i, row := range rows {
+		projects[i] = dto.Project{
+			ID:        row.ID,
+			OwnerID:   nullable.Int64Ptr(row.OwnerID),
+			Code:      row.Code,
+			Color:     nullable.StringPtr(row.Color),
+			StartDate: date.From(row.StartDate),
+			EndDate:   date.From(row.EndDate),
+			Priority:  int(row.Priority),
+		}
+	}
+	return projects, nil
+}
+
+// ListProcesses — process-scoped list (process.view matrix).
+func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error) {
 	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
 		UserID:    userID,
-		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProcess),
+		ScopeView: viewScope,
 	})
 	if err != nil {
 		return nil, err
@@ -64,11 +86,13 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, ro
 		processes[i] = dto.Process{
 			ID:          row.Process.ID,
 			Title:       row.Process.Title,
+			Color:       nullable.StringPtr(row.Process.Color),
 			OwnerID:     nullable.Int64Ptr(row.Process.OwnerID),
 			ProjectID:   row.Process.ProjectID,
 			ProjectCode: row.ProjectCode,
 			StartDate:   date.From(row.Process.StartDate),
 			EndDate:     date.From(row.Process.EndDate),
+			Order:       int(row.Process.SortOrder),
 		}
 	}
 	return processes, nil
@@ -87,10 +111,12 @@ func (r *PlanningRepository) ListProcessesByProjectIDs(
 		processes[i] = dto.Process{
 			ID:        row.ID,
 			Title:     row.Title,
+			Color:     nullable.StringPtr(row.Color),
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			ProjectID: row.ProjectID,
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
+			Order:     int(row.SortOrder),
 		}
 	}
 	return groupByKey(processes, func(p dto.Process) int64 { return p.ProjectID }), nil
@@ -111,8 +137,10 @@ func (r *PlanningRepository) ListTasksByProcessIDs(
 			ProcessID: row.ProcessID,
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Title:     row.Title,
+			Color:     nullable.StringPtr(row.Color),
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
+			Order:     int(row.SortOrder),
 		}
 	}
 	return groupByKey(tasks, func(t dto.Task) int64 { return t.ProcessID }), nil
@@ -133,6 +161,7 @@ func (r *PlanningRepository) ListMilestonesByProcessIDs(
 			ProcessID: row.ProcessID,
 			Title:     row.Title,
 			Content:   row.Content,
+			Color:     nullable.StringPtr(row.Color),
 			Date:      date.From(row.Date),
 		}
 	}
@@ -199,6 +228,7 @@ func (r *PlanningRepository) ListResources(ctx context.Context) ([]dto.Resource,
 			ID:    row.ID,
 			Title: row.Title,
 			Code:  row.Code,
+			Color: nullable.StringPtr(row.Color),
 		}
 		result = append(result, r)
 	}

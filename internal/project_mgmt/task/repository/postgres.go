@@ -10,7 +10,6 @@ import (
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -18,6 +17,7 @@ import (
 
 type TaskRepository struct {
 	logger *slog.Logger
+	pool   *pgxpool.Pool
 	db     *sqlc.Queries
 }
 
@@ -25,6 +25,7 @@ type TaskRepository struct {
 func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository {
 	return &TaskRepository{
 		logger: logger,
+		pool:   pool,
 		db:     sqlc.New(pool),
 	}
 }
@@ -34,6 +35,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 		ProcessID: task.ProcessID,
 		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
+		Color:     nullable.ToString(task.Color),
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -61,6 +63,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 		ProcessID: task.ProcessID,
 		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
+		Color:     nullable.ToString(task.Color),
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -79,12 +82,12 @@ func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
 func (r *TaskRepository) ListTasks(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Task, error) {
 	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceTask),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -100,11 +103,11 @@ func (r *TaskRepository) ListTasks(
 	return tasks, nil
 }
 
-func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, role string, ownerID int64) (int64, error) {
+func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error) {
 	return r.db.CountTasks(
 		ctx,
 		sqlc.CountTasksParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceTask),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},
@@ -117,9 +120,39 @@ func mapTask(row sqlc.Task) domain.Task {
 		ProcessID: row.ProcessID,
 		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		Title:     row.Title,
+		Color:     nullable.StringPtr(row.Color),
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
+		SortOrder: int(row.SortOrder),
 	}
+}
+
+// ListTaskIDsByProcess returns the active task ids of a process in their
+// display order — to validate a reorder request covers the whole group.
+func (r *TaskRepository) ListTaskIDsByProcess(ctx context.Context, processID int64) ([]int64, error) {
+	return r.db.ListTaskIdsByProcess(ctx, processID)
+}
+
+// ReorderTasks rewrites the sort_order of the given task ids by list position
+// (1-based) in one transaction. The caller validates that the ids cover the
+// whole group. The two-phase UPDATE parks the rows on offset slots first,
+// because a single-statement value swap would transiently violate the partial
+// unique index (process_id, sort_order).
+func (r *TaskRepository) ReorderTasks(ctx context.Context, ids []int64) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := r.db.WithTx(tx)
+	if err = q.ReorderTasksMark(ctx, ids); err != nil {
+		return err
+	}
+	if err = q.ReorderTasksApply(ctx, ids); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

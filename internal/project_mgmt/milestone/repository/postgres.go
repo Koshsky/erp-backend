@@ -8,9 +8,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type MilestoneRepository struct {
@@ -34,6 +34,7 @@ func (r *MilestoneRepository) CreateMilestone(
 		ProcessID: milestone.ProcessID,
 		Title:     milestone.Title,
 		Content:   milestone.Content,
+		Color:     nullable.ToString(milestone.Color),
 		Date:      milestone.Date,
 	})
 	if err != nil {
@@ -64,6 +65,7 @@ func (r *MilestoneRepository) UpdateMilestone(
 		Date:        milestone.Date,
 		Title:       milestone.Title,
 		Content:     milestone.Content,
+		Color:       nullable.ToString(milestone.Color),
 	})
 	if err != nil {
 		return nil, err
@@ -80,12 +82,12 @@ func (r *MilestoneRepository) DeleteMilestone(ctx context.Context, id int64) err
 func (r *MilestoneRepository) ListMilestones(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Milestone, error) {
 	rows, err := r.db.ListMilestones(ctx, sqlc.ListMilestonesParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceMilestone),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -104,13 +106,13 @@ func (r *MilestoneRepository) ListMilestones(
 func (r *MilestoneRepository) CountMilestones(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 ) (int64, error) {
 	return r.db.CountMilestones(
 		ctx,
 		sqlc.CountMilestonesParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceMilestone),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},
@@ -123,6 +125,7 @@ func mapMilestone(row sqlc.Milestone) domain.Milestone {
 		ProcessID: row.ProcessID,
 		Title:     row.Title,
 		Content:   row.Content,
+		Color:     nullable.StringPtr(row.Color),
 		Date:      row.Date,
 	}
 }

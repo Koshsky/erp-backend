@@ -20,9 +20,11 @@ func (m *TaskMapper) ToDTO(task *domain.Task) *dto.TaskResponse {
 		ID:        task.ID,
 		OwnerID:   task.OwnerID,
 		Title:     task.Title,
+		Color:     task.Color,
 		StartDate: date.From(task.StartDate),
 		EndDate:   date.From(task.EndDate),
 		ProcessID: task.ProcessID,
+		Order:     task.SortOrder,
 	}
 }
 
@@ -42,6 +44,7 @@ func (m *TaskMapper) ToDomainFromCreate(req dto.CreateTaskRequest) domain.Task {
 	return domain.Task{
 		OwnerID:   req.OwnerID,
 		Title:     req.Title,
+		Color:     req.Color,
 		ProcessID: req.ProcessID,
 		StartDate: req.StartDate.Time(),
 		EndDate:   req.EndDate.Time(),
@@ -55,6 +58,13 @@ func (m *TaskMapper) ApplyUpdateToDomain(task *domain.Task, req dto.UpdateTaskRe
 
 	if req.Title != nil {
 		task.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			task.Color = nil
+		} else {
+			task.Color = req.Color
+		}
 	}
 	if req.OwnerID != nil {
 		task.OwnerID = req.OwnerID

@@ -1,4 +1,4 @@
-//nolint:testpackage // юнит-тест неэкспортированного предиката reclaimable
+//nolint:testpackage // unit test of the unexported reclaimable predicate
 package repository
 
 import (

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -57,7 +58,7 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	items, total, err := h.service.ListProjects(
 		c.Request.Context(),
 		user.ID,
-		user.Role,
+		policies.ViewScopeCodeUser(user, rbac.ResourceProject),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,
@@ -105,7 +106,7 @@ func (h *ProjectHandler) FindProject(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			project	body		dto.CreateProjectRequest	true	"Project data"
-//	@Success		201		{object}	response.SuccessResponse{data=dto.ProjectResponse,error=nil}
+//	@Success		201		{object}	response.SuccessResponse{data=dto.CreateProjectResponse,error=nil}
 //	@Failure		400		{object}	response.ErrorResponse{data=nil}
 //	@Failure		500		{object}	response.ErrorResponse{data=nil}
 //	@Router			/project [post]
@@ -122,7 +123,12 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		return
 	}
 
-	created, err := h.service.CreateProject(c.Request.Context(), project, user.ID, user.Role)
+	created, err := h.service.CreateProject(
+		c.Request.Context(),
+		project,
+		user.ID,
+		policies.ScopeForUser(user, rbac.ResourceProject, policies.ActionCreate) == policies.ScopeOwn,
+	)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return

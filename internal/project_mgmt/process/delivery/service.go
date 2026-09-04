@@ -10,7 +10,7 @@ type ProcessService interface {
 	ListProcesses(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]dto.ProcessResponse, int64, error)
@@ -18,4 +18,5 @@ type ProcessService interface {
 	CreateProcess(ctx context.Context, process dto.CreateProcessRequest) (*dto.ProcessResponse, error)
 	DeleteProcess(ctx context.Context, id int64) error
 	UpdateProcess(ctx context.Context, id int64, process dto.UpdateProcessRequest) (*dto.ProcessResponse, error)
+	ReorderProcesses(ctx context.Context, req dto.ReorderProcessRequest) error
 }

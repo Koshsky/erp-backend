@@ -20,8 +20,8 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-// commentOwners: комментарии лежат в задаче процесса 2 проекта 1; автор — по id
-// комментария (комментарий 42 написан пользователем 42, 43 — пользователем 43).
+// commentOwners: comments live in a task of process 2 of project 1; the author —
+// by the comment id (comment 42 was written by user 42, 43 — by user 43).
 func commentOwners(_ context.Context, id int64) (rbac.Owners, error) {
 	if id%10 == 0 {
 		return rbac.Owners{}, errors.ErrNotFound
@@ -58,7 +58,7 @@ func TestDeleteCommentPolicy(t *testing.T) {
 			t.Parallel()
 			router := gin.New()
 			router.Use(func(c *gin.Context) {
-				c.Set(userctx.KeyUser, userctx.UserContext{ID: tc.userID, Role: tc.role})
+				c.Set(userctx.KeyUser, userctx.UserContext{ID: tc.userID, Preset: tc.role, Admin: tc.role == "admin"})
 				c.Next()
 			})
 			router.DELETE("/task/:id/comments/:comment_id", mw.Check("task.comment.delete"), func(c *gin.Context) {

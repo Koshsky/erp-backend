@@ -21,10 +21,10 @@ type StoredResult struct {
 	Body   json.RawMessage
 }
 
-// claimLease — сколько in-flight ключ считается «живым»; дольше — краш.
+// claimLease — how long an in-flight key is considered "alive"; longer means a crash.
 const claimLease = 2 * time.Minute
 
-// claimRetryAttempts — сколько раз повторяем наблюдение/перезахват ключа.
+// claimRetryAttempts — how many times we repeat observing/re-claiming the key.
 const claimRetryAttempts = 2
 
 // IdempotencyRepository stores/retrieves idempotency keys and their responses.
@@ -66,15 +66,15 @@ func (r *IdempotencyRepository) Claim(
 	}
 	_, err := r.db.CreateIdempotencyKey(ctx, params)
 	if err == nil {
-		// Мы захватили ключ.
+		// We claimed the key.
 		return nil, true, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return nil, false, err
 	}
-	// Ключ уже существует — смотрим, завершился ли первый вызов; устаревший
-	// (истёкший или зависший) ключ перезахватываем. Устаревший ключ, потерянный
-	// в гонке перезахвата, на следующей итерации наблюдается заново.
+	// The key already exists — check whether the first call completed; a stale
+	// (expired or stuck) key is re-claimed. A stale key lost in a re-claim race
+	// is observed again on the next iteration.
 	for attempt := range claimRetryAttempts {
 		result, claimed, oerr := r.claimExisting(ctx, params)
 		if oerr != nil {
@@ -86,7 +86,7 @@ func (r *IdempotencyRepository) Claim(
 		if result != nil {
 			return result, false, nil
 		}
-		// «В полёте» или потерянная гонка: на последней итерации возвращаем 409.
+		// In flight or lost a race: return 409 on the last iteration.
 		if attempt == claimRetryAttempts-1 {
 			return nil, false, nil
 		}
@@ -94,10 +94,10 @@ func (r *IdempotencyRepository) Claim(
 	return nil, false, nil
 }
 
-// claimExisting наблюдает текущее состояние существующего ключа. Устаревший
-// ключ (истёкший или in-flight дольше lease — краш) удаляется и перезахватывается.
-// Возвращает: готовый результат реплея (result, claimed=false),
-// признак захвата (claimed=true), либо «в полёте» (nil, false, nil).
+// claimExisting observes the current state of an existing key. A stale key
+// (expired or in-flight longer than the lease — a crash) is deleted and re-claimed.
+// Returns: a ready replay result (result, claimed=false),
+// a claim indicator (claimed=true), or "in flight" (nil, false, nil).
 func (r *IdempotencyRepository) claimExisting(
 	ctx context.Context,
 	params sqlc.CreateIdempotencyKeyParams,
@@ -110,7 +110,7 @@ func (r *IdempotencyRepository) claimExisting(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			// Ключ исчез между checks — считаем конфликтом без воспроизведения.
+			// The key disappeared between checks — treat it as a conflict without replay.
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -124,7 +124,7 @@ func (r *IdempotencyRepository) claimExisting(
 		}); derr != nil {
 			return nil, false, derr
 		}
-		// Повторный захват (гонку выигрывает один из ретраев).
+		// Re-claim (one of the retries wins the race).
 		_, ierr := r.db.CreateIdempotencyKey(ctx, params)
 		if ierr == nil {
 			return nil, true, nil
@@ -135,7 +135,7 @@ func (r *IdempotencyRepository) claimExisting(
 		return nil, false, nil
 	}
 	if existing.ResponseStatus <= 0 {
-		// Первый запрос ещё выполняется.
+		// The first request is still running.
 		return nil, false, nil
 	}
 	return &StoredResult{Status: int(existing.ResponseStatus), Body: existing.ResponseBody}, false, nil
@@ -151,7 +151,7 @@ func reclaimable(existing sqlc.IdempotencyKey, now time.Time, lease time.Duratio
 	return existing.ResponseStatus <= 0 && existing.CreatedAt.Before(now.Add(-lease))
 }
 
-// Complete сохраняет ответ завершённого вызова по ключу.
+// Complete saves the response of the completed call under the key.
 func (r *IdempotencyRepository) Complete(
 	ctx context.Context,
 	key string,
@@ -160,8 +160,8 @@ func (r *IdempotencyRepository) Complete(
 	status int,
 	body json.RawMessage,
 ) error {
-	// HTTP-статусы всегда малы и помещаются в int32; страховка от выхода за
-	// диапазон (gosec G115) — не кладём некорректный статус в БД.
+	// HTTP statuses are always small and fit into int32; a safeguard against
+	// range overflow (gosec G115) — we never store an incorrect status in the DB.
 	if status <= 0 || status > math.MaxInt32 {
 		status = http.StatusInternalServerError
 	}
@@ -175,7 +175,7 @@ func (r *IdempotencyRepository) Complete(
 	})
 }
 
-// Release удаляет ключ (например при 5xx, чтобы ретрай мог повторить операцию).
+// Release deletes the key (e.g. on 5xx so a retry can run the operation again).
 func (r *IdempotencyRepository) Release(
 	ctx context.Context,
 	key string,
@@ -190,7 +190,7 @@ func (r *IdempotencyRepository) Release(
 	})
 }
 
-// DeleteExpired удаляет ключи, у которых истёк TTL.
+// DeleteExpired deletes keys whose TTL has expired.
 func (r *IdempotencyRepository) DeleteExpired(ctx context.Context) error {
 	return r.db.DeleteExpiredIdempotencyKeys(ctx)
 }

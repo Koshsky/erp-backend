@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/policies"
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
@@ -12,7 +13,6 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/response"
-	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/date"
@@ -52,7 +52,7 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 	response.OK(c, users)
 }
 
-// ListUsers handles the request to list users with role/manager filters.
+// ListUsers handles the request to list users with preset/manager filters.
 //
 //	@Summary		List users
 //	@Description	Returns a paged list of users; admin sees all, vp sees own subordinates + self.
@@ -60,9 +60,9 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			limit			query		int		false	"Page size (default 50, max 500)"
-//	@Param			role			query		string	false	"Filter by role (e.g. worker)"
+//	@Param			preset			query		string	false	"Filter by preset (e.g. worker)"
 //	@Param			manager_id		query		int		false	"Filter by manager (admin)"
-//	@Param			include_hash	query		bool	false	"Включить password_hash (только admin)"
+//	@Param			include_hash	query		bool	false	"Include password_hash (admin only)"
 //	@Param			offset			query		int		false	"Page offset"
 //	@Success		200				{object}	response.SuccessResponse{data=response.Page{items=[]dto.AdminUserResponse},error=nil}
 //	@Failure		400				{object}	response.ErrorResponse{data=nil}
@@ -84,15 +84,15 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	if raw := c.Query("include_hash"); raw != "" {
 		includeHash = raw == "true" || raw == "1"
 	}
-	if includeHash && user.Role != domain.Admin {
+	if includeHash && !user.Admin {
 		response.Error(c, h.logger, errors.ErrForbidden)
 		return
 	}
 	items, total, err := h.service.ListUsers(
 		c.Request.Context(),
 		user.ID,
-		user.Role,
-		c.Query("role"),
+		policies.ViewScopeCodeUser(user, rbac.ResourceWorker),
+		c.Query("preset"),
 		response.QueryID(c, "manager_id"),
 		limit,
 		offset,
@@ -114,11 +114,12 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 			FirstName:       u.FirstName,
 			MiddleName:      u.MiddleName,
 			Username:        u.Username,
-			Role:            u.Role,
+			Preset:          u.Preset,
 			ManagerID:       u.ManagerID,
 			Position:        u.Position,
 			HireDate:        u.HireDate,
 			TerminationDate: u.TerminationDate,
+			CreatedAt:       u.CreatedAt,
 			PasswordHash:    hash,
 		})
 	}
@@ -177,14 +178,8 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
 	}
-	// Создание сотрудников — только admin (worker.create у vp убран из
-	// матрицы). Защитный блок ниже остаётся как оборона от устаревших правил
-	// в БД: если vp всё же получит доступ, чужой manager_id игнорируется.
-	if user.Role == domain.ProcessOwner {
-		req.ManagerID = &user.ID
-	}
 
-	created, err := h.service.CreateUserWithCreds(c.Request.Context(), req)
+	created, err := h.service.CreateUserWithCreds(c.Request.Context(), req, user)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
@@ -252,7 +247,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.service.UpdateUser(c.Request.Context(), id, body, user.Role, user.ID)
+	updated, err := h.service.UpdateUser(c.Request.Context(), id, body, user, user.ID)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
@@ -288,13 +283,7 @@ func (h *UserHandler) UpdateManager(c *gin.Context) {
 		return
 	}
 
-	user, err := userctx.GetUser(c)
-	if err != nil {
-		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
-		return
-	}
-
-	updated, err := h.service.UpdateManager(c.Request.Context(), id, body.ManagerID, user.Role)
+	updated, err := h.service.UpdateManager(c.Request.Context(), id, body.ManagerID)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
@@ -350,8 +339,8 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 
 	err := h.service.ChangePassword(c.Request.Context(), userID, req.OldPassword, req.NewPassword)
 	if err != nil {
-		// Нарушение политики пароля — отдельный 400 с текстом требований;
-		// остальные ошибки (старый пароль неверен) — generic 400, не раскрываем.
+		// Password policy violation — a separate 400 with the requirements text;
+		// other errors (wrong old password) — generic 400, do not disclose.
 		if stderrors.Is(err, errors.ErrBadRequest) {
 			response.Error(c, h.logger, err)
 			return

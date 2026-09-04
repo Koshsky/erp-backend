@@ -104,12 +104,12 @@ func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) erro
 	assignment, err := s.repository.FindAssignment(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if assignment == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteAssignment(ctx, id)
@@ -118,18 +118,18 @@ func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) erro
 func (s *AssignmentService) ListAssignments(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.AssignmentResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "assignment.ListAssignments")
 	defer end(nil)
 
-	rows, err := s.repository.ListAssignments(ctx, userID, role, ownerID, limit, offset)
+	rows, err := s.repository.ListAssignments(ctx, userID, viewScope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountAssignments(ctx, userID, role, ownerID)
+	total, err := s.repository.CountAssignments(ctx, userID, viewScope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

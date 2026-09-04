@@ -1,11 +1,14 @@
 -- name: CreateProcess :one
-INSERT INTO processes (project_id, title, start_date, end_date, owner_id)
+INSERT INTO processes (project_id, title, start_date, end_date, owner_id, color, sort_order)
 VALUES (
 	@project_id::bigint,
 	@title::text,
 	@start_date::date,
 	@end_date::date,
-	@owner_id
+	@owner_id,
+	@color,
+	-- New process goes to the end of its project group.
+	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM processes WHERE project_id = @project_id::bigint)
 )
 RETURNING *;
 
@@ -21,7 +24,7 @@ WHERE p.deleted_at IS NULL
     (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
   )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
-ORDER BY p.id ASC
+ORDER BY p.sort_order ASC, p.id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 
 -- name: CountProcesses :one
@@ -48,6 +51,7 @@ WHERE id = @id::bigint
 UPDATE processes
 SET
 	title = @title,
+	color = @color,
 	start_date = @start_date,
 	end_date = @end_date,
 	project_id = COALESCE(@project_id, project_id),
@@ -71,3 +75,31 @@ JOIN projects pr ON pr.id = p.project_id
 WHERE p.id = @id::bigint
 	AND p.deleted_at IS NULL
 	AND pr.deleted_at IS NULL;
+
+-- name: ReorderProcessesMark :exec
+-- Phase 1 of the two-phase reorder (runs inside one transaction with
+-- ReorderProcessesApply): park every process on a temporary offset slot so the
+-- follow-up write cannot transiently violate the partial unique index
+-- (project_id, sort_order) when values swap. The caller sends the whole group.
+UPDATE processes p
+SET sort_order = x.ord + 1000000, updated_at = NOW()
+FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE p.id = x.id AND p.deleted_at IS NULL;
+
+-- name: ReorderProcessesApply :exec
+-- Phase 2 of the two-phase reorder: write the final positions. The group is
+-- the whole active set of the project (validated by the caller), so no target
+-- slot collides with rows outside the group.
+UPDATE processes p
+SET sort_order = x.ord, updated_at = NOW()
+FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE p.id = x.id AND p.deleted_at IS NULL;
+
+-- name: ListProcessIdsByProject :many
+-- Active process ids of a project — to validate a reorder request covers the
+-- whole group.
+SELECT id
+FROM processes
+WHERE project_id = @project_id::bigint
+	AND deleted_at IS NULL
+ORDER BY sort_order ASC, id ASC;

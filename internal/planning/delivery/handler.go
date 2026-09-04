@@ -4,10 +4,12 @@ import (
 	"log/slog"
 
 	planningservice "github.com/Koshsky/erp-backend/internal/planning/service"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
@@ -15,13 +17,19 @@ import (
 type PlanningHandler struct {
 	logger  *slog.Logger
 	service MilestoneService
+	mw      *rbac.Middleware
 }
 
 // NewPlanningHandler builds the planning handler.
-func NewPlanningHandler(logger *slog.Logger, svc *planningservice.PlanningService) *PlanningHandler {
+func NewPlanningHandler(
+	logger *slog.Logger,
+	svc *planningservice.PlanningService,
+	mw *rbac.Middleware,
+) *PlanningHandler {
 	return &PlanningHandler{
 		logger:  logger,
 		service: svc,
+		mw:      mw,
 	}
 }
 
@@ -43,7 +51,11 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetProjectPlanning(c.Request.Context(), user.ID, user.Role)
+	planning, err := h.service.GetProjectPlanning(
+		c.Request.Context(),
+		user.ID,
+		policies.ViewScopeCodeUser(user, rbac.ResourceProject),
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -69,7 +81,11 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetProcessPlanning(c.Request.Context(), user.ID, user.Role)
+	planning, err := h.service.GetProcessPlanning(
+		c.Request.Context(),
+		user.ID,
+		policies.ViewScopeCodeUser(user, rbac.ResourceProcess),
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -95,7 +111,11 @@ func (h *PlanningHandler) GetTaskPlanning(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetTaskPlanning(c.Request.Context(), user.ID, user.Role)
+	planning, err := h.service.GetTaskPlanning(
+		c.Request.Context(),
+		user.ID,
+		policies.ViewScopeCodeUser(user, rbac.ResourceTask),
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

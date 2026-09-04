@@ -19,7 +19,7 @@ import (
 	userDTO "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
-// activeSessionSweepWindow — насколько давно истёкшие сессии вычищаем фоново.
+// activeSessionSweepWindow — how long expired sessions are kept before background cleanup.
 const activeSessionSweepWindow = 30 * 24 * time.Hour
 
 type AuthService struct {
@@ -64,7 +64,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		return nil, err
 	}
 
-	access, err := s.jwt.GenerateAccessToken(user.ID, user.Role, user.Username)
+	access, err := s.jwt.GenerateAccessToken(user.ID, user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token")
 	}
@@ -85,8 +85,8 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	if session.RevokedAt != nil {
-		// Повторное использование отозванного токена — признак кражи: сбрасываем
-		// все активные сессии пользователя.
+		// Reusing a revoked token indicates theft: revoke
+		// all of the user's active sessions.
 		_ = s.sessions.RevokeAllUserSessions(ctx, session.UserID)
 		return nil, fmt.Errorf("invalid refresh token")
 	}
@@ -99,7 +99,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 		return nil, fmt.Errorf("user not found")
 	}
 
-	// Ротация: старая сессия отзывается, выписывается новая пара.
+	// Rotation: the old session is revoked and a new pair is issued.
 	if err = s.sessions.RevokeSession(ctx, session.ID); err != nil {
 		return nil, fmt.Errorf("failed to rotate session")
 	}
@@ -107,7 +107,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	if err != nil {
 		return nil, err
 	}
-	access, err := s.jwt.GenerateAccessToken(user.ID, user.Role, user.Username)
+	access, err := s.jwt.GenerateAccessToken(user.ID, user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token")
 	}
@@ -119,7 +119,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}, nil
 }
 
-// Logout отзывает сессию по refresh-токену (идемпотентно).
+// Logout revokes the session by refresh token (idempotently).
 func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 	ctx, end := s.tracer.Start(ctx, "auth.Logout")
 	defer end(nil)
@@ -129,7 +129,7 @@ func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 	}
 	session, err := s.findSession(ctx, refreshToken)
 	if err != nil {
-		// Неизвестный/уже отозванный токен — logout идемпотентен, это не ошибка.
+		// Unknown/already revoked token — logout is idempotent, this is not an error.
 		return nil
 	}
 	if err = s.sessions.RevokeSession(ctx, session.ID); err != nil {
@@ -142,7 +142,7 @@ func (s *AuthService) findSession(ctx context.Context, refreshToken string) (rep
 	return s.sessions.FindSessionByHash(ctx, hashToken(refreshToken))
 }
 
-// issueSession создаёт opaque refresh-токен и сохраняет его SHA-256 хэш в БД.
+// issueSession creates an opaque refresh token and stores its SHA-256 hash in the DB.
 func (s *AuthService) issueSession(ctx context.Context, userID int64) (string, error) {
 	refresh, err := generateRefreshToken()
 	if err != nil {
@@ -160,12 +160,12 @@ func (s *AuthService) issueSession(ctx context.Context, userID int64) (string, e
 	return refresh, nil
 }
 
-// sweepExpired — фоновая очистка давно истёкших сессий (best-effort).
+// sweepExpired — background cleanup of long-expired sessions (best-effort).
 func (s *AuthService) sweepExpired(ctx context.Context) {
 	_ = s.sessions.DeleteExpiredSessions(ctx, time.Now().Add(-activeSessionSweepWindow))
 }
 
-// generateRefreshToken — opaque 256-битный токен (crypto/rand, hex).
+// generateRefreshToken — an opaque 256-bit token (crypto/rand, hex).
 func generateRefreshToken() (string, error) {
 	var buf [32]byte
 	if _, err := rand.Read(buf[:]); err != nil {
@@ -174,7 +174,7 @@ func generateRefreshToken() (string, error) {
 	return hex.EncodeToString(buf[:]), nil
 }
 
-// hashToken — SHA-256 токена; в БД хранится только хэш.
+// hashToken — SHA-256 of the token; only the hash is stored in the DB.
 func hashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
@@ -192,7 +192,7 @@ func (s *AuthService) newAuthResponse(user *userDTO.UserResponse, access string)
 			FirstName:  user.FirstName,
 			MiddleName: user.MiddleName,
 			Username:   user.Username,
-			Role:       user.Role,
+			Preset:     user.Preset,
 		},
 	}
 }

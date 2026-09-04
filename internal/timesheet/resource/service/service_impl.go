@@ -8,7 +8,6 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
-	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -35,18 +34,18 @@ func NewResourceService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 func (s *ResourceService) ListResources(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ResourceResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "resource.ListResources")
 	defer end(nil)
 
-	rows, err := s.repository.ListResources(ctx, userID, role, ownerID, limit, offset)
+	rows, err := s.repository.ListResources(ctx, userID, viewScope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountResources(ctx, userID, role, ownerID)
+	total, err := s.repository.CountResources(ctx, userID, viewScope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -130,12 +129,12 @@ func (s *ResourceService) DeleteResource(ctx context.Context, id int64) error {
 	resource, err := s.repository.FindResource(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if resource == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteResource(ctx, id)
@@ -155,15 +154,15 @@ func (s *ResourceService) ListMembers(ctx context.Context, resourceID int64) ([]
 
 // AddMember attaches a user to a resource. The middleware checks resource
 // management rights (admin or the resource owner); here we enforce the
-// hierarchy rule: vp может привязывать только своих прямых подчинённых
-// («вассал моего вассала не мой вассал»), admin — любого. Исключение —
-// самоподчинение: владелец может добавить себя в свой ресурс.
+// hierarchy rule: vp can attach only their direct subordinates ("a vassal of my vassal is not my vassal"),
+// admin — anyone. Exception — self-subordination: the owner can add themselves
+// to their own resource.
 func (s *ResourceService) AddMember(
 	ctx context.Context,
 	resourceID int64,
 	userID int64,
 	actorID int64,
-	role string,
+	actorAdmin bool,
 ) error {
 	ctx, end := s.tracer.Start(ctx, "resource.AddMember")
 	defer end(nil)
@@ -175,7 +174,7 @@ func (s *ResourceService) AddMember(
 		return err
 	}
 
-	if role != userdomain.Admin && userID != actorID {
+	if !actorAdmin && userID != actorID {
 		managerID, err := s.repository.FindUserManager(ctx, userID)
 		if err != nil {
 			return err

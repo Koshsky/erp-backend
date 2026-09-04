@@ -1,4 +1,4 @@
-// Package maintenance запускает фоновую нормализацию данных БД.
+// Package maintenance runs background normalization of DB data.
 package maintenance
 
 import (
@@ -11,8 +11,8 @@ import (
 	"github.com/Koshsky/erp-backend/internal/config"
 )
 
-// Normalizer периодически вызывает fn_normalize_user_states(): сливает
-// смежные диапазоны состояний рабочих (user_states) в непрерывные.
+// Normalizer periodically calls fn_normalize_user_states() to merge
+// adjacent ranges of worker states (user_states) into continuous ones.
 type Normalizer struct {
 	cfg    config.MaintenanceConfig
 	logger *slog.Logger
@@ -40,8 +40,8 @@ func (n *Normalizer) Start() {
 
 func (n *Normalizer) loop(ctx context.Context) {
 	defer close(n.done)
-	// Первый прогон сразу после старта (могли накопиться несведённые диапазоны),
-	// затем — по таймеру.
+	// First run right after startup (unmerged ranges may have accumulated),
+	// then on a timer.
 	n.normalize(ctx)
 	ticker := time.NewTicker(time.Duration(n.cfg.Interval))
 	defer ticker.Stop()

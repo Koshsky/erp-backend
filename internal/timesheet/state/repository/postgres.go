@@ -34,8 +34,8 @@ func (r *StateRepository) CreateState(ctx context.Context, state domain.State) (
 		IsAvailable: state.IsAvailable,
 	})
 	if err != nil {
-		// Идемпотентный create: code уже существует (ON CONFLICT ничего не
-		// вставил) — это конфликт бизнес-ключа, а не внутренняя ошибка.
+		// Idempotent create: the code already exists (ON CONFLICT
+		// inserted nothing) — this is a business-key conflict, not an internal error.
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errapi.Conflict("state with this code already exists")
 		}

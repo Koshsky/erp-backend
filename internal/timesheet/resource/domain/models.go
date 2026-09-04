@@ -6,6 +6,7 @@ type Resource struct {
 	ID             int64
 	Title          string
 	Code           string
+	Color          *string
 	OwnerID        *int64
 	EmployeesCount int
 }
@@ -14,7 +15,7 @@ type Resource struct {
 type ResourceMember struct {
 	ID              int64
 	Name            string
-	Role            string
+	Preset          *string
 	Position        string
 	ManagerID       *int64
 	HireDate        *time.Time

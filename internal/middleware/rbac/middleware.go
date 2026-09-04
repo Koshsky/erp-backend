@@ -60,7 +60,7 @@ func (d Data) resolve(rsrc Resource) ResolveByID {
 	case ResourceComment:
 		return d.CommentOwners
 	case ResourceState, ResourceUserCatalog, ResourceRBACConfig,
-		ResourceUserAdmin, ResourceStateAdmin, ResourceOrgStructure:
+		ResourceUserAdmin, ResourceStateAdmin, ResourceOrgStructure, ResourceAudit:
 		// States and virtual resources have no owner.
 		return nil
 	default:
@@ -140,8 +140,8 @@ type Middleware struct {
 }
 
 // Check runs the policy by name, wrapped in its own trace span. An unknown
-// name denies with 403 + ERROR log (политика могла быть удалена/испорчена в
-// БД; отказ без раскрытия деталей вместо паники).
+// name denies with 403 + ERROR log (the policy may have been deleted/corrupted
+// in the DB; deny without revealing details instead of panicking).
 func (m *Middleware) Check(name string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, end := m.tracer.Start(c.Request.Context(), "rbac."+name)
@@ -177,8 +177,8 @@ func (m *Middleware) Check(name string) gin.HandlerFunc {
 	}
 }
 
-// Refresh атомарно заменяет набор маршрутных проверок (вызывается PolicyStore
-// после каждой перезагрузки правил из БД).
+// Refresh atomically replaces the set of route checks (called by PolicyStore
+// after each reload of rules from the DB).
 func (m *Middleware) Refresh(policies []Policy) {
 	byName := make(map[string]Policy, len(policies))
 	for _, p := range policies {

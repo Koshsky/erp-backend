@@ -45,8 +45,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- for resources: мягкое удаление категории жёстко снимает членство её пользователей
--- (и освобождает UNIQUE(user_id), чтобы рабочего можно было привязать к другому ресурсу)
+-- for resources: soft-deleting a category hard-removes its users' memberships
+-- (and frees UNIQUE(user_id) so the worker can be attached to another resource)
 CREATE OR REPLACE FUNCTION cascade_delete_resource_members()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -56,7 +56,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- for users (worker): мягкое удаление рабочего жёстко удаляет его состояния и членства
+-- for users (worker): soft-deleting a worker hard-deletes their states and memberships
 CREATE OR REPLACE FUNCTION cascade_delete_user_states()
 RETURNS TRIGGER AS $$
 BEGIN

@@ -450,6 +450,189 @@ const docTemplate = `{
                 }
             }
         },
+        "/audit/events": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a paged list of audit events (all CRUD mutations + auth events).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Audit"
+                ],
+                "summary": "List audit events",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by actor user id",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by actor login or full name (case-insensitive substring)",
+                        "name": "user",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by entity (project, user, auth, ...)",
+                        "name": "entity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by action (create, update, delete, login, ...)",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by HTTP status group (2xx/3xx/4xx/5xx) or exact code",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Lower bound (RFC3339, inclusive)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Upper bound (RFC3339, inclusive)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Substring search on path / actor email",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by the ID shown in the ID column (entity_id or actor_user_id)",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by exact actor IP (e.g. 172.18.0.1)",
+                        "name": "ip",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.Page"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.AuditEventView"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticate user; the refresh token goes into an HttpOnly cookie",
@@ -1688,6 +1871,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/process/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rewrite the order of all active processes of a project (the request carries the complete ordered id list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Processes"
+                ],
+                "summary": "Reorder processes",
+                "parameters": [
+                    {
+                        "description": "New process order",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReorderProcessRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/process/{id}": {
             "get": {
                 "security": [
@@ -2059,7 +2314,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ProjectResponse"
+                                            "$ref": "#/definitions/dto.CreateProjectResponse"
                                         },
                                         "error": {
                                             "type": "object"
@@ -2370,8 +2625,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Role",
-                        "name": "role",
+                        "description": "Preset",
+                        "name": "preset",
                         "in": "query",
                         "required": true
                     },
@@ -2661,239 +2916,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/rbac/reset": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Reset policies to defaults",
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/rbac/roles": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "List roles",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/domain.Role"
-                                            }
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Create a role",
-                "parameters": [
-                    {
-                        "description": "Role",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RoleUpsertInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/domain.Role"
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/rbac/roles/{name}": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Update a role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Role name",
-                        "name": "name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Role",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RoleUpdateInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/domain.Role"
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Delete a role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Role name",
-                        "name": "name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/rbac/rules": {
+        "/rbac/preset-rules": {
             "get": {
                 "security": [
                     {
@@ -2921,7 +2944,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.RuleView"
+                                                "$ref": "#/definitions/dto.PresetRuleView"
                                             }
                                         },
                                         "error": {
@@ -2957,7 +2980,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RuleInput"
+                            "$ref": "#/definitions/dto.PresetRuleInput"
                         }
                     }
                 ],
@@ -2973,7 +2996,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.RuleView"
+                                            "$ref": "#/definitions/dto.PresetRuleView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -3004,7 +3027,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/rbac/rules/{id}": {
+        "/rbac/preset-rules/{id}": {
             "delete": {
                 "security": [
                     {
@@ -3027,6 +3050,380 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/rbac/presets": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "List presets",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Preset"
+                                            }
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Create a preset",
+                "parameters": [
+                    {
+                        "description": "Preset",
+                        "name": "preset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PresetUpsertInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.Preset"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/rbac/presets/{name}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Update a preset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Preset name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Preset",
+                        "name": "preset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PresetUpdateInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.Preset"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Delete a preset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Preset name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/rbac/reset": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Reset policies to defaults",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/rbac/users/{id}/permissions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "User permissions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserPermissionsView"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Replace user permissions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Permissions",
+                        "name": "perms",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserPermissionsInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserPermissionsInput"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
                     }
                 }
             }
@@ -3957,6 +4354,78 @@ const docTemplate = `{
                                 }
                             ]
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/task/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rewrite the order of all active tasks of a process (the request carries the complete ordered id list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Reorder tasks",
+                "parameters": [
+                    {
+                        "description": "New task order",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReorderTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -5012,8 +5481,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by role (e.g. worker)",
-                        "name": "role",
+                        "description": "Filter by preset (e.g. worker)",
+                        "name": "preset",
                         "in": "query"
                     },
                     {
@@ -5024,7 +5493,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "boolean",
-                        "description": "Включить password_hash (только admin)",
+                        "description": "Include password_hash (admin only)",
                         "name": "include_hash",
                         "in": "query"
                     },
@@ -6058,7 +6527,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Role": {
+        "domain.Preset": {
             "type": "object",
             "properties": {
                 "description": {
@@ -6084,6 +6553,12 @@ const docTemplate = `{
         "dto.AdminUserResponse": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "description": "Account registration time (email/username created at).",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-08-28T07:00:00Z"
+                },
                 "first_name": {
                     "type": "string",
                     "example": "Иван"
@@ -6121,7 +6596,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -6157,6 +6632,69 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AuditEventView": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "create"
+                },
+                "actor_email": {
+                    "type": "string",
+                    "example": "admin@example.ru"
+                },
+                "actor_ip": {
+                    "type": "string",
+                    "example": "172.18.0.1"
+                },
+                "actor_name": {
+                    "type": "string",
+                    "example": "Иванов Иван"
+                },
+                "actor_role": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "actor_user_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "duration_ms": {
+                    "type": "integer",
+                    "example": 15
+                },
+                "entity": {
+                    "type": "string",
+                    "example": "project"
+                },
+                "entity_id": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "method": {
+                    "type": "string",
+                    "example": "POST"
+                },
+                "path": {
+                    "type": "string",
+                    "example": "/api/v1/project"
+                },
+                "request_body": {},
+                "response_body": {},
+                "status": {
+                    "type": "integer",
+                    "example": 201
+                },
+                "ts": {
+                    "type": "string",
+                    "example": "2026-09-02T10:00:00.000Z"
+                }
+            }
+        },
         "dto.AuthResponse": {
             "type": "object",
             "properties": {
@@ -6188,6 +6726,20 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.ProcessTemplate"
                     }
+                }
+            }
+        },
+        "dto.AutoCreatedCounts": {
+            "type": "object",
+            "properties": {
+                "assignments": {
+                    "type": "integer"
+                },
+                "processes": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "integer"
                 }
             }
         },
@@ -6306,7 +6858,7 @@ const docTemplate = `{
                     "example": "Перенести сроки?"
                 },
                 "parent_id": {
-                    "description": "Ответ на другой комментарий той же задачи; пусто — корневой комментарий.",
+                    "description": "Reply to another comment of the same task; empty means a root comment.",
                     "type": "integer",
                     "example": 3
                 }
@@ -6315,6 +6867,10 @@ const docTemplate = `{
         "dto.CreateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6337,6 +6893,10 @@ const docTemplate = `{
         "dto.CreateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6368,6 +6928,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "КО_001"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6388,12 +6952,45 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateProjectResponse": {
+            "type": "object",
+            "properties": {
+                "auto_created": {
+                    "$ref": "#/definitions/dto.AutoCreatedCounts"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "color": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateResourceRequest": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -6425,6 +7022,10 @@ const docTemplate = `{
         "dto.CreateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6477,11 +7078,18 @@ const docTemplate = `{
                     "type": "string",
                     "example": ""
                 },
+                "permissions": {
+                    "description": "Individual permission overrides created together with the user\n(admin-only, same validation as /rbac/users/{id}/permissions).",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserPermissionInput"
+                    }
+                },
                 "position": {
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -6510,6 +7118,10 @@ const docTemplate = `{
         "dto.DetailedProcess": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6524,6 +7136,11 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.Milestone"
                     }
+                },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
+                    "type": "integer",
+                    "example": 1
                 },
                 "owner_id": {
                     "type": "integer",
@@ -6557,6 +7174,10 @@ const docTemplate = `{
         "dto.DetailedProject": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6594,8 +7215,12 @@ const docTemplate = `{
         "dto.DetailedTask": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "comments_count": {
-                    "description": "Количество активных комментариев задачи (для бейджа на диаграмме).",
+                    "description": "Number of active comments on the task (for the badge on the diagram).",
                     "type": "integer",
                     "example": 3
                 },
@@ -6605,6 +7230,11 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the task within its process (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6663,10 +7293,10 @@ const docTemplate = `{
                 "action": {
                     "type": "string"
                 },
-                "resource": {
+                "preset": {
                     "type": "string"
                 },
-                "role": {
+                "resource": {
                     "type": "string"
                 },
                 "scope": {
@@ -6677,6 +7307,10 @@ const docTemplate = `{
         "dto.Milestone": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Начало работ по проекту"
@@ -6703,6 +7337,10 @@ const docTemplate = `{
         "dto.MilestoneResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -6743,15 +7381,127 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PermissionOverride": {
+            "type": "object",
+            "required": [
+                "action",
+                "resource"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "view"
+                },
+                "granted": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "resource": {
+                    "type": "string",
+                    "example": "task"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "parent"
+                }
+            }
+        },
+        "dto.PresetRuleInput": {
+            "type": "object",
+            "required": [
+                "action",
+                "preset",
+                "resource",
+                "scope"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "update"
+                },
+                "preset": {
+                    "type": "string",
+                    "example": "vp"
+                },
+                "resource": {
+                    "type": "string",
+                    "example": "task"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "parent"
+                }
+            }
+        },
+        "dto.PresetRuleView": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "preset": {
+                    "type": "string"
+                },
+                "resource": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "updated_by": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PresetUpdateInput": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                }
+            }
+        },
+        "dto.PresetUpsertInput": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "auditor"
+                }
+            }
+        },
         "dto.Process": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6792,12 +7542,21 @@ const docTemplate = `{
         "dto.ProcessResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
                     "example": "2026-02-01"
                 },
                 "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "description": "Order of the process within its project (ascending display order).",
                     "type": "integer",
                     "example": 1
                 },
@@ -6823,8 +7582,13 @@ const docTemplate = `{
         "dto.ProcessTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "owner_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 5
                 },
                 "tasks": {
                     "type": "array",
@@ -6833,13 +7597,18 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Инсталляция"
                 }
             }
         },
         "dto.Project": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -6885,6 +7654,9 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
@@ -6899,6 +7671,36 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ReorderProcessRequest": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "project_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.ReorderTaskRequest": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "process_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -6921,6 +7723,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "id": {
                     "type": "integer",
@@ -7029,7 +7835,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -7047,6 +7853,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "М"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "employees_count": {
                     "type": "integer",
                     "example": 4
@@ -7062,31 +7872,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Монтажник"
-                }
-            }
-        },
-        "dto.RoleUpdateInput": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Внешний аудит"
-                }
-            }
-        },
-        "dto.RoleUpsertInput": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Внешний аудит"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "auditor"
                 }
             }
         },
@@ -7129,59 +7914,6 @@ const docTemplate = `{
                 "params": {
                     "type": "object",
                     "additionalProperties": {}
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "updated_by": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dto.RuleInput": {
-            "type": "object",
-            "required": [
-                "action",
-                "resource",
-                "role",
-                "scope"
-            ],
-            "properties": {
-                "action": {
-                    "type": "string",
-                    "example": "update"
-                },
-                "resource": {
-                    "type": "string",
-                    "example": "task"
-                },
-                "role": {
-                    "type": "string",
-                    "example": "vp"
-                },
-                "scope": {
-                    "type": "string",
-                    "example": "parent"
-                }
-            }
-        },
-        "dto.RuleView": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "resource": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "scope": {
-                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
@@ -7245,11 +7977,19 @@ const docTemplate = `{
         "dto.TaskResponse": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string"
+                },
                 "end_date": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
+                },
+                "order": {
+                    "description": "Order of the task within its process (ascending display order).",
+                    "type": "integer",
+                    "example": 1
                 },
                 "owner_id": {
                     "type": "integer"
@@ -7268,6 +8008,10 @@ const docTemplate = `{
         "dto.TaskTemplate": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "resources": {
                     "type": "array",
                     "items": {
@@ -7275,7 +8019,8 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Пуско-наладочные работы"
                 }
             }
         },
@@ -7308,6 +8053,10 @@ const docTemplate = `{
         "dto.UpdateMilestoneRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "content": {
                     "type": "string",
                     "example": "Приедут с России1"
@@ -7330,6 +8079,10 @@ const docTemplate = `{
         "dto.UpdateProcessRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7361,6 +8114,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "1"
                 },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7387,6 +8144,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "М"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
                 },
                 "owner_id": {
                     "type": "integer",
@@ -7418,6 +8179,10 @@ const docTemplate = `{
         "dto.UpdateTaskRequest": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "#0f83c4"
+                },
                 "end_date": {
                     "type": "string",
                     "format": "date",
@@ -7470,7 +8235,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -7508,13 +8273,81 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "rp"
                 },
                 "username": {
                     "type": "string",
                     "example": "ivanov"
+                }
+            }
+        },
+        "dto.UserPermissionInput": {
+            "type": "object",
+            "required": [
+                "action",
+                "resource"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "view"
+                },
+                "granted": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "resource": {
+                    "type": "string",
+                    "example": "task"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "parent"
+                }
+            }
+        },
+        "dto.UserPermissionsInput": {
+            "type": "object",
+            "properties": {
+                "overrides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionOverride"
+                    }
+                }
+            }
+        },
+        "dto.UserPermissionsView": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "type": "boolean"
+                },
+                "effective": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Permission"
+                    }
+                },
+                "overrides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionOverride"
+                    }
+                },
+                "preset": {
+                    "type": "string"
+                },
+                "preset_scope": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Permission"
+                    }
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -7547,7 +8380,7 @@ const docTemplate = `{
                     "example": "Иванович"
                 },
                 "name": {
-                    "description": "Полное ФИО «Фамилия Имя Отчество» (готовое, для отображения).",
+                    "description": "Full name \"Last First Middle\" (pre-composed, for display).",
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },
@@ -7555,7 +8388,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },

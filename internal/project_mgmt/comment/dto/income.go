@@ -2,6 +2,6 @@ package dto
 
 type CreateCommentRequest struct {
 	Content string `json:"content" example:"Перенести сроки?"`
-	// Ответ на другой комментарий той же задачи; пусто — корневой комментарий.
+	// Reply to another comment of the same task; empty means a root comment.
 	ParentID *int64 `json:"parent_id" example:"3"`
 }

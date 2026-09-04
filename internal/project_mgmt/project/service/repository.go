@@ -14,9 +14,10 @@ type ProjectRepository interface {
 	ListProjects(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]domain.Project, error)
-	CountProjects(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
+	CountProjects(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error)
+	AutoCreatedCounts(ctx context.Context, projectID int64) (domain.AutoCreatedCounts, error)
 }

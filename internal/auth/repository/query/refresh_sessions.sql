@@ -1,4 +1,4 @@
--- Проверка: считается ли токен активным (revoked_at IS NULL AND expires_at > NOW()).
+-- Check: whether the token is considered active (revoked_at IS NULL AND expires_at > NOW()).
 -- name: FindActiveSession :one
 SELECT id, user_id, token_hash, created_at, expires_at, revoked_at, COALESCE(replaced_by, 0)::bigint AS replaced_by
 FROM refresh_sessions
@@ -7,7 +7,7 @@ WHERE token_hash = @token_hash::text
   AND expires_at > NOW()
 LIMIT 1;
 
--- Найти сессию по хэшу (включая отозванные/истёкшие — для детекта повторного использования).
+-- Find a session by hash (including revoked/expired ones — to detect token reuse).
 -- name: FindSessionByHash :one
 SELECT id, user_id, token_hash, created_at, expires_at, revoked_at, COALESCE(replaced_by, 0)::bigint AS replaced_by
 FROM refresh_sessions

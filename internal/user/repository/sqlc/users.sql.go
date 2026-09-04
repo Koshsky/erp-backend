@@ -21,22 +21,22 @@ WHERE deleted_at IS NULL
     $1::text = 'all' OR
     ($1::text = 'own' AND manager_id = $2::bigint)
   )
-  AND ($3::text = '' OR role = $3::text)
+  AND ($3::text = '' OR preset = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
 `
 
 type CountUsersParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	RoleFilter string `json:"role_filter"`
-	ManagerID  int64  `json:"manager_id"`
+	ScopeView    string `json:"scope_view"`
+	UserID       int64  `json:"user_id"`
+	PresetFilter string `json:"preset_filter"`
+	ManagerID    int64  `json:"manager_id"`
 }
 
 func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countUsers,
 		arg.ScopeView,
 		arg.UserID,
-		arg.RoleFilter,
+		arg.PresetFilter,
 		arg.ManagerID,
 	)
 	var count int64
@@ -45,9 +45,9 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (last_name, first_name, middle_name, username, role, password_hash, manager_id, position, hire_date, termination_date)
+INSERT INTO users (last_name, first_name, middle_name, username, preset, password_hash, manager_id, position, hire_date, termination_date)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -55,7 +55,7 @@ type CreateUserParams struct {
 	FirstName       string         `json:"first_name"`
 	MiddleName      sql.NullString `json:"middle_name"`
 	Username        string         `json:"username"`
-	Role            string         `json:"role"`
+	Preset          sql.NullString `json:"preset"`
 	PasswordHash    string         `json:"password_hash"`
 	ManagerID       pgtype.Int8    `json:"manager_id"`
 	Position        string         `json:"position"`
@@ -69,7 +69,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.FirstName,
 		arg.MiddleName,
 		arg.Username,
-		arg.Role,
+		arg.Preset,
 		arg.PasswordHash,
 		arg.ManagerID,
 		arg.Position,
@@ -82,7 +82,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.LastName,
 		&i.FirstName,
 		&i.MiddleName,
-		&i.Role,
+		&i.Preset,
 		&i.Username,
 		&i.PasswordHash,
 		&i.ManagerID,
@@ -152,7 +152,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
 	AND deleted_at IS NULL
@@ -167,7 +167,7 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 		&i.LastName,
 		&i.FirstName,
 		&i.MiddleName,
-		&i.Role,
+		&i.Preset,
 		&i.Username,
 		&i.PasswordHash,
 		&i.ManagerID,
@@ -182,7 +182,7 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 }
 
 const findUserByUsername = `-- name: FindUserByUsername :one
-SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE username = $1
 	AND deleted_at IS NULL
@@ -197,7 +197,7 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 		&i.LastName,
 		&i.FirstName,
 		&i.MiddleName,
-		&i.Role,
+		&i.Preset,
 		&i.Username,
 		&i.PasswordHash,
 		&i.ManagerID,
@@ -244,8 +244,36 @@ func (q *Queries) InsertStateRange(ctx context.Context, arg InsertStateRangePara
 	return i, err
 }
 
+const insertUserPermission = `-- name: InsertUserPermission :exec
+INSERT INTO user_permissions (user_id, resource, action, scope, granted, updated_by)
+VALUES ($1::bigint, $2::text, $3::text, $4::text, $5, $6)
+`
+
+type InsertUserPermissionParams struct {
+	UserID    int64       `json:"user_id"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	Granted   bool        `json:"granted"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+}
+
+// Individual permission override created together with the user account
+// (same table/semantics as rbacpolicy's user_permissions).
+func (q *Queries) InsertUserPermission(ctx context.Context, arg InsertUserPermissionParams) error {
+	_, err := q.db.Exec(ctx, insertUserPermission,
+		arg.UserID,
+		arg.Resource,
+		arg.Action,
+		arg.Scope,
+		arg.Granted,
+		arg.UpdatedBy,
+	)
+	return err
+}
+
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
 ORDER BY id ASC
@@ -265,7 +293,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.LastName,
 			&i.FirstName,
 			&i.MiddleName,
-			&i.Role,
+			&i.Preset,
 			&i.Username,
 			&i.PasswordHash,
 			&i.ManagerID,
@@ -453,36 +481,36 @@ func (q *Queries) ListStatesByUserRange(ctx context.Context, arg ListStatesByUse
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 FROM users
 WHERE deleted_at IS NULL
-  -- Для не-admin — только прямые подчинённые (manager_id = текущий пользователь);
-  -- admin видит всех. «Сам пользователь» сюда не включается (табель добавляет
-  -- себя на клиенте отдельно).
+  -- For non-admin: only direct subordinates (manager_id = current user);
+  -- admin sees everyone. The user himself is not included here (the timesheet
+  -- adds oneself on the client separately).
   AND (
     $1::text = 'all' OR
     ($1::text = 'own' AND manager_id = $2::bigint)
   )
-  AND ($3::text = '' OR role = $3::text)
+  AND ($3::text = '' OR preset = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
 ORDER BY id ASC
 LIMIT $6::bigint OFFSET $5::bigint
 `
 
 type ListUsersParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	RoleFilter string `json:"role_filter"`
-	ManagerID  int64  `json:"manager_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScopeView    string `json:"scope_view"`
+	UserID       int64  `json:"user_id"`
+	PresetFilter string `json:"preset_filter"`
+	ManagerID    int64  `json:"manager_id"`
+	PageOffset   int64  `json:"page_offset"`
+	PageLimit    int64  `json:"page_limit"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
 	rows, err := q.db.Query(ctx, listUsers,
 		arg.ScopeView,
 		arg.UserID,
-		arg.RoleFilter,
+		arg.PresetFilter,
 		arg.ManagerID,
 		arg.PageOffset,
 		arg.PageLimit,
@@ -499,7 +527,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.LastName,
 			&i.FirstName,
 			&i.MiddleName,
-			&i.Role,
+			&i.Preset,
 			&i.Username,
 			&i.PasswordHash,
 			&i.ManagerID,
@@ -524,7 +552,7 @@ const normalizeUserStates = `-- name: NormalizeUserStates :exec
 SELECT fn_normalize_user_states()
 `
 
-// Сливает смежные диапазоны одинакового (user_id, state_id) в непрерывные.
+// Merges adjacent ranges with the same (user_id, state_id) into continuous ones.
 func (q *Queries) NormalizeUserStates(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, normalizeUserStates)
 	return err
@@ -537,8 +565,8 @@ WHERE id = $1::bigint
 	AND deleted_at IS NULL
 `
 
-// Владелец записи: руководитель, а при его отсутствии — сам пользователь
-// (чтобы пользователь мог видеть/менять свой табель).
+// Record owner: the manager, or the user himself when there is none
+// (so a user can see/edit their own timesheet).
 func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
 	row := q.db.QueryRow(ctx, ownerChain, id)
 	var owner_id int64
@@ -553,7 +581,7 @@ SET
 	first_name = $2,
 	middle_name = $3,
 	username = $4,
-	role = $5,
+	preset = $5,
 	password_hash = $6,
 	manager_id = $7,
 	position = $8,
@@ -562,7 +590,7 @@ SET
 	updated_at = NOW()
 WHERE id = $11
 	AND deleted_at IS NULL
-RETURNING id, last_name, first_name, middle_name, role, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
@@ -570,7 +598,7 @@ type UpdateUserParams struct {
 	FirstName       string         `json:"first_name"`
 	MiddleName      sql.NullString `json:"middle_name"`
 	Username        string         `json:"username"`
-	Role            string         `json:"role"`
+	Preset          sql.NullString `json:"preset"`
 	PasswordHash    string         `json:"password_hash"`
 	ManagerID       pgtype.Int8    `json:"manager_id"`
 	Position        string         `json:"position"`
@@ -585,7 +613,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.FirstName,
 		arg.MiddleName,
 		arg.Username,
-		arg.Role,
+		arg.Preset,
 		arg.PasswordHash,
 		arg.ManagerID,
 		arg.Position,
@@ -599,7 +627,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.LastName,
 		&i.FirstName,
 		&i.MiddleName,
-		&i.Role,
+		&i.Preset,
 		&i.Username,
 		&i.PasswordHash,
 		&i.ManagerID,

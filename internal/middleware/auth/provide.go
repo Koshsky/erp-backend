@@ -7,9 +7,10 @@ import (
 )
 
 // ProvideAuthMiddleware builds the JWT auth middleware.
-func ProvideAuthMiddleware(logger *slog.Logger, jwtService *jwt.Service) *Middleware {
+func ProvideAuthMiddleware(logger *slog.Logger, jwtService *jwt.Service, resolver PrincipalResolver) *Middleware {
 	return &Middleware{
 		logger:     logger,
 		jwtManager: jwtService,
+		resolver:   resolver,
 	}
 }

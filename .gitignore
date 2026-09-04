@@ -1,4 +1,5 @@
 .env
+.dsh-project-memory
 
 vendor/
 build/
@@ -32,9 +33,9 @@ logs/
 *.tmp
 *.temp
 temp/
-# Enterprise-плагин и личный seed (не отслеживаются; каталоги держат .gitkeep)
+# Enterprise plugin and personal seed (not tracked; dirs keep .gitkeep)
 migrations/plugins/*.sql
 migrations/seed/*.sql
 
-# Локальный код-ревью (не хранится в репо)
+# Local code review (not stored in the repo)
 CODE_REVIEW.md

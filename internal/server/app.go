@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/audit"
 	"github.com/Koshsky/erp-backend/internal/config"
 	idempotencypkg "github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
@@ -39,6 +40,7 @@ type App struct {
 	authMw      *auth.Middleware
 	tracer      *tracingpkg.Tracer
 	idemMw      *idempotencypkg.Middleware
+	auditMw     *audit.Middleware
 	policyStore *rbacpolicysvc.PolicyStore
 	modules     []Module
 }
@@ -52,6 +54,7 @@ func New(
 	profiler *profiler.Profiler,
 	tracer *tracingpkg.Tracer,
 	idemMw *idempotencypkg.Middleware,
+	auditMw *audit.Middleware,
 	policyStore *rbacpolicysvc.PolicyStore,
 	modules []Module,
 ) (*App, error) {
@@ -64,6 +67,7 @@ func New(
 		maintenance: maintenance.New(cfg.Maintenance, pool, logger),
 		tracer:      tracer,
 		idemMw:      idemMw,
+		auditMw:     auditMw,
 		policyStore: policyStore,
 		modules:     modules,
 	}, nil
@@ -94,6 +98,9 @@ func (a *App) Start() error {
 	if a.policyStore != nil {
 		a.policyStore.Start()
 	}
+	if a.auditMw != nil {
+		a.auditMw.Start()
+	}
 
 	if a.cfg.Swagger.Enabled {
 		// Swagger is outside /api/v1; keep a public per-IP wall on it.
@@ -108,9 +115,9 @@ func (a *App) Start() error {
 	// a common IP bucket and block their neighbors.
 	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
-	// Корневой span запроса (trace): method/path/status/duration + user_id.
+	// Root request span (trace): method/path/status/duration + user_id.
 	router.Use(a.tracer.HTTPRootSpan())
-	// Резервное текстовое логирование запросов (независимо от трейсинга).
+	// Fallback text request logging (independent of tracing).
 	router.Use(a.requestLog())
 	// Register routes
 	a.registerRoutes(router)
@@ -175,6 +182,9 @@ func (a *App) Stop(ctx context.Context) error {
 	if a.policyStore != nil {
 		a.policyStore.Stop()
 	}
+	if a.auditMw != nil {
+		a.auditMw.Stop(ctx)
+	}
 	if a.pool != nil {
 		a.pool.Close()
 	}
@@ -192,8 +202,8 @@ func (a *App) Stop(ctx context.Context) error {
 	return nil
 }
 
-// requestLog пишет в лог сводку по каждому HTTP-запросу (метод, путь, статус,
-// длительность) — независимый от трейсинга резерв для текстовых логов.
+// requestLog writes a summary of every HTTP request (method, path, status,
+// duration) to the log — a tracing-independent fallback for text logs.
 func (a *App) requestLog() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

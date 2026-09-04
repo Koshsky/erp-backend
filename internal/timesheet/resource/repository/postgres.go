@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -36,11 +35,12 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 	row, err := r.db.CreateResource(ctx, sqlc.CreateResourceParams{
 		Title:   resource.Title,
 		Code:    resource.Code,
+		Color:   nullable.ToString(resource.Color),
 		OwnerID: ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
-		// Идемпотентный create: активный code уже существует (ON CONFLICT
-		// ничего не вставил) — это конфликт бизнес-ключа, а не внутренняя ошибка.
+		// Idempotent create: the active code already exists (ON CONFLICT
+		// inserted nothing) — this is a business-key conflict, not an internal error.
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errapi.Conflict("resource with this code already exists")
 		}
@@ -60,6 +60,7 @@ func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*domai
 		ID:             row.ID,
 		Title:          row.Title,
 		Code:           row.Code,
+		Color:          nullable.StringPtr(row.Color),
 		OwnerID:        &row.OwnerID,
 		EmployeesCount: int(row.EmployeesCount),
 	}, nil
@@ -70,6 +71,7 @@ func (r *ResourceRepository) UpdateResource(ctx context.Context, resource domain
 		ResourceID: resource.ID,
 		Title:      resource.Title,
 		Code:       resource.Code,
+		Color:      nullable.ToString(resource.Color),
 		OwnerID:    ownerIDValue(resource.OwnerID),
 	})
 	if err != nil {
@@ -86,12 +88,12 @@ func (r *ResourceRepository) DeleteResource(ctx context.Context, id int64) error
 func (r *ResourceRepository) ListResources(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Resource, error) {
 	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceResource),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -107,6 +109,7 @@ func (r *ResourceRepository) ListResources(
 			ID:             row.ID,
 			Title:          row.Title,
 			Code:           row.Code,
+			Color:          nullable.StringPtr(row.Color),
 			OwnerID:        &row.OwnerID,
 			EmployeesCount: int(row.EmployeesCount),
 		})
@@ -117,13 +120,13 @@ func (r *ResourceRepository) ListResources(
 func (r *ResourceRepository) CountResources(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 ) (int64, error) {
 	return r.db.CountResources(
 		ctx,
 		sqlc.CountResourcesParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceResource),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},
@@ -142,6 +145,7 @@ func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID
 			ID:             row.ID,
 			Title:          row.Title,
 			Code:           row.Code,
+			Color:          nullable.StringPtr(row.Color),
 			OwnerID:        &row.OwnerID,
 			EmployeesCount: int(row.EmployeesCount),
 		})
@@ -160,6 +164,7 @@ func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Re
 		ID:             row.ID,
 		Title:          row.Title,
 		Code:           row.Code,
+		Color:          nullable.StringPtr(row.Color),
 		OwnerID:        &row.OwnerID,
 		EmployeesCount: int(count),
 	}, nil
@@ -202,7 +207,7 @@ func mapMember(row sqlc.ListMembersByResourceIDRow) domain.ResourceMember {
 	return domain.ResourceMember{
 		ID:              row.ID,
 		Name:            row.Name,
-		Role:            row.Role,
+		Preset:          nullable.StringPtr(row.Preset),
 		Position:        row.Position,
 		ManagerID:       nullable.Int64Ptr(row.ManagerID),
 		HireDate:        fromDate(row.HireDate),

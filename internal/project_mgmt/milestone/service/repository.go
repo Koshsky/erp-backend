@@ -14,9 +14,9 @@ type MilestoneRepository interface {
 	ListMilestones(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]domain.Milestone, error)
-	CountMilestones(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
+	CountMilestones(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error)
 }

@@ -35,6 +35,9 @@ const (
 	ResourceStateAdmin
 	// ResourceOrgStructure is a virtual resource: the org structure section.
 	ResourceOrgStructure
+	// ResourceAudit is a virtual resource: the audit-log admin section
+	// (page guard), admin only (bypass).
+	ResourceAudit
 )
 
 // Owners is an entity's chain of owners: the project owner and the process owner.

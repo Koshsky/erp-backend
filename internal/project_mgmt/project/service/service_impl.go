@@ -8,7 +8,6 @@ import (
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
-	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -32,18 +31,20 @@ func NewProjectService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.P
 }
 
 // CreateProject creates a project. The middleware checked permissions; here
-// only owner normalization: rp always becomes the owner.
+// only owner normalization: a caller creating into own ownership (own scope)
+// always becomes the owner (forceSelfOwner). The response also reports what
+// the auto-create template (DB trigger V8) added to the project.
 func (s *ProjectService) CreateProject(
 	ctx context.Context,
 	req dto.CreateProjectRequest,
 	userID int64,
-	role string,
-) (*dto.ProjectResponse, error) {
+	forceSelfOwner bool,
+) (*dto.CreateProjectResponse, error) {
 	ctx, end := s.tracer.Start(ctx, "project.CreateProject")
 	defer end(nil)
 
-	if role == userdomain.ProjectManager {
-		// the project manager immediately becomes the owner; a foreign owner from the request is ignored
+	if forceSelfOwner {
+		// the owner-scoped creator immediately becomes the owner; a foreign owner from the request is ignored
 		req.OwnerID = &userID
 	}
 
@@ -57,7 +58,12 @@ func (s *ProjectService) CreateProject(
 		return nil, err
 	}
 
-	return s.mapper.ToDTO(created), nil
+	counts, err := s.repository.AutoCreatedCounts(ctx, created.ID)
+	if err != nil {
+		// Non-critical feedback: the project itself was created fine.
+		s.logger.WarnContext(ctx, "auto-create counts unavailable", "project_id", created.ID, "error", err)
+	}
+	return s.mapper.ToCreateDTO(created, counts), nil
 }
 
 func (s *ProjectService) FindProject(ctx context.Context, id int64) (*dto.ProjectResponse, error) {
@@ -110,12 +116,12 @@ func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {
 	project, err := s.repository.FindProject(ctx, id)
 	if err != nil {
 		if errors.IsNotFoundError(err) {
-			return nil // идемпотентный delete: уже удалено — не ошибка
+			return nil // idempotent delete: already deleted — not an error
 		}
 		return err
 	}
 	if project == nil {
-		return nil // идемпотентный delete
+		return nil // idempotent delete
 	}
 
 	return s.repository.DeleteProject(ctx, id)
@@ -124,18 +130,18 @@ func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {
 func (s *ProjectService) ListProjects(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ProjectResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "project.ListProjects")
 	defer end(nil)
 
-	rows, err := s.repository.ListProjects(ctx, userID, role, ownerID, limit, offset)
+	rows, err := s.repository.ListProjects(ctx, userID, viewScope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountProjects(ctx, userID, role, ownerID)
+	total, err := s.repository.CountProjects(ctx, userID, viewScope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

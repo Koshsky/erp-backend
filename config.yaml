@@ -14,10 +14,10 @@ server:
 jwt:
   access_expiry: 15m
   refresh_expiry: 168h
-  # Refresh-кука: HttpOnly, SameSite=Strict. Флаг Secure применяется только за
-  # реальным https (True — жёсткое требование https); по фактическому http
-  # (нативный dev, прямой http-доступ) он снимается автоматически, иначе
-  # браузер не сохранит куку и автопродление access-токена не заработает.
+  # Refresh cookie: HttpOnly, SameSite=Strict. The Secure flag applies only
+  # behind real https (True — a hard https requirement); over actual http
+  # (native dev, direct http access) it is lifted automatically, otherwise the
+  # browser would not persist the cookie and access-token auto-renewal breaks.
   refresh_cookie_secure: true
   issuer: mvs-erp
 
@@ -76,7 +76,7 @@ swagger:
 
 profiling:
   enabled: false
-  # pprof только на loopback (AD-13): даже при включении наружу не торчит.
+  # pprof on loopback only (AD-13): even when enabled it is not exposed.
   address: "127.0.0.1:6060"
 
 maintenance:
@@ -91,6 +91,19 @@ tracing:
   sampler_ratio: 1.0
 
 rbac:
-  # Период фоновой перезагрузки правил из Postgres (эвентуальная
-  # консистентность между инстансами; локальные правки применяются сразу).
+  # Background reload interval for rules from Postgres (eventual consistency
+  # between instances; local edits apply immediately).
   refresh_interval: 30s
+
+audit:
+  # Audit-log capture of all CRUD mutations + auth events. Events are pushed
+  # to Grafana Loki (the log-storage service) over its HTTP API; the admin
+  # page reads them back through GET /api/v1/audit/events.
+  enabled: true
+  # Loki base URL (docker network); native dev — http://localhost:3100.
+  # Loki runs inside the app-network with auth disabled (no tokens needed).
+  url: "http://loki:3100"
+  timeout: 10s
+  # sync: true — send events synchronously (strict, slower); false (default) —
+  # buffer and retry asynchronously without blocking the user request.
+  sync: false

@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -41,17 +42,27 @@ func (q *Queries) CountTasks(ctx context.Context, arg CountTasksParams) (int64, 
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (process_id, owner_id, title, start_date, end_date)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
+INSERT INTO tasks (process_id, owner_id, title, color, start_date, end_date, sort_order)
+VALUES (
+	$1,
+	$2,
+	$3,
+	$4,
+	$5,
+	$6,
+	-- New task goes to the end of its process group.
+	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks WHERE process_id = $1)
+)
+RETURNING id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 `
 
 type CreateTaskParams struct {
-	ProcessID int64       `json:"process_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
+	ProcessID int64          `json:"process_id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Title     string         `json:"title"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -59,6 +70,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.ProcessID,
 		arg.OwnerID,
 		arg.Title,
+		arg.Color,
 		arg.StartDate,
 		arg.EndDate,
 	)
@@ -68,8 +80,10 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.ProcessID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -90,7 +104,7 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
 }
 
 const findTask = `-- name: FindTask :one
-SELECT id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
+SELECT id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 FROM tasks
 WHERE deleted_at IS NULL
 	AND id = $1::bigint
@@ -104,8 +118,10 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 		&i.ProcessID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -113,8 +129,38 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 	return i, err
 }
 
+const listTaskIdsByProcess = `-- name: ListTaskIdsByProcess :many
+SELECT id
+FROM tasks
+WHERE process_id = $1::bigint
+	AND deleted_at IS NULL
+ORDER BY sort_order ASC, id ASC
+`
+
+// Active task ids of a process — to validate a reorder request covers the
+// whole group.
+func (q *Queries) ListTaskIdsByProcess(ctx context.Context, processID int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, listTaskIdsByProcess, processID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTasks = `-- name: ListTasks :many
-SELECT t.id, t.process_id, t.owner_id, t.title, t.start_date, t.end_date, t.created_at, t.updated_at, t.deleted_at
+SELECT t.id, t.process_id, t.owner_id, t.title, t.color, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at, t.deleted_at
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
@@ -126,7 +172,7 @@ WHERE t.deleted_at IS NULL
     ($1::text = 'own' AND t.owner_id = $2::bigint)
   )
   AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
-ORDER BY t.id ASC
+ORDER BY t.sort_order ASC, t.id ASC
 LIMIT $5::bigint OFFSET $4::bigint
 `
 
@@ -158,8 +204,10 @@ func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, e
 			&i.ProcessID,
 			&i.OwnerID,
 			&i.Title,
+			&i.Color,
 			&i.StartDate,
 			&i.EndDate,
+			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -200,27 +248,60 @@ func (q *Queries) OwnerChain(ctx context.Context, id int64) (OwnerChainRow, erro
 	return i, err
 }
 
+const reorderTasksApply = `-- name: ReorderTasksApply :exec
+UPDATE tasks t
+SET sort_order = x.ord, updated_at = NOW()
+FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE t.id = x.id AND t.deleted_at IS NULL
+`
+
+// Phase 2 of the two-phase reorder: write the final positions. The group is
+// the whole active set of the process (validated by the caller), so no target
+// slot collides with rows outside the group.
+func (q *Queries) ReorderTasksApply(ctx context.Context, ids []int64) error {
+	_, err := q.db.Exec(ctx, reorderTasksApply, ids)
+	return err
+}
+
+const reorderTasksMark = `-- name: ReorderTasksMark :exec
+UPDATE tasks t
+SET sort_order = x.ord + 1000000, updated_at = NOW()
+FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
+WHERE t.id = x.id AND t.deleted_at IS NULL
+`
+
+// Phase 1 of the two-phase reorder (runs inside one transaction with
+// ReorderTasksApply): park every task on a temporary offset slot so the
+// follow-up write cannot transiently violate the partial unique index
+// (process_id, sort_order) when values swap. The caller sends the whole group.
+func (q *Queries) ReorderTasksMark(ctx context.Context, ids []int64) error {
+	_, err := q.db.Exec(ctx, reorderTasksMark, ids)
+	return err
+}
+
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET
 	process_id = $1,
 	owner_id = $2,
 	title = $3,
-	start_date = $4,
-	end_date = $5,
+	color = $4,
+	start_date = $5,
+	end_date = $6,
 	updated_at = NOW()
-WHERE id = $6
+WHERE id = $7
 	AND deleted_at IS NULL
-RETURNING id, process_id, owner_id, title, start_date, end_date, created_at, updated_at, deleted_at
+RETURNING id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
 `
 
 type UpdateTaskParams struct {
-	ProcessID int64       `json:"process_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	TaskID    int64       `json:"task_id"`
+	ProcessID int64          `json:"process_id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Title     string         `json:"title"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	TaskID    int64          `json:"task_id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -228,6 +309,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.ProcessID,
 		arg.OwnerID,
 		arg.Title,
+		arg.Color,
 		arg.StartDate,
 		arg.EndDate,
 		arg.TaskID,
@@ -238,8 +320,10 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.ProcessID,
 		&i.OwnerID,
 		&i.Title,
+		&i.Color,
 		&i.StartDate,
 		&i.EndDate,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

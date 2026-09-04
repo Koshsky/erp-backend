@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -58,7 +59,7 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 	items, total, err := h.service.ListResources(
 		c.Request.Context(),
 		user.ID,
-		user.Role,
+		policies.ViewScopeCodeUser(user, rbac.ResourceResource),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,
@@ -253,7 +254,7 @@ func (h *ResourceHandler) AddMember(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.AddMember(c.Request.Context(), id, body.UserID, user.ID, user.Role); err != nil {
+	if err = h.service.AddMember(c.Request.Context(), id, body.UserID, user.ID, user.Admin); err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}

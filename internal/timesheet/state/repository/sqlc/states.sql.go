@@ -23,8 +23,8 @@ type CreateStateParams struct {
 	IsAvailable bool   `json:"is_available"`
 }
 
-// Идемпотентный create по бизнес-ключу code: на существующем code ничего не
-// вставляем; вызывающий код (репозиторий) превращает конфликт в 409.
+// Idempotent create by business key code: if the code already exists we
+// insert nothing; the calling code (repository) turns the conflict into 409.
 func (q *Queries) CreateState(ctx context.Context, arg CreateStateParams) (State, error) {
 	row := q.db.QueryRow(ctx, createState, arg.Code, arg.Name, arg.IsAvailable)
 	var i State

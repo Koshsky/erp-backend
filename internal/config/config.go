@@ -42,13 +42,14 @@ type Config struct {
 	Maintenance   MaintenanceConfig `yaml:"maintenance"`
 	Tracing       TracingConfig     `yaml:"tracing"`
 	RBAC          RBACConfig        `yaml:"rbac"`
+	Audit         AuditConfig       `yaml:"audit"`
 }
 
-// RBACConfig — настройки runtime-RBAC (перезагрузка правил из БД).
+// RBACConfig — runtime-RBAC settings (rules reload from the DB).
 type RBACConfig struct {
-	// RefreshInterval — период фоновой перезагрузки правил из Postgres
-	// (эвентуальная консистентность между инстансами; локальные правки
-	// применяются сразу).
+	// RefreshInterval — the background rule reload period from Postgres
+	// (eventual consistency between instances; local edits
+	// apply immediately).
 	RefreshInterval Duration `yaml:"refresh_interval"`
 }
 
@@ -83,8 +84,8 @@ type PostgresConfig struct {
 // Secrets come from environment variables (yaml:"-").
 type JWTConfig struct {
 	SecretKey string `yaml:"-"`
-	// RefreshKey остаётся legacy-совместимым: refresh-токены opaque и хранятся
-	// в БД (AD-06), ключ лишь сохраняется в окружении.
+	// RefreshKey remains legacy-compatible: refresh tokens are opaque and stored
+	// in the DB (AD-06); the key is only kept in the environment.
 	RefreshKey          string   `yaml:"-"`
 	AccessExpiry        Duration `yaml:"access_expiry"`
 	RefreshExpiry       Duration `yaml:"refresh_expiry"`
@@ -119,8 +120,8 @@ type ProfilingConfig struct {
 	Address string `yaml:"address"`
 }
 
-// MaintenanceConfig — фоновая нормализация данных (периодический запуск
-// fn_normalize_employee_states для employee_states).
+// MaintenanceConfig — background data normalization (periodic run of
+// fn_normalize_employee_states for employee_states).
 type MaintenanceConfig struct {
 	Enabled  bool     `yaml:"enabled"`
 	Interval Duration `yaml:"interval"`
@@ -133,6 +134,20 @@ type TracingConfig struct {
 	ExporterEndpoint string  `yaml:"exporter_endpoint"`
 	ServiceName      string  `yaml:"service_name"`
 	SamplerRatio     float64 `yaml:"sampler_ratio"`
+}
+
+// AuditConfig — audit-log capture settings. Events are pushed to Grafana Loki
+// (the log-storage service) over its HTTP API.
+type AuditConfig struct {
+	Enabled bool `yaml:"enabled"`
+	// URL is the Grafana Loki base URL (in the docker network, e.g.
+	// http://loki:3100). No auth: Loki runs inside the app-network with
+	// auth_enabled disabled.
+	URL     string   `yaml:"url"`
+	Timeout Duration `yaml:"timeout"`
+	// Sync sends events synchronously inside the request (strict durability,
+	// slower); the default async mode buffers events and retries.
+	Sync bool `yaml:"sync"`
 }
 
 // RateLimitConfig is the per-client rate limiting settings.
@@ -180,6 +195,13 @@ func applyEnv(cfg *Config) error {
 	cfg.JWT.RefreshKey = getEnv("JWT_REFRESH_KEY", "")
 	if cfg.JWT.RefreshKey == "" {
 		return fmt.Errorf("JWT_REFRESH_KEY is required")
+	}
+
+	// TRACING_ENDPOINT overrides the OTLP exporter endpoint (dev: host-run air
+	// reaches the in-docker Jaeger collector via its published port; kept empty
+	// in the full-stack docker run, which uses the in-network "jaeger:4317").
+	if endpoint := getEnv("TRACING_ENDPOINT", ""); endpoint != "" {
+		cfg.Tracing.ExporterEndpoint = endpoint
 	}
 
 	return nil

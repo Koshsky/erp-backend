@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
@@ -38,9 +37,9 @@ func (r *AssignmentRepository) CreateAssignment(
 		Quantity:   int64(assignment.Quantity),
 	})
 	if err != nil {
-		// Идемпотентный create: на существующей активной связке
-		// (task_id, resource_id) INSERT ... ON CONFLICT DO NOTHING не вставил
-		// строку, RETURNING вернул пусто. Возвращаем уже существующую запись.
+		// Idempotent create: for an already-active (task_id, resource_id) pair,
+		// INSERT ... ON CONFLICT DO NOTHING inserts no row and RETURNING comes
+		// back empty. Return the already existing record.
 		if errors.Is(err, pgx.ErrNoRows) {
 			existing, ferr := r.db.FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
 				TaskID:     assignment.TaskID,
@@ -94,12 +93,12 @@ func (r *AssignmentRepository) DeleteAssignment(ctx context.Context, id int64) e
 func (r *AssignmentRepository) ListAssignments(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Assignment, error) {
 	rows, err := r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceAssignment),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -118,13 +117,13 @@ func (r *AssignmentRepository) ListAssignments(
 func (r *AssignmentRepository) CountAssignments(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 ) (int64, error) {
 	return r.db.CountAssignments(
 		ctx,
 		sqlc.CountAssignmentsParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceAssignment),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},

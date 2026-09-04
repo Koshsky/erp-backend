@@ -199,7 +199,7 @@ func TestIdempotencyInFlightReturnsConflict(t *testing.T) {
 	counter := 0
 	router := buildRouter(mw, &counter)
 
-	// Эмулируем «в полёте»: первый запрос с ключом ещё не завершился.
+	// Emulate "in flight": the first request with the key has not finished yet.
 	repo.mu.Lock()
 	repo.inflight[scope("k-x", 7, http.MethodPost, "/tasks")] = true
 	repo.mu.Unlock()
@@ -328,7 +328,7 @@ func TestIdempotencyWithoutAuthPassesThrough(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	// Без setUser — userctx.GetUserID вернёт ошибку, мидлварь пропускает.
+	// Without setUser — userctx.GetUserID returns an error, the middleware passes through.
 	router.Use(mw.Handler())
 	counter := 0
 	router.POST("/tasks", func(c *gin.Context) {

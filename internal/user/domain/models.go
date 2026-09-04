@@ -6,16 +6,16 @@ import (
 )
 
 const (
-	Admin           string = "admin"
-	ProjectDirector string = "dp"
-	ProjectManager  string = "rp"
-	ProcessOwner    string = "vp"
-	Worker          string = "worker"
+	PresetAdmin           string = "admin"
+	PresetProjectDirector string = "dp"
+	PresetProjectManager  string = "rp"
+	PresetProcessOwner    string = "vp"
+	PresetWorker          string = "worker"
 )
 
 /*
-Roles:
-Admin (admin) — system administrator: full access to all entities and user management.
+Permission presets (renamed from roles):
+Admin (admin) — system administrator: full access to all entities and user management (a code bypass, not the matrix).
 ProjectDirector (dp) — project portfolio director: sees all projects, processes,
 tasks, milestones and assignments; may change only project priorities.
 ProjectManager (rp) — project manager: sees own projects and the processes of own
@@ -25,6 +25,10 @@ ProcessOwner (vp) — process owner: sees own processes and their tasks/mileston
 assignments; creates, edits and deletes tasks, milestones and assignments in own
 processes. Does not create or edit processes.
 Worker (worker) — no rights yet.
+
+A user's effective rights = base from the assigned preset PLUS per-user
+overrides (user_permissions): an explicit grant shadows the preset rule for the
+same (resource, action), an explicit revoke removes it.
 
 Permission matrix (admin — everything; worker — nothing):
 Projects:
@@ -60,17 +64,19 @@ type User struct {
 	LastName     string
 	FirstName    string
 	MiddleName   *string
-	Role         string
+	Preset       *string // assigned permission preset (nil — no base rights)
 	Username     string
 	PasswordHash string
-	// Руководитель рабочего (user с ролью vp); для остальных ролей — nil.
+	// Manager of the worker; nil when the user has no manager.
 	ManagerID       *int64
 	Position        string
 	HireDate        *time.Time
 	TerminationDate *time.Time
+	// Account registration time.
+	CreatedAt time.Time
 }
 
-// FullName возвращает полное ФИО «Фамилия Имя Отчество» (без пустых частей).
+// FullName returns the full name "Last First Middle" (without empty parts).
 func (u *User) FullName() string {
 	parts := []string{}
 	if u.LastName != "" {
@@ -85,6 +91,14 @@ func (u *User) FullName() string {
 	return strings.Join(parts, " ")
 }
 
+// PresetName returns the assigned preset code ("" — none).
+func (u *User) PresetName() string {
+	if u.Preset == nil {
+		return ""
+	}
+	return *u.Preset
+}
+
 // UserState is a worker state range (non-presence only), [StartDate, EndDate].
 type UserState struct {
 	ID          int64
@@ -95,4 +109,15 @@ type UserState struct {
 	IsAvailable bool
 	StartDate   time.Time
 	EndDate     time.Time
+}
+
+// UserPermission — an individual permission override of a user (created
+// together with the account): an explicit grant (Granted=true, Scope) or
+// revoke (Granted=false, Scope ignored) that shadows the preset rule for the
+// same (resource, action).
+type UserPermission struct {
+	Resource string
+	Action   string
+	Scope    string
+	Granted  bool
 }

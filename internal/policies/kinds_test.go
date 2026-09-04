@@ -7,7 +7,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/policies"
 )
 
-// Кодеки: roundtrip для каждого ресурса/действия/зоны + невалидные значения.
+// Codecs: roundtrip for each resource/action/scope + invalid values.
 func TestResourceCodecs(t *testing.T) {
 	t.Parallel()
 	for i := rbac.ResourceProject; i <= rbac.ResourceRBACConfig; i++ {
@@ -58,7 +58,7 @@ func TestScopeCodecs(t *testing.T) {
 	}
 }
 
-// Точная таблица применимости зон по ресурсу (зеркалит бэкенд ScopeApplicable).
+// Exact scope applicability table per resource (mirrors the backend ScopeApplicable).
 func TestScopeApplicableTable(t *testing.T) {
 	t.Parallel()
 	ownRes := map[rbac.Resource]bool{
@@ -76,6 +76,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceUserAdmin:    false,
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
+		rbac.ResourceAudit:        false,
 	}
 	parentRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      false,
@@ -92,6 +93,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceUserAdmin:    false,
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
+		rbac.ResourceAudit:        false,
 	}
 	ancestorRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      false,
@@ -108,6 +110,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceUserAdmin:    false,
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
+		rbac.ResourceAudit:        false,
 	}
 	for i := rbac.ResourceProject; i <= rbac.ResourceRBACConfig; i++ {
 		if !policies.ScopeApplicable(i, policies.ScopeAll) {
@@ -131,7 +134,7 @@ func TestScopeApplicableTable(t *testing.T) {
 	}
 }
 
-// NewMatrix: последняя пара (role, resource, action) побеждает.
+// NewMatrix: the last (role, resource, action) pair wins.
 func TestNewMatrixLastWins(t *testing.T) {
 	t.Parallel()
 	m := policies.NewMatrix([]policies.MatrixRule{
@@ -146,8 +149,8 @@ func TestNewMatrixLastWins(t *testing.T) {
 	}
 }
 
-// DefaultMatrixRules ↔ NewMatrix равны встроенной матрице (reset-путь не теряет
-// ни одного правила).
+// DefaultMatrixRules ↔ NewMatrix equal the built-in matrix (the reset path loses
+// no rule).
 func TestDefaultMatrixRoundTrip(t *testing.T) {
 	t.Parallel()
 	rebuilt := policies.NewMatrix(policies.DefaultMatrixRules())
@@ -164,7 +167,7 @@ func TestDefaultMatrixRoundTrip(t *testing.T) {
 	}
 }
 
-// Валидация kind'ов: валидные собираются, невалидные — ошибка.
+// Kind validation: valid ones are built, invalid ones are an error.
 func TestValidateSpec(t *testing.T) {
 	t.Parallel()
 	valid := []policies.RouteSpec{
@@ -197,6 +200,26 @@ func TestValidateSpec(t *testing.T) {
 			"author_resource": "comment", "author_id_param": "comment_id",
 			"right_resource": "task", "right_action": "update",
 		}},
+		{
+			Name: "b.task.order",
+			Kind: "parent_action",
+			Params: map[string]any{
+				"resource":        "task",
+				"action":          "update",
+				"parent_resource": "process",
+				"parent_from":     "process_id",
+			},
+		},
+		{
+			Name: "b.process.order",
+			Kind: "parent_action",
+			Params: map[string]any{
+				"resource":        "process",
+				"action":          "update",
+				"parent_resource": "project",
+				"parent_from":     "project_id",
+			},
+		},
 	}
 	for _, spec := range valid {
 		if err := policies.ValidateSpec(spec); err != nil {
@@ -246,6 +269,24 @@ func TestValidateSpec(t *testing.T) {
 			"right_resource": "task", "right_action": "edit",
 		}}},
 		{
+			"parent_action: parent_from без parent_resource",
+			policies.RouteSpec{Name: "x", Kind: "parent_action", Params: map[string]any{
+				"resource": "task", "action": "update", "parent_from": "process_id",
+			}},
+		},
+		{
+			"parent_action: неизвестный родитель",
+			policies.RouteSpec{Name: "x", Kind: "parent_action", Params: map[string]any{
+				"resource": "task", "action": "update", "parent_resource": "nope", "parent_from": "process_id",
+			}},
+		},
+		{
+			"parent_action: неизвестное действие",
+			policies.RouteSpec{Name: "x", Kind: "parent_action", Params: map[string]any{
+				"resource": "task", "action": "edit", "parent_resource": "process", "parent_from": "process_id",
+			}},
+		},
+		{
 			"имя с пробелами",
 			policies.RouteSpec{
 				Name:   " x ",
@@ -276,19 +317,19 @@ func TestValidateSpec(t *testing.T) {
 		}
 	}
 
-	// BuildPolicies: невалидная спецификация валит всю сборку (fail-closed).
+	// BuildPolicies: an invalid specification fails the whole build (fail-closed).
 	built, err := policies.BuildPolicies([]policies.RouteSpec{valid[0], invalid[1].spec})
 	if err == nil || len(built) != 0 {
 		t.Errorf("BuildPolicies с битой спецификацией: err=%v built=%d; want error и пусто", err, len(built))
 	}
 }
 
-// Kinds-справочник содержит все kind'ы и схемы параметров.
+// The Kinds reference contains all kinds and parameter schemas.
 func TestKinds(t *testing.T) {
 	t.Parallel()
 	infos := policies.Kinds()
-	if len(infos) != 5 {
-		t.Fatalf("Kinds() = %d; want 5", len(infos))
+	if len(infos) != 6 {
+		t.Fatalf("Kinds() = %d; want 6", len(infos))
 	}
 	seen := map[string]bool{}
 	for _, k := range infos {
@@ -297,7 +338,7 @@ func TestKinds(t *testing.T) {
 			t.Errorf("kind %s без схемы параметров", k.Name)
 		}
 	}
-	for _, name := range []string{"list", "entity", "create", "owner_match", "author_or"} {
+	for _, name := range []string{"list", "entity", "create", "owner_match", "author_or", "parent_action"} {
 		if !seen[name] {
 			t.Errorf("в Kinds() нет kind'а %s", name)
 		}

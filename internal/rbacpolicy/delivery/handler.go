@@ -14,7 +14,7 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
-// RBACHandler — HTTP-слой администрирования политик (все маршруты admin-only).
+// RBACHandler is the HTTP layer for policy administration (all routes are admin-only).
 type RBACHandler struct {
 	logger  *slog.Logger
 	service *service.Service
@@ -26,21 +26,21 @@ func NewRBACHandler(logger *slog.Logger, svc *service.Service, mw *rbac.Middlewa
 	return &RBACHandler{logger: logger, service: svc, mw: mw}
 }
 
-// ListRoles handles the role catalog listing.
+// ListPresets handles the preset catalog listing.
 //
 //	@Tags		RBAC
-//	@Summary	List roles
+//	@Summary	List presets
 //	@Security	ApiKeyAuth
 //	@Produce	json
-//	@Success	200	{object}	response.SuccessResponse{data=[]domain.Role,error=nil}
-//	@Router		/rbac/roles [get]
-func (h *RBACHandler) ListRoles(c *gin.Context) {
-	roles, err := h.service.ListRoles(c.Request.Context())
+//	@Success	200	{object}	response.SuccessResponse{data=[]domain.Preset,error=nil}
+//	@Router		/rbac/presets [get]
+func (h *RBACHandler) ListPresets(c *gin.Context) {
+	presets, err := h.service.ListPresets(c.Request.Context())
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}
-	response.OK(c, roles)
+	response.OK(c, presets)
 }
 
 // ListRules handles the matrix rows listing.
@@ -49,8 +49,8 @@ func (h *RBACHandler) ListRoles(c *gin.Context) {
 //	@Summary	List matrix rules
 //	@Security	ApiKeyAuth
 //	@Produce	json
-//	@Success	200	{object}	response.SuccessResponse{data=[]dto.RuleView,error=nil}
-//	@Router		/rbac/rules [get]
+//	@Success	200	{object}	response.SuccessResponse{data=[]dto.PresetRuleView,error=nil}
+//	@Router		/rbac/preset-rules [get]
 func (h *RBACHandler) ListRules(c *gin.Context) {
 	rules, err := h.service.ListRules(c.Request.Context())
 	if err != nil {
@@ -60,19 +60,19 @@ func (h *RBACHandler) ListRules(c *gin.Context) {
 	response.OK(c, rules)
 }
 
-// UpsertRule handles writing a matrix row (upsert by role/resource/action).
+// UpsertRule handles writing a matrix row (upsert by preset/resource/action).
 //
 //	@Tags		RBAC
 //	@Summary	Upsert a matrix rule
 //	@Security	ApiKeyAuth
 //	@Accept		json
 //	@Produce	json
-//	@Param		rule	body		dto.RuleInput	true	"Matrix rule"
-//	@Success	200		{object}	response.SuccessResponse{data=dto.RuleView,error=nil}
+//	@Param		rule	body		dto.PresetRuleInput	true	"Matrix rule"
+//	@Success	200		{object}	response.SuccessResponse{data=dto.PresetRuleView,error=nil}
 //	@Failure	400		{object}	response.ErrorResponse{data=nil}
-//	@Router		/rbac/rules [put]
+//	@Router		/rbac/preset-rules [put]
 func (h *RBACHandler) UpsertRule(c *gin.Context) {
-	var in dto.RuleInput
+	var in dto.PresetRuleInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
@@ -96,7 +96,7 @@ func (h *RBACHandler) UpsertRule(c *gin.Context) {
 //	@Security	ApiKeyAuth
 //	@Param		id	path	int	true	"Rule ID"
 //	@Success	204
-//	@Router		/rbac/rules/{id} [delete]
+//	@Router		/rbac/preset-rules/{id} [delete]
 func (h *RBACHandler) DeleteRule(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -227,7 +227,7 @@ func (h *RBACHandler) Reset(c *gin.Context) {
 //	@Summary	Explain a decision
 //	@Security	ApiKeyAuth
 //	@Produce	json
-//	@Param		role			query		string	true	"Role"
+//	@Param		preset			query		string	true	"Preset"
 //	@Param		resource		query		string	true	"Resource"
 //	@Param		action			query		string	true	"Action"
 //	@Param		user_id			query		int		false	"User ID"
@@ -250,8 +250,8 @@ func (h *RBACHandler) Explain(c *gin.Context) {
 	response.OK(c, res)
 }
 
-// MyPermissions handles listing the caller's permitted actions (by rights,
-// not by role) — used by the frontend to show/hide capabilities.
+// MyPermissions handles listing the caller's permitted actions (by effective
+// rights, not by preset) — used by the frontend to show/hide capabilities.
 //
 //	@Tags		Permissions
 //	@Summary	My RBAC permissions
@@ -265,72 +265,132 @@ func (h *RBACHandler) MyPermissions(c *gin.Context) {
 		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
 		return
 	}
-	response.OK(c, h.service.MyPermissions(c.Request.Context(), user.Role))
+	response.OK(c, h.service.MyPermissions(c.Request.Context(), user))
 }
 
-// CreateRole handles creating (or reviving) a role.
+// CreatePreset handles creating (or reviving) a preset.
 //
 //	@Tags		RBAC
-//	@Summary	Create a role
+//	@Summary	Create a preset
 //	@Security	ApiKeyAuth
 //	@Accept		json
 //	@Produce	json
-//	@Param		role	body		dto.RoleUpsertInput	true	"Role"
-//	@Success	201		{object}	response.SuccessResponse{data=domain.Role,error=nil}
+//	@Param		preset	body		dto.PresetUpsertInput	true	"Preset"
+//	@Success	201		{object}	response.SuccessResponse{data=domain.Preset,error=nil}
 //	@Failure	400		{object}	response.ErrorResponse{data=nil}
-//	@Router		/rbac/roles [post]
-func (h *RBACHandler) CreateRole(c *gin.Context) {
-	var in dto.RoleUpsertInput
+//	@Router		/rbac/presets [post]
+func (h *RBACHandler) CreatePreset(c *gin.Context) {
+	var in dto.PresetUpsertInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
-	role, err := h.service.CreateRole(c.Request.Context(), in)
+	preset, err := h.service.CreatePreset(c.Request.Context(), in)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}
-	response.Created(c, role)
+	response.Created(c, preset)
 }
 
-// UpdateRole handles updating a role's description.
+// UpdatePreset handles updating a preset's description.
 //
 //	@Tags		RBAC
-//	@Summary	Update a role
+//	@Summary	Update a preset
 //	@Security	ApiKeyAuth
 //	@Accept		json
 //	@Produce	json
-//	@Param		name	path		string				true	"Role name"
-//	@Param		role	body		dto.RoleUpdateInput	true	"Role"
-//	@Success	200		{object}	response.SuccessResponse{data=domain.Role,error=nil}
+//	@Param		name	path		string					true	"Preset name"
+//	@Param		preset	body		dto.PresetUpdateInput	true	"Preset"
+//	@Success	200		{object}	response.SuccessResponse{data=domain.Preset,error=nil}
 //	@Failure	400		{object}	response.ErrorResponse{data=nil}
-//	@Router		/rbac/roles/{name} [put]
-func (h *RBACHandler) UpdateRole(c *gin.Context) {
-	var in dto.RoleUpdateInput
+//	@Router		/rbac/presets/{name} [put]
+func (h *RBACHandler) UpdatePreset(c *gin.Context) {
+	var in dto.PresetUpdateInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
-	role, err := h.service.UpdateRole(c.Request.Context(), c.Param("name"), in)
+	preset, err := h.service.UpdatePreset(c.Request.Context(), c.Param("name"), in)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}
-	response.OK(c, role)
+	response.OK(c, preset)
 }
 
-// DeleteRole handles soft-deleting a role (and its rules).
+// DeletePreset handles soft-deleting a preset (and its rules); assigned users
+// keep existing but lose the preset's base rights.
 //
 //	@Tags		RBAC
-//	@Summary	Delete a role
+//	@Summary	Delete a preset
 //	@Security	ApiKeyAuth
-//	@Param		name	path	string	true	"Role name"
+//	@Param		name	path	string	true	"Preset name"
 //	@Success	204
-//	@Router		/rbac/roles/{name} [delete]
-func (h *RBACHandler) DeleteRole(c *gin.Context) {
-	if err := h.service.DeleteRole(c.Request.Context(), c.Param("name")); err != nil {
+//	@Router		/rbac/presets/{name} [delete]
+func (h *RBACHandler) DeletePreset(c *gin.Context) {
+	if err := h.service.DeletePreset(c.Request.Context(), c.Param("name")); err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}
 	response.NoContent(c)
+}
+
+// ListUserPermissions handles the per-user permissions view of the editor.
+//
+//	@Tags		RBAC
+//	@Summary	User permissions
+//	@Security	ApiKeyAuth
+//	@Produce	json
+//	@Param		id	path		int	true	"User ID"
+//	@Success	200	{object}	response.SuccessResponse{data=dto.UserPermissionsView,error=nil}
+//	@Failure	400	{object}	response.ErrorResponse{data=nil}
+//	@Router		/rbac/users/{id}/permissions [get]
+func (h *RBACHandler) ListUserPermissions(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid user id")
+		return
+	}
+	view, err := h.service.ListUserPermissions(c.Request.Context(), id)
+	if err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.OK(c, view)
+}
+
+// ReplaceUserPermissions handles the full replacement of a user's overrides.
+//
+//	@Tags		RBAC
+//	@Summary	Replace user permissions
+//	@Security	ApiKeyAuth
+//	@Accept		json
+//	@Produce	json
+//	@Param		id		path		int							true	"User ID"
+//	@Param		perms	body		dto.UserPermissionsInput	true	"Permissions"
+//	@Success	200		{object}	response.SuccessResponse{data=dto.UserPermissionsInput,error=nil}
+//	@Failure	400		{object}	response.ErrorResponse{data=nil}
+//	@Router		/rbac/users/{id}/permissions [put]
+func (h *RBACHandler) ReplaceUserPermissions(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid user id")
+		return
+	}
+	var in dto.UserPermissionsInput
+	if err = c.ShouldBindJSON(&in); err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
+		return
+	}
+	userID, err := userctx.GetUserID(c)
+	if err != nil {
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
+		return
+	}
+	if applyErr := h.service.ReplaceUserPermissions(c.Request.Context(), id, in, userID); applyErr != nil {
+		response.Error(c, h.logger, applyErr)
+		return
+	}
+	response.OK(c, in)
 }

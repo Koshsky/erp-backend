@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -57,7 +58,7 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	items, total, err := h.service.ListProcesses(
 		c.Request.Context(),
 		user.ID,
-		user.Role,
+		policies.ViewScopeCodeUser(user, rbac.ResourceProcess),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,
@@ -142,6 +143,33 @@ func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	}
 
 	if err = h.service.DeleteProcess(c.Request.Context(), id); err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.NoContent(c)
+}
+
+// ReorderProcesses handles the request to reorder all processes of one project.
+//
+//	@Tags			Processes
+//	@Summary		Reorder processes
+//	@Description	Rewrite the order of all active processes of a project (the request carries the complete ordered id list)
+//	@Security		ApiKeyAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			order	body	dto.ReorderProcessRequest	true	"New process order"
+//	@Success		204
+//	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		500	{object}	response.ErrorResponse{data=nil}
+//	@Router			/process/order [put]
+func (h *ProcessHandler) ReorderProcesses(c *gin.Context) {
+	var order dto.ReorderProcessRequest
+	if err := c.ShouldBindJSON(&order); err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.ReorderProcesses(c.Request.Context(), order); err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}

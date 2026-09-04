@@ -34,38 +34,42 @@ type IdempotencyKey struct {
 }
 
 type Milestone struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	Date      time.Time   `json:"date"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64          `json:"id"`
+	ProcessID int64          `json:"process_id"`
+	Title     string         `json:"title"`
+	Content   string         `json:"content"`
+	Color     sql.NullString `json:"color"`
+	Date      time.Time      `json:"date"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt **time.Time    `json:"deleted_at"`
 }
 
 type Process struct {
-	ID        int64       `json:"id"`
-	ProjectID int64       `json:"project_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64          `json:"id"`
+	ProjectID int64          `json:"project_id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Title     string         `json:"title"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	SortOrder int32          `json:"sort_order"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt **time.Time    `json:"deleted_at"`
 }
 
 type Project struct {
-	ID        int64       `json:"id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Code      string      `json:"code"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	Priority  int32       `json:"priority"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64          `json:"id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Code      string         `json:"code"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	Priority  int32          `json:"priority"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt **time.Time    `json:"deleted_at"`
 }
 
 type ProjectAutoCreate struct {
@@ -76,7 +80,7 @@ type ProjectAutoCreate struct {
 	UpdatedAt time.Time       `json:"updated_at"`
 }
 
-type RbacRole struct {
+type RbacPreset struct {
 	ID          int64       `json:"id"`
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
@@ -85,9 +89,9 @@ type RbacRole struct {
 	DeletedAt   **time.Time `json:"deleted_at"`
 }
 
-type RbacRoleRule struct {
+type RbacPresetRule struct {
 	ID        int64       `json:"id"`
-	Role      string      `json:"role"`
+	Preset    string      `json:"preset"`
 	Resource  string      `json:"resource"`
 	Action    string      `json:"action"`
 	Scope     string      `json:"scope"`
@@ -119,13 +123,14 @@ type RefreshSession struct {
 }
 
 type Resource struct {
-	ID        int64       `json:"id"`
-	Title     string      `json:"title"`
-	Code      string      `json:"code"`
-	OwnerID   int64       `json:"owner_id"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64          `json:"id"`
+	Title     string         `json:"title"`
+	Code      string         `json:"code"`
+	Color     sql.NullString `json:"color"`
+	OwnerID   int64          `json:"owner_id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt **time.Time    `json:"deleted_at"`
 }
 
 type ResourceMember struct {
@@ -145,15 +150,17 @@ type State struct {
 }
 
 type Task struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	StartDate time.Time   `json:"start_date"`
-	EndDate   time.Time   `json:"end_date"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64          `json:"id"`
+	ProcessID int64          `json:"process_id"`
+	OwnerID   pgtype.Int8    `json:"owner_id"`
+	Title     string         `json:"title"`
+	Color     sql.NullString `json:"color"`
+	StartDate time.Time      `json:"start_date"`
+	EndDate   time.Time      `json:"end_date"`
+	SortOrder int32          `json:"sort_order"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt **time.Time    `json:"deleted_at"`
 }
 
 type TaskComment struct {
@@ -172,7 +179,7 @@ type User struct {
 	LastName        string         `json:"last_name"`
 	FirstName       string         `json:"first_name"`
 	MiddleName      sql.NullString `json:"middle_name"`
-	Role            string         `json:"role"`
+	Preset          sql.NullString `json:"preset"`
 	Username        string         `json:"username"`
 	PasswordHash    string         `json:"password_hash"`
 	ManagerID       pgtype.Int8    `json:"manager_id"`
@@ -182,6 +189,19 @@ type User struct {
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       **time.Time    `json:"deleted_at"`
+}
+
+type UserPermission struct {
+	ID        int64       `json:"id"`
+	UserID    int64       `json:"user_id"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	Granted   bool        `json:"granted"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	DeletedAt **time.Time `json:"deleted_at"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
 }
 
 type UserState struct {

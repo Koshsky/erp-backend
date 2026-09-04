@@ -1,7 +1,7 @@
 -- name: CreateAssignment :one
--- Идемпотентный create: если связка (task_id, resource_id) уже активна —
--- ничего не вставляем; наличие существующей строки возвращает вызывающий
--- код (репозиторий) через FindAssignmentByKey.
+-- Idempotent create: if the (task_id, resource_id) link is already active
+-- we insert nothing; an existing row is reported back to the calling
+-- code (repository) via FindAssignmentByKey.
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES (@task_id, @resource_id, @quantity::bigint)
 ON CONFLICT (task_id, resource_id) WHERE deleted_at IS NULL

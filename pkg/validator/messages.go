@@ -10,6 +10,7 @@ const (
 	codeMinValue  = "min_value"
 	codeDateRange = "date_range"
 	codeOneOf     = "one_of"
+	codeFormat    = "format"
 )
 
 func msgRequired(field string) string {
@@ -22,4 +23,8 @@ func msgGreaterThan(field string, minVal int) string {
 
 func msgDateRange(entity string) string {
 	return fmt.Sprintf("%s end_date must be greater than or equal to start_date", entity)
+}
+
+func msgFormat(field string) string {
+	return fmt.Sprintf("%s must be a #RRGGBB hex color", field)
 }

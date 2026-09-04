@@ -84,7 +84,7 @@ type FindActiveSessionRow struct {
 	ReplacedBy int64       `json:"replaced_by"`
 }
 
-// Проверка: считается ли токен активным (revoked_at IS NULL AND expires_at > NOW()).
+// Check: whether the token is considered active (revoked_at IS NULL AND expires_at > NOW()).
 func (q *Queries) FindActiveSession(ctx context.Context, tokenHash string) (FindActiveSessionRow, error) {
 	row := q.db.QueryRow(ctx, findActiveSession, tokenHash)
 	var i FindActiveSessionRow
@@ -117,7 +117,7 @@ type FindSessionByHashRow struct {
 	ReplacedBy int64       `json:"replaced_by"`
 }
 
-// Найти сессию по хэшу (включая отозванные/истёкшие — для детекта повторного использования).
+// Find a session by hash (including revoked/expired ones — to detect token reuse).
 func (q *Queries) FindSessionByHash(ctx context.Context, tokenHash string) (FindSessionByHashRow, error) {
 	row := q.db.QueryRow(ctx, findSessionByHash, tokenHash)
 	var i FindSessionByHashRow

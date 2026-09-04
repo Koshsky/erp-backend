@@ -21,8 +21,10 @@ func (m *ProcessMapper) ToDTO(process *domain.Process) *dto.ProcessResponse {
 		OwnerID:   process.OwnerID,
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
+		Color:     process.Color,
 		StartDate: date.From(process.StartDate),
 		EndDate:   date.From(process.EndDate),
+		Order:     process.SortOrder,
 	}
 }
 
@@ -42,6 +44,7 @@ func (m *ProcessMapper) ToDomainFromCreate(req dto.CreateProcessRequest) domain.
 	return domain.Process{
 		ProjectID: req.ProjectID,
 		Title:     req.Title,
+		Color:     req.Color,
 		StartDate: req.StartDate.Time(),
 		EndDate:   req.EndDate.Time(),
 		OwnerID:   req.OwnerID,
@@ -55,6 +58,13 @@ func (m *ProcessMapper) ApplyUpdateToDomain(process *domain.Process, req dto.Upd
 
 	if req.Title != nil {
 		process.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			process.Color = nil
+		} else {
+			process.Color = req.Color
+		}
 	}
 	if req.StartDate != nil {
 		process.StartDate = req.StartDate.Time()

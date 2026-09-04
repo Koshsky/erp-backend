@@ -20,6 +20,7 @@ func (m *ProjectMapper) ToDTO(project *domain.Project) *dto.ProjectResponse {
 		ID:        project.ID,
 		OwnerID:   project.OwnerID,
 		Code:      project.Code,
+		Color:     project.Color,
 		StartDate: date.From(project.StartDate),
 		EndDate:   date.From(project.EndDate),
 		Priority:  project.Priority,
@@ -38,10 +39,36 @@ func (m *ProjectMapper) ToDTOs(projects []domain.Project) []dto.ProjectResponse 
 	return responses
 }
 
+// ToCreateDTO builds the create response: the project plus what the
+// auto-create template added to it (counts fetched after the insert).
+func (m *ProjectMapper) ToCreateDTO(
+	project *domain.Project,
+	counts domain.AutoCreatedCounts,
+) *dto.CreateProjectResponse {
+	if project == nil {
+		return nil
+	}
+	return &dto.CreateProjectResponse{
+		ID:        project.ID,
+		OwnerID:   project.OwnerID,
+		Code:      project.Code,
+		Color:     project.Color,
+		StartDate: date.From(project.StartDate),
+		EndDate:   date.From(project.EndDate),
+		Priority:  project.Priority,
+		AutoCreated: dto.AutoCreatedCounts{
+			Processes:   counts.Processes,
+			Tasks:       counts.Tasks,
+			Assignments: counts.Assignments,
+		},
+	}
+}
+
 func (m *ProjectMapper) ToDomainFromCreate(req dto.CreateProjectRequest) domain.Project {
 	return domain.Project{
 		OwnerID:   req.OwnerID,
 		Code:      req.Code,
+		Color:     req.Color,
 		StartDate: req.StartDate.Time(),
 		EndDate:   req.EndDate.Time(),
 		Priority:  req.Priority,
@@ -58,6 +85,13 @@ func (m *ProjectMapper) ApplyUpdateToDomain(project *domain.Project, req dto.Upd
 	}
 	if req.Code != nil {
 		project.Code = *req.Code
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			project.Color = nil
+		} else {
+			project.Color = req.Color
+		}
 	}
 	if req.StartDate != nil {
 		project.StartDate = req.StartDate.Time()
