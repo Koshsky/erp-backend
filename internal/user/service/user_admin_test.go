@@ -148,7 +148,7 @@ func TestCreateUserPresetRule(t *testing.T) {
 	t.Parallel()
 	svc := newStubService(newStubRepo())
 	req := dto.CreateUserRequest{
-		LastName: "И", FirstName: "И", Username: "u1", PasswordHash: "hash",
+		LastName: "И", FirstName: "И", Username: "user1", PasswordHash: "hash",
 	}
 
 	for _, preset := range []string{
@@ -193,7 +193,7 @@ func TestCreateUserWithPermissions(t *testing.T) {
 	t.Parallel()
 	svc := newStubService(newStubRepo())
 	req := dto.CreateUserRequest{
-		LastName: "И", FirstName: "И", Username: "u1", PasswordHash: "hash",
+		LastName: "И", FirstName: "И", Username: "user1", PasswordHash: "hash",
 		Preset: presetPtr(userdomain.PresetWorker),
 		Permissions: []dto.UserPermissionInput{
 			{Resource: "project", Action: "view", Scope: "own", Granted: true},
@@ -258,7 +258,7 @@ func TestUpdateManagerGrantable(t *testing.T) {
 		},
 		&userdomain.User{
 			ID:        2,
-			Username:  "w2",
+			Username:  "worker2",
 			LastName:  "Р",
 			FirstName: "а",
 			Preset:    presetPtr(userdomain.PresetWorker),
@@ -302,7 +302,7 @@ func TestUpdateUserManagerAndPreset(t *testing.T) {
 		},
 		&userdomain.User{
 			ID:        2,
-			Username:  "w2",
+			Username:  "worker2",
 			LastName:  "Р",
 			FirstName: "а",
 			Preset:    presetPtr(userdomain.PresetWorker),
@@ -343,14 +343,14 @@ func TestUpdateUserLastAdminGuard(t *testing.T) {
 	repo := newStubRepo(
 		&userdomain.User{
 			ID:        1,
-			Username:  "a1",
+			Username:  "admin2",
 			LastName:  "Ад",
 			FirstName: "м",
 			Preset:    presetPtr(userdomain.PresetAdmin),
 		},
 		&userdomain.User{
 			ID:        2,
-			Username:  "w2",
+			Username:  "worker2",
 			LastName:  "Р",
 			FirstName: "а",
 			Preset:    presetPtr(userdomain.PresetWorker),

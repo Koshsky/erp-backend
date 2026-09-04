@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/Koshsky/erp-backend/internal/policies"
 	repo "github.com/Koshsky/erp-backend/internal/user/repository"
 
 	"github.com/Koshsky/erp-backend/internal/security/creds"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
+	"github.com/Koshsky/erp-backend/internal/security/hibp"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
@@ -33,6 +33,7 @@ type UserService struct {
 	validator  *UserValidator
 	tracer     *tracingpkg.Tracer
 	rbac       RBACReloader
+	hibp       *hibp.Checker
 }
 
 // maxManagerDepth — guard against an infinite loop while walking the manager hierarchy.
@@ -44,6 +45,7 @@ func NewUserService(
 	tracer *tracingpkg.Tracer,
 	r *repo.UserRepository,
 	rbac RBACReloader,
+	hibpChecker *hibp.Checker,
 ) *UserService {
 	return &UserService{
 		logger:     logger,
@@ -52,6 +54,7 @@ func NewUserService(
 		validator:  &UserValidator{},
 		tracer:     tracer,
 		rbac:       rbac,
+		hibp:       hibpChecker,
 	}
 }
 
@@ -65,19 +68,30 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	ctx, end := s.tracer.Start(ctx, "user.ChangePassword")
 	defer end(nil)
 
-	// Complexity policy — checked before the old password (AD-09): the format of
-	// the new password reveals nothing about the current one.
-	if err := creds.ValidatePassword(newPassword); err != nil {
-		return err
-	}
-
 	user, err := s.FindUserByID(ctx, userID)
 	if err != nil {
 		return errors.NotFound("user not found")
 	}
 
+	// Complexity policy — checked before the old password (AD-09): the format of
+	// the new password reveals nothing about the current one. The account login
+	// is passed for the "must not contain the login" rule.
+	if policyErr := creds.ValidatePassword(newPassword, user.Username); policyErr != nil {
+		return policyErr
+	}
+
+	// Optional HIBP breach check — best-effort: network failures skip it.
+	if s.hibp != nil {
+		compromised, hibpErr := s.hibp.Check(ctx, newPassword)
+		if hibpErr != nil {
+			s.logger.WarnContext(ctx, "hibp check skipped", "error", hibpErr)
+		} else if compromised {
+			return errors.BadRequest("пароль был скомпрометирован в утечках — выберите другой")
+		}
+	}
+
 	if err = hasher.Compare(user.PasswordHash, oldPassword); err != nil {
-		return errors.NewValidationError("invalid current password")
+		return errors.NewValidationError("неверный текущий пароль")
 	}
 
 	newHash, err := hasher.Hash(newPassword)
@@ -120,13 +134,18 @@ func (s *UserService) createUserInternal(
 			return nil, errors.ErrForbidden
 		}
 	}
-	req.Username = strings.TrimSpace(req.Username)
+	req.Username = NormalizeUsername(req.Username)
 	if req.Username == "" {
 		username, err := s.generateUsername(ctx, req.LastName, presetName(req.Preset))
 		if err != nil {
 			return nil, err
 		}
 		req.Username = username
+	}
+	if IsUsernameReserved(req.Username) {
+		return nil, errors.NewFieldError(
+			"username", "reserved", "Логин «"+req.Username+"» зарезервирован системой",
+		)
 	}
 	if req.PasswordHash == "" {
 		raw, err := creds.RandomPassword()
@@ -323,8 +342,19 @@ func (s *UserService) UpdateUser(
 		}
 	}
 
+	// A login change to a reserved system word is blocked (unchanged logins,
+	// e.g. the seeded "admin" account, keep working); the format itself is
+	// checked by ValidateUser afterwards.
+	if req.Username != nil {
+		newName := NormalizeUsername(*req.Username)
+		if newName != user.Username && IsUsernameReserved(newName) {
+			return nil, errors.NewFieldError(
+				"username", "reserved", "Логин «"+newName+"» зарезервирован системой",
+			)
+		}
+	}
+
 	s.mapper.ApplyUpdateToDomain(user, req)
-	user.Username = strings.TrimSpace(user.Username)
 	if err = s.validator.ValidateUser(user); err != nil {
 		return nil, err
 	}

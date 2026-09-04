@@ -48,7 +48,9 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 	ctx, end := s.tracer.Start(ctx, "auth.Login")
 	defer end(nil)
 
-	username = strings.TrimSpace(username)
+	// Logins are stored lowercase; normalize the input so case-insensitive
+	// login matches the stored value without leaking case sensitivity.
+	username = strings.ToLower(strings.TrimSpace(username))
 
 	user, err := s.users.FindUserByUsername(ctx, username)
 	if err != nil {

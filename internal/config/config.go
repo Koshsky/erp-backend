@@ -43,6 +43,25 @@ type Config struct {
 	Tracing       TracingConfig     `yaml:"tracing"`
 	RBAC          RBACConfig        `yaml:"rbac"`
 	Audit         AuditConfig       `yaml:"audit"`
+	Security      SecurityConfig    `yaml:"security"`
+}
+
+// SecurityConfig — password policy extras.
+type SecurityConfig struct {
+	Password PasswordSecurityConfig `yaml:"password"`
+}
+
+// PasswordSecurityConfig — password validation options.
+type PasswordSecurityConfig struct {
+	// HIBP — optional Have I Been Pwned breach check (k-anonymity range API).
+	HIBP HIBPConfig `yaml:"hibp"`
+}
+
+// HIBPConfig — breach-feed check settings. Best-effort: network failures
+// skip the check; the local policy always applies.
+type HIBPConfig struct {
+	Enabled bool     `yaml:"enabled"`
+	Timeout Duration `yaml:"timeout"`
 }
 
 // RBACConfig — runtime-RBAC settings (rules reload from the DB).

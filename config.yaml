@@ -95,6 +95,15 @@ rbac:
   # between instances; local edits apply immediately).
   refresh_interval: 30s
 
+security:
+  password:
+    # Optional Have I Been Pwned breach check on password change (k-anonymity
+    # range API). Best-effort: if the feed is unreachable the check is skipped;
+    # the local password policy always applies.
+    hibp:
+      enabled: true
+      timeout: 2s
+
 audit:
   # Audit-log capture of all CRUD mutations + auth events. Events are pushed
   # to Grafana Loki (the log-storage service) over its HTTP API; the admin
