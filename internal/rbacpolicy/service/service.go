@@ -11,6 +11,8 @@ import (
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/domain"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/dto"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
+	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -27,28 +29,28 @@ func NewRBACService(logger *slog.Logger, repo *repository.RuleRepository, store 
 	return &Service{logger: logger, repo: repo, store: store}
 }
 
-// ListRoles returns the role catalog.
-func (s *Service) ListRoles(ctx context.Context) ([]domain.Role, error) {
-	return s.repo.ListActiveRoles(ctx)
+// ListPresets returns the preset catalog.
+func (s *Service) ListPresets(ctx context.Context) ([]domain.Preset, error) {
+	return s.repo.ListActivePresets(ctx)
 }
 
 // ListRules returns the active matrix rows.
-func (s *Service) ListRules(ctx context.Context) ([]domain.Rule, error) {
+func (s *Service) ListRules(ctx context.Context) ([]domain.PresetRule, error) {
 	return s.repo.ListActiveRules(ctx)
 }
 
 // UpsertRule validates and writes a matrix row, then applies the
 // changes immediately.
-func (s *Service) UpsertRule(ctx context.Context, in dto.RuleInput, updatedBy int64) error {
-	if in.Role == "" {
-		return errors.BadRequest("role обязательна")
+func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, updatedBy int64) error {
+	if in.Preset == "" {
+		return errors.BadRequest("пресет обязателен")
 	}
-	roles, err := s.repo.ListActiveRoles(ctx)
+	presets, err := s.repo.ListActivePresets(ctx)
 	if err != nil {
 		return err
 	}
-	if !roleExists(roles, in.Role) {
-		return errors.BadRequest("неизвестная роль " + in.Role)
+	if !presetExists(presets, in.Preset) {
+		return errors.BadRequest("неизвестный пресет " + in.Preset)
 	}
 	res, ok := policies.ParseResource(in.Resource)
 	if !ok {
@@ -65,8 +67,8 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.RuleInput, updatedBy in
 		return errors.BadRequest("зона " + in.Scope + " неприменима к ресурсу " + in.Resource)
 	}
 
-	if _, upsertErr := s.repo.UpsertRule(ctx, domain.Rule{
-		Role: in.Role, Resource: in.Resource, Action: in.Action, Scope: in.Scope,
+	if _, upsertErr := s.repo.UpsertRule(ctx, domain.PresetRule{
+		Preset: in.Preset, Resource: in.Resource, Action: in.Action, Scope: in.Scope,
 		UpdatedBy: &updatedBy,
 	}); upsertErr != nil {
 		return upsertErr
@@ -125,8 +127,8 @@ func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 	}
 	for _, r := range policies.DefaultMatrixRules() {
 		scope := policies.ScopeName(r.Scope)
-		if _, err := s.repo.UpsertRule(ctx, domain.Rule{
-			Role: r.Role, Resource: policies.ResourceName(r.Res), Action: policies.ActionName(r.Act),
+		if _, err := s.repo.UpsertRule(ctx, domain.PresetRule{
+			Preset: r.Role, Resource: policies.ResourceName(r.Res), Action: policies.ActionName(r.Act),
 			Scope: scope, UpdatedBy: &updatedBy,
 		}); err != nil {
 			return err
@@ -145,24 +147,24 @@ func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 
 // EffectiveMatrix returns the effective matrix (with the admin bypass) for the API.
 func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error) {
-	_ = ctx // matrix and roles are read from memory/DB without extra queries
-	roles, err := s.repo.ListActiveRoles(ctx)
+	_ = ctx // matrix and presets are read from memory/DB without extra queries
+	presets, err := s.repo.ListActivePresets(ctx)
 	if err != nil {
 		return nil, err
 	}
 	matrix := policies.CurrentMatrix()
-	names := make([]string, 0, len(roles)+1)
-	names = append(names, "admin")
-	for _, r := range roles {
-		names = append(names, r.Name)
+	names := make([]string, 0, len(presets)+1)
+	names = append(names, userdomain.PresetAdmin)
+	for _, p := range presets {
+		names = append(names, p.Name)
 	}
 	var cells []dto.MatrixCell
-	for _, role := range names {
-		for res := rbac.ResourceProject; res <= rbac.ResourceOrgStructure; res++ {
+	for _, preset := range names {
+		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
 			for act := policies.ActionView; act <= policies.ActionDelete; act++ {
-				if scope := matrix.ScopeFor(role, res, act); scope != policies.ScopeNone {
+				if scope := matrix.ScopeFor(preset, res, act); scope != policies.ScopeNone {
 					cells = append(cells, dto.MatrixCell{
-						Role: role, Resource: policies.ResourceName(res), Action: policies.ActionName(act),
+						Preset: preset, Resource: policies.ResourceName(res), Action: policies.ActionName(act),
 						Scope: policies.ScopeName(scope),
 					})
 				}
@@ -187,8 +189,8 @@ func (s *Service) Explain(_ context.Context, in dto.ExplainInput) (dto.ExplainRe
 	if !ok {
 		return dto.ExplainResult{}, errors.BadRequest("неизвестное действие " + in.Action)
 	}
-	scope := policies.CurrentMatrix().ScopeFor(in.Role, res, act)
-	allowed := policies.Authorize(in.Role, res, act, rbac.Owners{
+	scope := policies.CurrentMatrix().ScopeFor(in.Preset, res, act)
+	allowed := policies.Authorize(in.Preset, res, act, rbac.Owners{
 		ProjectOwner: in.ProjectOwner,
 		ProcessOwner: in.ProcessOwner,
 		Owner:        in.Owner,
@@ -209,23 +211,23 @@ func (s *Service) apply(ctx context.Context) error {
 	return nil
 }
 
-func roleExists(roles []domain.Role, name string) bool {
-	for _, r := range roles {
-		if r.Name == name {
+func presetExists(presets []domain.Preset, name string) bool {
+	for _, p := range presets {
+		if p.Name == name {
 			return true
 		}
 	}
 	return false
 }
 
-// MyPermissions returns the role's principal permissions (all allowed
-// actions with ScopeFor != none; admin — everything). Used by the frontend to
-// display capabilities by permissions rather than by roles.
-func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission {
+// MyPermissions returns the caller's principal permissions (all allowed
+// actions with an effective scope != none; admin — everything). Used by the
+// frontend to display capabilities by permissions rather than by presets.
+func (s *Service) MyPermissions(_ context.Context, user userctx.UserContext) []dto.Permission {
 	out := []dto.Permission{}
-	for res := rbac.ResourceProject; res <= rbac.ResourceOrgStructure; res++ {
+	for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
 		for act := policies.ActionView; act <= policies.ActionDelete; act++ {
-			scope := policies.CurrentMatrix().ScopeFor(role, res, act)
+			scope := policies.CurrentMatrix().ScopeForUser(user, res, act)
 			if scope == policies.ScopeNone {
 				continue
 			}
@@ -239,58 +241,177 @@ func (s *Service) MyPermissions(_ context.Context, role string) []dto.Permission
 	return out
 }
 
-// maxRoleNameLen — maximum role name length.
-//
-
-const maxRoleNameLen = 32
-
-// CreateRole creates a role (or revives a deleted one) and returns it.
-func (s *Service) CreateRole(ctx context.Context, in dto.RoleUpsertInput) (domain.Role, error) {
-	if err := validateRoleName(in.Name); err != nil {
-		return domain.Role{}, err
-	}
-	role, err := s.repo.UpsertRole(ctx, in.Name, in.Description)
+// ListUserPermissions returns the editor view of a user's permissions: the
+// assigned preset, the current overrides, the preset baseline (without
+// overrides) and the resulting effective matrix.
+func (s *Service) ListUserPermissions(
+	ctx context.Context,
+	userID int64,
+) (dto.UserPermissionsView, error) {
+	presetCode, presetSet, err := s.repo.FindUserPreset(ctx, userID)
 	if err != nil {
-		return domain.Role{}, err
+		return dto.UserPermissionsView{}, err
 	}
-	return role, nil
+	rows, err := s.repo.ListUserPermissions(ctx, userID)
+	if err != nil {
+		return dto.UserPermissionsView{}, err
+	}
+	var preset *string
+	if presetSet {
+		preset = &presetCode
+	}
+	overrides := make([]dto.PermissionOverride, 0, len(rows))
+	for _, p := range rows {
+		overrides = append(overrides, dto.PermissionOverride{
+			Resource: p.Resource,
+			Action:   p.Action,
+			Scope:    p.Scope,
+			Granted:  p.Granted,
+		})
+	}
+	admin := presetSet && presetCode == userdomain.PresetAdmin
+	// Preset baseline: the assigned preset without individual overrides.
+	base := userctx.UserContext{
+		ID:     userID,
+		Admin:  admin,
+		Preset: presetNameRef(preset),
+	}
+	// Effective matrix: the caller's principal applied to every resource/action.
+	principal := base
+	principal.Rules = toRules(overrides)
+	return dto.UserPermissionsView{
+		UserID:      userID,
+		Preset:      preset,
+		Admin:       admin,
+		Overrides:   overrides,
+		PresetScope: s.MyPermissions(ctx, base),
+		Effective:   s.MyPermissions(ctx, principal),
+	}, nil
 }
 
-// UpdateRole updates the role description.
-func (s *Service) UpdateRole(ctx context.Context, name string, in dto.RoleUpdateInput) (domain.Role, error) {
-	role, err := s.repo.UpdateRoleDescription(ctx, name, in.Description)
-	if err != nil {
-		return domain.Role{}, err
+// ReplaceUserPermissions validates and replaces the user's override set
+// (full replacement), then applies the change immediately.
+func (s *Service) ReplaceUserPermissions(
+	ctx context.Context,
+	userID int64,
+	in dto.UserPermissionsInput,
+	updatedBy int64,
+) error {
+	rows := make([]domain.UserPermission, 0, len(in.Overrides))
+	seen := map[string]bool{}
+	for _, o := range in.Overrides {
+		res, ok := policies.ParseResource(o.Resource)
+		if !ok {
+			return errors.BadRequest("неизвестный ресурс " + o.Resource)
+		}
+		if _, okAction := policies.ParseAction(o.Action); !okAction {
+			return errors.BadRequest("неизвестное действие " + o.Action)
+		}
+		key := o.Resource + "/" + o.Action
+		if seen[key] {
+			return errors.BadRequest("дублируется право " + key)
+		}
+		seen[key] = true
+		scope := "all"
+		if o.Granted {
+			parsed, okScope := policies.ParseScope(o.Scope)
+			if !okScope || parsed == policies.ScopeNone {
+				return errors.BadRequest("недопустимая зона " + o.Scope + " (all|own|parent|ancestor)")
+			}
+			if !policies.ScopeApplicable(res, parsed) {
+				return errors.BadRequest("зона " + o.Scope + " неприменима к ресурсу " + o.Resource)
+			}
+			scope = o.Scope
+		}
+		rows = append(rows, domain.UserPermission{
+			UserID:    userID,
+			Resource:  o.Resource,
+			Action:    o.Action,
+			Scope:     scope,
+			Granted:   o.Granted,
+			UpdatedBy: &updatedBy,
+		})
 	}
-	return role, nil
-}
-
-// DeleteRole softly deletes a role and its rules; assigned users
-// keep existing but lose permissions (the role disappears from the matrix).
-func (s *Service) DeleteRole(ctx context.Context, name string) error {
-	if err := s.repo.SoftDeleteRole(ctx, name); err != nil {
+	if err := s.repo.ReplaceUserPermissions(ctx, userID, rows); err != nil {
 		return err
 	}
 	return s.apply(ctx)
 }
 
-// validRoleName — allowed characters of a role name (system access code):
+// toRules converts overrides into the engine's user-rule model.
+func toRules(overrides []dto.PermissionOverride) []userctx.PermissionRule {
+	out := make([]userctx.PermissionRule, 0, len(overrides))
+	for _, o := range overrides {
+		out = append(out, userctx.PermissionRule{
+			Resource: o.Resource,
+			Action:   o.Action,
+			Scope:    o.Scope,
+			Granted:  o.Granted,
+		})
+	}
+	return out
+}
+
+// presetNameRef unwraps a preset pointer ("" — none).
+func presetNameRef(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+// maxPresetNameLen — maximum preset name length.
+const maxPresetNameLen = 32
+
+// CreatePreset creates a preset (or revives a deleted one) and returns it.
+func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (domain.Preset, error) {
+	if err := validatePresetName(in.Name); err != nil {
+		return domain.Preset{}, err
+	}
+	preset, err := s.repo.UpsertPreset(ctx, in.Name, in.Description)
+	if err != nil {
+		return domain.Preset{}, err
+	}
+	_ = s.apply(ctx)
+	return preset, nil
+}
+
+// UpdatePreset updates the preset description.
+func (s *Service) UpdatePreset(ctx context.Context, name string, in dto.PresetUpdateInput) (domain.Preset, error) {
+	preset, err := s.repo.UpdatePresetDescription(ctx, name, in.Description)
+	if err != nil {
+		return domain.Preset{}, err
+	}
+	return preset, nil
+}
+
+// DeletePreset softly deletes a preset, its rules and clears the preset ref on
+// assigned users (they keep the account but lose the preset's base rights;
+// individual overrides survive).
+func (s *Service) DeletePreset(ctx context.Context, name string) error {
+	if err := s.repo.SoftDeletePreset(ctx, name); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// validPresetName — allowed characters of a preset name (system access code):
 // lowercase latin letters, digits, "-" and "_".
-func validRoleName(name string) bool {
+func validPresetName(name string) bool {
 	return regexp.MustCompile(`^[a-z0-9_-]+$`).MatchString(name)
 }
 
-// validateRoleName validates a role name: non-empty, no longer than 32, a code.
-func validateRoleName(name string) error {
+// validatePresetName validates a preset name: non-empty, no longer than 32, a code.
+func validatePresetName(name string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return errors.BadRequest("имя роли не может быть пустым")
+		return errors.BadRequest("имя пресета не может быть пустым")
 	}
-	if len(name) > maxRoleNameLen {
-		return errors.BadRequest("имя роли не длиннее 32 символов")
+	if len(name) > maxPresetNameLen {
+		return errors.BadRequest("имя пресета не длиннее 32 символов")
 	}
-	if !validRoleName(name) {
-		return errors.BadRequest("имя роли: только латиница в нижнем регистре, цифры, «-» и «_»")
+	if !validPresetName(name) {
+		return errors.BadRequest("имя пресета: только латиница в нижнем регистре, цифры, «-» и «_»")
 	}
 	return nil
 }

@@ -48,6 +48,11 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	api := router.Group("/api/v1")
 	api.Use(a.tracer.GinSpan("middleware.ratelimit.public"))
 	api.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
+	// Audit capture for the public routes (only the /auth/* mutations are
+	// classified; everything else passes through untouched).
+	if a.auditMw != nil {
+		api.Use(a.auditMw.Handler())
+	}
 
 	// Health: liveness probe without authorization. The frontend uses it to
 	// check backend availability before offline sync (instead of static files).
@@ -60,6 +65,13 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	protected := router.Group("/api/v1")
 	protected.Use(a.tracer.GinSpan("middleware.auth"))
 	protected.Use(a.authMw.RequireAuth())
+	// Audit capture for protected routes: runs right after auth (so the actor
+	// is known) and before idempotency/handlers, reading the body first and
+	// restoring it for the downstream chain.
+	if a.auditMw != nil {
+		protected.Use(a.tracer.GinSpan("middleware.audit"))
+		protected.Use(a.auditMw.Handler())
+	}
 	// Idempotency-Key: pass-through without a header; with a header — idempotent
 	// create (replay-safe). Mounted globally on protected, since the key is
 	// scoped by (key, user_id, method, path) and active only when an

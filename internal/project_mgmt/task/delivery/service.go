@@ -10,7 +10,7 @@ type TaskService interface {
 	ListTasks(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]dto.TaskResponse, int64, error)

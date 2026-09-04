@@ -76,6 +76,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceUserAdmin:    false,
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
+		rbac.ResourceAudit:        false,
 	}
 	parentRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      false,
@@ -92,6 +93,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceUserAdmin:    false,
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
+		rbac.ResourceAudit:        false,
 	}
 	ancestorRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      false,
@@ -108,6 +110,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceUserAdmin:    false,
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
+		rbac.ResourceAudit:        false,
 	}
 	for i := rbac.ResourceProject; i <= rbac.ResourceRBACConfig; i++ {
 		if !policies.ScopeApplicable(i, policies.ScopeAll) {

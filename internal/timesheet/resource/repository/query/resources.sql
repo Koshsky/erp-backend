@@ -87,7 +87,7 @@ WHERE id = @id::bigint
 
 -- name: ListMembersByResourceID :many
 SELECT u.id, CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), NULLIF(u.middle_name, '')) AS name,
-       u.role, u.position, u.hire_date, u.termination_date, u.manager_id
+       u.preset, u.position, u.hire_date, u.termination_date, u.manager_id
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
 WHERE rm.resource_id = @resource_id::bigint

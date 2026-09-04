@@ -9,7 +9,7 @@ WHERE deleted_at IS NULL
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
   )
-  AND (@role_filter::text = '' OR role = @role_filter::text)
+  AND (@preset_filter::text = '' OR preset = @preset_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
 ORDER BY id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
@@ -22,7 +22,7 @@ WHERE deleted_at IS NULL
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
   )
-  AND (@role_filter::text = '' OR role = @role_filter::text)
+  AND (@preset_filter::text = '' OR preset = @preset_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint);
 
 -- name: ListAllUsers :many
@@ -54,8 +54,8 @@ SELECT EXISTS(
 );
 
 -- name: CreateUser :one
-INSERT INTO users (last_name, first_name, middle_name, username, role, password_hash, manager_id, position, hire_date, termination_date)
-VALUES (@last_name, @first_name, @middle_name, @username, @role, @password_hash, @manager_id, @position, @hire_date, @termination_date)
+INSERT INTO users (last_name, first_name, middle_name, username, preset, password_hash, manager_id, position, hire_date, termination_date)
+VALUES (@last_name, @first_name, @middle_name, @username, @preset, @password_hash, @manager_id, @position, @hire_date, @termination_date)
 RETURNING *;
 
 -- name: UpdateUser :one
@@ -65,7 +65,7 @@ SET
 	first_name = @first_name,
 	middle_name = @middle_name,
 	username = @username,
-	role = @role,
+	preset = @preset,
 	password_hash = @password_hash,
 	manager_id = @manager_id,
 	position = @position,
@@ -81,6 +81,12 @@ UPDATE users
 SET password_hash = @password_hash, updated_at = NOW()
 WHERE id = @user_id
 	AND deleted_at IS NULL;
+
+-- name: InsertUserPermission :exec
+-- Individual permission override created together with the user account
+-- (same table/semantics as rbacpolicy's user_permissions).
+INSERT INTO user_permissions (user_id, resource, action, scope, granted, updated_by)
+VALUES (@user_id::bigint, @resource::text, @action::text, @scope::text, @granted, @updated_by);
 
 -- name: DeleteUser :exec
 UPDATE users

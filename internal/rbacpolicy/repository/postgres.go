@@ -3,6 +3,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log/slog"
 
@@ -29,30 +30,30 @@ func NewRuleRepository(logger *slog.Logger, pool *pgxpool.Pool) *RuleRepository 
 	}
 }
 
-// ListActiveRoles returns the role catalog.
-func (r *RuleRepository) ListActiveRoles(ctx context.Context) ([]domain.Role, error) {
-	rows, err := r.db.ListActiveRoles(ctx)
+// ListActivePresets returns the preset catalog.
+func (r *RuleRepository) ListActivePresets(ctx context.Context) ([]domain.Preset, error) {
+	rows, err := r.db.ListActivePresets(ctx)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]domain.Role, 0, len(rows))
+	presets := make([]domain.Preset, 0, len(rows))
 	for _, row := range rows {
-		roles = append(roles, domain.Role{ID: row.ID, Name: row.Name, Description: row.Description})
+		presets = append(presets, domain.Preset{ID: row.ID, Name: row.Name, Description: row.Description})
 	}
-	return roles, nil
+	return presets, nil
 }
 
 // ListActiveRules returns all active matrix rows.
-func (r *RuleRepository) ListActiveRules(ctx context.Context) ([]domain.Rule, error) {
-	rows, err := r.db.ListActiveRules(ctx)
+func (r *RuleRepository) ListActiveRules(ctx context.Context) ([]domain.PresetRule, error) {
+	rows, err := r.db.ListActivePresetRules(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rules := make([]domain.Rule, 0, len(rows))
+	rules := make([]domain.PresetRule, 0, len(rows))
 	for _, row := range rows {
-		rules = append(rules, domain.Rule{
+		rules = append(rules, domain.PresetRule{
 			ID:        row.ID,
-			Role:      row.Role,
+			Preset:    row.Preset,
 			Resource:  row.Resource,
 			Action:    row.Action,
 			Scope:     row.Scope,
@@ -64,21 +65,21 @@ func (r *RuleRepository) ListActiveRules(ctx context.Context) ([]domain.Rule, er
 }
 
 // UpsertRule writes (or updates) a matrix row by the unique key
-// (role, resource, action) and returns the stored row.
-func (r *RuleRepository) UpsertRule(ctx context.Context, rule domain.Rule) (domain.Rule, error) {
-	row, err := r.db.UpsertRule(ctx, sqlc.UpsertRuleParams{
-		Role:      rule.Role,
+// (preset, resource, action) and returns the stored row.
+func (r *RuleRepository) UpsertRule(ctx context.Context, rule domain.PresetRule) (domain.PresetRule, error) {
+	row, err := r.db.UpsertPresetRule(ctx, sqlc.UpsertPresetRuleParams{
+		Preset:    rule.Preset,
 		Resource:  rule.Resource,
 		Action:    rule.Action,
 		Scope:     rule.Scope,
 		UpdatedBy: toInt8(rule.UpdatedBy),
 	})
 	if err != nil {
-		return domain.Rule{}, err
+		return domain.PresetRule{}, err
 	}
-	return domain.Rule{
+	return domain.PresetRule{
 		ID:        row.ID,
-		Role:      row.Role,
+		Preset:    row.Preset,
 		Resource:  row.Resource,
 		Action:    row.Action,
 		Scope:     row.Scope,
@@ -89,12 +90,12 @@ func (r *RuleRepository) UpsertRule(ctx context.Context, rule domain.Rule) (doma
 
 // SoftDeleteRule marks a matrix row as deleted (no-op if already deleted).
 func (r *RuleRepository) SoftDeleteRule(ctx context.Context, id int64) error {
-	return r.db.SoftDeleteRule(ctx, id)
+	return r.db.SoftDeletePresetRule(ctx, id)
 }
 
 // SoftDeleteAllRules marks every matrix row as deleted (for reset).
 func (r *RuleRepository) SoftDeleteAllRules(ctx context.Context) error {
-	return r.db.SoftDeleteAllRules(ctx)
+	return r.db.SoftDeleteAllPresetRules(ctx)
 }
 
 // ListActiveRoutePolicies returns all active route policy definitions.
@@ -165,6 +166,170 @@ func (r *RuleRepository) SoftDeleteAllRoutePolicies(ctx context.Context) error {
 	return r.db.SoftDeleteAllRoutePolicies(ctx)
 }
 
+// UpsertPreset creates a preset (or revives a soft-deleted one by name).
+func (r *RuleRepository) UpsertPreset(ctx context.Context, name, description string) (domain.Preset, error) {
+	row, err := r.db.UpsertPreset(ctx, sqlc.UpsertPresetParams{Name: name, Description: description})
+	if err != nil {
+		return domain.Preset{}, err
+	}
+	return domain.Preset{ID: row.ID, Name: row.Name, Description: row.Description}, nil
+}
+
+// UpdatePresetDescription updates the preset description.
+func (r *RuleRepository) UpdatePresetDescription(
+	ctx context.Context,
+	name, description string,
+) (domain.Preset, error) {
+	row, err := r.db.UpdatePresetDescription(ctx, sqlc.UpdatePresetDescriptionParams{
+		Name: name, Description: description,
+	})
+	if err != nil {
+		return domain.Preset{}, err
+	}
+	return domain.Preset{ID: row.ID, Name: row.Name, Description: row.Description}, nil
+}
+
+// SoftDeletePreset softly deletes a preset together with its rules and clears
+// the preset ref on users (base rights vanish; individual overrides survive).
+func (r *RuleRepository) SoftDeletePreset(ctx context.Context, name string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := sqlc.New(tx)
+	if err = q.SoftDeletePreset(ctx, name); err != nil {
+		return err
+	}
+	if err = q.SoftDeletePresetRulesByPreset(ctx, name); err != nil {
+		return err
+	}
+	if err = q.ClearPresetOnUsers(ctx, name); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// ListUserPermissions returns the active per-user overrides of a user.
+func (r *RuleRepository) ListUserPermissions(ctx context.Context, userID int64) ([]domain.UserPermission, error) {
+	rows, err := r.db.ListUserPermissions(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.UserPermission, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.UserPermission{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Resource:  row.Resource,
+			Action:    row.Action,
+			Scope:     row.Scope,
+			Granted:   row.Granted,
+			UpdatedBy: fromInt8(row.UpdatedBy),
+			UpdatedAt: row.UpdatedAt,
+		})
+	}
+	return out, nil
+}
+
+// ReplaceUserPermissions atomically replaces the user's override set:
+// soft-deletes the previous rows and inserts the new ones.
+func (r *RuleRepository) ReplaceUserPermissions(
+	ctx context.Context,
+	userID int64,
+	rows []domain.UserPermission,
+) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := sqlc.New(tx)
+	if err = q.SoftDeleteAllUserPermissions(ctx, userID); err != nil {
+		return err
+	}
+	for _, p := range rows {
+		if _, err = q.InsertUserPermission(ctx, sqlc.InsertUserPermissionParams{
+			UserID:    p.UserID,
+			Resource:  p.Resource,
+			Action:    p.Action,
+			Scope:     p.Scope,
+			Granted:   p.Granted,
+			UpdatedBy: toInt8(p.UpdatedBy),
+		}); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
+// FindUserPreset returns the user's assigned preset and whether it is set
+// (exists=false — the user has no preset).
+func (r *RuleRepository) FindUserPreset(ctx context.Context, userID int64) (string, bool, error) {
+	preset, err := r.db.FindUserPreset(ctx, userID)
+	if err != nil {
+		return "", false, err
+	}
+	if !preset.Valid {
+		return "", false, nil
+	}
+	return preset.String, true, nil
+}
+
+// ListUserPrincipals returns the preset of every active user (user_id, preset)
+// — the base of the in-memory principal snapshot.
+func (r *RuleRepository) ListUserPrincipals(ctx context.Context) ([]UserPreset, error) {
+	rows, err := r.db.ListUserPrincipals(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]UserPreset, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, UserPreset{
+			UserID: row.UserID,
+			Preset: row.Preset,
+		})
+	}
+	return out, nil
+}
+
+// ListAllUserPermissions returns every active per-user override (for the
+// in-memory principal snapshot; grouped by the caller).
+func (r *RuleRepository) ListAllUserPermissions(ctx context.Context) ([]UserPermissionRef, error) {
+	rows, err := r.db.ListAllUserPermissions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]UserPermissionRef, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, UserPermissionRef{
+			UserID:   row.UserID,
+			Resource: row.Resource,
+			Action:   row.Action,
+			Scope:    row.Scope,
+			Granted:  row.Granted,
+		})
+	}
+	return out, nil
+}
+
+// UserPreset — user_id → preset (from ListUserPrincipals).
+type UserPreset struct {
+	UserID int64
+	Preset sql.NullString
+}
+
+// UserPermissionRef — a per-user override reference (from ListAllUserPermissions).
+type UserPermissionRef struct {
+	UserID   int64
+	Resource string
+	Action   string
+	Scope    string
+	Granted  bool
+}
+
 func toInt8(v *int64) pgtype.Int8 {
 	if v == nil {
 		return pgtype.Int8{}
@@ -178,30 +343,4 @@ func fromInt8(v pgtype.Int8) *int64 {
 	}
 	out := v.Int64
 	return &out
-}
-
-// UpsertRole creates a role (or revives a soft-deleted one by name).
-func (r *RuleRepository) UpsertRole(ctx context.Context, name, description string) (domain.Role, error) {
-	row, err := r.db.UpsertRole(ctx, sqlc.UpsertRoleParams{Name: name, Description: description})
-	if err != nil {
-		return domain.Role{}, err
-	}
-	return domain.Role{ID: row.ID, Name: row.Name, Description: row.Description}, nil
-}
-
-// UpdateRoleDescription updates the role description.
-func (r *RuleRepository) UpdateRoleDescription(ctx context.Context, name, description string) (domain.Role, error) {
-	row, err := r.db.UpdateRoleDescription(ctx, sqlc.UpdateRoleDescriptionParams{Name: name, Description: description})
-	if err != nil {
-		return domain.Role{}, err
-	}
-	return domain.Role{ID: row.ID, Name: row.Name, Description: row.Description}, nil
-}
-
-// SoftDeleteRole softly deletes a role together with its rules.
-func (r *RuleRepository) SoftDeleteRole(ctx context.Context, name string) error {
-	if err := r.db.SoftDeleteRole(ctx, name); err != nil {
-		return err
-	}
-	return r.db.SoftDeleteRulesByRole(ctx, name)
 }

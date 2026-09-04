@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 
@@ -13,9 +14,17 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
+// PrincipalResolver resolves the caller's current effective rights by user id
+// (admin bypass, assigned preset, per-user overrides). Implemented by the
+// rbacpolicy PolicyStore — an in-memory snapshot, never a per-request DB call.
+type PrincipalResolver interface {
+	EffectiveUser(ctx context.Context, userID int64) (userctx.UserContext, error)
+}
+
 type Middleware struct {
 	logger     *slog.Logger
 	jwtManager *jwt.Service
+	resolver   PrincipalResolver
 }
 
 // RequireAuth verifies the JWT token and sets the user context.
@@ -53,16 +62,31 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 5. Store the user in the context (as a single object!)
-		user := userctx.UserContext{
-			ID:    claims.UserID,
-			Role:  claims.Role,
-			Email: claims.Email, // if present
+		// 5. Resolve the caller's current rights from the RBAC snapshot (so
+		// permission changes apply immediately, without waiting for token
+		// expiry). A missing entry falls back to the default deny principal.
+		user, err := m.resolver.EffectiveUser(c.Request.Context(), claims.UserID)
+		if err != nil {
+			if m.logger != nil {
+				m.logger.ErrorContext(
+					c.Request.Context(),
+					"auth: не удалось получить права пользователя",
+					"user_id",
+					claims.UserID,
+					"error",
+					err,
+				)
+			}
+			user = userctx.UserContext{ID: claims.UserID}
 		}
-		c.Set("user", user)
-		tracingpkg.SetUserOnSpan(c, user.ID, user.Role)
+		user.ID = claims.UserID
+		user.Email = claims.Email
 
-		// 6. Pass the request through
+		// 6. Store the user in the context (as a single object!)
+		c.Set("user", user)
+		tracingpkg.SetUserOnSpan(c, user.ID, user.Preset)
+
+		// 7. Pass the request through
 		c.Next()
 	}
 }

@@ -173,7 +173,7 @@ func (q *Queries) FindUserManager(ctx context.Context, userID int64) (pgtype.Int
 const listMembersByResourceID = `-- name: ListMembersByResourceID :many
 
 SELECT u.id, CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), NULLIF(u.middle_name, '')) AS name,
-       u.role, u.position, u.hire_date, u.termination_date, u.manager_id
+       u.preset, u.position, u.hire_date, u.termination_date, u.manager_id
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
 WHERE rm.resource_id = $1::bigint
@@ -182,13 +182,13 @@ ORDER BY u.id ASC
 `
 
 type ListMembersByResourceIDRow struct {
-	ID              int64       `json:"id"`
-	Name            string      `json:"name"`
-	Role            string      `json:"role"`
-	Position        string      `json:"position"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
+	ID              int64          `json:"id"`
+	Name            string         `json:"name"`
+	Preset          sql.NullString `json:"preset"`
+	Position        string         `json:"position"`
+	HireDate        pgtype.Date    `json:"hire_date"`
+	TerminationDate pgtype.Date    `json:"termination_date"`
+	ManagerID       pgtype.Int8    `json:"manager_id"`
 }
 
 // ================= resource members =================
@@ -204,7 +204,7 @@ func (q *Queries) ListMembersByResourceID(ctx context.Context, resourceID int64)
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Role,
+			&i.Preset,
 			&i.Position,
 			&i.HireDate,
 			&i.TerminationDate,

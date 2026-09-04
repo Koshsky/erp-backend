@@ -15,11 +15,11 @@ type ResourceRepository interface {
 	ListResources(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]domain.Resource, error)
-	CountResources(ctx context.Context, userID int64, role string, ownerID int64) (int64, error)
+	CountResources(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error)
 	ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error)
 	ListMembersByResourceID(ctx context.Context, resourceID int64) ([]domain.ResourceMember, error)
 	AddMember(ctx context.Context, resourceID, userID int64) error

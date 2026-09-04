@@ -9,13 +9,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// UserContext is the authenticated user carried through the request.
+// PermissionRule is a per-user override of the preset rule for a
+// (resource, action) pair: an explicit grant (Granted=true, Scope) or an
+// explicit revoke (Granted=false, Scope ignored). A missing rule means the
+// user falls back to the assigned preset; admin ignores all rules (bypass).
+type PermissionRule struct {
+	Resource string `json:"resource"`
+	Action   string `json:"action"`
+	Scope    string `json:"scope,omitempty"` // all|own|parent|ancestor (when granted)
+	Granted  bool   `json:"granted"`
+}
+
+// UserContext is the authenticated user carried through the request, with the
+// caller's effective rights resolved by the RBAC store (admin bypass, assigned
+// preset and per-user overrides).
 type UserContext struct {
-	ID       int64  `json:"id"`
-	Role     string `json:"role"`
-	Email    string `json:"email,omitempty"`
-	FullName string `json:"full_name,omitempty"`
-	TenantID int64  `json:"tenant_id,omitempty"`
+	ID     int64  `json:"id"`
+	Admin  bool   `json:"admin"`
+	Preset string `json:"preset,omitempty"`
+	// Rules are the caller's individual permission overrides
+	// (see PermissionRule); nil — none.
+	Rules    []PermissionRule `json:"rules,omitempty"`
+	Email    string           `json:"email,omitempty"`
+	FullName string           `json:"full_name,omitempty"`
+	TenantID int64            `json:"tenant_id,omitempty"`
 }
 
 // KeyUser is the Gin context key under which the UserContext is stored.
@@ -54,30 +71,30 @@ func GetUserID(c *gin.Context) (int64, error) {
 	return user.ID, nil
 }
 
-// GetUserRole returns the user role from the context.
-func GetUserRole(c *gin.Context) (string, error) {
+// GetUserPreset returns the user's assigned preset from the context ("" — none).
+func GetUserPreset(c *gin.Context) (string, error) {
 	user, err := GetUser(c)
 	if err != nil {
 		return "", err
 	}
-	return user.Role, nil
+	return user.Preset, nil
 }
 
-// IsAdmin verifies if the user is an admin.
+// IsAdmin verifies if the user is an admin (the admin preset bypass).
 func IsAdmin(c *gin.Context) bool {
 	user, err := GetUser(c)
 	if err != nil {
 		return false
 	}
-	return user.Role == "admin"
+	return user.Admin
 }
 
-// HasRole verifies if the user has any of the allowed roles.
-func HasRole(c *gin.Context, allowedRoles ...string) bool {
+// HasPreset verifies if the user has any of the allowed presets.
+func HasPreset(c *gin.Context, allowedPresets ...string) bool {
 	user, err := GetUser(c)
 	if err != nil {
 		return false
 	}
 
-	return slices.Contains(allowedRoles, user.Role)
+	return slices.Contains(allowedPresets, user.Preset)
 }

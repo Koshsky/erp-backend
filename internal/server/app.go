@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/audit"
 	"github.com/Koshsky/erp-backend/internal/config"
 	idempotencypkg "github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
@@ -39,6 +40,7 @@ type App struct {
 	authMw      *auth.Middleware
 	tracer      *tracingpkg.Tracer
 	idemMw      *idempotencypkg.Middleware
+	auditMw     *audit.Middleware
 	policyStore *rbacpolicysvc.PolicyStore
 	modules     []Module
 }
@@ -52,6 +54,7 @@ func New(
 	profiler *profiler.Profiler,
 	tracer *tracingpkg.Tracer,
 	idemMw *idempotencypkg.Middleware,
+	auditMw *audit.Middleware,
 	policyStore *rbacpolicysvc.PolicyStore,
 	modules []Module,
 ) (*App, error) {
@@ -64,6 +67,7 @@ func New(
 		maintenance: maintenance.New(cfg.Maintenance, pool, logger),
 		tracer:      tracer,
 		idemMw:      idemMw,
+		auditMw:     auditMw,
 		policyStore: policyStore,
 		modules:     modules,
 	}, nil
@@ -93,6 +97,9 @@ func (a *App) Start() error {
 	a.maintenance.Start()
 	if a.policyStore != nil {
 		a.policyStore.Start()
+	}
+	if a.auditMw != nil {
+		a.auditMw.Start()
 	}
 
 	if a.cfg.Swagger.Enabled {
@@ -174,6 +181,9 @@ func (a *App) Stop(ctx context.Context) error {
 	a.maintenance.Stop(ctx)
 	if a.policyStore != nil {
 		a.policyStore.Stop()
+	}
+	if a.auditMw != nil {
+		a.auditMw.Stop(ctx)
 	}
 	if a.pool != nil {
 		a.pool.Close()

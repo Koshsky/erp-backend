@@ -1,6 +1,8 @@
 // Package policies — the single place holding access rules. The engine (rbac)
-// stays a pure mechanism; rules are split into a matrix (role × resource ×
-// action → ownership scope) and route policies (kind + parameters).
+// stays a pure mechanism; rules are split into a matrix (preset × resource ×
+// action → ownership scope) and route policies (kind + parameters). A caller's
+// effective scope is resolved by the matrix from the assigned preset plus
+// per-user overrides (see ScopeForUser).
 package policies
 
 import (
@@ -8,6 +10,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
 // Action — an operation on an entity.
@@ -48,6 +51,7 @@ const (
 	resUserAdmin    = "user_admin"
 	resStateAdmin   = "state_admin"
 	resOrgStructure = "org_structure"
+	resAudit        = "audit"
 )
 
 // String action codes.
@@ -66,7 +70,7 @@ const (
 	scopeAncestor = "ancestor"
 )
 
-// Rule binds a role and the required access zone.
+// Rule binds a preset and the required access zone.
 type Rule struct {
 	Role  string
 	Scope Scope
@@ -96,7 +100,7 @@ func DefaultMatrixRules() []MatrixRule {
 	return out
 }
 
-// Matrix — a snapshot of the permission matrix (role × resource × action → rules).
+// Matrix — a snapshot of the permission matrix (preset × resource × action → rules).
 type Matrix struct {
 	rules map[rbac.Resource]map[Action][]Rule
 }
@@ -152,92 +156,92 @@ func snapshot() Matrix {
 var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 	rbac.ResourceProject: {
 		ActionView: {
-			{userdomain.ProjectDirector, ScopeAll},
-			{userdomain.ProjectManager, ScopeOwn},
+			{userdomain.PresetProjectDirector, ScopeAll},
+			{userdomain.PresetProjectManager, ScopeOwn},
 		},
 		ActionCreate: {
 			// rp creates a project into own ownership (the owner defaults to themselves).
-			{userdomain.ProjectManager, ScopeOwn},
+			{userdomain.PresetProjectManager, ScopeOwn},
 		},
 		ActionUpdate: {
 			// dp and admin edit any project, rp — their own.
-			{userdomain.ProjectDirector, ScopeAll},
-			{userdomain.ProjectManager, ScopeOwn},
+			{userdomain.PresetProjectDirector, ScopeAll},
+			{userdomain.PresetProjectManager, ScopeOwn},
 		},
 		ActionDelete: {
-			{userdomain.ProjectManager, ScopeOwn},
+			{userdomain.PresetProjectManager, ScopeOwn},
 		},
 	},
 	rbac.ResourceProcess: {
 		ActionView: {
-			{userdomain.ProjectDirector, ScopeAll},
+			{userdomain.PresetProjectDirector, ScopeAll},
 			// rp — processes of own projects (parent), vp — all for reference.
-			{userdomain.ProjectManager, ScopeParent},
-			{userdomain.ProcessOwner, ScopeAll},
+			{userdomain.PresetProjectManager, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeAll},
 		},
 		ActionCreate: {
-			{userdomain.ProjectManager, ScopeParent},
+			{userdomain.PresetProjectManager, ScopeParent},
 		},
 		ActionUpdate: {
-			{userdomain.ProjectManager, ScopeParent},
+			{userdomain.PresetProjectManager, ScopeParent},
 		},
 		ActionDelete: {
-			{userdomain.ProjectManager, ScopeParent},
+			{userdomain.PresetProjectManager, ScopeParent},
 		},
 	},
 	rbac.ResourceTask: {
 		ActionView: {
-			{userdomain.ProjectDirector, ScopeAll},
-			{userdomain.ProjectManager, ScopeAncestor},
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProjectDirector, ScopeAll},
+			{userdomain.PresetProjectManager, ScopeAncestor},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionCreate: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionUpdate: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionDelete: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 	},
 	rbac.ResourceMilestone: {
 		ActionView: {
-			{userdomain.ProjectDirector, ScopeAll},
-			{userdomain.ProjectManager, ScopeAncestor},
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProjectDirector, ScopeAll},
+			{userdomain.PresetProjectManager, ScopeAncestor},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionCreate: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionUpdate: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionDelete: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 	},
 	rbac.ResourceAssignment: {
 		ActionView: {
-			{userdomain.ProjectDirector, ScopeAll},
-			{userdomain.ProjectManager, ScopeAncestor},
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProjectDirector, ScopeAll},
+			{userdomain.PresetProjectManager, ScopeAncestor},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionCreate: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionUpdate: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 		ActionDelete: {
-			{userdomain.ProcessOwner, ScopeParent},
+			{userdomain.PresetProcessOwner, ScopeParent},
 		},
 	},
 	// === Timesheet ===
 	// States: an ownerless reference; vp sees them (for the timesheet), only admin manages them.
 	rbac.ResourceState: {
 		ActionView: {
-			{userdomain.ProcessOwner, ScopeAll},
+			{userdomain.PresetProcessOwner, ScopeAll},
 		},
 		ActionCreate: {},
 		ActionUpdate: {},
@@ -246,29 +250,29 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 	// Resource categories: admin — all, vp — own (own); vp creates into own ownership.
 	rbac.ResourceResource: {
 		ActionView: {
-			{userdomain.ProcessOwner, ScopeOwn},
+			{userdomain.PresetProcessOwner, ScopeOwn},
 		},
 		ActionCreate: {
-			{userdomain.ProcessOwner, ScopeOwn},
+			{userdomain.PresetProcessOwner, ScopeOwn},
 		},
 		ActionUpdate: {
-			{userdomain.ProcessOwner, ScopeOwn},
+			{userdomain.PresetProcessOwner, ScopeOwn},
 		},
 		ActionDelete: {
-			{userdomain.ProcessOwner, ScopeOwn},
+			{userdomain.PresetProcessOwner, ScopeOwn},
 		},
 	},
 	// Workers: creating employees — admin only (bypass); vp — own
 	// subordinates (manager_id): view and edit.
 	rbac.ResourceWorker: {
 		ActionView: {
-			{userdomain.ProcessOwner, ScopeOwn},
+			{userdomain.PresetProcessOwner, ScopeOwn},
 		},
 		ActionUpdate: {
-			{userdomain.ProcessOwner, ScopeOwn},
+			{userdomain.PresetProcessOwner, ScopeOwn},
 		},
 		ActionDelete: {
-			{userdomain.ProcessOwner, ScopeOwn},
+			{userdomain.PresetProcessOwner, ScopeOwn},
 		},
 	},
 	// Comments: no access in the common matrix — rights are derived from the parent
@@ -280,15 +284,16 @@ var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
 	// only, bypass) — no rows in the matrix.
 	rbac.ResourceUserCatalog: {
 		ActionView: {
-			{userdomain.ProjectDirector, ScopeAll},
-			{userdomain.ProjectManager, ScopeAll},
-			{userdomain.ProcessOwner, ScopeAll},
+			{userdomain.PresetProjectDirector, ScopeAll},
+			{userdomain.PresetProjectManager, ScopeAll},
+			{userdomain.PresetProcessOwner, ScopeAll},
 		},
 	},
 	rbac.ResourceRBACConfig:   {},
 	rbac.ResourceUserAdmin:    {},
 	rbac.ResourceStateAdmin:   {},
 	rbac.ResourceOrgStructure: {},
+	rbac.ResourceAudit:        {},
 }}
 
 // DefaultMatrix returns the built-in default matrix (a copy).
@@ -296,10 +301,10 @@ func DefaultMatrix() Matrix {
 	return defaultMatrix
 }
 
-// ScopeFor returns the required access zone for (role, resource, action).
+// ScopeFor returns the required access zone for (preset, resource, action).
 // admin gets ScopeAll (a protective invariant, not stored in the DB).
 func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) Scope {
-	if role == userdomain.Admin {
+	if role == userdomain.PresetAdmin {
 		return ScopeAll
 	}
 	rules, ok := m.rules[res][act]
@@ -314,6 +319,70 @@ func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) Scope {
 	return ScopeNone
 }
 
+// overrideScope returns the caller's individual override for (resource, action):
+// (scope, true) — an explicit grant/revoke rule matched; (ScopeNone, false) —
+// no override (fall back to the preset).
+func overrideScope(u userctx.UserContext, res rbac.Resource, act Action) (Scope, bool) {
+	for _, r := range u.Rules {
+		if r.Resource != ResourceName(res) || r.Action != ActionName(act) {
+			continue
+		}
+		if !r.Granted {
+			return ScopeNone, true
+		}
+		scope, ok := ParseScope(r.Scope)
+		if !ok {
+			return ScopeNone, true
+		}
+		return scope, true
+	}
+	return ScopeNone, false
+}
+
+// ScopeForUser returns the caller's effective zone for (resource, action):
+// admin — ScopeAll (a bypass; overrides do not apply); a per-user override —
+// its scope (a revoked rule — ScopeNone); otherwise the preset matrix rule.
+func (m Matrix) ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
+	if u.Admin {
+		return ScopeAll
+	}
+	if scope, ok := overrideScope(u, res, act); ok {
+		return scope
+	}
+	return m.ScopeFor(u.Preset, res, act)
+}
+
+// scopeForUser — internal wrapper for the check builders.
+func scopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
+	return snapshot().ScopeForUser(u, res, act)
+}
+
+// ScopeForUser returns the caller's effective zone for an action on a resource
+// (admin bypass + per-user overrides applied; package-level helper).
+func ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
+	return scopeForUser(u, res, act)
+}
+
+// authorizeScope — the single owner-chain mechanism for a resolved zone.
+func authorizeScope(scope Scope, res rbac.Resource, owners rbac.Owners, userID int64) bool {
+	switch scope {
+	case ScopeNone:
+		return false
+	case ScopeAll:
+		return true
+	case ScopeOwn:
+		owner := ownField(res, owners)
+		return userID != 0 && owner != 0 && owner == userID
+	case ScopeParent:
+		parent := parentField(res, owners)
+		return userID != 0 && parent != 0 && parent == userID
+	case ScopeAncestor:
+		return ancestorMatch(res, owners, userID)
+	default:
+		return false
+	}
+}
+
 // ownField returns the owner of the row itself (chain L0) for a resource
 // (0 — the entity has no own owner: own is not applicable).
 func ownField(res rbac.Resource, owners rbac.Owners) int64 {
@@ -326,7 +395,8 @@ func ownField(res rbac.Resource, owners rbac.Owners) int64 {
 		return owners.Owner
 	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
 		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return 0
 	}
 	return 0
@@ -343,7 +413,8 @@ func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return 0
 	}
 	return 0
@@ -364,43 +435,47 @@ func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return false
 	}
 	return false
 }
 
-// Authorize reports whether the user may perform an action on an entity
+// Authorize reports whether a preset may perform an action on an entity
 // with its owners.
 func Authorize(role string, res rbac.Resource, act Action, owners rbac.Owners, userID int64) bool {
-	switch snapshot().ScopeFor(role, res, act) {
-	case ScopeNone:
-		return false
-	case ScopeAll:
-		return true
-	case ScopeOwn:
-		owner := ownField(res, owners)
-		return userID != 0 && owner != 0 && owner == userID
-	case ScopeParent:
-		parent := parentField(res, owners)
-		return userID != 0 && parent != 0 && parent == userID
-	case ScopeAncestor:
-		return ancestorMatch(res, owners, userID)
-	default:
-		return false
-	}
+	return authorizeScope(snapshot().ScopeFor(role, res, act), res, owners, userID)
 }
 
-// Can reports whether a role can perform an action at all
+// AuthorizeUser reports whether the caller may perform an action on an entity
+// with its owners (admin bypass + per-user overrides applied).
+func AuthorizeUser(u userctx.UserContext, res rbac.Resource, act Action, owners rbac.Owners, userID int64) bool {
+	return authorizeScope(scopeForUser(u, res, act), res, owners, userID)
+}
+
+// Can reports whether a preset can perform an action at all
 // (a coarse check before loading lists).
 func Can(role string, res rbac.Resource, act Action) bool {
 	return scopeFor(role, res, act) != ScopeNone
+}
+
+// CanUser reports whether the caller can perform an action at all
+// (admin bypass + per-user overrides applied).
+func CanUser(u userctx.UserContext, res rbac.Resource, act Action) bool {
+	return scopeForUser(u, res, act) != ScopeNone
 }
 
 // ViewScopeCode returns the string code of the view zone for listing requests
 // (all|own|parent|ancestor). SQL applies exactly this zone to the owner chain.
 func ViewScopeCode(role string, res rbac.Resource) string {
 	return ScopeName(scopeFor(role, res, ActionView))
+}
+
+// ViewScopeCodeUser returns the string code of the caller's view zone for
+// listing requests (admin bypass + per-user overrides applied).
+func ViewScopeCodeUser(u userctx.UserContext, res rbac.Resource) string {
+	return ScopeName(scopeForUser(u, res, ActionView))
 }
 
 // scopeFor — internal wrapper for the check builders.
@@ -424,6 +499,7 @@ var resourceNames = map[rbac.Resource]string{
 	rbac.ResourceUserAdmin:    resUserAdmin,
 	rbac.ResourceStateAdmin:   resStateAdmin,
 	rbac.ResourceOrgStructure: resOrgStructure,
+	rbac.ResourceAudit:        resAudit,
 }
 
 //nolint:gochecknoglobals // action codex
@@ -498,6 +574,7 @@ var ownApplicable = map[rbac.Resource]bool{
 	rbac.ResourceUserAdmin:    false,
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
+	rbac.ResourceAudit:        false,
 }
 
 //nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
@@ -516,6 +593,7 @@ var parentApplicable = map[rbac.Resource]bool{
 	rbac.ResourceUserAdmin:    false,
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
+	rbac.ResourceAudit:        false,
 }
 
 //nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
@@ -534,6 +612,7 @@ var ancestorApplicable = map[rbac.Resource]bool{
 	rbac.ResourceUserAdmin:    false,
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
+	rbac.ResourceAudit:        false,
 }
 
 // ScopeApplicable reports whether a zone is applicable to a resource (for rule validation).

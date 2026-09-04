@@ -7,34 +7,154 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const listActiveRoles = `-- name: ListActiveRoles :many
+const clearPresetOnUsers = `-- name: ClearPresetOnUsers :exec
+UPDATE users
+SET preset = NULL, updated_at = NOW()
+WHERE preset = $1::text AND deleted_at IS NULL
+`
+
+// Removes the preset ref from users after its soft delete (base rights vanish;
+// individual overrides survive).
+func (q *Queries) ClearPresetOnUsers(ctx context.Context, preset string) error {
+	_, err := q.db.Exec(ctx, clearPresetOnUsers, preset)
+	return err
+}
+
+const findUserPreset = `-- name: FindUserPreset :one
+SELECT preset
+FROM users
+WHERE id = $1::bigint AND deleted_at IS NULL
+`
+
+func (q *Queries) FindUserPreset(ctx context.Context, userID int64) (sql.NullString, error) {
+	row := q.db.QueryRow(ctx, findUserPreset, userID)
+	var preset sql.NullString
+	err := row.Scan(&preset)
+	return preset, err
+}
+
+const insertUserPermission = `-- name: InsertUserPermission :one
+INSERT INTO user_permissions (user_id, resource, action, scope, granted, updated_by)
+VALUES ($1::bigint, $2::text, $3::text, $4::text, $5, $6)
+RETURNING id, user_id, resource, action, scope, granted, updated_by, updated_at
+`
+
+type InsertUserPermissionParams struct {
+	UserID    int64       `json:"user_id"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	Granted   bool        `json:"granted"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+}
+
+type InsertUserPermissionRow struct {
+	ID        int64       `json:"id"`
+	UserID    int64       `json:"user_id"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	Granted   bool        `json:"granted"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+func (q *Queries) InsertUserPermission(ctx context.Context, arg InsertUserPermissionParams) (InsertUserPermissionRow, error) {
+	row := q.db.QueryRow(ctx, insertUserPermission,
+		arg.UserID,
+		arg.Resource,
+		arg.Action,
+		arg.Scope,
+		arg.Granted,
+		arg.UpdatedBy,
+	)
+	var i InsertUserPermissionRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Resource,
+		&i.Action,
+		&i.Scope,
+		&i.Granted,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listActivePresetRules = `-- name: ListActivePresetRules :many
+SELECT id, preset, resource, action, scope, updated_by, updated_at
+FROM rbac_preset_rules
+WHERE deleted_at IS NULL
+`
+
+type ListActivePresetRulesRow struct {
+	ID        int64       `json:"id"`
+	Preset    string      `json:"preset"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+func (q *Queries) ListActivePresetRules(ctx context.Context) ([]ListActivePresetRulesRow, error) {
+	rows, err := q.db.Query(ctx, listActivePresetRules)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActivePresetRulesRow{}
+	for rows.Next() {
+		var i ListActivePresetRulesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Preset,
+			&i.Resource,
+			&i.Action,
+			&i.Scope,
+			&i.UpdatedBy,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActivePresets = `-- name: ListActivePresets :many
 SELECT id, name, description
-FROM rbac_roles
+FROM rbac_presets
 WHERE deleted_at IS NULL
 ORDER BY name
 `
 
-type ListActiveRolesRow struct {
+type ListActivePresetsRow struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-func (q *Queries) ListActiveRoles(ctx context.Context) ([]ListActiveRolesRow, error) {
-	rows, err := q.db.Query(ctx, listActiveRoles)
+func (q *Queries) ListActivePresets(ctx context.Context) ([]ListActivePresetsRow, error) {
+	rows, err := q.db.Query(ctx, listActivePresets)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListActiveRolesRow{}
+	items := []ListActivePresetsRow{}
 	for rows.Next() {
-		var i ListActiveRolesRow
+		var i ListActivePresetsRow
 		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
 			return nil, err
 		}
@@ -88,37 +208,84 @@ func (q *Queries) ListActiveRoutePolicies(ctx context.Context) ([]ListActiveRout
 	return items, nil
 }
 
-const listActiveRules = `-- name: ListActiveRules :many
-SELECT id, role, resource, action, scope, updated_by, updated_at
-FROM rbac_role_rules
+const listAllUserPermissions = `-- name: ListAllUserPermissions :many
+SELECT user_id, resource, action, scope, granted
+FROM user_permissions
 WHERE deleted_at IS NULL
 `
 
-type ListActiveRulesRow struct {
-	ID        int64       `json:"id"`
-	Role      string      `json:"role"`
-	Resource  string      `json:"resource"`
-	Action    string      `json:"action"`
-	Scope     string      `json:"scope"`
-	UpdatedBy pgtype.Int8 `json:"updated_by"`
-	UpdatedAt time.Time   `json:"updated_at"`
+type ListAllUserPermissionsRow struct {
+	UserID   int64  `json:"user_id"`
+	Resource string `json:"resource"`
+	Action   string `json:"action"`
+	Scope    string `json:"scope"`
+	Granted  bool   `json:"granted"`
 }
 
-func (q *Queries) ListActiveRules(ctx context.Context) ([]ListActiveRulesRow, error) {
-	rows, err := q.db.Query(ctx, listActiveRules)
+// All active per-user overrides — grouped by user_id in the snapshot loader.
+func (q *Queries) ListAllUserPermissions(ctx context.Context) ([]ListAllUserPermissionsRow, error) {
+	rows, err := q.db.Query(ctx, listAllUserPermissions)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListActiveRulesRow{}
+	items := []ListAllUserPermissionsRow{}
 	for rows.Next() {
-		var i ListActiveRulesRow
+		var i ListAllUserPermissionsRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.Role,
+			&i.UserID,
 			&i.Resource,
 			&i.Action,
 			&i.Scope,
+			&i.Granted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUserPermissions = `-- name: ListUserPermissions :many
+
+SELECT id, user_id, resource, action, scope, granted, updated_by, updated_at
+FROM user_permissions
+WHERE user_id = $1::bigint AND deleted_at IS NULL
+`
+
+type ListUserPermissionsRow struct {
+	ID        int64       `json:"id"`
+	UserID    int64       `json:"user_id"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	Granted   bool        `json:"granted"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+// =============================================
+// Per-user permission overrides
+// =============================================
+func (q *Queries) ListUserPermissions(ctx context.Context, userID int64) ([]ListUserPermissionsRow, error) {
+	rows, err := q.db.Query(ctx, listUserPermissions, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserPermissionsRow{}
+	for rows.Next() {
+		var i ListUserPermissionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Resource,
+			&i.Action,
+			&i.Scope,
+			&i.Granted,
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 		); err != nil {
@@ -132,6 +299,49 @@ func (q *Queries) ListActiveRules(ctx context.Context) ([]ListActiveRulesRow, er
 	return items, nil
 }
 
+const listUserPrincipals = `-- name: ListUserPrincipals :many
+SELECT id AS user_id, preset
+FROM users
+WHERE deleted_at IS NULL
+`
+
+type ListUserPrincipalsRow struct {
+	UserID int64          `json:"user_id"`
+	Preset sql.NullString `json:"preset"`
+}
+
+// Active users with their preset — the base of the in-memory principal snapshot.
+func (q *Queries) ListUserPrincipals(ctx context.Context) ([]ListUserPrincipalsRow, error) {
+	rows, err := q.db.Query(ctx, listUserPrincipals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserPrincipalsRow{}
+	for rows.Next() {
+		var i ListUserPrincipalsRow
+		if err := rows.Scan(&i.UserID, &i.Preset); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const softDeleteAllPresetRules = `-- name: SoftDeleteAllPresetRules :exec
+UPDATE rbac_preset_rules
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteAllPresetRules(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, softDeleteAllPresetRules)
+	return err
+}
+
 const softDeleteAllRoutePolicies = `-- name: SoftDeleteAllRoutePolicies :exec
 UPDATE rbac_route_policies
 SET deleted_at = NOW(), updated_at = NOW()
@@ -143,25 +353,47 @@ func (q *Queries) SoftDeleteAllRoutePolicies(ctx context.Context) error {
 	return err
 }
 
-const softDeleteAllRules = `-- name: SoftDeleteAllRules :exec
-UPDATE rbac_role_rules
+const softDeleteAllUserPermissions = `-- name: SoftDeleteAllUserPermissions :exec
+UPDATE user_permissions
 SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
+WHERE user_id = $1::bigint AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteAllRules(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, softDeleteAllRules)
+func (q *Queries) SoftDeleteAllUserPermissions(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, softDeleteAllUserPermissions, userID)
 	return err
 }
 
-const softDeleteRole = `-- name: SoftDeleteRole :exec
-UPDATE rbac_roles
+const softDeletePreset = `-- name: SoftDeletePreset :exec
+UPDATE rbac_presets
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE name = $1::text AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteRole(ctx context.Context, name string) error {
-	_, err := q.db.Exec(ctx, softDeleteRole, name)
+func (q *Queries) SoftDeletePreset(ctx context.Context, name string) error {
+	_, err := q.db.Exec(ctx, softDeletePreset, name)
+	return err
+}
+
+const softDeletePresetRule = `-- name: SoftDeletePresetRule :exec
+UPDATE rbac_preset_rules
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE id = $1::bigint AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeletePresetRule(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, softDeletePresetRule, id)
+	return err
+}
+
+const softDeletePresetRulesByPreset = `-- name: SoftDeletePresetRulesByPreset :exec
+UPDATE rbac_preset_rules
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE preset = $1::text AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeletePresetRulesByPreset(ctx context.Context, preset string) error {
+	_, err := q.db.Exec(ctx, softDeletePresetRulesByPreset, preset)
 	return err
 }
 
@@ -176,78 +408,106 @@ func (q *Queries) SoftDeleteRoutePolicy(ctx context.Context, name string) error 
 	return err
 }
 
-const softDeleteRule = `-- name: SoftDeleteRule :exec
-UPDATE rbac_role_rules
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1::bigint AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeleteRule(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, softDeleteRule, id)
-	return err
-}
-
-const softDeleteRulesByRole = `-- name: SoftDeleteRulesByRole :exec
-UPDATE rbac_role_rules
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE role = $1::text AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeleteRulesByRole(ctx context.Context, role string) error {
-	_, err := q.db.Exec(ctx, softDeleteRulesByRole, role)
-	return err
-}
-
-const updateRoleDescription = `-- name: UpdateRoleDescription :one
-UPDATE rbac_roles
+const updatePresetDescription = `-- name: UpdatePresetDescription :one
+UPDATE rbac_presets
 SET description = $1::text, updated_at = NOW()
 WHERE name = $2::text AND deleted_at IS NULL
 RETURNING id, name, description
 `
 
-type UpdateRoleDescriptionParams struct {
+type UpdatePresetDescriptionParams struct {
 	Description string `json:"description"`
 	Name        string `json:"name"`
 }
 
-type UpdateRoleDescriptionRow struct {
+type UpdatePresetDescriptionRow struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-func (q *Queries) UpdateRoleDescription(ctx context.Context, arg UpdateRoleDescriptionParams) (UpdateRoleDescriptionRow, error) {
-	row := q.db.QueryRow(ctx, updateRoleDescription, arg.Description, arg.Name)
-	var i UpdateRoleDescriptionRow
+func (q *Queries) UpdatePresetDescription(ctx context.Context, arg UpdatePresetDescriptionParams) (UpdatePresetDescriptionRow, error) {
+	row := q.db.QueryRow(ctx, updatePresetDescription, arg.Description, arg.Name)
+	var i UpdatePresetDescriptionRow
 	err := row.Scan(&i.ID, &i.Name, &i.Description)
 	return i, err
 }
 
-const upsertRole = `-- name: UpsertRole :one
-INSERT INTO rbac_roles (name, description)
+const upsertPreset = `-- name: UpsertPreset :one
+INSERT INTO rbac_presets (name, description)
 VALUES ($1::text, $2::text)
 ON CONFLICT (name) DO UPDATE
 SET description = EXCLUDED.description,
-    deleted_at = NULL, -- upsert "revives" a soft-deleted role
+    deleted_at = NULL, -- upsert "revives" a soft-deleted preset
     updated_at = NOW()
 RETURNING id, name, description
 `
 
-type UpsertRoleParams struct {
+type UpsertPresetParams struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-type UpsertRoleRow struct {
+type UpsertPresetRow struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-func (q *Queries) UpsertRole(ctx context.Context, arg UpsertRoleParams) (UpsertRoleRow, error) {
-	row := q.db.QueryRow(ctx, upsertRole, arg.Name, arg.Description)
-	var i UpsertRoleRow
+func (q *Queries) UpsertPreset(ctx context.Context, arg UpsertPresetParams) (UpsertPresetRow, error) {
+	row := q.db.QueryRow(ctx, upsertPreset, arg.Name, arg.Description)
+	var i UpsertPresetRow
 	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	return i, err
+}
+
+const upsertPresetRule = `-- name: UpsertPresetRule :one
+INSERT INTO rbac_preset_rules (preset, resource, action, scope, updated_by)
+VALUES ($1::text, $2::text, $3::text, $4::text, $5)
+ON CONFLICT (preset, resource, action) DO UPDATE
+SET scope = EXCLUDED.scope,
+    updated_by = EXCLUDED.updated_by,
+    deleted_at = NULL, -- upsert "revives" a soft-deleted row (reset/re-grant of a permission)
+    updated_at = NOW()
+RETURNING id, preset, resource, action, scope, updated_by, updated_at
+`
+
+type UpsertPresetRuleParams struct {
+	Preset    string      `json:"preset"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+}
+
+type UpsertPresetRuleRow struct {
+	ID        int64       `json:"id"`
+	Preset    string      `json:"preset"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+func (q *Queries) UpsertPresetRule(ctx context.Context, arg UpsertPresetRuleParams) (UpsertPresetRuleRow, error) {
+	row := q.db.QueryRow(ctx, upsertPresetRule,
+		arg.Preset,
+		arg.Resource,
+		arg.Action,
+		arg.Scope,
+		arg.UpdatedBy,
+	)
+	var i UpsertPresetRuleRow
+	err := row.Scan(
+		&i.ID,
+		&i.Preset,
+		&i.Resource,
+		&i.Action,
+		&i.Scope,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 
@@ -295,56 +555,6 @@ func (q *Queries) UpsertRoutePolicy(ctx context.Context, arg UpsertRoutePolicyPa
 		&i.Kind,
 		&i.Params,
 		&i.Active,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const upsertRule = `-- name: UpsertRule :one
-INSERT INTO rbac_role_rules (role, resource, action, scope, updated_by)
-VALUES ($1::text, $2::text, $3::text, $4::text, $5)
-ON CONFLICT (role, resource, action) DO UPDATE
-SET scope = EXCLUDED.scope,
-    updated_by = EXCLUDED.updated_by,
-    deleted_at = NULL, -- upsert "revives" a soft-deleted row (reset/re-grant of a permission)
-    updated_at = NOW()
-RETURNING id, role, resource, action, scope, updated_by, updated_at
-`
-
-type UpsertRuleParams struct {
-	Role      string      `json:"role"`
-	Resource  string      `json:"resource"`
-	Action    string      `json:"action"`
-	Scope     string      `json:"scope"`
-	UpdatedBy pgtype.Int8 `json:"updated_by"`
-}
-
-type UpsertRuleRow struct {
-	ID        int64       `json:"id"`
-	Role      string      `json:"role"`
-	Resource  string      `json:"resource"`
-	Action    string      `json:"action"`
-	Scope     string      `json:"scope"`
-	UpdatedBy pgtype.Int8 `json:"updated_by"`
-	UpdatedAt time.Time   `json:"updated_at"`
-}
-
-func (q *Queries) UpsertRule(ctx context.Context, arg UpsertRuleParams) (UpsertRuleRow, error) {
-	row := q.db.QueryRow(ctx, upsertRule,
-		arg.Role,
-		arg.Resource,
-		arg.Action,
-		arg.Scope,
-		arg.UpdatedBy,
-	)
-	var i UpsertRuleRow
-	err := row.Scan(
-		&i.ID,
-		&i.Role,
-		&i.Resource,
-		&i.Action,
-		&i.Scope,
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 	)

@@ -264,7 +264,7 @@ func buildEntity(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 // noOwnerCheck — matrix check for a resource without owners (state, virtual ones).
 func noOwnerCheck(res rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
-		if !Authorize(rc.User.Role, res, act, rbac.Owners{}, rc.User.ID) {
+		if !AuthorizeUser(rc.User, res, act, rbac.Owners{}, rc.User.ID) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -331,7 +331,7 @@ func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		if ownerID == 0 && defaultSelf {
 			ownerID = rc.User.ID
 		}
-		if !Authorize(rc.User.Role, res, ActionCreate, makeOwners(ownerID), rc.User.ID) {
+		if !AuthorizeUser(rc.User, res, ActionCreate, makeOwners(ownerID), rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -349,7 +349,8 @@ func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
 	case rbac.ResourceProcess, rbac.ResourceTask, rbac.ResourceMilestone,
 		rbac.ResourceAssignment, rbac.ResourceState, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure:
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
 		return nil, false
 	}
 	return nil, false
@@ -442,12 +443,12 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if !Authorize(rc.User.Role, spec.res, spec.act, primaryOwners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, spec.res, spec.act, primaryOwners, rc.User.ID) {
 			return errors.Forbidden(
 				"недостаточно прав: действие доступно владельцу родительского элемента (или администратору)",
 			)
 		}
-		if slices.Contains(spec.exemptRoles, rc.User.Role) {
+		if slices.Contains(spec.exemptRoles, rc.User.Preset) {
 			return nil
 		}
 		compareID, bodyErr := rc.BodyID(spec.compareFrom)
@@ -509,7 +510,7 @@ func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		if owners.Owner != 0 && owners.Owner == rc.User.ID {
 			return nil // the author deletes their own
 		}
-		if !Authorize(rc.User.Role, rightRes, rightAct, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, rightRes, rightAct, owners, rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -560,7 +561,7 @@ func buildParentAction(params map[string]any) (func(*rbac.CheckCtx) error, error
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if !Authorize(rc.User.Role, res, act, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, res, act, owners, rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -589,7 +590,7 @@ func CommentDeleteCheck() func(*rbac.CheckCtx) error {
 // ListCheck — the standard listing rule (see buildList).
 func ListCheck(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
-		scope := scopeFor(rc.User.Role, rsrc, ActionView)
+		scope := scopeForUser(rc.User, rsrc, ActionView)
 		if scope == ScopeNone {
 			return errors.ErrForbidden
 		}
@@ -631,7 +632,7 @@ func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 		if err != nil {
 			return err
 		}
-		if !Authorize(rc.User.Role, rsrc, act, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, rsrc, act, owners, rc.User.ID) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -645,7 +646,7 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 		if err != nil {
 			return err
 		}
-		if !Authorize(rc.User.Role, rsrc, ActionCreate, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, rsrc, ActionCreate, owners, rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -804,7 +805,7 @@ var defaultRouteSpecs = []RouteSpec{
 		paramResource: resAssignment, paramAction: actCreate,
 		paramPrimaryResource: resTask, paramPrimaryFrom: bodyKeyTaskID,
 		paramCompareResource: resResource, paramCompareFrom: bodyKeyResourceID,
-		paramExemptRoles: []string{userdomain.Admin},
+		paramExemptRoles: []string{userdomain.PresetAdmin},
 	}},
 	{
 		Name:   "assignment.update",
@@ -859,6 +860,23 @@ var defaultRouteSpecs = []RouteSpec{
 		Name:   "user.picker",
 		Kind:   kindEntity,
 		Params: map[string]any{paramResource: resUserCatalog, paramAction: actView, paramOwner: ownerModeNone},
+	},
+	{
+		// User profile mutations (an employee IS a system user): gated by the
+		// user_admin virtual resource — admin by default, grantable via the matrix.
+		Name:   "user_admin.create",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resUserAdmin, paramAction: actCreate, paramOwner: ownerModeNone},
+	},
+	{
+		Name:   "user_admin.update",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resUserAdmin, paramAction: actUpdate, paramOwner: ownerModeNone},
+	},
+	{
+		Name:   "user_admin.delete",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resUserAdmin, paramAction: actDelete, paramOwner: ownerModeNone},
 	},
 	{
 		Name:   "resource.list",
@@ -930,6 +948,24 @@ var defaultRouteSpecs = []RouteSpec{
 		Kind:   kindEntity,
 		Params: map[string]any{paramResource: resState, paramAction: actDelete, paramOwner: ownerModeNone},
 	},
+	// Planning aggregates (/planning/*): gated by the view matrix of the
+	// underlying domain. The list kind checks the view right; row scoping
+	// stays in the SQL via ViewScopeCode (no owner query param is exposed).
+	{
+		Name:   "planning.projects",
+		Kind:   kindList,
+		Params: map[string]any{paramResource: resProject, paramQueryKey: bodyKeyOwnerID},
+	},
+	{
+		Name:   "planning.processes",
+		Kind:   kindList,
+		Params: map[string]any{paramResource: resProcess, paramQueryKey: bodyKeyOwnerID},
+	},
+	{
+		Name:   "planning.tasks",
+		Kind:   kindList,
+		Params: map[string]any{paramResource: resTask, paramQueryKey: bodyKeyOwnerID},
+	},
 	{
 		Name:   "autocreate.list",
 		Kind:   kindEntity,
@@ -944,6 +980,13 @@ var defaultRouteSpecs = []RouteSpec{
 		Name:   "rbac.manage",
 		Kind:   kindEntity,
 		Params: map[string]any{paramResource: resRBACConfig, paramAction: actView, paramOwner: ownerModeNone},
+	},
+	// Audit-log admin section: virtual resource, admin only (bypass). No rows
+	// in the matrix — the page and the /audit/* routes are admin-only.
+	{
+		Name:   "audit.view",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resAudit, paramAction: actView, paramOwner: ownerModeNone},
 	},
 }
 

@@ -137,14 +137,15 @@ func (t *Tracer) GinSpan(name string) gin.HandlerFunc {
 }
 
 // SetUserOnSpan attaches the authenticated user attributes to the request's
-// root span (called by the auth middleware once the user is known).
-func SetUserOnSpan(c *gin.Context, userID int64, role string) {
+// root span (called by the auth middleware once the user is known); preset —
+// the user's assigned permission preset ("" — none).
+func SetUserOnSpan(c *gin.Context, userID int64, preset string) {
 	span, ok := FromGin(c)
 	if !ok {
 		return
 	}
 	span.SetAttributes(
 		attribute.Int64(AttrUserID, userID),
-		attribute.String(AttrUserRole, role),
+		attribute.String(AttrUserRole, preset),
 	)
 }

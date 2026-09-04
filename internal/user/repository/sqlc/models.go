@@ -80,7 +80,7 @@ type ProjectAutoCreate struct {
 	UpdatedAt time.Time       `json:"updated_at"`
 }
 
-type RbacRole struct {
+type RbacPreset struct {
 	ID          int64       `json:"id"`
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
@@ -89,9 +89,9 @@ type RbacRole struct {
 	DeletedAt   **time.Time `json:"deleted_at"`
 }
 
-type RbacRoleRule struct {
+type RbacPresetRule struct {
 	ID        int64       `json:"id"`
-	Role      string      `json:"role"`
+	Preset    string      `json:"preset"`
 	Resource  string      `json:"resource"`
 	Action    string      `json:"action"`
 	Scope     string      `json:"scope"`
@@ -179,7 +179,7 @@ type User struct {
 	LastName        string         `json:"last_name"`
 	FirstName       string         `json:"first_name"`
 	MiddleName      sql.NullString `json:"middle_name"`
-	Role            string         `json:"role"`
+	Preset          sql.NullString `json:"preset"`
 	Username        string         `json:"username"`
 	PasswordHash    string         `json:"password_hash"`
 	ManagerID       pgtype.Int8    `json:"manager_id"`
@@ -189,6 +189,19 @@ type User struct {
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       **time.Time    `json:"deleted_at"`
+}
+
+type UserPermission struct {
+	ID        int64       `json:"id"`
+	UserID    int64       `json:"user_id"`
+	Resource  string      `json:"resource"`
+	Action    string      `json:"action"`
+	Scope     string      `json:"scope"`
+	Granted   bool        `json:"granted"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	DeletedAt **time.Time `json:"deleted_at"`
+	UpdatedBy pgtype.Int8 `json:"updated_by"`
 }
 
 type UserState struct {

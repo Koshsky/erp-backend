@@ -6,6 +6,7 @@ package server
 import (
 	"github.com/google/wire"
 
+	"github.com/Koshsky/erp-backend/internal/audit"
 	"github.com/Koshsky/erp-backend/internal/auth"
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	"github.com/Koshsky/erp-backend/internal/config"
@@ -18,11 +19,13 @@ import (
 	"github.com/Koshsky/erp-backend/internal/policies"
 	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
+	rbacpolicyService "github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/internal/user"
+	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 )
 
 // InitializeApp builds the whole application dependency graph.
@@ -37,6 +40,7 @@ func InitializeApp() (*App, error) {
 		config.ProvideJWTConfig,
 		config.ProvideProfilingConfig,
 		config.ProvideRBACRefreshInterval,
+		config.ProvideAuditConfig,
 		idempotency.ProvideIdempotencyRepository,
 		idempotency.ProvideIdempotencyMiddleware,
 		jwt.ProvideJWTService,
@@ -45,6 +49,15 @@ func InitializeApp() (*App, error) {
 		policies.ProvideAll,
 		profiler.ProvideProfiler,
 		ProvideRBACData,
+		// The audit client consumes the user service to resolve the `user`
+		// filter (login/full name) and to enrich actor display names.
+		wire.Bind(new(audit.UserLookup), new(*userservice.UserService)),
+		// The auth middleware resolves the caller's current rights from the
+		// in-memory RBAC snapshot (PolicyStore) — no per-request DB call.
+		wire.Bind(new(authMw.PrincipalResolver), new(*rbacpolicyService.PolicyStore)),
+		// User mutations (preset/account changes) refresh the same snapshot
+		// immediately (TTL heals multi-instance).
+		wire.Bind(new(userservice.RBACReloader), new(*rbacpolicyService.PolicyStore)),
 
 		user.ProviderSet,
 		auth.ProviderSet,
@@ -53,6 +66,7 @@ func InitializeApp() (*App, error) {
 		timesheet.ProviderSet,
 		autocreate.ProviderSet,
 		rbacpolicy.ProviderSet,
+		audit.ProviderSet,
 
 		ProvideModules,
 		New,

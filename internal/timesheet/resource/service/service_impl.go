@@ -8,7 +8,6 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
-	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -35,18 +34,18 @@ func NewResourceService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 func (s *ResourceService) ListResources(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ResourceResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "resource.ListResources")
 	defer end(nil)
 
-	rows, err := s.repository.ListResources(ctx, userID, role, ownerID, limit, offset)
+	rows, err := s.repository.ListResources(ctx, userID, viewScope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountResources(ctx, userID, role, ownerID)
+	total, err := s.repository.CountResources(ctx, userID, viewScope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -163,7 +162,7 @@ func (s *ResourceService) AddMember(
 	resourceID int64,
 	userID int64,
 	actorID int64,
-	role string,
+	actorAdmin bool,
 ) error {
 	ctx, end := s.tracer.Start(ctx, "resource.AddMember")
 	defer end(nil)
@@ -175,7 +174,7 @@ func (s *ResourceService) AddMember(
 		return err
 	}
 
-	if role != userdomain.Admin && userID != actorID {
+	if !actorAdmin && userID != actorID {
 		managerID, err := s.repository.FindUserManager(ctx, userID)
 		if err != nil {
 			return err

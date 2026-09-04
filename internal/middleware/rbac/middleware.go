@@ -60,7 +60,7 @@ func (d Data) resolve(rsrc Resource) ResolveByID {
 	case ResourceComment:
 		return d.CommentOwners
 	case ResourceState, ResourceUserCatalog, ResourceRBACConfig,
-		ResourceUserAdmin, ResourceStateAdmin, ResourceOrgStructure:
+		ResourceUserAdmin, ResourceStateAdmin, ResourceOrgStructure, ResourceAudit:
 		// States and virtual resources have no owner.
 		return nil
 	default:

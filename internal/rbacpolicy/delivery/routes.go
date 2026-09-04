@@ -8,13 +8,13 @@ func (h *RBACHandler) RegisterRoutes(router *gin.RouterGroup) {
 	r := router.Group("/rbac")
 	r.Use(h.mw.Check("rbac.manage"))
 	{
-		r.GET("/roles", h.ListRoles)
-		r.POST("/roles", h.CreateRole)
-		r.PUT("/roles/:name", h.UpdateRole)
-		r.DELETE("/roles/:name", h.DeleteRole)
-		r.GET("/rules", h.ListRules)
-		r.PUT("/rules", h.UpsertRule)
-		r.DELETE("/rules/:id", h.DeleteRule)
+		r.GET("/presets", h.ListPresets)
+		r.POST("/presets", h.CreatePreset)
+		r.PUT("/presets/:name", h.UpdatePreset)
+		r.DELETE("/presets/:name", h.DeletePreset)
+		r.GET("/preset-rules", h.ListRules)
+		r.PUT("/preset-rules", h.UpsertRule)
+		r.DELETE("/preset-rules/:id", h.DeleteRule)
 		r.GET("/policies", h.ListRoutePolicies)
 		r.PUT("/policies", h.UpsertRoutePolicy)
 		r.DELETE("/policies/:name", h.DeleteRoutePolicy)
@@ -22,5 +22,7 @@ func (h *RBACHandler) RegisterRoutes(router *gin.RouterGroup) {
 		r.GET("/matrix", h.Matrix)
 		r.POST("/reset", h.Reset)
 		r.GET("/explain", h.Explain)
+		r.GET("/users/:id/permissions", h.ListUserPermissions)
+		r.PUT("/users/:id/permissions", h.ReplaceUserPermissions)
 	}
 }

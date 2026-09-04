@@ -23,5 +23,5 @@ type UserInfo struct {
 	FirstName  string  `json:"first_name"  example:"Иван"`
 	MiddleName *string `json:"middle_name" example:"Иванович"`
 	Username   string  `json:"username"    example:"ivanov"`
-	Role       string  `json:"role"        example:"rp"`
+	Preset     *string `json:"preset"      example:"rp"`
 }

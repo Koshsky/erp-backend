@@ -10,7 +10,6 @@ import (
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -83,12 +82,12 @@ func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
 func (r *TaskRepository) ListTasks(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Task, error) {
 	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceTask),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -104,11 +103,11 @@ func (r *TaskRepository) ListTasks(
 	return tasks, nil
 }
 
-func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, role string, ownerID int64) (int64, error) {
+func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error) {
 	return r.db.CountTasks(
 		ctx,
 		sqlc.CountTasksParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceTask),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},

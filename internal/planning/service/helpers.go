@@ -14,9 +14,9 @@ func getSlice[T any](m map[int64][]T, key int64) []T {
 	return []T{}
 }
 
-// loadProcesses loads processes for the given user ID and role.
-func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
-	processes, err := s.repository.ListProcesses(ctx, userID, role)
+// loadProcesses loads processes for the given user ID and view scope code.
+func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error) {
+	processes, err := s.repository.ListProcesses(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
 	}

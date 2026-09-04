@@ -6,10 +6,11 @@
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 -- =============================================
--- Runtime roles (the RBAC role catalog).
--- Created before users: users.role references rbac_roles(name).
+-- Permission presets (renamed from the RBAC role catalog): a named set of
+-- permissions assigned as the base rights of a user.
+-- Created before users: users.preset references rbac_presets(name).
 -- =============================================
-CREATE TABLE rbac_roles (
+CREATE TABLE rbac_presets (
     id          BIGSERIAL PRIMARY KEY,
     name        TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL DEFAULT '',
@@ -18,7 +19,7 @@ CREATE TABLE rbac_roles (
     deleted_at  TIMESTAMPTZ
 );
 
--- People (a single table). A worker is a user with the worker role; the worker's
+-- People (a single table). A worker is a user with the worker preset; the worker's
 -- profile (position, dates, manager) is stored directly on users.
 CREATE TABLE users (
 	id BIGSERIAL PRIMARY KEY,
@@ -26,8 +27,9 @@ CREATE TABLE users (
 	first_name TEXT NOT NULL,
 	-- Patronymic is optional.
 	middle_name TEXT DEFAULT NULL,
-	-- Role from the rbac_roles catalog (admin/dp/rp/vp/worker + runtime roles).
-	role TEXT NOT NULL REFERENCES rbac_roles(name),
+	-- Base permission preset from the rbac_presets catalog (admin/dp/rp/vp/worker
+	-- + runtime presets); NULL — no base rights (only individual user_permissions).
+	preset TEXT REFERENCES rbac_presets(name),
 	username TEXT NOT NULL,
 	password_hash TEXT NOT NULL,
 	-- The worker's manager (a user with the vp role); NULL for other roles.
@@ -224,12 +226,12 @@ CREATE TABLE task_comments (
 	deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- The rights matrix (rbac_role_rules) and route-policy definitions
+-- The rights matrix (rbac_preset_rules) and route-policy definitions
 -- (rbac_route_policies) are configured at runtime: the source of truth is the DB,
 -- while the engine (scope interpretation, kind registry) stays in code.
-CREATE TABLE rbac_role_rules (
+CREATE TABLE rbac_preset_rules (
     id          BIGSERIAL PRIMARY KEY,
-    role        TEXT NOT NULL REFERENCES rbac_roles(name),
+    preset      TEXT NOT NULL REFERENCES rbac_presets(name),
     resource    TEXT NOT NULL, -- project|process|task|milestone|assignment|state|resource|worker|comment|user_catalog|rbac_config
     action      TEXT NOT NULL, -- view|create|update|delete
     scope       TEXT NOT NULL, -- all|own|parent|ancestor
@@ -237,7 +239,25 @@ CREATE TABLE rbac_role_rules (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at  TIMESTAMPTZ,
     updated_by  BIGINT,        -- user who made the last change (from JWT)
-    UNIQUE (role, resource, action)
+    UNIQUE (preset, resource, action)
+);
+
+-- Per-user permission overrides: an explicit grant (granted=true, scope) or
+-- revoke (granted=false, scope ignored) that shadows the preset rule for the
+-- same (resource, action); no row — fall back to the assigned preset.
+-- Soft-deleted on replacement; unique per active (user_id, resource, action).
+CREATE TABLE user_permissions (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    resource    TEXT NOT NULL, -- same resource codes as rbac_preset_rules
+    action      TEXT NOT NULL, -- same action codes as rbac_preset_rules
+    scope       TEXT NOT NULL DEFAULT 'all', -- all|own|parent|ancestor (when granted)
+    granted     BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at  TIMESTAMPTZ,
+    updated_by  BIGINT,        -- user who made the last change (from JWT)
+    CHECK (NOT granted OR scope IN ('all', 'own', 'parent', 'ancestor'))
 );
 
 CREATE TABLE rbac_route_policies (

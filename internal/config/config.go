@@ -42,6 +42,7 @@ type Config struct {
 	Maintenance   MaintenanceConfig `yaml:"maintenance"`
 	Tracing       TracingConfig     `yaml:"tracing"`
 	RBAC          RBACConfig        `yaml:"rbac"`
+	Audit         AuditConfig       `yaml:"audit"`
 }
 
 // RBACConfig — runtime-RBAC settings (rules reload from the DB).
@@ -133,6 +134,20 @@ type TracingConfig struct {
 	ExporterEndpoint string  `yaml:"exporter_endpoint"`
 	ServiceName      string  `yaml:"service_name"`
 	SamplerRatio     float64 `yaml:"sampler_ratio"`
+}
+
+// AuditConfig — audit-log capture settings. Events are pushed to Grafana Loki
+// (the log-storage service) over its HTTP API.
+type AuditConfig struct {
+	Enabled bool `yaml:"enabled"`
+	// URL is the Grafana Loki base URL (in the docker network, e.g.
+	// http://loki:3100). No auth: Loki runs inside the app-network with
+	// auth_enabled disabled.
+	URL     string   `yaml:"url"`
+	Timeout Duration `yaml:"timeout"`
+	// Sync sends events synchronously inside the request (strict durability,
+	// slower); the default async mode buffers events and retries.
+	Sync bool `yaml:"sync"`
 }
 
 // RateLimitConfig is the per-client rate limiting settings.

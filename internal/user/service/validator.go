@@ -10,11 +10,11 @@ import (
 )
 
 // maxDayRange is the maximum calendar range width per request (in days).
-// maxRoleLen is the maximum role name length (RBAC catalog).
+// maxPresetLen is the maximum preset name length (RBAC catalog).
 const (
-	maxDayRange = 730
-	maxRoleLen  = 32
-	hoursPerDay = 24
+	maxDayRange  = 730
+	maxPresetLen = 32
+	hoursPerDay  = 24
 )
 
 type UserValidator struct {
@@ -31,14 +31,14 @@ func (v *UserValidator) ValidateUser(user *domain.User) error {
 	if err := v.ValidateRequiredText(user.Username, "username"); err != nil {
 		return err
 	}
-	// Roles are configured at runtime by the rbac_roles catalog (V15): here we
-	// only check the form; role existence is guaranteed by the FK
-	// users_role_fk (V17) — violations surface as 400 via mapUserErr.
-	if user.Role == "" {
-		return errors.NewFieldError("role", "required", "role is required")
-	}
-	if len(user.Role) > maxRoleLen {
-		return errors.NewFieldError("role", "too_long", "role is too long")
+	// Presets are configured at runtime by the rbac_presets catalog: here we
+	// only check the form (NULL — no base preset is allowed); preset existence
+	// is guaranteed by the FK users_preset_fk — violations surface as 400 via
+	// mapUserErr.
+	if user.Preset != nil {
+		if len(*user.Preset) > maxPresetLen {
+			return errors.NewFieldError("preset", "too_long", "preset is too long")
+		}
 	}
 	if user.ManagerID != nil {
 		if err := v.ValidatePositiveID(*user.ManagerID, "manager_id"); err != nil {

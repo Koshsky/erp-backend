@@ -79,7 +79,7 @@ func (m *ResourceMapper) ToMemberDTO(member *domain.ResourceMember) *dto.Resourc
 	return &dto.ResourceMemberResponse{
 		ID:              member.ID,
 		Name:            member.Name,
-		Role:            member.Role,
+		Preset:          member.Preset,
 		Position:        member.Position,
 		ManagerID:       member.ManagerID,
 		HireDate:        datePtr(member.HireDate),

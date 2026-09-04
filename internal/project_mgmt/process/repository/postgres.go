@@ -10,7 +10,6 @@ import (
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -83,12 +82,12 @@ func (r *ProcessRepository) DeleteProcess(ctx context.Context, id int64) error {
 func (r *ProcessRepository) ListProcesss(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Process, error) {
 	rows, err := r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceProcess),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -107,13 +106,13 @@ func (r *ProcessRepository) ListProcesss(
 func (r *ProcessRepository) CountProcesses(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 ) (int64, error) {
 	return r.db.CountProcesses(
 		ctx,
 		sqlc.CountProcessesParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceProcess),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},

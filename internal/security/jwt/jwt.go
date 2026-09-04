@@ -17,12 +17,11 @@ type Service struct {
 	issuer        string
 }
 
-// GenerateAccessToken generates a new JWT access token for the given user ID and role.
-func (s *Service) GenerateAccessToken(userID int64, role, email string) (string, error) {
+// GenerateAccessToken generates a new JWT access token for the given user ID.
+func (s *Service) GenerateAccessToken(userID int64, email string) (string, error) {
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,
-		Role:   role,
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),

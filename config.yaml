@@ -94,3 +94,16 @@ rbac:
   # Background reload interval for rules from Postgres (eventual consistency
   # between instances; local edits apply immediately).
   refresh_interval: 30s
+
+audit:
+  # Audit-log capture of all CRUD mutations + auth events. Events are pushed
+  # to Grafana Loki (the log-storage service) over its HTTP API; the admin
+  # page reads them back through GET /api/v1/audit/events.
+  enabled: true
+  # Loki base URL (docker network); native dev — http://localhost:3100.
+  # Loki runs inside the app-network with auth disabled (no tokens needed).
+  url: "http://loki:3100"
+  timeout: 10s
+  # sync: true — send events synchronously (strict, slower); false (default) —
+  # buffer and retry asynchronously without blocking the user request.
+  sync: false
