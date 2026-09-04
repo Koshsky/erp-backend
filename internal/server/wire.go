@@ -20,6 +20,7 @@ import (
 	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	rbacpolicyService "github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
+	"github.com/Koshsky/erp-backend/internal/security/hibp"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
@@ -41,6 +42,9 @@ func InitializeApp() (*App, error) {
 		config.ProvideProfilingConfig,
 		config.ProvideRBACRefreshInterval,
 		config.ProvideAuditConfig,
+		config.ProvideSecurityConfig,
+		// HIBP breach check for password changes; built from the security config.
+		hibp.ProvideChecker,
 		idempotency.ProvideIdempotencyRepository,
 		idempotency.ProvideIdempotencyMiddleware,
 		jwt.ProvideJWTService,

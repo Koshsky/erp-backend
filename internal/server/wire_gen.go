@@ -13,7 +13,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/auth/delivery"
 	repository9 "github.com/Koshsky/erp-backend/internal/auth/repository"
 	service3 "github.com/Koshsky/erp-backend/internal/auth/service"
-	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
+	"github.com/Koshsky/erp-backend/internal/auto_create"
 	delivery13 "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
 	repository13 "github.com/Koshsky/erp-backend/internal/auto_create/repository"
 	service14 "github.com/Koshsky/erp-backend/internal/auto_create/service"
@@ -28,7 +28,7 @@ import (
 	repository10 "github.com/Koshsky/erp-backend/internal/planning/repository"
 	service4 "github.com/Koshsky/erp-backend/internal/planning/service"
 	"github.com/Koshsky/erp-backend/internal/policies"
-	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt"
 	delivery8 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/delivery"
 	repository5 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	service9 "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/service"
@@ -36,7 +36,7 @@ import (
 	repository8 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
 	service10 "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/service"
 	delivery7 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/delivery"
-	postgres "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	service8 "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/service"
 	delivery6 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/delivery"
 	repository3 "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
@@ -51,6 +51,7 @@ import (
 	delivery14 "github.com/Koshsky/erp-backend/internal/rbacpolicy/delivery"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
+	"github.com/Koshsky/erp-backend/internal/security/hibp"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
@@ -114,7 +115,9 @@ func InitializeApp() (*App, error) {
 	idempotencyRepository := idempotency.ProvideIdempotencyRepository(pool)
 	idempotencyMiddleware := idempotency.ProvideIdempotencyMiddleware(idempotencyRepository, slogLogger, tracer)
 	auditConfig := config.ProvideAuditConfig(configConfig)
-	userService := service2.NewUserService(slogLogger, tracer, userRepository, policyStore)
+	securityConfig := config.ProvideSecurityConfig(configConfig)
+	checker := hibp.ProvideChecker(securityConfig)
+	userService := service2.NewUserService(slogLogger, tracer, userRepository, policyStore, checker)
 	client := audit.NewClient(slogLogger, auditConfig, userService)
 	sender := audit.NewSender(slogLogger, client, auditConfig)
 	auditMiddleware := audit.NewMiddleware(slogLogger, auditConfig, sender)
