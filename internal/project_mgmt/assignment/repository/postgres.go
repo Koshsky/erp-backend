@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
@@ -94,12 +93,12 @@ func (r *AssignmentRepository) DeleteAssignment(ctx context.Context, id int64) e
 func (r *AssignmentRepository) ListAssignments(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Assignment, error) {
 	rows, err := r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceAssignment),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -118,13 +117,13 @@ func (r *AssignmentRepository) ListAssignments(
 func (r *AssignmentRepository) CountAssignments(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 ) (int64, error) {
 	return r.db.CountAssignments(
 		ctx,
 		sqlc.CountAssignmentsParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceAssignment),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},

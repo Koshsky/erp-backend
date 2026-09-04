@@ -264,7 +264,7 @@ func buildEntity(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 // noOwnerCheck — matrix check for a resource without owners (state, virtual ones).
 func noOwnerCheck(res rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
-		if !Authorize(rc.User.Role, res, act, rbac.Owners{}, rc.User.ID) {
+		if !AuthorizeUser(rc.User, res, act, rbac.Owners{}, rc.User.ID) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -331,7 +331,7 @@ func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		if ownerID == 0 && defaultSelf {
 			ownerID = rc.User.ID
 		}
-		if !Authorize(rc.User.Role, res, ActionCreate, makeOwners(ownerID), rc.User.ID) {
+		if !AuthorizeUser(rc.User, res, ActionCreate, makeOwners(ownerID), rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -443,12 +443,12 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if !Authorize(rc.User.Role, spec.res, spec.act, primaryOwners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, spec.res, spec.act, primaryOwners, rc.User.ID) {
 			return errors.Forbidden(
 				"недостаточно прав: действие доступно владельцу родительского элемента (или администратору)",
 			)
 		}
-		if slices.Contains(spec.exemptRoles, rc.User.Role) {
+		if slices.Contains(spec.exemptRoles, rc.User.Preset) {
 			return nil
 		}
 		compareID, bodyErr := rc.BodyID(spec.compareFrom)
@@ -510,7 +510,7 @@ func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		if owners.Owner != 0 && owners.Owner == rc.User.ID {
 			return nil // the author deletes their own
 		}
-		if !Authorize(rc.User.Role, rightRes, rightAct, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, rightRes, rightAct, owners, rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -561,7 +561,7 @@ func buildParentAction(params map[string]any) (func(*rbac.CheckCtx) error, error
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if !Authorize(rc.User.Role, res, act, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, res, act, owners, rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -590,7 +590,7 @@ func CommentDeleteCheck() func(*rbac.CheckCtx) error {
 // ListCheck — the standard listing rule (see buildList).
 func ListCheck(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
-		scope := scopeFor(rc.User.Role, rsrc, ActionView)
+		scope := scopeForUser(rc.User, rsrc, ActionView)
 		if scope == ScopeNone {
 			return errors.ErrForbidden
 		}
@@ -632,7 +632,7 @@ func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 		if err != nil {
 			return err
 		}
-		if !Authorize(rc.User.Role, rsrc, act, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, rsrc, act, owners, rc.User.ID) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -646,7 +646,7 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 		if err != nil {
 			return err
 		}
-		if !Authorize(rc.User.Role, rsrc, ActionCreate, owners, rc.User.ID) {
+		if !AuthorizeUser(rc.User, rsrc, ActionCreate, owners, rc.User.ID) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -805,7 +805,7 @@ var defaultRouteSpecs = []RouteSpec{
 		paramResource: resAssignment, paramAction: actCreate,
 		paramPrimaryResource: resTask, paramPrimaryFrom: bodyKeyTaskID,
 		paramCompareResource: resResource, paramCompareFrom: bodyKeyResourceID,
-		paramExemptRoles: []string{userdomain.Admin},
+		paramExemptRoles: []string{userdomain.PresetAdmin},
 	}},
 	{
 		Name:   "assignment.update",

@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -67,7 +66,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 		FirstName:       user.FirstName,
 		MiddleName:      nullable.ToString(user.MiddleName),
 		Username:        user.Username,
-		Role:            user.Role,
+		Preset:          nullable.ToString(user.Preset),
 		PasswordHash:    user.PasswordHash,
 		ManagerID:       nullable.ToInt8(user.ManagerID),
 		Position:        user.Position,
@@ -76,6 +75,57 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 	})
 	if err != nil {
 		return nil, mapUserErr(err)
+	}
+
+	mapped := mapUser(row)
+	return &mapped, nil
+}
+
+// CreateUserWithPermissions creates the user and its individual permission
+// overrides in a single transaction (the account and its rights appear
+// together; on any error nothing is persisted).
+func (r *UserRepository) CreateUserWithPermissions(
+	ctx context.Context,
+	user domain.User,
+	perms []domain.UserPermission,
+	updatedBy int64,
+) (*domain.User, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := sqlc.New(tx)
+	row, err := q.CreateUser(ctx, sqlc.CreateUserParams{
+		LastName:        user.LastName,
+		FirstName:       user.FirstName,
+		MiddleName:      nullable.ToString(user.MiddleName),
+		Username:        user.Username,
+		Preset:          nullable.ToString(user.Preset),
+		PasswordHash:    user.PasswordHash,
+		ManagerID:       nullable.ToInt8(user.ManagerID),
+		Position:        user.Position,
+		HireDate:        toDate(user.HireDate),
+		TerminationDate: toDate(user.TerminationDate),
+	})
+	if err != nil {
+		return nil, mapUserErr(err)
+	}
+	for _, p := range perms {
+		if err = q.InsertUserPermission(ctx, sqlc.InsertUserPermissionParams{
+			UserID:    row.ID,
+			Resource:  p.Resource,
+			Action:    p.Action,
+			Scope:     p.Scope,
+			Granted:   p.Granted,
+			UpdatedBy: nullable.ToInt8(&updatedBy),
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return nil, err
 	}
 
 	mapped := mapUser(row)
@@ -99,7 +149,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 		FirstName:       user.FirstName,
 		MiddleName:      nullable.ToString(user.MiddleName),
 		Username:        user.Username,
-		Role:            user.Role,
+		Preset:          nullable.ToString(user.Preset),
 		PasswordHash:    user.PasswordHash,
 		ManagerID:       nullable.ToInt8(user.ManagerID),
 		Position:        user.Position,
@@ -117,18 +167,18 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 func (r *UserRepository) ListUsers(
 	ctx context.Context,
 	userID int64,
-	role string,
-	roleFilter string,
+	viewScope string,
+	presetFilter string,
 	managerID int64,
 	limit, offset int,
 ) ([]domain.User, error) {
 	rows, err := r.db.ListUsers(ctx, sqlc.ListUsersParams{
-		RoleFilter: roleFilter,
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceWorker),
-		UserID:     userID,
-		ManagerID:  managerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		PresetFilter: presetFilter,
+		ScopeView:    viewScope,
+		UserID:       userID,
+		ManagerID:    managerID,
+		PageLimit:    int64(limit),
+		PageOffset:   int64(offset),
 	})
 	if err != nil {
 		return nil, err
@@ -144,15 +194,15 @@ func (r *UserRepository) ListUsers(
 func (r *UserRepository) CountUsers(
 	ctx context.Context,
 	userID int64,
-	role string,
-	roleFilter string,
+	viewScope string,
+	presetFilter string,
 	managerID int64,
 ) (int64, error) {
 	return r.db.CountUsers(ctx, sqlc.CountUsersParams{
-		RoleFilter: roleFilter,
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceWorker),
-		UserID:     userID,
-		ManagerID:  managerID,
+		PresetFilter: presetFilter,
+		ScopeView:    viewScope,
+		UserID:       userID,
+		ManagerID:    managerID,
 	})
 }
 
@@ -390,7 +440,7 @@ func mapUser(row sqlc.User) domain.User {
 		LastName:        row.LastName,
 		FirstName:       row.FirstName,
 		MiddleName:      nullable.StringPtr(row.MiddleName),
-		Role:            row.Role,
+		Preset:          nullable.StringPtr(row.Preset),
 		Username:        row.Username,
 		PasswordHash:    row.PasswordHash,
 		ManagerID:       nullable.Int64Ptr(row.ManagerID),

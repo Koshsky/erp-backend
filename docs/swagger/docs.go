@@ -2625,8 +2625,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Role",
-                        "name": "role",
+                        "description": "Preset",
+                        "name": "preset",
                         "in": "query",
                         "required": true
                     },
@@ -2916,239 +2916,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/rbac/reset": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Reset policies to defaults",
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/rbac/roles": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "List roles",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/domain.Role"
-                                            }
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Create a role",
-                "parameters": [
-                    {
-                        "description": "Role",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RoleUpsertInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/domain.Role"
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/rbac/roles/{name}": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Update a role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Role name",
-                        "name": "name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Role",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RoleUpdateInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/domain.Role"
-                                        },
-                                        "error": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ErrorResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBAC"
-                ],
-                "summary": "Delete a role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Role name",
-                        "name": "name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/rbac/rules": {
+        "/rbac/preset-rules": {
             "get": {
                 "security": [
                     {
@@ -3176,7 +2944,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.RuleView"
+                                                "$ref": "#/definitions/dto.PresetRuleView"
                                             }
                                         },
                                         "error": {
@@ -3212,7 +2980,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RuleInput"
+                            "$ref": "#/definitions/dto.PresetRuleInput"
                         }
                     }
                 ],
@@ -3228,7 +2996,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.RuleView"
+                                            "$ref": "#/definitions/dto.PresetRuleView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -3259,7 +3027,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/rbac/rules/{id}": {
+        "/rbac/preset-rules/{id}": {
             "delete": {
                 "security": [
                     {
@@ -3282,6 +3050,380 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/rbac/presets": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "List presets",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Preset"
+                                            }
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Create a preset",
+                "parameters": [
+                    {
+                        "description": "Preset",
+                        "name": "preset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PresetUpsertInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.Preset"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/rbac/presets/{name}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Update a preset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Preset name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Preset",
+                        "name": "preset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PresetUpdateInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.Preset"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Delete a preset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Preset name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/rbac/reset": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Reset policies to defaults",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/rbac/users/{id}/permissions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "User permissions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserPermissionsView"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RBAC"
+                ],
+                "summary": "Replace user permissions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Permissions",
+                        "name": "perms",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserPermissionsInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserPermissionsInput"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
                     }
                 }
             }
@@ -5339,8 +5481,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by role (e.g. worker)",
-                        "name": "role",
+                        "description": "Filter by preset (e.g. worker)",
+                        "name": "preset",
                         "in": "query"
                     },
                     {
@@ -6385,7 +6527,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Role": {
+        "domain.Preset": {
             "type": "object",
             "properties": {
                 "description": {
@@ -6454,7 +6596,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -6936,11 +7078,18 @@ const docTemplate = `{
                     "type": "string",
                     "example": ""
                 },
+                "permissions": {
+                    "description": "Individual permission overrides created together with the user\n(admin-only, same validation as /rbac/users/{id}/permissions).",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserPermissionInput"
+                    }
+                },
                 "position": {
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -7144,10 +7293,10 @@ const docTemplate = `{
                 "action": {
                     "type": "string"
                 },
-                "resource": {
+                "preset": {
                     "type": "string"
                 },
-                "role": {
+                "resource": {
                     "type": "string"
                 },
                 "scope": {
@@ -7229,6 +7378,109 @@ const docTemplate = `{
                 "scope": {
                     "type": "string",
                     "example": "own"
+                }
+            }
+        },
+        "dto.PermissionOverride": {
+            "type": "object",
+            "required": [
+                "action",
+                "resource"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "view"
+                },
+                "granted": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "resource": {
+                    "type": "string",
+                    "example": "task"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "parent"
+                }
+            }
+        },
+        "dto.PresetRuleInput": {
+            "type": "object",
+            "required": [
+                "action",
+                "preset",
+                "resource",
+                "scope"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "update"
+                },
+                "preset": {
+                    "type": "string",
+                    "example": "vp"
+                },
+                "resource": {
+                    "type": "string",
+                    "example": "task"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "parent"
+                }
+            }
+        },
+        "dto.PresetRuleView": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "preset": {
+                    "type": "string"
+                },
+                "resource": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "updated_by": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PresetUpdateInput": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                }
+            }
+        },
+        "dto.PresetUpsertInput": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "auditor"
                 }
             }
         },
@@ -7583,7 +7835,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -7620,31 +7872,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Монтажник"
-                }
-            }
-        },
-        "dto.RoleUpdateInput": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Внешний аудит"
-                }
-            }
-        },
-        "dto.RoleUpsertInput": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Внешний аудит"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "auditor"
                 }
             }
         },
@@ -7687,59 +7914,6 @@ const docTemplate = `{
                 "params": {
                     "type": "object",
                     "additionalProperties": {}
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "updated_by": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dto.RuleInput": {
-            "type": "object",
-            "required": [
-                "action",
-                "resource",
-                "role",
-                "scope"
-            ],
-            "properties": {
-                "action": {
-                    "type": "string",
-                    "example": "update"
-                },
-                "resource": {
-                    "type": "string",
-                    "example": "task"
-                },
-                "role": {
-                    "type": "string",
-                    "example": "vp"
-                },
-                "scope": {
-                    "type": "string",
-                    "example": "parent"
-                }
-            }
-        },
-        "dto.RuleView": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "resource": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "scope": {
-                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
@@ -8061,7 +8235,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },
@@ -8099,13 +8273,81 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Иванов Иван Иванович"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "rp"
                 },
                 "username": {
                     "type": "string",
                     "example": "ivanov"
+                }
+            }
+        },
+        "dto.UserPermissionInput": {
+            "type": "object",
+            "required": [
+                "action",
+                "resource"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "view"
+                },
+                "granted": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "resource": {
+                    "type": "string",
+                    "example": "task"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "parent"
+                }
+            }
+        },
+        "dto.UserPermissionsInput": {
+            "type": "object",
+            "properties": {
+                "overrides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionOverride"
+                    }
+                }
+            }
+        },
+        "dto.UserPermissionsView": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "type": "boolean"
+                },
+                "effective": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Permission"
+                    }
+                },
+                "overrides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionOverride"
+                    }
+                },
+                "preset": {
+                    "type": "string"
+                },
+                "preset_scope": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Permission"
+                    }
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -8146,7 +8388,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Инженер 2 категории"
                 },
-                "role": {
+                "preset": {
                     "type": "string",
                     "example": "worker"
                 },

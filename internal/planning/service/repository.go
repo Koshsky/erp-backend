@@ -7,9 +7,9 @@ import (
 )
 
 type PlanningRepository interface {
-	ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error)
+	ListProjects(ctx context.Context, userID int64, viewScope string) ([]dto.Project, error)
 	ListProjectsByIDs(ctx context.Context, ids []int64) ([]dto.Project, error)
-	ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error)
+	ListProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error)
 	ListResources(ctx context.Context) ([]dto.Resource, error)
 
 	ListProcessesByProjectIDs(ctx context.Context, projectIDs []int64) (map[int64][]dto.Process, error)

@@ -7,10 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
@@ -28,10 +26,10 @@ func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRep
 	}
 }
 
-func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, role string) ([]dto.Project, error) {
+func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, viewScope string) ([]dto.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
 		UserID:    userID,
-		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProject),
+		ScopeView: viewScope,
 	})
 	if err != nil {
 		return nil, err
@@ -75,10 +73,10 @@ func (r *PlanningRepository) ListProjectsByIDs(ctx context.Context, ids []int64)
 }
 
 // ListProcesses — process-scoped list (process.view matrix).
-func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, role string) ([]dto.Process, error) {
+func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error) {
 	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
 		UserID:    userID,
-		ScopeView: policies.ViewScopeCode(role, rbac.ResourceProcess),
+		ScopeView: viewScope,
 	})
 	if err != nil {
 		return nil, err

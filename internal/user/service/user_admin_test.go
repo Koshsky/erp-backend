@@ -4,18 +4,21 @@ package service
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 // stubRepo is a minimal UserRepository for the user-admin rule tests.
 type stubRepo struct {
-	users map[int64]*userdomain.User
+	users      map[int64]*userdomain.User
+	adminCount int64
 }
 
 func newStubRepo(users ...*userdomain.User) *stubRepo {
@@ -23,6 +26,11 @@ func newStubRepo(users ...*userdomain.User) *stubRepo {
 	for _, u := range users {
 		if u != nil {
 			r.users[u.ID] = u
+		}
+	}
+	for _, u := range r.users {
+		if u.PresetName() == userdomain.PresetAdmin {
+			r.adminCount++
 		}
 	}
 	return r
@@ -35,6 +43,15 @@ func (r *stubRepo) CreateUser(_ context.Context, user userdomain.User) (*userdom
 	}
 	r.users[created.ID] = &created
 	return &created, nil
+}
+
+func (r *stubRepo) CreateUserWithPermissions(
+	_ context.Context,
+	user userdomain.User,
+	_ []userdomain.UserPermission,
+	_ int64,
+) (*userdomain.User, error) {
+	return r.CreateUser(context.Background(), user)
 }
 
 func (r *stubRepo) FindUser(_ context.Context, id int64) (*userdomain.User, error) {
@@ -80,7 +97,10 @@ func (r *stubRepo) ListUsers(
 	return nil, nil
 }
 
-func (r *stubRepo) CountUsers(_ context.Context, _ int64, _ string, _ string, _ int64) (int64, error) {
+func (r *stubRepo) CountUsers(_ context.Context, _ int64, _ string, presetFilter string, _ int64) (int64, error) {
+	if presetFilter == userdomain.PresetAdmin {
+		return r.adminCount, nil
+	}
 	return 0, nil
 }
 
@@ -105,51 +125,122 @@ func newStubService(repo *stubRepo) *UserService {
 	}
 }
 
+// vp is a non-admin caller principal (the vp preset).
+func vp(userID int64) userctx.UserContext {
+	return userctx.UserContext{ID: userID, Preset: "vp", Admin: false}
+}
+
+// admin is an admin caller principal.
+func admin(userID int64) userctx.UserContext {
+	return userctx.UserContext{ID: userID, Preset: "admin", Admin: true}
+}
+
+// presetPtr returns a pointer to a preset code.
+func presetPtr(p string) *string {
+	return &p
+}
+
 // Creating a user is covered by the grantable user_admin.create right, but
-// role assignment stays admin-only: non-admin callers may only create workers
-// (an empty role defaults to worker). Prevents privilege escalation through
+// preset assignment stays admin-only: non-admin callers may only create workers
+// (a missing preset defaults to worker). Prevents privilege escalation through
 // the now-grantable create endpoint.
-func TestCreateUserRoleRule(t *testing.T) {
+func TestCreateUserPresetRule(t *testing.T) {
 	t.Parallel()
 	svc := newStubService(newStubRepo())
 	req := dto.CreateUserRequest{
 		LastName: "И", FirstName: "И", Username: "u1", PasswordHash: "hash",
 	}
 
-	for _, role := range []string{
-		userdomain.ProjectDirector, userdomain.ProjectManager, userdomain.Admin,
+	for _, preset := range []string{
+		userdomain.PresetProjectDirector, userdomain.PresetProjectManager, userdomain.PresetAdmin,
 	} {
 		r := req
-		r.Role = role
+		r.Preset = presetPtr(preset)
 		if _, loopErr := svc.CreateUserWithCreds(
-			context.Background(), r, userdomain.ProcessOwner,
+			context.Background(), r, vp(10),
 		); !errors.IsForbidden(loopErr) {
-			t.Errorf("не-админ создаёт роль %q: err=%v; want forbidden", role, loopErr)
+			t.Errorf("не-админ назначает пресет %q: err=%v; want forbidden", preset, loopErr)
 		}
 	}
 
 	empty := req
-	empty.Role = ""
-	created, createErr := svc.CreateUserWithCreds(context.Background(), empty, userdomain.ProcessOwner)
+	created, createErr := svc.CreateUserWithCreds(context.Background(), empty, vp(10))
 	if createErr != nil {
-		t.Fatalf("не-админ с пустой ролью: %v; want default worker", createErr)
+		t.Fatalf("не-админ без пресета: %v; want default worker", createErr)
 	}
-	if created.User.Role != userdomain.Worker {
-		t.Errorf("пустая роль: got %q; want worker", created.User.Role)
+	if presetName(created.User.Preset) != userdomain.PresetWorker {
+		t.Errorf("пустой пресет: got %q; want worker", presetName(created.User.Preset))
 	}
 
 	worker := req
-	worker.Role = userdomain.Worker
+	worker.Preset = presetPtr(userdomain.PresetWorker)
 	if _, wErr := svc.CreateUserWithCreds(
-		context.Background(), worker, userdomain.ProcessOwner,
+		context.Background(), worker, vp(10),
 	); wErr != nil {
 		t.Errorf("не-админ создаёт worker: %v; want ok", wErr)
 	}
 
-	admin := req
-	admin.Role = userdomain.Admin
-	if _, aErr := svc.CreateUserWithCreds(context.Background(), admin, userdomain.Admin); aErr != nil {
+	adminReq := req
+	adminReq.Preset = presetPtr(userdomain.PresetAdmin)
+	if _, aErr := svc.CreateUserWithCreds(context.Background(), adminReq, admin(1)); aErr != nil {
 		t.Errorf("админ создаёт админа: %v; want ok", aErr)
+	}
+}
+
+// Admin may create a user with individual overrides in one call; a non-admin
+// cannot, and invalid overrides are rejected.
+func TestCreateUserWithPermissions(t *testing.T) {
+	t.Parallel()
+	svc := newStubService(newStubRepo())
+	req := dto.CreateUserRequest{
+		LastName: "И", FirstName: "И", Username: "u1", PasswordHash: "hash",
+		Preset: presetPtr(userdomain.PresetWorker),
+		Permissions: []dto.UserPermissionInput{
+			{Resource: "project", Action: "view", Scope: "own", Granted: true},
+			{Resource: "task", Action: "delete", Granted: false},
+		},
+	}
+
+	// Non-admin with permissions -> forbidden.
+	if _, err := svc.CreateUserWithCreds(context.Background(), req, vp(10)); !errors.IsForbidden(err) {
+		t.Errorf("не-админ с правами при создании: err=%v; want forbidden", err)
+	}
+
+	// Admin with valid overrides -> ok.
+	r := req
+	created, err := svc.CreateUserWithCreds(context.Background(), r, admin(1))
+	if err != nil {
+		t.Fatalf("админ с правами при создании: %v; want ok", err)
+	}
+	if presetName(created.User.Preset) != userdomain.PresetWorker {
+		t.Errorf("пресет созданного: got %q; want worker", presetName(created.User.Preset))
+	}
+
+	// Invalid resource -> bad request.
+	bad := req
+	bad.Permissions = []dto.UserPermissionInput{{Resource: "no_such", Action: "view", Scope: "all", Granted: true}}
+	if _, berr := svc.CreateUserWithCreds(
+		context.Background(),
+		bad,
+		admin(1),
+	); berr == nil ||
+		errors.StatusCode(berr) != http.StatusBadRequest {
+		t.Errorf("неверный ресурс: err=%v; want bad request", berr)
+	}
+
+	// Duplicate (resource/action) -> bad request.
+	dup := req
+	dup.Permissions = []dto.UserPermissionInput{
+		{Resource: "project", Action: "view", Scope: "own", Granted: true},
+		{Resource: "project", Action: "view", Scope: "all", Granted: true},
+	}
+	if _, derr := svc.CreateUserWithCreds(
+		context.Background(),
+		dup,
+		admin(1),
+	); derr == nil ||
+		errors.StatusCode(derr) != http.StatusBadRequest {
+		t.Errorf("дубликат права: err=%v; want bad request", derr)
 	}
 }
 
@@ -158,8 +249,20 @@ func TestCreateUserRoleRule(t *testing.T) {
 func TestUpdateManagerGrantable(t *testing.T) {
 	t.Parallel()
 	repo := newStubRepo(
-		&userdomain.User{ID: 1, Username: "vp1", LastName: "В", FirstName: "П", Role: userdomain.ProcessOwner},
-		&userdomain.User{ID: 2, Username: "w2", LastName: "Р", FirstName: "а", Role: userdomain.Worker},
+		&userdomain.User{
+			ID:        1,
+			Username:  "vp1",
+			LastName:  "В",
+			FirstName: "П",
+			Preset:    presetPtr(userdomain.PresetProcessOwner),
+		},
+		&userdomain.User{
+			ID:        2,
+			Username:  "w2",
+			LastName:  "Р",
+			FirstName: "а",
+			Preset:    presetPtr(userdomain.PresetWorker),
+		},
 	)
 	svc := newStubService(repo)
 
@@ -185,18 +288,31 @@ func TestUpdateManagerGrantable(t *testing.T) {
 }
 
 // UpdateUser: non-admin honors manager_id in the body (user_admin.update), but
-// a role change stays admin-only (escalation protection).
-func TestUpdateUserManagerAndRole(t *testing.T) {
+// a preset change stays admin-only (escalation protection); the last active
+// admin cannot be demoted.
+func TestUpdateUserManagerAndPreset(t *testing.T) {
 	t.Parallel()
 	repo := newStubRepo(
-		&userdomain.User{ID: 1, Username: "vp1", LastName: "В", FirstName: "П", Role: userdomain.ProcessOwner},
-		&userdomain.User{ID: 2, Username: "w2", LastName: "Р", FirstName: "а", Role: userdomain.Worker},
+		&userdomain.User{
+			ID:        1,
+			Username:  "vp1",
+			LastName:  "В",
+			FirstName: "П",
+			Preset:    presetPtr(userdomain.PresetProcessOwner),
+		},
+		&userdomain.User{
+			ID:        2,
+			Username:  "w2",
+			LastName:  "Р",
+			FirstName: "а",
+			Preset:    presetPtr(userdomain.PresetWorker),
+		},
 	)
 	svc := newStubService(repo)
 
 	mgr := int64(1)
 	if _, err := svc.UpdateUser(
-		context.Background(), 2, dto.UpdateUserRequest{ManagerID: &mgr}, userdomain.ProcessOwner, 99,
+		context.Background(), 2, dto.UpdateUserRequest{ManagerID: &mgr}, vp(99), 99,
 	); err != nil {
 		t.Fatalf("manager_id в теле от не-админа: %v; want ok", err)
 	}
@@ -204,19 +320,55 @@ func TestUpdateUserManagerAndRole(t *testing.T) {
 		t.Errorf("manager_id не применён: got %v; want %d", got, mgr)
 	}
 
-	role := userdomain.ProjectManager
+	preset := userdomain.PresetProjectManager
 	if _, err := svc.UpdateUser(
-		context.Background(), 2, dto.UpdateUserRequest{Role: &role}, userdomain.ProcessOwner, 99,
+		context.Background(), 2, dto.UpdateUserRequest{Preset: &preset}, vp(99), 99,
 	); !errors.IsForbidden(err) {
-		t.Errorf("смена роли не-админом: err=%v; want forbidden", err)
+		t.Errorf("смена пресета не-админом: err=%v; want forbidden", err)
 	}
 
 	if _, err := svc.UpdateUser(
-		context.Background(), 2, dto.UpdateUserRequest{Role: &role}, userdomain.Admin, 99,
+		context.Background(), 2, dto.UpdateUserRequest{Preset: &preset}, admin(1), 99,
 	); err != nil {
-		t.Fatalf("смена роли админом: %v; want ok", err)
+		t.Fatalf("смена пресета админом: %v; want ok", err)
 	}
-	if repo.users[2].Role != role {
-		t.Errorf("роль не применена: got %q; want %q", repo.users[2].Role, role)
+	if presetName(repo.users[2].Preset) != preset {
+		t.Errorf("пресет не применён: got %q; want %q", presetName(repo.users[2].Preset), preset)
+	}
+}
+
+// The last active admin cannot be demoted (preset change guard).
+func TestUpdateUserLastAdminGuard(t *testing.T) {
+	t.Parallel()
+	repo := newStubRepo(
+		&userdomain.User{
+			ID:        1,
+			Username:  "a1",
+			LastName:  "Ад",
+			FirstName: "м",
+			Preset:    presetPtr(userdomain.PresetAdmin),
+		},
+		&userdomain.User{
+			ID:        2,
+			Username:  "w2",
+			LastName:  "Р",
+			FirstName: "а",
+			Preset:    presetPtr(userdomain.PresetWorker),
+		},
+	)
+	svc := newStubService(repo)
+
+	preset := userdomain.PresetWorker
+	if _, err := svc.UpdateUser(
+		context.Background(), 1, dto.UpdateUserRequest{Preset: &preset}, admin(1), 1,
+	); !errors.IsValidationError(err) {
+		t.Errorf("снятие последнего админа самим себе: err=%v; want validation", err)
+	}
+
+	// A different admin may not demote the last admin either.
+	if _, err := svc.UpdateUser(
+		context.Background(), 1, dto.UpdateUserRequest{Preset: &preset}, admin(7), 7,
+	); !errors.IsValidationError(err) {
+		t.Errorf("снятие последнего админа другим админом: err=%v; want validation", err)
 	}
 }

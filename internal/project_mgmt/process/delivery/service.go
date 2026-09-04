@@ -10,7 +10,7 @@ type ProcessService interface {
 	ListProcesses(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]dto.ProcessResponse, int64, error)

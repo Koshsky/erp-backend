@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -87,12 +86,12 @@ func (r *ProjectRepository) DeleteProject(ctx context.Context, id int64) error {
 func (r *ProjectRepository) ListProjects(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]domain.Project, error) {
 	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
-		ScopeView:  policies.ViewScopeCode(role, rbac.ResourceProject),
+		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -111,13 +110,13 @@ func (r *ProjectRepository) ListProjects(
 func (r *ProjectRepository) CountProjects(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 ) (int64, error) {
 	return r.db.CountProjects(
 		ctx,
 		sqlc.CountProjectsParams{
-			ScopeView: policies.ViewScopeCode(role, rbac.ResourceProject),
+			ScopeView: viewScope,
 			UserID:    userID,
 			OwnerID:   ownerID,
 		},

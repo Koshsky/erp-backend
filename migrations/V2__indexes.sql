@@ -12,6 +12,10 @@ CREATE UNIQUE INDEX idx_processes_project_sort_order
 ON processes(project_id, sort_order) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX idx_tasks_process_sort_order
 ON tasks(process_id, sort_order) WHERE deleted_at IS NULL;
+-- Per-user permission overrides: one active (resource, action) pair per user;
+-- soft-deleted rows do not block re-granting the same pair.
+CREATE UNIQUE INDEX idx_user_permissions_active
+ON user_permissions(user_id, resource, action) WHERE deleted_at IS NULL;
 
 -- =============================================
 -- 2. INDICES FOR Foreign Keys

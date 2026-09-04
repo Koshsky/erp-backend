@@ -25,13 +25,14 @@ const (
 	actResetPassword = "reset_password"
 	actSetDays       = "set_days"
 	actDeleteDays    = "delete_days"
-	actCreateRole    = "create_role"
-	actUpdateRole    = "update_role"
-	actDeleteRole    = "delete_role"
-	actUpsertRule    = "upsert_rule"
-	actDeleteRule    = "delete_rule"
+	actCreateRole    = "create_preset"
+	actUpdateRole    = "update_preset"
+	actDeleteRole    = "delete_preset"
+	actUpsertRule    = "upsert_preset_rule"
+	actDeleteRule    = "delete_preset_rule"
 	actUpsertPolicy  = "upsert_policy"
 	actDeletePolicy  = "delete_policy"
+	actReplacePerms  = "replace_user_permissions"
 	actReset         = "reset"
 )
 
@@ -112,14 +113,15 @@ var routeClasses = map[string]routeClass{
 	"PUT /api/v1/auto-create/config": {entity: entAutoCreate, action: actUpdate},
 
 	// ---- RBAC admin ----
-	"POST /api/v1/rbac/roles":            {entity: entRBAC, action: actCreateRole},
-	"PUT /api/v1/rbac/roles/:name":       {entity: entRBAC, action: actUpdateRole},
-	"DELETE /api/v1/rbac/roles/:name":    {entity: entRBAC, action: actDeleteRole},
-	"PUT /api/v1/rbac/rules":             {entity: entRBAC, action: actUpsertRule},
-	"DELETE /api/v1/rbac/rules/:id":      {entity: entRBAC, action: actDeleteRule, idParam: "id"},
-	"PUT /api/v1/rbac/policies":          {entity: entRBAC, action: actUpsertPolicy},
-	"DELETE /api/v1/rbac/policies/:name": {entity: entRBAC, action: actDeletePolicy},
-	"POST /api/v1/rbac/reset":            {entity: entRBAC, action: actReset},
+	"POST /api/v1/rbac/presets":              {entity: entRBAC, action: actCreateRole},
+	"PUT /api/v1/rbac/presets/:name":         {entity: entRBAC, action: actUpdateRole},
+	"DELETE /api/v1/rbac/presets/:name":      {entity: entRBAC, action: actDeleteRole},
+	"PUT /api/v1/rbac/preset-rules":          {entity: entRBAC, action: actUpsertRule},
+	"DELETE /api/v1/rbac/preset-rules/:id":   {entity: entRBAC, action: actDeleteRule, idParam: "id"},
+	"PUT /api/v1/rbac/users/:id/permissions": {entity: entRBAC, action: actReplacePerms, idParam: "id"},
+	"PUT /api/v1/rbac/policies":              {entity: entRBAC, action: actUpsertPolicy},
+	"DELETE /api/v1/rbac/policies/:name":     {entity: entRBAC, action: actDeletePolicy},
+	"POST /api/v1/rbac/reset":                {entity: entRBAC, action: actReset},
 }
 
 // classify returns the audit class for a matched route.

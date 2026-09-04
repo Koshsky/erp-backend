@@ -15,7 +15,7 @@ type ResourceResponse struct {
 type ResourceMemberResponse struct {
 	ID              int64      `json:"id"               example:"7"`
 	Name            string     `json:"name"             example:"Иванов Иван Иванович"`
-	Role            string     `json:"role"             example:"worker"`
+	Preset          *string    `json:"preset"           example:"worker"`
 	Position        string     `json:"position"         example:"Инженер 2 категории"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	HireDate        *date.Date `json:"hire_date"        example:"2024-01-15"           format:"date"`

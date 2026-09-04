@@ -58,7 +58,7 @@ func TestDeleteCommentPolicy(t *testing.T) {
 			t.Parallel()
 			router := gin.New()
 			router.Use(func(c *gin.Context) {
-				c.Set(userctx.KeyUser, userctx.UserContext{ID: tc.userID, Role: tc.role})
+				c.Set(userctx.KeyUser, userctx.UserContext{ID: tc.userID, Preset: tc.role, Admin: tc.role == "admin"})
 				c.Next()
 			})
 			router.DELETE("/task/:id/comments/:comment_id", mw.Check("task.comment.delete"), func(c *gin.Context) {

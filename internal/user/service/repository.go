@@ -9,6 +9,14 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user domain.User) (*domain.User, error)
+	// CreateUserWithPermissions creates the account and its individual
+	// permission overrides atomically.
+	CreateUserWithPermissions(
+		ctx context.Context,
+		user domain.User,
+		perms []domain.UserPermission,
+		updatedBy int64,
+	) (*domain.User, error)
 	FindUser(ctx context.Context, id int64) (*domain.User, error)
 	FindUserByUsername(ctx context.Context, username string) (*domain.User, error)
 	UsernameExists(ctx context.Context, username string) (bool, error)
@@ -18,12 +26,12 @@ type UserRepository interface {
 	ListUsers(
 		ctx context.Context,
 		userID int64,
-		role string,
-		roleFilter string,
+		viewScope string,
+		presetFilter string,
 		managerID int64,
 		limit, offset int,
 	) ([]domain.User, error)
-	CountUsers(ctx context.Context, userID int64, role string, roleFilter string, managerID int64) (int64, error)
+	CountUsers(ctx context.Context, userID int64, viewScope string, presetFilter string, managerID int64) (int64, error)
 	ListAllUsers(ctx context.Context) ([]domain.User, error)
 
 	ListStates(ctx context.Context, userID int64, start, end time.Time) ([]domain.UserState, error)

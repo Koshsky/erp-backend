@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Koshsky/erp-backend/internal/user/dto"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
@@ -12,8 +13,8 @@ type UserService interface {
 	ListUsers(
 		ctx context.Context,
 		userID int64,
-		role string,
-		roleFilter string,
+		viewScope string,
+		presetFilter string,
 		managerID int64,
 		limit, offset int,
 	) ([]dto.UserResponse, int64, error)
@@ -21,7 +22,7 @@ type UserService interface {
 	CreateUserWithCreds(
 		ctx context.Context,
 		req dto.CreateUserRequest,
-		callerRole string,
+		caller userctx.UserContext,
 	) (*dto.CreateUserResult, error)
 	ResetPassword(ctx context.Context, id int64) (*dto.ResetPasswordResponse, error)
 	DeleteUser(ctx context.Context, id int64) error
@@ -30,7 +31,7 @@ type UserService interface {
 		ctx context.Context,
 		id int64,
 		user dto.UpdateUserRequest,
-		callerRole string,
+		caller userctx.UserContext,
 		callerID int64,
 	) (*dto.UserResponse, error)
 	UpdateManager(

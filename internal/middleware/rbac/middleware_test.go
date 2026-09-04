@@ -30,7 +30,7 @@ const (
 // setUser mimics AuthMiddleware: puts the user into the gin context.
 func setUser(role string, id int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set(userctx.KeyUser, userctx.UserContext{ID: id, Role: role})
+		c.Set(userctx.KeyUser, userctx.UserContext{ID: id, Preset: role, Admin: role == "admin"})
 		c.Next()
 	}
 }
@@ -185,11 +185,11 @@ func createAssignmentForTest(rc *rbac.CheckCtx) error {
 	if err != nil {
 		return err
 	}
-	if !policies.Authorize(rc.User.Role, rbac.ResourceAssignment, policies.ActionCreate, taskOwners, rc.User.ID) {
+	if !policies.AuthorizeUser(rc.User, rbac.ResourceAssignment, policies.ActionCreate, taskOwners, rc.User.ID) {
 		return errors.ErrForbidden
 	}
 
-	if rc.User.Role != testAdmin {
+	if rc.User.Preset != testAdmin {
 		resourceOwners, ownerErr := rc.Owners(rbac.ResourceResource, resourceID)
 		if ownerErr != nil {
 			return ownerErr

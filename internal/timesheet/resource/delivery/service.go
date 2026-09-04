@@ -11,7 +11,7 @@ type ResourceService interface {
 	ListResources(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]dto.ResourceResponse, int64, error)
@@ -28,7 +28,7 @@ type ResourceService interface {
 		resource dto.UpdateResourceRequest,
 	) (*dto.ResourceResponse, error)
 	ListMembers(ctx context.Context, resourceID int64) ([]dto.ResourceMemberResponse, error)
-	AddMember(ctx context.Context, resourceID, userID, actorID int64, role string) error
+	AddMember(ctx context.Context, resourceID, userID, actorID int64, actorAdmin bool) error
 	RemoveMember(ctx context.Context, resourceID, userID int64) error
 	ListAbsence(
 		ctx context.Context,

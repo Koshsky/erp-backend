@@ -3,18 +3,18 @@ package dto
 
 import "time"
 
-// RuleInput — a permissions matrix row record.
-type RuleInput struct {
-	Role     string `json:"role"     example:"vp"     binding:"required"`
+// PresetRuleInput — a permissions matrix row record.
+type PresetRuleInput struct {
+	Preset   string `json:"preset"   example:"vp"     binding:"required"`
 	Resource string `json:"resource" example:"task"   binding:"required"`
 	Action   string `json:"action"   example:"update" binding:"required"`
 	Scope    string `json:"scope"    example:"parent" binding:"required"`
 }
 
-// RuleView — a permissions matrix row.
-type RuleView struct {
+// PresetRuleView — a permissions matrix row.
+type PresetRuleView struct {
 	ID        int64     `json:"id"`
-	Role      string    `json:"role"`
+	Preset    string    `json:"preset"`
 	Resource  string    `json:"resource"`
 	Action    string    `json:"action"`
 	Scope     string    `json:"scope"`
@@ -42,7 +42,7 @@ type RoutePolicyView struct {
 
 // MatrixCell — an effective matrix cell (with the admin bypass).
 type MatrixCell struct {
-	Role     string `json:"role"`
+	Preset   string `json:"preset"`
 	Resource string `json:"resource"`
 	Action   string `json:"action"`
 	Scope    string `json:"scope"`
@@ -50,7 +50,7 @@ type MatrixCell struct {
 
 // ExplainInput — parameters of the "why allow/deny" check.
 type ExplainInput struct {
-	Role         string `form:"role"          binding:"required" example:"vp"`
+	Preset       string `form:"preset"        binding:"required" example:"vp"`
 	Resource     string `form:"resource"      binding:"required" example:"task"`
 	Action       string `form:"action"        binding:"required" example:"update"`
 	UserID       int64  `form:"user_id"                          example:"4"`
@@ -65,7 +65,7 @@ type ExplainResult struct {
 	Allowed bool   `json:"allowed"`
 }
 
-// Permission — a role's principal right: an action on a resource is allowed
+// Permission — a caller's principal right: an action on a resource is allowed
 // (the scope from the matrix; the frontend derives the ownership zone from it).
 type Permission struct {
 	Resource string `json:"resource" example:"project"`
@@ -73,13 +73,39 @@ type Permission struct {
 	Scope    string `json:"scope"    example:"own"`
 }
 
-// RoleUpsertInput — role creation (name = system access code).
-type RoleUpsertInput struct {
+// PermissionOverride — a per-user permission cell of the editor: an explicit
+// grant (granted=true, scope) or revoke (granted=false, scope ignored).
+type PermissionOverride struct {
+	Resource string `json:"resource" example:"task"   binding:"required"`
+	Action   string `json:"action"   example:"view"   binding:"required"`
+	Scope    string `json:"scope"    example:"parent"`
+	Granted  bool   `json:"granted"  example:"true"`
+}
+
+// UserPermissionsView — the per-user permissions of the editor: the assigned
+// preset, the current overrides, the preset baseline (without overrides) and
+// the resulting effective matrix.
+type UserPermissionsView struct {
+	UserID      int64                `json:"user_id"`
+	Preset      *string              `json:"preset"`
+	Admin       bool                 `json:"admin"`
+	Overrides   []PermissionOverride `json:"overrides"`
+	PresetScope []Permission         `json:"preset_scope"`
+	Effective   []Permission         `json:"effective"`
+}
+
+// UserPermissionsInput — the full replacement set of a user's overrides.
+type UserPermissionsInput struct {
+	Overrides []PermissionOverride `json:"overrides"`
+}
+
+// PresetUpsertInput — preset creation (name = system access code).
+type PresetUpsertInput struct {
 	Name        string `json:"name"        example:"auditor"       binding:"required"`
 	Description string `json:"description" example:"Внешний аудит"`
 }
 
-// RoleUpdateInput — role description update.
-type RoleUpdateInput struct {
+// PresetUpdateInput — preset description update.
+type PresetUpdateInput struct {
 	Description string `json:"description" example:"Внешний аудит"`
 }

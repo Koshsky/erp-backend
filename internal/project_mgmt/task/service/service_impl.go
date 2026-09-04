@@ -108,18 +108,18 @@ func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 func (s *TaskService) ListTasks(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.TaskResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "task.ListTasks")
 	defer end(nil)
 
-	rows, err := s.repository.ListTasks(ctx, userID, role, ownerID, limit, offset)
+	rows, err := s.repository.ListTasks(ctx, userID, viewScope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountTasks(ctx, userID, role, ownerID)
+	total, err := s.repository.CountTasks(ctx, userID, viewScope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

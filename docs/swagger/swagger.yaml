@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  domain.Role:
+  domain.Preset:
     properties:
       description:
         type: string
@@ -50,7 +50,7 @@ definitions:
       position:
         example: Инженер 2 категории
         type: string
-      role:
+      preset:
         example: worker
         type: string
       termination_date:
@@ -397,10 +397,17 @@ definitions:
       password_hash:
         example: ""
         type: string
+      permissions:
+        description: |-
+          Individual permission overrides created together with the user
+          (admin-only, same validation as /rbac/users/{id}/permissions).
+        items:
+          $ref: '#/definitions/dto.UserPermissionInput'
+        type: array
       position:
         example: Инженер 2 категории
         type: string
-      role:
+      preset:
         example: worker
         type: string
       termination_date:
@@ -547,9 +554,9 @@ definitions:
     properties:
       action:
         type: string
-      resource:
+      preset:
         type: string
-      role:
+      resource:
         type: string
       scope:
         type: string
@@ -609,6 +616,78 @@ definitions:
       scope:
         example: own
         type: string
+    type: object
+  dto.PermissionOverride:
+    properties:
+      action:
+        example: view
+        type: string
+      granted:
+        example: true
+        type: boolean
+      resource:
+        example: task
+        type: string
+      scope:
+        example: parent
+        type: string
+    required:
+    - action
+    - resource
+    type: object
+  dto.PresetRuleInput:
+    properties:
+      action:
+        example: update
+        type: string
+      preset:
+        example: vp
+        type: string
+      resource:
+        example: task
+        type: string
+      scope:
+        example: parent
+        type: string
+    required:
+    - action
+    - preset
+    - resource
+    - scope
+    type: object
+  dto.PresetRuleView:
+    properties:
+      action:
+        type: string
+      id:
+        type: integer
+      preset:
+        type: string
+      resource:
+        type: string
+      scope:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: integer
+    type: object
+  dto.PresetUpdateInput:
+    properties:
+      description:
+        example: Внешний аудит
+        type: string
+    type: object
+  dto.PresetUpsertInput:
+    properties:
+      description:
+        example: Внешний аудит
+        type: string
+      name:
+        example: auditor
+        type: string
+    required:
+    - name
     type: object
   dto.Process:
     properties:
@@ -860,7 +939,7 @@ definitions:
       position:
         example: Инженер 2 категории
         type: string
-      role:
+      preset:
         example: worker
         type: string
       termination_date:
@@ -888,23 +967,6 @@ definitions:
       title:
         example: Монтажник
         type: string
-    type: object
-  dto.RoleUpdateInput:
-    properties:
-      description:
-        example: Внешний аудит
-        type: string
-    type: object
-  dto.RoleUpsertInput:
-    properties:
-      description:
-        example: Внешний аудит
-        type: string
-      name:
-        example: auditor
-        type: string
-    required:
-    - name
     type: object
   dto.RoutePolicyInput:
     properties:
@@ -934,43 +996,6 @@ definitions:
       params:
         additionalProperties: {}
         type: object
-      updated_at:
-        type: string
-      updated_by:
-        type: integer
-    type: object
-  dto.RuleInput:
-    properties:
-      action:
-        example: update
-        type: string
-      resource:
-        example: task
-        type: string
-      role:
-        example: vp
-        type: string
-      scope:
-        example: parent
-        type: string
-    required:
-    - action
-    - resource
-    - role
-    - scope
-    type: object
-  dto.RuleView:
-    properties:
-      action:
-        type: string
-      id:
-        type: integer
-      resource:
-        type: string
-      role:
-        type: string
-      scope:
-        type: string
       updated_at:
         type: string
       updated_by:
@@ -1200,7 +1225,7 @@ definitions:
       position:
         example: Инженер 2 категории
         type: string
-      role:
+      preset:
         example: worker
         type: string
       termination_date:
@@ -1228,12 +1253,58 @@ definitions:
       name:
         example: Иванов Иван Иванович
         type: string
-      role:
+      preset:
         example: rp
         type: string
       username:
         example: ivanov
         type: string
+    type: object
+  dto.UserPermissionInput:
+    properties:
+      action:
+        example: view
+        type: string
+      granted:
+        example: true
+        type: boolean
+      resource:
+        example: task
+        type: string
+      scope:
+        example: parent
+        type: string
+    required:
+    - action
+    - resource
+    type: object
+  dto.UserPermissionsInput:
+    properties:
+      overrides:
+        items:
+          $ref: '#/definitions/dto.PermissionOverride'
+        type: array
+    type: object
+  dto.UserPermissionsView:
+    properties:
+      admin:
+        type: boolean
+      effective:
+        items:
+          $ref: '#/definitions/dto.Permission'
+        type: array
+      overrides:
+        items:
+          $ref: '#/definitions/dto.PermissionOverride'
+        type: array
+      preset:
+        type: string
+      preset_scope:
+        items:
+          $ref: '#/definitions/dto.Permission'
+        type: array
+      user_id:
+        type: integer
     type: object
   dto.UserResponse:
     properties:
@@ -1263,7 +1334,7 @@ definitions:
       position:
         example: Инженер 2 категории
         type: string
-      role:
+      preset:
         example: worker
         type: string
       termination_date:
@@ -2790,9 +2861,9 @@ paths:
   /rbac/explain:
     get:
       parameters:
-      - description: Role
+      - description: Preset
         in: query
-        name: role
+        name: preset
         required: true
         type: string
       - description: Resource
@@ -2963,17 +3034,7 @@ paths:
       summary: Delete a route policy
       tags:
       - RBAC
-  /rbac/reset:
-    post:
-      responses:
-        "204":
-          description: No Content
-      security:
-      - ApiKeyAuth: []
-      summary: Reset policies to defaults
-      tags:
-      - RBAC
-  /rbac/roles:
+  /rbac/preset-rules:
     get:
       produces:
       - application/json
@@ -2986,127 +3047,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/domain.Role'
-                  type: array
-                error:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: List roles
-      tags:
-      - RBAC
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Role
-        in: body
-        name: role
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RoleUpsertInput'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/domain.Role'
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create a role
-      tags:
-      - RBAC
-  /rbac/roles/{name}:
-    delete:
-      parameters:
-      - description: Role name
-        in: path
-        name: name
-        required: true
-        type: string
-      responses:
-        "204":
-          description: No Content
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a role
-      tags:
-      - RBAC
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Role name
-        in: path
-        name: name
-        required: true
-        type: string
-      - description: Role
-        in: body
-        name: role
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RoleUpdateInput'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/domain.Role'
-                error:
-                  type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update a role
-      tags:
-      - RBAC
-  /rbac/rules:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/dto.RuleView'
+                    $ref: '#/definitions/dto.PresetRuleView'
                   type: array
                 error:
                   type: object
@@ -3125,7 +3066,7 @@ paths:
         name: rule
         required: true
         schema:
-          $ref: '#/definitions/dto.RuleInput'
+          $ref: '#/definitions/dto.PresetRuleInput'
       produces:
       - application/json
       responses:
@@ -3136,7 +3077,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.RuleView'
+                  $ref: '#/definitions/dto.PresetRuleView'
                 error:
                   type: object
               type: object
@@ -3154,7 +3095,7 @@ paths:
       summary: Upsert a matrix rule
       tags:
       - RBAC
-  /rbac/rules/{id}:
+  /rbac/preset-rules/{id}:
     delete:
       parameters:
       - description: Rule ID
@@ -3168,6 +3109,215 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Delete a matrix rule
+      tags:
+      - RBAC
+  /rbac/presets:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Preset'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List presets
+      tags:
+      - RBAC
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Preset
+        in: body
+        name: preset
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PresetUpsertInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.Preset'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a preset
+      tags:
+      - RBAC
+  /rbac/presets/{name}:
+    delete:
+      parameters:
+      - description: Preset name
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a preset
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Preset name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Preset
+        in: body
+        name: preset
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PresetUpdateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.Preset'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a preset
+      tags:
+      - RBAC
+  /rbac/reset:
+    post:
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Reset policies to defaults
+      tags:
+      - RBAC
+  /rbac/users/{id}/permissions:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserPermissionsView'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: User permissions
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Permissions
+        in: body
+        name: perms
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserPermissionsInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserPermissionsInput'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Replace user permissions
       tags:
       - RBAC
   /resources:
@@ -4306,9 +4456,9 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Filter by role (e.g. worker)
+      - description: Filter by preset (e.g. worker)
         in: query
-        name: role
+        name: preset
         type: string
       - description: Filter by manager (admin)
         in: query

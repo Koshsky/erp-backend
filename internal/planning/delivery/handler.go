@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	planningservice "github.com/Koshsky/erp-backend/internal/planning/service"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
@@ -50,7 +51,11 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetProjectPlanning(c.Request.Context(), user.ID, user.Role)
+	planning, err := h.service.GetProjectPlanning(
+		c.Request.Context(),
+		user.ID,
+		policies.ViewScopeCodeUser(user, rbac.ResourceProject),
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -76,7 +81,11 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetProcessPlanning(c.Request.Context(), user.ID, user.Role)
+	planning, err := h.service.GetProcessPlanning(
+		c.Request.Context(),
+		user.ID,
+		policies.ViewScopeCodeUser(user, rbac.ResourceProcess),
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return
@@ -102,7 +111,11 @@ func (h *PlanningHandler) GetTaskPlanning(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetTaskPlanning(c.Request.Context(), user.ID, user.Role)
+	planning, err := h.service.GetTaskPlanning(
+		c.Request.Context(),
+		user.ID,
+		policies.ViewScopeCodeUser(user, rbac.ResourceTask),
+	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
 		return

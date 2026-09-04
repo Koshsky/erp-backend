@@ -99,7 +99,7 @@ func (m *Middleware) buildEvent(
 	if u, err := userctx.GetUser(c); err == nil {
 		ev.ActorUserID = &u.ID
 		ev.ActorEmail = u.Email
-		ev.ActorRole = u.Role
+		ev.ActorRole = u.Preset
 	} else if rc.entity == entityAuth {
 		// Public auth events (login): no authenticated user yet — label the
 		// actor by the submitted username (password is masked).

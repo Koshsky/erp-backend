@@ -145,18 +145,18 @@ func (s *ProcessService) ReorderProcesses(
 func (s *ProcessService) ListProcesses(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ProcessResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "process.ListProcesses")
 	defer end(nil)
 
-	rows, err := s.repository.ListProcesss(ctx, userID, role, ownerID, limit, offset)
+	rows, err := s.repository.ListProcesss(ctx, userID, viewScope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountProcesses(ctx, userID, role, ownerID)
+	total, err := s.repository.CountProcesses(ctx, userID, viewScope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

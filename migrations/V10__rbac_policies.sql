@@ -1,8 +1,8 @@
 -- =============================================
 -- RUNTIME RBAC POLICIES
 -- =============================================
--- Tables rbac_roles / rbac_role_rules / rbac_route_policies are defined in V1.
--- The rights matrix (rbac_role_rules) and route-policy definitions
+-- Tables rbac_presets / rbac_preset_rules / rbac_route_policies are defined in V1.
+-- The rights matrix (rbac_preset_rules) and route-policy definitions
 -- (rbac_route_policies) are configured at runtime: the source of truth is the DB,
 -- while the engine (scope interpretation, the kind registry) stays in code.
 --
@@ -15,9 +15,9 @@
 -- admin — a hard bypass in code (ScopeAll), not stored in the DB.
 
 -- =============================================
--- SEED: role catalog
+-- SEED: preset catalog
 -- =============================================
-INSERT INTO rbac_roles (name, description) VALUES
+INSERT INTO rbac_presets (name, description) VALUES
     ('admin',  'system administrator — full access (bypass in code)'),
     ('dp',     'project portfolio director'),
     ('rp',     'project manager'),
@@ -27,7 +27,7 @@ INSERT INTO rbac_roles (name, description) VALUES
 -- =============================================
 -- SEED: rights matrix (current behavior in the new scopes)
 -- =============================================
-INSERT INTO rbac_role_rules (role, resource, action, scope) VALUES
+INSERT INTO rbac_preset_rules (preset, resource, action, scope) VALUES
     -- projects: dp — all, rp — own (view/edit/delete), rp creates into own ownership
     ('dp', 'project', 'view',   'all'),
     ('rp', 'project', 'view',   'own'),
@@ -151,14 +151,19 @@ INSERT INTO rbac_route_policies (name, kind, params) VALUES
 -- =============================================
 -- BLOCK hard DELETE (same protection as for the other tables, V5)
 -- =============================================
-CREATE TRIGGER block_hard_delete_on_rbac_roles
-BEFORE DELETE ON rbac_roles
+CREATE TRIGGER block_hard_delete_on_rbac_presets
+BEFORE DELETE ON rbac_presets
 FOR EACH ROW EXECUTE FUNCTION block_hard_delete();
 
-CREATE TRIGGER block_hard_delete_on_rbac_role_rules
-BEFORE DELETE ON rbac_role_rules
+CREATE TRIGGER block_hard_delete_on_rbac_preset_rules
+BEFORE DELETE ON rbac_preset_rules
 FOR EACH ROW EXECUTE FUNCTION block_hard_delete();
 
 CREATE TRIGGER block_hard_delete_on_rbac_route_policies
 BEFORE DELETE ON rbac_route_policies
+FOR EACH ROW EXECUTE FUNCTION block_hard_delete();
+
+-- Per-user overrides are replaced by soft-delete (audit), never hard-deleted.
+CREATE TRIGGER block_hard_delete_on_user_permissions
+BEFORE DELETE ON user_permissions
 FOR EACH ROW EXECUTE FUNCTION block_hard_delete();

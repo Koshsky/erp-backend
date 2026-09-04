@@ -64,7 +64,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 		return nil, err
 	}
 
-	access, err := s.jwt.GenerateAccessToken(user.ID, user.Role, user.Username)
+	access, err := s.jwt.GenerateAccessToken(user.ID, user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token")
 	}
@@ -107,7 +107,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	if err != nil {
 		return nil, err
 	}
-	access, err := s.jwt.GenerateAccessToken(user.ID, user.Role, user.Username)
+	access, err := s.jwt.GenerateAccessToken(user.ID, user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token")
 	}
@@ -192,7 +192,7 @@ func (s *AuthService) newAuthResponse(user *userDTO.UserResponse, access string)
 			FirstName:  user.FirstName,
 			MiddleName: user.MiddleName,
 			Username:   user.Username,
-			Role:       user.Role,
+			Preset:     user.Preset,
 		},
 	}
 }

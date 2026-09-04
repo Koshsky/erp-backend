@@ -29,12 +29,12 @@ func NewPlanningService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 func (s *PlanningService) GetProjectPlanning(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 ) (*dto.ProjectPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetProjectPlanning")
 	defer end(nil)
 
-	projects, err := s.repository.ListProjects(ctx, userID, role)
+	projects, err := s.repository.ListProjects(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
 	}
@@ -47,15 +47,15 @@ func (s *PlanningService) GetProjectPlanning(
 func (s *PlanningService) GetProcessPlanning(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 ) (*dto.ProcessPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetProcessPlanning")
 	defer end(nil)
 
-	// Scoped by process.view (ListProcesses): a role with the right sees its
+	// Scoped by process.view (ListProcesses): a caller with the right sees its
 	// processes even when it has no project.view (e.g. vp). The processes are
 	// grouped under their parent projects, which are re-fetched by ids.
-	processes, err := s.repository.ListProcesses(ctx, userID, role)
+	processes, err := s.repository.ListProcesses(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +103,12 @@ func (s *PlanningService) GetProcessPlanning(
 func (s *PlanningService) GetTaskPlanning(
 	ctx context.Context,
 	userID int64,
-	role string,
+	viewScope string,
 ) (*dto.TaskPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetTaskPlanning")
 	defer end(nil)
 
-	processes, err := s.loadProcesses(ctx, userID, role)
+	processes, err := s.loadProcesses(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
 	}

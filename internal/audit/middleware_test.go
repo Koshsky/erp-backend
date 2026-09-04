@@ -48,7 +48,7 @@ func TestBuildEventExtractsActorAndID(t *testing.T) {
 	body := `{"code":"P-1","password":"secret"}`
 	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/project", bytes.NewBufferString(body))
 	c.Request.Header.Set("Content-Type", "application/json")
-	c.Set(userctx.KeyUser, userctx.UserContext{ID: 3, Email: "admin@x.ru", Role: "admin"})
+	c.Set(userctx.KeyUser, userctx.UserContext{ID: 3, Email: "admin@x.ru", Preset: "admin", Admin: true})
 
 	bw := &bodyWriter{ResponseWriter: c.Writer}
 	c.Writer = bw

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -57,7 +58,7 @@ func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 	items, total, err := h.service.ListMilestones(
 		c.Request.Context(),
 		user.ID,
-		user.Role,
+		policies.ViewScopeCodeUser(user, rbac.ResourceMilestone),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

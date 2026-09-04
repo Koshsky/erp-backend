@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -57,7 +58,7 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 	items, total, err := h.service.ListTasks(
 		c.Request.Context(),
 		user.ID,
-		user.Role,
+		policies.ViewScopeCodeUser(user, rbac.ResourceTask),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

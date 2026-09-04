@@ -10,7 +10,7 @@ type AssignmentService interface {
 	ListAssignments(
 		ctx context.Context,
 		userID int64,
-		role string,
+		viewScope string,
 		ownerID int64,
 		limit, offset int,
 	) ([]dto.AssignmentResponse, int64, error)

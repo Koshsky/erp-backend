@@ -19,6 +19,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/policies"
 	projectmgmt "github.com/Koshsky/erp-backend/internal/project_mgmt"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
+	rbacpolicyService "github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
@@ -51,6 +52,12 @@ func InitializeApp() (*App, error) {
 		// The audit client consumes the user service to resolve the `user`
 		// filter (login/full name) and to enrich actor display names.
 		wire.Bind(new(audit.UserLookup), new(*userservice.UserService)),
+		// The auth middleware resolves the caller's current rights from the
+		// in-memory RBAC snapshot (PolicyStore) — no per-request DB call.
+		wire.Bind(new(authMw.PrincipalResolver), new(*rbacpolicyService.PolicyStore)),
+		// User mutations (preset/account changes) refresh the same snapshot
+		// immediately (TTL heals multi-instance).
+		wire.Bind(new(userservice.RBACReloader), new(*rbacpolicyService.PolicyStore)),
 
 		user.ProviderSet,
 		auth.ProviderSet,

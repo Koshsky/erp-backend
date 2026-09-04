@@ -15,7 +15,7 @@ type UserResponse struct {
 	FirstName       string     `json:"first_name"       example:"Иван"`
 	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
 	Username        string     `json:"username"         example:"worker_1"`
-	Role            string     `json:"role"             example:"worker"`
+	Preset          *string    `json:"preset"           example:"worker"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	Position        string     `json:"position"         example:"Инженер 2 категории"`
 	HireDate        *date.Date `json:"hire_date"        example:"2024-01-15"           format:"date"`
@@ -41,7 +41,7 @@ type AdminUserResponse struct {
 	FirstName       string     `json:"first_name"       example:"Иван"`
 	MiddleName      *string    `json:"middle_name"      example:"Иванович"`
 	Username        string     `json:"username"         example:"worker_1"`
-	Role            string     `json:"role"             example:"worker"`
+	Preset          *string    `json:"preset"           example:"worker"`
 	ManagerID       *int64     `json:"manager_id"       example:"5"`
 	Position        string     `json:"position"         example:"Инженер 2 категории"`
 	HireDate        *date.Date `json:"hire_date"        example:"2024-01-15"           format:"date"`

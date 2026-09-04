@@ -25,7 +25,7 @@ func (m *UserMapper) ToDTO(user *domain.User) *dto.UserResponse {
 		FirstName:       user.FirstName,
 		MiddleName:      user.MiddleName,
 		Username:        user.Username,
-		Role:            user.Role,
+		Preset:          user.Preset,
 		ManagerID:       user.ManagerID,
 		Position:        user.Position,
 		HireDate:        datePtr(user.HireDate),
@@ -52,7 +52,7 @@ func (m *UserMapper) ToDomainFromCreate(req dto.CreateUserRequest) domain.User {
 		FirstName:       req.FirstName,
 		MiddleName:      normalizeMiddle(req.MiddleName),
 		Username:        req.Username,
-		Role:            req.Role,
+		Preset:          req.Preset,
 		PasswordHash:    req.PasswordHash,
 		ManagerID:       req.ManagerID,
 		Position:        req.Position,
@@ -78,8 +78,12 @@ func (m *UserMapper) ApplyUpdateToDomain(user *domain.User, req dto.UpdateUserRe
 	if req.Username != nil {
 		user.Username = *req.Username
 	}
-	if req.Role != nil {
-		user.Role = *req.Role
+	if req.Preset != nil {
+		if *req.Preset == "" {
+			user.Preset = nil
+		} else {
+			user.Preset = req.Preset
+		}
 	}
 	if req.ManagerID != nil {
 		user.ManagerID = req.ManagerID

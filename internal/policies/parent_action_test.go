@@ -38,7 +38,7 @@ func parentActionRouter(policyName string, data rbac.Data, role string, userID i
 	mw := rbac.ProvideMiddleware(nil, tracingpkg.New(nil), data, built)
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
-		c.Set(userctx.KeyUser, userctx.UserContext{ID: userID, Role: role})
+		c.Set(userctx.KeyUser, userctx.UserContext{ID: userID, Preset: role, Admin: role == "admin"})
 		c.Next()
 	})
 	router.PUT("/order", mw.Check(policyName), func(c *gin.Context) {
