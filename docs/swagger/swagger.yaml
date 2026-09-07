@@ -131,6 +131,9 @@ definitions:
       expires_in:
         example: 900
         type: integer
+      refresh_token:
+        example: a1b2c3d4...
+        type: string
       token_type:
         example: Bearer
         type: string
@@ -823,6 +826,12 @@ definitions:
       priority:
         type: integer
       start_date:
+        type: string
+    type: object
+  dto.RefreshRequest:
+    properties:
+      refresh_token:
+        example: a1b2c3d4...
         type: string
     type: object
   dto.ReorderProcessRequest:
@@ -1783,7 +1792,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user; the refresh token goes into an HttpOnly cookie
+      description: Authenticate user; the refresh token is returned both in the response
+        body and in an HttpOnly cookie
       parameters:
       - description: Login credentials
         in: body
@@ -1828,7 +1838,16 @@ paths:
       - Auth
   /auth/logout:
     post:
-      description: Revoke the refresh session and clear the cookie (idempotent)
+      consumes:
+      - application/json
+      description: Revoke the refresh session and clear the cookie; the token is read
+        from the body ({refresh_token}) or the HttpOnly cookie (idempotent)
+      parameters:
+      - description: Refresh token (optional; falls back to the HttpOnly cookie)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.RefreshRequest'
       produces:
       - application/json
       responses:
@@ -1850,8 +1869,16 @@ paths:
       - Auth
   /auth/refresh:
     post:
-      description: Rotate the refresh session from the HttpOnly cookie; returns a
-        new access token
+      consumes:
+      - application/json
+      description: Rotate the refresh session; the token is read from the body ({refresh_token})
+        or the HttpOnly cookie, and a new refresh token is returned in both
+      parameters:
+      - description: Refresh token (optional; falls back to the HttpOnly cookie)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.RefreshRequest'
       produces:
       - application/json
       responses:

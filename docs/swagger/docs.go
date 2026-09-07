@@ -635,7 +635,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user; the refresh token goes into an HttpOnly cookie",
+                "description": "Authenticate user; the refresh token is returned both in the response body and in an HttpOnly cookie",
                 "consumes": [
                     "application/json"
                 ],
@@ -720,7 +720,10 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Revoke the refresh session and clear the cookie (idempotent)",
+                "description": "Revoke the refresh session and clear the cookie; the token is read from the body ({refresh_token}) or the HttpOnly cookie (idempotent)",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -728,6 +731,16 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Logout",
+                "parameters": [
+                    {
+                        "description": "Refresh token (optional; falls back to the HttpOnly cookie)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -758,7 +771,10 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Rotate the refresh session from the HttpOnly cookie; returns a new access token",
+                "description": "Rotate the refresh session; the token is read from the body ({refresh_token}) or the HttpOnly cookie, and a new refresh token is returned in both",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -766,6 +782,16 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Refresh Token",
+                "parameters": [
+                    {
+                        "description": "Refresh token (optional; falls back to the HttpOnly cookie)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6706,6 +6732,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 900
                 },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "a1b2c3d4..."
+                },
                 "token_type": {
                     "type": "string",
                     "example": "Bearer"
@@ -7671,6 +7701,15 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.RefreshRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "example": "a1b2c3d4..."
                 }
             }
         },
