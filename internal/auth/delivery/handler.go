@@ -161,16 +161,28 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	response.OK(c, res.Auth)
 }
 
-// Logout revokes the refresh session and clears the cookie.
+// Logout revokes the refresh session and clears the cookie. The refresh token
+// is read from the body ({refresh_token}) or, as a fallback, from the cookie.
 //
 //	@Tags			Auth
 //	@Summary		Logout
-//	@Description	Revoke the refresh session and clear the cookie (idempotent)
+//	@Description	Revoke the refresh session and clear the cookie; the token is read from the body ({refresh_token}) or the HttpOnly cookie (idempotent)
+//	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	response.SuccessResponse{data=map[string]string,error=nil}
+//	@Param			request	body		dto.RefreshRequest	false	"Refresh token (optional; falls back to the HttpOnly cookie)"
+//	@Success		200		{object}	response.SuccessResponse{data=map[string]string,error=nil}
 //	@Router			/auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
-	if token, err := c.Cookie(refreshCookieName); err == nil && token != "" {
+	var req dto.RefreshRequest
+	_ = c.ShouldBindJSON(&req)
+
+	token := req.RefreshToken
+	if token == "" {
+		if cookie, err := c.Cookie(refreshCookieName); err == nil && cookie != "" {
+			token = cookie
+		}
+	}
+	if token != "" {
 		_ = h.service.Logout(c.Request.Context(), token)
 	}
 	h.clearRefreshCookie(c)
