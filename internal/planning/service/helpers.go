@@ -134,27 +134,43 @@ func (s *PlanningService) buildDetailedProcess(
 	}
 }
 
-// buildDetailedTasks constructs detailed tasks with their resources.
+// buildDetailedTasks constructs detailed tasks with their resources, nesting
+// subtasks (operations) under their parent task: only top-level tasks appear
+// in the returned slice, each carrying its subtasks in display order.
 func (s *PlanningService) buildDetailedTasks(
 	tasks []dto.Task,
 	assignments map[int64][]dto.Assignment,
 	resourcesMap map[int64]dto.Resource,
 	commentCounts map[int64]int64,
 ) []dto.DetailedTask {
-	detailedTasks := make([]dto.DetailedTask, 0, len(tasks))
-
+	// Build every detailed task first, then group subtasks by parent.
+	detailed := make([]dto.DetailedTask, 0, len(tasks))
+	byParent := make(map[int64][]dto.DetailedTask, len(tasks))
 	for _, task := range tasks {
 		taskAssignments := getSlice(assignments, task.ID)
 		resources := s.buildTaskResources(taskAssignments, resourcesMap)
 
-		detailedTasks = append(detailedTasks, dto.DetailedTask{
+		item := dto.DetailedTask{
 			Task:          task,
 			Resources:     resources,
 			CommentsCount: commentCounts[task.ID],
-		})
+		}
+		if task.ParentID != nil {
+			byParent[*task.ParentID] = append(byParent[*task.ParentID], item)
+			continue
+		}
+		detailed = append(detailed, item)
 	}
 
-	return detailedTasks
+	// Attach children to their parents (input is already sorted by the
+	// repository, so appended children keep their display order).
+	for i := range detailed {
+		if children := byParent[detailed[i].ID]; len(children) > 0 {
+			detailed[i].Subtasks = children
+		}
+	}
+
+	return detailed
 }
 
 // buildTaskResources constructs resources for a task.

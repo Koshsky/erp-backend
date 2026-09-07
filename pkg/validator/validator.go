@@ -35,6 +35,15 @@ func (v *Validator) ValidatePositiveID(id int64, field string) error {
 	return nil
 }
 
+// ValidateOptionalPositiveID validates a nullable positive id: nil means "not
+// set"; a value must be strictly positive.
+func (v *Validator) ValidateOptionalPositiveID(id *int64, field string) error {
+	if id == nil {
+		return nil
+	}
+	return v.ValidatePositiveID(*id, field)
+}
+
 func (v *Validator) ValidateRequiredDate(value time.Time, field string) error {
 	if value.IsZero() {
 		return errors.NewFieldError(field, codeRequired, msgRequired(field))

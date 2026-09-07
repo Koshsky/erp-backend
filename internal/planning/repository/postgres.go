@@ -135,9 +135,11 @@ func (r *PlanningRepository) ListTasksByProcessIDs(
 		tasks[i] = dto.Task{
 			ID:        row.ID,
 			ProcessID: row.ProcessID,
+			ParentID:  nullable.Int64Ptr(row.ParentID),
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Title:     row.Title,
 			Color:     nullable.StringPtr(row.Color),
+			Status:    row.Status,
 			StartDate: date.From(row.StartDate),
 			EndDate:   date.From(row.EndDate),
 			Order:     int(row.SortOrder),

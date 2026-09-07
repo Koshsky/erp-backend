@@ -33,9 +33,13 @@ func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository 
 func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
 	row, err := r.db.CreateTask(ctx, sqlc.CreateTaskParams{
 		ProcessID: task.ProcessID,
+		// 0 means "no parent" (the query NULLIFs it to NULL); the real parent
+		// id for subtasks. Both map to the same NULLIF branch in the INSERT.
+		ParentID:  nullable.PtrValueOr(task.ParentID, 0),
 		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
 		Color:     nullable.ToString(task.Color),
+		Status:    task.Status,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -60,10 +64,10 @@ func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*domain.Task, 
 func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
 	row, err := r.db.UpdateTask(ctx, sqlc.UpdateTaskParams{
 		TaskID:    task.ID,
-		ProcessID: task.ProcessID,
 		OwnerID:   nullable.ToInt8(task.OwnerID),
 		Title:     task.Title,
 		Color:     nullable.ToString(task.Color),
+		Status:    task.Status,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -118,13 +122,28 @@ func mapTask(row sqlc.Task) domain.Task {
 	return domain.Task{
 		ID:        row.ID,
 		ProcessID: row.ProcessID,
+		ParentID:  nullable.Int64Ptr(row.ParentID),
 		OwnerID:   nullable.Int64Ptr(row.OwnerID),
 		Title:     row.Title,
 		Color:     nullable.StringPtr(row.Color),
+		Status:    row.Status,
 		StartDate: row.StartDate,
 		EndDate:   row.EndDate,
 		SortOrder: int(row.SortOrder),
 	}
+}
+
+// ListSubtasksByParent returns the active subtasks of a task in display order.
+func (r *TaskRepository) ListSubtasksByParent(ctx context.Context, parentID int64) ([]domain.Task, error) {
+	rows, err := r.db.ListSubtasksByParent(ctx, parentID)
+	if err != nil {
+		return nil, err
+	}
+	tasks := make([]domain.Task, 0, len(rows))
+	for _, row := range rows {
+		tasks = append(tasks, mapTask(row))
+	}
+	return tasks, nil
 }
 
 // ListTaskIDsByProcess returns the active task ids of a process in their

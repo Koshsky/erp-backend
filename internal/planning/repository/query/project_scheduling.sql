@@ -46,7 +46,9 @@ ORDER BY id ASC;
 SELECT * FROM tasks
 WHERE process_id = ANY(@process_ids::bigint[])
 AND deleted_at IS NULL
-ORDER BY sort_order ASC, id ASC;
+-- Top-level tasks (parent group 0) first in display order, then each
+-- parent's subtasks in their own display order.
+ORDER BY COALESCE(parent_id, 0), sort_order ASC, id ASC;
 
 -- name: ListAssignmentsByTaskIDs :many
 SELECT * FROM assignments

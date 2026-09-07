@@ -152,9 +152,11 @@ type State struct {
 type Task struct {
 	ID        int64          `json:"id"`
 	ProcessID int64          `json:"process_id"`
+	ParentID  pgtype.Int8    `json:"parent_id"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
+	Status    string         `json:"status"`
 	StartDate time.Time      `json:"start_date"`
 	EndDate   time.Time      `json:"end_date"`
 	SortOrder int32          `json:"sort_order"`

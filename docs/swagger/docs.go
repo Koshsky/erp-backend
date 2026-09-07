@@ -7065,6 +7065,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "parent_id": {
+                    "description": "ParentID — optional subtask (operation) link: task of the given parent.\nWhen set, process_id must point to the parent's process; dates and\nowner may be omitted and are inherited from the parent by the service.",
+                    "type": "integer",
+                    "example": 10
+                },
                 "process_id": {
                     "type": "integer",
                     "example": 1
@@ -7073,6 +7078,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "not_started"
                 },
                 "title": {
                     "type": "string",
@@ -7264,13 +7273,17 @@ const docTemplate = `{
                     "example": 1
                 },
                 "order": {
-                    "description": "Order of the task within its process (ascending display order).",
+                    "description": "Order of the task within its parent group (ascending display order):\ntop-level tasks sort within the process, subtasks within the parent.",
                     "type": "integer",
                     "example": 1
                 },
                 "owner_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "parent_id": {
+                    "description": "ParentID — subtask (operation) link; NULL for top-level tasks.",
+                    "type": "integer"
                 },
                 "process_id": {
                     "type": "integer",
@@ -7286,6 +7299,18 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "description": "Execution status: not_started | in_progress | done.",
+                    "type": "string",
+                    "example": "not_started"
+                },
+                "subtasks": {
+                    "description": "Subtasks (operations) attached to this task, in display order.\nPresent only on top-level tasks; subtasks cannot have subtasks.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedTask"
+                    }
                 },
                 "title": {
                     "type": "string",
@@ -8026,17 +8051,25 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "order": {
-                    "description": "Order of the task within its process (ascending display order).",
+                    "description": "Order of the task within its parent group (ascending display order):\ntop-level tasks sort within the process, subtasks within the parent.",
                     "type": "integer",
                     "example": 1
                 },
                 "owner_id": {
                     "type": "integer"
                 },
+                "parent_id": {
+                    "description": "ParentID — subtask (operation) link; NULL for top-level tasks.",
+                    "type": "integer"
+                },
                 "process_id": {
                     "type": "integer"
                 },
                 "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Execution status: not_started | in_progress | done.",
                     "type": "string"
                 },
                 "title": {
@@ -8228,10 +8261,7 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
+                    "description": "ProcessID is intentionally absent: a task never changes its process.\nParentID is absent too: the parent is fixed at creation.",
                     "type": "integer",
                     "example": 1
                 },
@@ -8239,6 +8269,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "in_progress"
                 },
                 "title": {
                     "type": "string",

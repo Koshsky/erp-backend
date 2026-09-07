@@ -327,12 +327,14 @@ func (q *Queries) ListTaskCommentCountsByTaskIDs(ctx context.Context, taskIds []
 }
 
 const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
-SELECT id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM tasks
+SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM tasks
 WHERE process_id = ANY($1::bigint[])
 AND deleted_at IS NULL
-ORDER BY sort_order ASC, id ASC
+ORDER BY COALESCE(parent_id, 0), sort_order ASC, id ASC
 `
 
+// Top-level tasks (parent group 0) first in display order, then each
+// parent's subtasks in their own display order.
 func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listTasksByProcessIDs, processIds)
 	if err != nil {
@@ -345,9 +347,11 @@ func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64)
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProcessID,
+			&i.ParentID,
 			&i.OwnerID,
 			&i.Title,
 			&i.Color,
+			&i.Status,
 			&i.StartDate,
 			&i.EndDate,
 			&i.SortOrder,
