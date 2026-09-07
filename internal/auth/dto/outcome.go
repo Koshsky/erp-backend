@@ -4,9 +4,9 @@ package dto
 // here (alongside the HttpOnly cookie) so clients that cannot read the cookie
 // — e.g. a desktop SPA — can persist it in non-volatile storage.
 type AuthResponse struct {
-	AccessToken  string   `json:"access_token"  example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	TokenType    string   `json:"token_type"    example:"Bearer"`
-	ExpiresIn    int      `json:"expires_in"    example:"900"`
+	AccessToken  string   `json:"access_token"            example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	TokenType    string   `json:"token_type"              example:"Bearer"`
+	ExpiresIn    int      `json:"expires_in"              example:"900"`
 	RefreshToken string   `json:"refresh_token,omitempty" example:"a1b2c3d4..."`
 	User         UserInfo `json:"user"`
 }
