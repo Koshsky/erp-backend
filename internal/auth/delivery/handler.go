@@ -90,7 +90,7 @@ func (h *AuthHandler) clearRefreshCookie(c *gin.Context) {
 //
 //	@Tags			Auth
 //	@Summary		Login
-//	@Description	Authenticate user; the refresh token goes into an HttpOnly cookie
+//	@Description	Authenticate user; the refresh token is returned both in the response body and in an HttpOnly cookie
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.LoginRequest	true	"Login credentials"
@@ -110,6 +110,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.Unauthorized(c, errors.CodeInvalidCredentials, "invalid credentials")
 		return
 	}
+
+	// Return the refresh token in the body too, so clients that cannot read
+	// the HttpOnly cookie (e.g. a desktop SPA) can persist it themselves.
+	res.Auth.RefreshToken = res.RefreshToken
 
 	h.setRefreshCookie(c, res.RefreshToken)
 	response.OK(c, res.Auth)
