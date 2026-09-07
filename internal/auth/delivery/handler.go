@@ -119,18 +119,31 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response.OK(c, res.Auth)
 }
 
-// RefreshToken handles the request to refresh access token using the HttpOnly cookie.
+// RefreshToken handles the request to refresh access token. The refresh token
+// may arrive in the request body ({refresh_token}) or, as a fallback, in the
+// HttpOnly cookie.
 //
 //	@Tags			Auth
 //	@Summary		Refresh Token
-//	@Description	Rotate the refresh session from the HttpOnly cookie; returns a new access token
+//	@Description	Rotate the refresh session; the token is read from the body ({refresh_token}) or the HttpOnly cookie, and a new refresh token is returned in both
+//	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	response.SuccessResponse{data=dto.AuthResponse,error=nil}
-//	@Failure		401	{object}	response.ErrorResponse{data=nil}
+//	@Param			request	body		dto.RefreshRequest	false	"Refresh token (optional; falls back to the HttpOnly cookie)"
+//	@Success		200		{object}	response.SuccessResponse{data=dto.AuthResponse,error=nil}
+//	@Failure		401		{object}	response.ErrorResponse{data=nil}
 //	@Router			/auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	token, err := c.Cookie(refreshCookieName)
-	if err != nil || token == "" {
+	var req dto.RefreshRequest
+	// An invalid or empty body is not an error: the cookie is the fallback.
+	_ = c.ShouldBindJSON(&req)
+
+	token := req.RefreshToken
+	if token == "" {
+		if cookie, err := c.Cookie(refreshCookieName); err == nil && cookie != "" {
+			token = cookie
+		}
+	}
+	if token == "" {
 		response.Unauthorized(c, errors.CodeInvalidToken, "invalid refresh token")
 		return
 	}
@@ -140,6 +153,9 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		response.Unauthorized(c, errors.CodeInvalidToken, "invalid refresh token")
 		return
 	}
+
+	// Return the rotated refresh token in the body too, mirroring login.
+	res.Auth.RefreshToken = res.RefreshToken
 
 	h.setRefreshCookie(c, res.RefreshToken)
 	response.OK(c, res.Auth)
