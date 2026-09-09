@@ -634,6 +634,12 @@ definitions:
         example: Телевидение
         type: string
     type: object
+  dto.OperationTemplate:
+    properties:
+      title:
+        example: Подготовка площадки
+        type: string
+    type: object
   dto.Permission:
     properties:
       action:
@@ -1106,6 +1112,14 @@ definitions:
       color:
         example: '#0f83c4'
         type: string
+      operations:
+        description: |-
+          Operations (subtasks) of the task — created as subtasks (parent_id)
+          with the task's dates. Status is always not_started; resources are not
+          bound to subtasks.
+        items:
+          $ref: '#/definitions/dto.OperationTemplate'
+        type: array
       resources:
         items:
           $ref: '#/definitions/dto.ResourceBinding'

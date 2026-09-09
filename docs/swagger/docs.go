@@ -7419,6 +7419,15 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.OperationTemplate": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "example": "Подготовка площадки"
+                }
+            }
+        },
         "dto.Permission": {
             "type": "object",
             "properties": {
@@ -8083,6 +8092,13 @@ const docTemplate = `{
                 "color": {
                     "type": "string",
                     "example": "#0f83c4"
+                },
+                "operations": {
+                    "description": "Operations (subtasks) of the task — created as subtasks (parent_id)\nwith the task's dates. Status is always not_started; resources are not\nbound to subtasks.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.OperationTemplate"
+                    }
                 },
                 "resources": {
                     "type": "array",
