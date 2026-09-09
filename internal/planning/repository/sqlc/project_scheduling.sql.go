@@ -176,6 +176,72 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 	return items, nil
 }
 
+const listProcessesByTaskScope = `-- name: ListProcessesByTaskScope :many
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.deleted_at, pr.code AS project_code
+FROM processes p
+JOIN projects pr ON pr.id = p.project_id
+WHERE p.deleted_at IS NULL
+AND (
+    $1::text = 'all' OR
+    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
+    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($1::text = 'own' AND EXISTS (
+        SELECT 1 FROM tasks t
+        WHERE t.process_id = p.id
+          AND t.owner_id = $2::bigint
+          AND t.deleted_at IS NULL
+    ))
+)
+`
+
+type ListProcessesByTaskScopeParams struct {
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+}
+
+type ListProcessesByTaskScopeRow struct {
+	Process     Process `json:"process"`
+	ProjectCode string  `json:"project_code"`
+}
+
+// Processes for the TASK planning aggregate: the scope comes from the task
+// matrix, where 'parent' means "in my processes" (p.owner_id), not "in my
+// projects" (pr.owner_id) — the process list must follow the task semantics,
+// otherwise a process owner (vp) sees an empty task diagram although the
+// process view lists their processes.
+func (q *Queries) ListProcessesByTaskScope(ctx context.Context, arg ListProcessesByTaskScopeParams) ([]ListProcessesByTaskScopeRow, error) {
+	rows, err := q.db.Query(ctx, listProcessesByTaskScope, arg.ScopeView, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListProcessesByTaskScopeRow{}
+	for rows.Next() {
+		var i ListProcessesByTaskScopeRow
+		if err := rows.Scan(
+			&i.Process.ID,
+			&i.Process.ProjectID,
+			&i.Process.OwnerID,
+			&i.Process.Title,
+			&i.Process.Color,
+			&i.Process.StartDate,
+			&i.Process.EndDate,
+			&i.Process.SortOrder,
+			&i.Process.CreatedAt,
+			&i.Process.UpdatedAt,
+			&i.Process.DeletedAt,
+			&i.ProjectCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
 WHERE deleted_at IS NULL

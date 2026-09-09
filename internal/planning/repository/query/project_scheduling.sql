@@ -19,6 +19,28 @@ AND (
     (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
 );
 
+-- name: ListProcessesByTaskScope :many
+-- Processes for the TASK planning aggregate: the scope comes from the task
+-- matrix, where 'parent' means "in my processes" (p.owner_id), not "in my
+-- projects" (pr.owner_id) — the process list must follow the task semantics,
+-- otherwise a process owner (vp) sees an empty task diagram although the
+-- process view lists their processes.
+SELECT sqlc.embed(p), pr.code AS project_code
+FROM processes p
+JOIN projects pr ON pr.id = p.project_id
+WHERE p.deleted_at IS NULL
+AND (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
+    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@scope_view::text = 'own' AND EXISTS (
+        SELECT 1 FROM tasks t
+        WHERE t.process_id = p.id
+          AND t.owner_id = @user_id::bigint
+          AND t.deleted_at IS NULL
+    ))
+);
+
 -- name: ListResources :many
 SELECT * FROM resources
 WHERE deleted_at IS NULL;

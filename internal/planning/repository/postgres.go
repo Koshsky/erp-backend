@@ -83,19 +83,47 @@ func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, vi
 	}
 	processes := make([]dto.Process, len(rows))
 	for i, row := range rows {
-		processes[i] = dto.Process{
-			ID:          row.Process.ID,
-			Title:       row.Process.Title,
-			Color:       nullable.StringPtr(row.Process.Color),
-			OwnerID:     nullable.Int64Ptr(row.Process.OwnerID),
-			ProjectID:   row.Process.ProjectID,
-			ProjectCode: row.ProjectCode,
-			StartDate:   date.From(row.Process.StartDate),
-			EndDate:     date.From(row.Process.EndDate),
-			Order:       int(row.Process.SortOrder),
-		}
+		processes[i] = mapProcess(row.Process, row.ProjectCode)
 	}
 	return processes, nil
+}
+
+// ListProcessesByTaskScope — process-scoped list for the TASK planning
+// aggregate. The scope comes from the task matrix: 'parent' means "in my
+// processes" (p.owner_id) rather than "in my projects" (pr.owner_id), so a
+// process owner (vp) sees their processes in the task diagram.
+func (r *PlanningRepository) ListProcessesByTaskScope(
+	ctx context.Context,
+	userID int64,
+	viewScope string,
+) ([]dto.Process, error) {
+	rows, err := r.db.ListProcessesByTaskScope(ctx, sqlc.ListProcessesByTaskScopeParams{
+		UserID:    userID,
+		ScopeView: viewScope,
+	})
+	if err != nil {
+		return nil, err
+	}
+	processes := make([]dto.Process, len(rows))
+	for i, row := range rows {
+		processes[i] = mapProcess(row.Process, row.ProjectCode)
+	}
+	return processes, nil
+}
+
+// mapProcess converts a sqlc embedding into the process DTO.
+func mapProcess(p sqlc.Process, projectCode string) dto.Process {
+	return dto.Process{
+		ID:          p.ID,
+		Title:       p.Title,
+		Color:       nullable.StringPtr(p.Color),
+		OwnerID:     nullable.Int64Ptr(p.OwnerID),
+		ProjectID:   p.ProjectID,
+		ProjectCode: projectCode,
+		StartDate:   date.From(p.StartDate),
+		EndDate:     date.From(p.EndDate),
+		Order:       int(p.SortOrder),
+	}
 }
 
 func (r *PlanningRepository) ListProcessesByProjectIDs(

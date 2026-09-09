@@ -14,9 +14,13 @@ func getSlice[T any](m map[int64][]T, key int64) []T {
 	return []T{}
 }
 
-// loadProcesses loads processes for the given user ID and view scope code.
+// loadProcesses loads processes for the given user ID and view scope code
+// using the TASK scope semantics (parent = "in my processes"): the caller is
+// the task-planning aggregate, and the same process list is what a process
+// owner (vp) must see on the task diagram. The process aggregate uses the
+// process scope directly (parent = "in my projects").
 func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error) {
-	processes, err := s.repository.ListProcesses(ctx, userID, viewScope)
+	processes, err := s.repository.ListProcessesByTaskScope(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
 	}
