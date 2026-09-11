@@ -85,6 +85,7 @@ func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateC
 const (
 	maxProcesses             = 20
 	maxTasksPerProcess       = 50
+	maxOperationsPerTask     = 50
 	maxResourcesPerTask      = 10
 	maxAssignmentsTotal      = 500
 	maxQuantityPerAssignment = 99
@@ -152,6 +153,17 @@ func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 	if err := validateTemplateColor(t.Color, fmt.Sprintf("процесс «%s», задача %d", processTitle, ti+1)); err != nil {
 		return err
 	}
+	if len(t.Operations) > maxOperationsPerTask {
+		return errors.NewValidationError(
+			fmt.Sprintf("процесс «%s», задача %d: слишком много операций: максимум %d",
+				processTitle, ti+1, maxOperationsPerTask),
+		)
+	}
+	for oi, op := range t.Operations {
+		if err := validateOperation(processTitle, t.Title, op, oi); err != nil {
+			return err
+		}
+	}
 	if len(t.Resources) > maxResourcesPerTask {
 		return errors.NewValidationError(
 			fmt.Sprintf("процесс «%s», задача %d: слишком много ресурсов: максимум %d",
@@ -163,6 +175,16 @@ func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 		if err := validateResource(t.Title, res, ri, seen); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func validateOperation(processTitle, taskTitle string, op dto.OperationTemplate, oi int) error {
+	if strings.TrimSpace(op.Title) == "" {
+		return errors.NewValidationError(
+			fmt.Sprintf("процесс «%s», задача «%s», операция %d: название не заполнено",
+				processTitle, taskTitle, oi+1),
+		)
 	}
 	return nil
 }

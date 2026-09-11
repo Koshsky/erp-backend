@@ -1,15 +1,24 @@
 -- name: CreateTask :one
-INSERT INTO tasks (process_id, owner_id, title, color, start_date, end_date, sort_order)
-VALUES (
-	@process_id,
+INSERT INTO tasks (process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order)
+SELECT
+	@process_id::bigint,
+	NULLIF(@parent_id::bigint, 0),
 	@owner_id,
 	@title,
 	@color,
+	@status,
 	@start_date,
 	@end_date,
-	-- New task goes to the end of its process group.
-	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks WHERE process_id = @process_id)
-)
+	-- New task goes to the end of its parent group: top-level tasks append
+	-- within the process, subtasks within the parent task.
+	CASE
+		WHEN @parent_id::bigint IS NULL OR @parent_id::bigint = 0 THEN
+			(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks
+			 WHERE process_id = @process_id AND parent_id IS NULL)
+		ELSE
+			(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks
+			 WHERE parent_id = @parent_id)
+	END
 RETURNING *;
 
 -- name: ListTasks :many
@@ -51,16 +60,23 @@ WHERE deleted_at IS NULL
 -- name: UpdateTask :one
 UPDATE tasks
 SET
-	process_id = @process_id,
 	owner_id = @owner_id,
 	title = @title,
 	color = @color,
+	status = @status,
 	start_date = @start_date,
 	end_date = @end_date,
 	updated_at = NOW()
 WHERE id = @task_id
 	AND deleted_at IS NULL
 RETURNING *;
+
+-- name: ListSubtasksByParent :many
+SELECT *
+FROM tasks
+WHERE parent_id = @parent_id::bigint
+	AND deleted_at IS NULL
+ORDER BY sort_order ASC, id ASC;
 
 -- name: DeleteTask :exec
 UPDATE tasks
@@ -84,7 +100,8 @@ WHERE t.id = @id::bigint
 -- Phase 1 of the two-phase reorder (runs inside one transaction with
 -- ReorderTasksApply): park every task on a temporary offset slot so the
 -- follow-up write cannot transiently violate the partial unique index
--- (process_id, sort_order) when values swap. The caller sends the whole group.
+-- (process_id, parent group, sort_order) when values swap. The caller sends
+-- the whole top-level group (subtasks keep their positions).
 UPDATE tasks t
 SET sort_order = x.ord + 1000000, updated_at = NOW()
 FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
@@ -92,18 +109,20 @@ WHERE t.id = x.id AND t.deleted_at IS NULL;
 
 -- name: ReorderTasksApply :exec
 -- Phase 2 of the two-phase reorder: write the final positions. The group is
--- the whole active set of the process (validated by the caller), so no target
--- slot collides with rows outside the group.
+-- the whole active top-level set of the process (validated by the caller), so
+-- no target slot collides with rows outside the group.
 UPDATE tasks t
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
 WHERE t.id = x.id AND t.deleted_at IS NULL;
 
 -- name: ListTaskIdsByProcess :many
--- Active task ids of a process — to validate a reorder request covers the
--- whole group.
+-- Active top-level task ids of a process — to validate a reorder request
+-- covers the whole (top-level) group. Subtasks are managed by their parent
+-- and are not reorderable.
 SELECT id
 FROM tasks
 WHERE process_id = @process_id::bigint
+	AND parent_id IS NULL
 	AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC;

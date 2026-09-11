@@ -26,14 +26,19 @@ type Process struct {
 }
 
 type Task struct {
-	ID        int64     `json:"id"         example:"1"`
-	Title     string    `json:"title"      example:"Пуско-наладочные работы"`
-	Color     *string   `json:"color"      example:"#0f83c4"`
-	StartDate date.Date `json:"start_date" example:"2026-01-01"              format:"date"`
-	EndDate   date.Date `json:"end_date"   example:"2026-02-01"              format:"date"`
+	ID    int64   `json:"id"    example:"1"`
+	Title string  `json:"title" example:"Пуско-наладочные работы"`
+	Color *string `json:"color" example:"#0f83c4"`
+	// ParentID — subtask (operation) link; NULL for top-level tasks.
+	ParentID *int64 `json:"parent_id"`
+	// Execution status: not_started | in_progress | done.
+	Status    string    `json:"status"     example:"not_started"`
+	StartDate date.Date `json:"start_date" example:"2026-01-01"  format:"date"`
+	EndDate   date.Date `json:"end_date"   example:"2026-02-01"  format:"date"`
 	ProcessID int64     `json:"process_id" example:"1"`
 	OwnerID   *int64    `json:"owner_id"   example:"1"`
-	// Order of the task within its process (ascending display order).
+	// Order of the task within its parent group (ascending display order):
+	// top-level tasks sort within the process, subtasks within the parent.
 	Order int `json:"order" example:"1"`
 }
 

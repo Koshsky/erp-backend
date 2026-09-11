@@ -31,4 +31,7 @@ type DetailedTask struct {
 	Resources []Resource `json:"resources"`
 	// Number of active comments on the task (for the badge on the diagram).
 	CommentsCount int64 `json:"comments_count" example:"3"`
+	// Subtasks (operations) attached to this task, in display order.
+	// Present only on top-level tasks; subtasks cannot have subtasks.
+	Subtasks []DetailedTask `json:"subtasks,omitempty"`
 }

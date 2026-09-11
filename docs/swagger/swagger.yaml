@@ -131,6 +131,9 @@ definitions:
       expires_in:
         example: 900
         type: integer
+      refresh_token:
+        example: a1b2c3d4...
+        type: string
       token_type:
         example: Bearer
         type: string
@@ -365,12 +368,22 @@ definitions:
       owner_id:
         example: 1
         type: integer
+      parent_id:
+        description: |-
+          ParentID — optional subtask (operation) link: task of the given parent.
+          When set, process_id must point to the parent's process; dates and
+          owner may be omitted and are inherited from the parent by the service.
+        example: 10
+        type: integer
       process_id:
         example: 1
         type: integer
       start_date:
         example: "2026-01-01"
         format: date
+        type: string
+      status:
+        example: not_started
         type: string
       title:
         example: Пуско-наладочные работы
@@ -513,11 +526,16 @@ definitions:
         example: 1
         type: integer
       order:
-        description: Order of the task within its process (ascending display order).
+        description: |-
+          Order of the task within its parent group (ascending display order):
+          top-level tasks sort within the process, subtasks within the parent.
         example: 1
         type: integer
       owner_id:
         example: 1
+        type: integer
+      parent_id:
+        description: ParentID — subtask (operation) link; NULL for top-level tasks.
         type: integer
       process_id:
         example: 1
@@ -530,6 +548,17 @@ definitions:
         example: "2026-01-01"
         format: date
         type: string
+      status:
+        description: 'Execution status: not_started | in_progress | done.'
+        example: not_started
+        type: string
+      subtasks:
+        description: |-
+          Subtasks (operations) attached to this task, in display order.
+          Present only on top-level tasks; subtasks cannot have subtasks.
+        items:
+          $ref: '#/definitions/dto.DetailedTask'
+        type: array
       title:
         example: Пуско-наладочные работы
         type: string
@@ -603,6 +632,12 @@ definitions:
         type: integer
       title:
         example: Телевидение
+        type: string
+    type: object
+  dto.OperationTemplate:
+    properties:
+      title:
+        example: Подготовка площадки
         type: string
     type: object
   dto.Permission:
@@ -823,6 +858,12 @@ definitions:
       priority:
         type: integer
       start_date:
+        type: string
+    type: object
+  dto.RefreshRequest:
+    properties:
+      refresh_token:
+        example: a1b2c3d4...
         type: string
     type: object
   dto.ReorderProcessRequest:
@@ -1046,14 +1087,22 @@ definitions:
       id:
         type: integer
       order:
-        description: Order of the task within its process (ascending display order).
+        description: |-
+          Order of the task within its parent group (ascending display order):
+          top-level tasks sort within the process, subtasks within the parent.
         example: 1
         type: integer
       owner_id:
         type: integer
+      parent_id:
+        description: ParentID — subtask (operation) link; NULL for top-level tasks.
+        type: integer
       process_id:
         type: integer
       start_date:
+        type: string
+      status:
+        description: 'Execution status: not_started | in_progress | done.'
         type: string
       title:
         type: string
@@ -1063,6 +1112,14 @@ definitions:
       color:
         example: '#0f83c4'
         type: string
+      operations:
+        description: |-
+          Operations (subtasks) of the task — created as subtasks (parent_id)
+          with the task's dates. Status is always not_started; resources are not
+          bound to subtasks.
+        items:
+          $ref: '#/definitions/dto.OperationTemplate'
+        type: array
       resources:
         items:
           $ref: '#/definitions/dto.ResourceBinding'
@@ -1191,14 +1248,17 @@ definitions:
         format: date
         type: string
       owner_id:
-        example: 1
-        type: integer
-      process_id:
+        description: |-
+          ProcessID is intentionally absent: a task never changes its process.
+          ParentID is absent too: the parent is fixed at creation.
         example: 1
         type: integer
       start_date:
         example: "2026-01-01"
         format: date
+        type: string
+      status:
+        example: in_progress
         type: string
       title:
         example: Пуско-наладочные работы
@@ -1783,7 +1843,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user; the refresh token goes into an HttpOnly cookie
+      description: Authenticate user; the refresh token is returned both in the response
+        body and in an HttpOnly cookie
       parameters:
       - description: Login credentials
         in: body
@@ -1828,7 +1889,16 @@ paths:
       - Auth
   /auth/logout:
     post:
-      description: Revoke the refresh session and clear the cookie (idempotent)
+      consumes:
+      - application/json
+      description: Revoke the refresh session and clear the cookie; the token is read
+        from the body ({refresh_token}) or the HttpOnly cookie (idempotent)
+      parameters:
+      - description: Refresh token (optional; falls back to the HttpOnly cookie)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.RefreshRequest'
       produces:
       - application/json
       responses:
@@ -1850,8 +1920,16 @@ paths:
       - Auth
   /auth/refresh:
     post:
-      description: Rotate the refresh session from the HttpOnly cookie; returns a
-        new access token
+      consumes:
+      - application/json
+      description: Rotate the refresh session; the token is read from the body ({refresh_token})
+        or the HttpOnly cookie, and a new refresh token is returned in both
+      parameters:
+      - description: Refresh token (optional; falls back to the HttpOnly cookie)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.RefreshRequest'
       produces:
       - application/json
       responses:

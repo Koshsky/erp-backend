@@ -84,18 +84,27 @@ CREATE TABLE processes (
 CREATE TABLE tasks (
 	id BIGSERIAL PRIMARY KEY,
 	process_id BIGINT NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
+	-- Subtask (operation) link: the parent task this task is attached to.
+	-- NULL — a top-level task of its process. The process_id always matches
+	-- the parent's process (enforced in the service), so RBAC stays unchanged.
+	parent_id BIGINT REFERENCES tasks(id) ON DELETE CASCADE,
 	owner_id BIGINT REFERENCES users(id),
 	title TEXT NOT NULL,
 	-- Optional entity color (#RRGGBB, NULL — standard color on the frontend).
 	color TEXT,
+	-- Execution status of the task (fixed catalog).
+	status TEXT NOT NULL DEFAULT 'not_started',
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
-	-- Order of the task within its process (unique per process, see V2).
+	-- Order of the task within its parent group (unique per parent group via
+	-- idx_tasks_parent_sort_order, see V16): top-level tasks sort within the
+	-- process, subtasks within the parent task.
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	deleted_at TIMESTAMPTZ DEFAULT NULL,
-	CHECK (end_date >= start_date)
+	CHECK (end_date >= start_date),
+	CHECK (status IN ('not_started', 'in_progress', 'done'))
 );
 
 -- Resource category dictionary (specializations).

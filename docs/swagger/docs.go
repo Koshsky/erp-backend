@@ -635,7 +635,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user; the refresh token goes into an HttpOnly cookie",
+                "description": "Authenticate user; the refresh token is returned both in the response body and in an HttpOnly cookie",
                 "consumes": [
                     "application/json"
                 ],
@@ -720,7 +720,10 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Revoke the refresh session and clear the cookie (idempotent)",
+                "description": "Revoke the refresh session and clear the cookie; the token is read from the body ({refresh_token}) or the HttpOnly cookie (idempotent)",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -728,6 +731,16 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Logout",
+                "parameters": [
+                    {
+                        "description": "Refresh token (optional; falls back to the HttpOnly cookie)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -758,7 +771,10 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Rotate the refresh session from the HttpOnly cookie; returns a new access token",
+                "description": "Rotate the refresh session; the token is read from the body ({refresh_token}) or the HttpOnly cookie, and a new refresh token is returned in both",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -766,6 +782,16 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Refresh Token",
+                "parameters": [
+                    {
+                        "description": "Refresh token (optional; falls back to the HttpOnly cookie)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6706,6 +6732,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 900
                 },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "a1b2c3d4..."
+                },
                 "token_type": {
                     "type": "string",
                     "example": "Bearer"
@@ -7035,6 +7065,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "parent_id": {
+                    "description": "ParentID — optional subtask (operation) link: task of the given parent.\nWhen set, process_id must point to the parent's process; dates and\nowner may be omitted and are inherited from the parent by the service.",
+                    "type": "integer",
+                    "example": 10
+                },
                 "process_id": {
                     "type": "integer",
                     "example": 1
@@ -7043,6 +7078,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "not_started"
                 },
                 "title": {
                     "type": "string",
@@ -7234,13 +7273,17 @@ const docTemplate = `{
                     "example": 1
                 },
                 "order": {
-                    "description": "Order of the task within its process (ascending display order).",
+                    "description": "Order of the task within its parent group (ascending display order):\ntop-level tasks sort within the process, subtasks within the parent.",
                     "type": "integer",
                     "example": 1
                 },
                 "owner_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "parent_id": {
+                    "description": "ParentID — subtask (operation) link; NULL for top-level tasks.",
+                    "type": "integer"
                 },
                 "process_id": {
                     "type": "integer",
@@ -7256,6 +7299,18 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "description": "Execution status: not_started | in_progress | done.",
+                    "type": "string",
+                    "example": "not_started"
+                },
+                "subtasks": {
+                    "description": "Subtasks (operations) attached to this task, in display order.\nPresent only on top-level tasks; subtasks cannot have subtasks.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedTask"
+                    }
                 },
                 "title": {
                     "type": "string",
@@ -7361,6 +7416,15 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Телевидение"
+                }
+            }
+        },
+        "dto.OperationTemplate": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "example": "Подготовка площадки"
                 }
             }
         },
@@ -7671,6 +7735,15 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.RefreshRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "example": "a1b2c3d4..."
                 }
             }
         },
@@ -7987,17 +8060,25 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "order": {
-                    "description": "Order of the task within its process (ascending display order).",
+                    "description": "Order of the task within its parent group (ascending display order):\ntop-level tasks sort within the process, subtasks within the parent.",
                     "type": "integer",
                     "example": 1
                 },
                 "owner_id": {
                     "type": "integer"
                 },
+                "parent_id": {
+                    "description": "ParentID — subtask (operation) link; NULL for top-level tasks.",
+                    "type": "integer"
+                },
                 "process_id": {
                     "type": "integer"
                 },
                 "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Execution status: not_started | in_progress | done.",
                     "type": "string"
                 },
                 "title": {
@@ -8011,6 +8092,13 @@ const docTemplate = `{
                 "color": {
                     "type": "string",
                     "example": "#0f83c4"
+                },
+                "operations": {
+                    "description": "Operations (subtasks) of the task — created as subtasks (parent_id)\nwith the task's dates. Status is always not_started; resources are not\nbound to subtasks.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.OperationTemplate"
+                    }
                 },
                 "resources": {
                     "type": "array",
@@ -8189,10 +8277,7 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
+                    "description": "ProcessID is intentionally absent: a task never changes its process.\nParentID is absent too: the parent is fixed at creation.",
                     "type": "integer",
                     "example": 1
                 },
@@ -8200,6 +8285,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "in_progress"
                 },
                 "title": {
                     "type": "string",

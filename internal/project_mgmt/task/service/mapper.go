@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 	"github.com/Koshsky/erp-backend/pkg/date"
@@ -18,12 +20,14 @@ func (m *TaskMapper) ToDTO(task *domain.Task) *dto.TaskResponse {
 	}
 	return &dto.TaskResponse{
 		ID:        task.ID,
+		ProcessID: task.ProcessID,
+		ParentID:  task.ParentID,
 		OwnerID:   task.OwnerID,
 		Title:     task.Title,
 		Color:     task.Color,
+		Status:    task.Status,
 		StartDate: date.From(task.StartDate),
 		EndDate:   date.From(task.EndDate),
-		ProcessID: task.ProcessID,
 		Order:     task.SortOrder,
 	}
 }
@@ -41,14 +45,29 @@ func (m *TaskMapper) ToDTOs(tasks []domain.Task) []dto.TaskResponse {
 }
 
 func (m *TaskMapper) ToDomainFromCreate(req dto.CreateTaskRequest) domain.Task {
+	status := domain.StatusNotStarted
+	if req.Status != nil && *req.Status != "" {
+		status = *req.Status
+	}
 	return domain.Task{
+		ProcessID: req.ProcessID,
+		ParentID:  req.ParentID,
 		OwnerID:   req.OwnerID,
 		Title:     req.Title,
 		Color:     req.Color,
-		ProcessID: req.ProcessID,
-		StartDate: req.StartDate.Time(),
-		EndDate:   req.EndDate.Time(),
+		Status:    status,
+		StartDate: dateFromPtr(req.StartDate),
+		EndDate:   dateFromPtr(req.EndDate),
 	}
+}
+
+// dateFromPtr converts a nullable request date; a nil pointer yields the zero
+// time (subtask dates are inherited from the parent by the service).
+func dateFromPtr(d *date.Date) time.Time {
+	if d == nil {
+		return time.Time{}
+	}
+	return d.Time()
 }
 
 func (m *TaskMapper) ApplyUpdateToDomain(task *domain.Task, req dto.UpdateTaskRequest) {
@@ -69,8 +88,8 @@ func (m *TaskMapper) ApplyUpdateToDomain(task *domain.Task, req dto.UpdateTaskRe
 	if req.OwnerID != nil {
 		task.OwnerID = req.OwnerID
 	}
-	if req.ProcessID != nil {
-		task.ProcessID = *req.ProcessID
+	if req.Status != nil {
+		task.Status = *req.Status
 	}
 	if req.StartDate != nil {
 		task.StartDate = req.StartDate.Time()

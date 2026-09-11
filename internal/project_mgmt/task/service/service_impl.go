@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -40,12 +41,46 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 		return nil, err
 	}
 
+	// Subtask (operation) semantics:
+	//  - the parent must be a top-level task (a subtask cannot be a parent);
+	//  - process_id always equals the parent's process (RBAC unchanged);
+	//  - dates inherit the parent's bounds (subtask spans the parent's
+	//    interval; the frontend never renders subtask dates).
+	if err := s.applyParent(ctx, &task, req.ParentID); err != nil {
+		return nil, err
+	}
+
 	created, err := s.repository.CreateTask(ctx, task)
 	if err != nil {
 		return nil, err
 	}
 
 	return s.mapper.ToDTO(created), nil
+}
+
+// applyParent resolves the parent for a subtask request: inherits the
+// parent's process and dates and rejects a parent that is itself a subtask.
+func (s *TaskService) applyParent(ctx context.Context, task *domain.Task, parentID *int64) error {
+	if parentID == nil {
+		return nil
+	}
+	parent, err := s.repository.FindTask(ctx, *parentID)
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return errors.NewValidationError("родительская задача не найдена")
+		}
+		return err
+	}
+	if parent == nil {
+		return errors.NewValidationError("родительская задача не найдена")
+	}
+	if parent.ParentID != nil {
+		return errors.NewValidationError("подзадача не может иметь собственные подзадачи")
+	}
+	task.ProcessID = parent.ProcessID
+	task.StartDate = parent.StartDate
+	task.EndDate = parent.EndDate
+	return nil
 }
 
 func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse, error) {
