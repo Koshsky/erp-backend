@@ -34,9 +34,9 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, vie
 	if err != nil {
 		return nil, err
 	}
-	projetcs := make([]dto.Project, len(rows))
+	projects := make([]dto.Project, len(rows))
 	for i, row := range rows {
-		projetcs[i] = dto.Project{
+		projects[i] = dto.Project{
 			ID:        row.ID,
 			OwnerID:   nullable.Int64Ptr(row.OwnerID),
 			Code:      row.Code,
@@ -47,7 +47,7 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, vie
 		}
 	}
 
-	return projetcs, nil
+	return projects, nil
 }
 
 // ListProjectsByIDs returns full project rows by ids (for attaching parent

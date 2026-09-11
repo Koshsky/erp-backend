@@ -1430,6 +1430,22 @@ definitions:
       state_name:
         example: Отпуск
         type: string
+      user_id:
+        description: |-
+          UserID is set only in batch responses (GET /user/days), where one worker's
+          ranges are nested among several — hence omitempty.
+        example: 7
+        type: integer
+    type: object
+  dto.UserStatesResponse:
+    properties:
+      days:
+        items:
+          $ref: '#/definitions/dto.UserStateResponse'
+        type: array
+      user_id:
+        example: 7
+        type: integer
     type: object
   errors.DomainError:
     properties:
@@ -1485,7 +1501,7 @@ definitions:
 externalDocs:
   description: ERP documentation (placeholder)
   url: https://swagger.io/resources/open-api/
-host: localhost
+host: localhost:8080
 info:
   contact:
     email: shmonov.mv@gmail.com
@@ -4546,6 +4562,11 @@ paths:
         in: query
         name: include_hash
         type: boolean
+      - description: Case-insensitive substring of the full name or login (max 128
+          chars)
+        in: query
+        name: search
+        type: string
       - description: Page offset
         in: query
         name: offset
@@ -5121,8 +5142,86 @@ paths:
       summary: Change Password
       tags:
       - Users
+  /user/days:
+    get:
+      description: 'Batch replacement of GET /user/{id}/days: returns the state ranges
+        of several workers over one date range, with one entry per requested id (empty
+        days when the worker has none) and no N+1 requests per employee.'
+      parameters:
+      - description: Comma-separated user IDs (max 200)
+        in: query
+        name: ids
+        required: true
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.UserStatesResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Batch list worker days
+      tags:
+      - Users
 schemes:
-- https
+- http
 securityDefinitions:
   ApiKeyAuth:
     description: '"Provide JWT token in the format: Bearer {token}"'

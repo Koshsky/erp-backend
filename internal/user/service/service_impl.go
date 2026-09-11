@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
 	repo "github.com/Koshsky/erp-backend/internal/user/repository"
 
@@ -26,6 +28,13 @@ type RBACReloader interface {
 	Reload(ctx context.Context) error
 }
 
+// SessionRevoker is an optional hook that revokes every active refresh session
+// of a user after a credential change or account deletion; implemented by the
+// auth repository. Nil — sessions are not revoked (best-effort hook).
+type SessionRevoker interface {
+	RevokeAllUserSessions(ctx context.Context, userID int64) error
+}
+
 type UserService struct {
 	logger     *slog.Logger
 	repository UserRepository
@@ -33,11 +42,17 @@ type UserService struct {
 	validator  *UserValidator
 	tracer     *tracingpkg.Tracer
 	rbac       RBACReloader
+	sessions   SessionRevoker
 	hibp       *hibp.Checker
 }
 
 // maxManagerDepth — guard against an infinite loop while walking the manager hierarchy.
 const maxManagerDepth = 1000
+
+// stateBatchParallelism — how many worker scopes are checked concurrently while
+// authorizing a batch states request (bounded so a 200-id request cannot open
+// hundreds of connections at once on the pool).
+const stateBatchParallelism = 8
 
 // NewUserService builds the UserService service.
 func NewUserService(
@@ -45,6 +60,7 @@ func NewUserService(
 	tracer *tracingpkg.Tracer,
 	r *repo.UserRepository,
 	rbac RBACReloader,
+	sessions SessionRevoker,
 	hibpChecker *hibp.Checker,
 ) *UserService {
 	return &UserService{
@@ -54,6 +70,7 @@ func NewUserService(
 		validator:  &UserValidator{},
 		tracer:     tracer,
 		rbac:       rbac,
+		sessions:   sessions,
 		hibp:       hibpChecker,
 	}
 }
@@ -99,7 +116,14 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, oldPassw
 		return fmt.Errorf("failed to hash password")
 	}
 
-	return s.repository.UpdatePassword(ctx, userID, newHash)
+	if err = s.repository.UpdatePassword(ctx, userID, newHash); err != nil {
+		return err
+	}
+
+	// The password changed: every existing refresh session must die so a
+	// stolen refresh token cannot keep refreshing under the new credentials.
+	s.revokeSessions(ctx, userID)
+	return nil
 }
 
 // CreateUserWithCreds creates a user and returns the generated password (if any)
@@ -287,6 +311,9 @@ func (s *UserService) ResetPassword(ctx context.Context, id int64) (*dto.ResetPa
 		return nil, err
 	}
 
+	// Same as ChangePassword: a reset invalidates every existing session.
+	s.revokeSessions(ctx, id)
+
 	return &dto.ResetPasswordResponse{Password: raw}, nil
 }
 
@@ -389,7 +416,7 @@ func (s *UserService) checkPresetChange(
 	if *newPreset == userdomain.PresetAdmin || presetName(user.Preset) != userdomain.PresetAdmin {
 		return nil
 	}
-	admins, err := s.repository.CountUsers(ctx, 0, scopeAllCode, userdomain.PresetAdmin, 0)
+	admins, err := s.repository.CountUsers(ctx, 0, scopeAllCode, userdomain.PresetAdmin, 0, "")
 	if err != nil {
 		return err
 	}
@@ -408,6 +435,23 @@ func (s *UserService) refreshRBAC(ctx context.Context) {
 	}
 	if err := s.rbac.Reload(ctx); err != nil {
 		s.logger.WarnContext(ctx, "user: обновление RBAC-снапшота не удалось (исправится фоновым TTL)", "error", err)
+	}
+}
+
+// revokeSessions — best-effort session invalidation after a credential change
+// or account deletion. A failure is logged loudly; the session table lives
+// outside the user write, so the update cannot be rolled back (a DB failure
+// here would also have failed the write itself).
+func (s *UserService) revokeSessions(ctx context.Context, userID int64) {
+	if s.sessions == nil {
+		return
+	}
+	if err := s.sessions.RevokeAllUserSessions(ctx, userID); err != nil {
+		s.logger.ErrorContext(ctx,
+			"user: не удалось отозвать сессии пользователя",
+			"user_id", userID,
+			"error", err,
+		)
 	}
 }
 
@@ -493,27 +537,45 @@ func (s *UserService) validateManager(ctx context.Context, userID int64, manager
 func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 	ctx, end := s.tracer.Start(ctx, "user.DeleteUser")
 	defer end(nil)
-	return s.repository.DeleteUser(ctx, id)
+
+	if err := s.repository.DeleteUser(ctx, id); err != nil {
+		return err
+	}
+
+	// The account is gone (soft delete): revoke sessions so a deleted user
+	// cannot refresh, and a restored account does not resurrect old tokens.
+	s.revokeSessions(ctx, id)
+	return nil
+}
+
+// NormalizeSearch validates and prepares the free-text search pattern of the
+// user list — the delivery layer entry point (see UserValidator.ValidateSearch).
+func (s *UserService) NormalizeSearch(search string) (string, error) {
+	return s.validator.ValidateSearch(search)
 }
 
 // ListUsers returns a paged list of users; visibility by manager is enforced
-// in the middleware (vp sees only their own subordinates).
+// in the middleware (vp sees only their own subordinates). search is an
+// optional case-insensitive substring over the full name or the login; an empty
+// string (or a pattern without searchable characters) disables the filter.
 func (s *UserService) ListUsers(
 	ctx context.Context,
 	userID int64,
 	viewScope string,
 	presetFilter string,
 	managerID int64,
+	search string,
 	limit, offset int,
 ) ([]dto.UserResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "user.ListUsers")
 	defer end(nil)
 
-	users, err := s.repository.ListUsers(ctx, userID, viewScope, presetFilter, managerID, limit, offset)
+	search = normalizeSearch(search)
+	users, err := s.repository.ListUsers(ctx, userID, viewScope, presetFilter, managerID, search, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountUsers(ctx, userID, viewScope, presetFilter, managerID)
+	total, err := s.repository.CountUsers(ctx, userID, viewScope, presetFilter, managerID, search)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -556,6 +618,132 @@ func (s *UserService) ListStates(
 		return nil, err
 	}
 	return s.mapper.ToStateDTOs(states), nil
+}
+
+// ListStatesBatch returns the calendar states of several workers over one date
+// range. It is the batch replacement of N sequential ListStates calls (one per
+// employee on screen): the same validation, one query for the whole set, and an
+// entry for every requested user — including workers with no states in the
+// range (empty days), so the client never has to guess. Every requested id is
+// authorized like the single endpoint: only ids the caller may view
+// (worker.view — own subordinates, self without a manager, or all for admins)
+// are served; a denied id 404s without disclosing existence.
+func (s *UserService) ListStatesBatch(
+	ctx context.Context,
+	caller userctx.UserContext,
+	userIDs []int64,
+	start, end date.Date,
+) ([]dto.UserStatesResponse, error) {
+	ctx, finish := s.tracer.Start(ctx, "user.ListStatesBatch")
+	defer finish(nil)
+
+	if err := s.validator.ValidatePositiveIDs(userIDs, "ids"); err != nil {
+		return nil, err
+	}
+	if err := s.validator.ValidateDayRange(start, end); err != nil {
+		return nil, err
+	}
+
+	ids, err := s.checkBatchScopes(ctx, caller, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	states, err := s.repository.ListStatesByUsers(ctx, ids, start.Time(), end.Time())
+	if err != nil {
+		return nil, err
+	}
+
+	// Rows arrive ordered by user_id; grouping keeps that order and every id
+	// from the request is present, so the result mirrors the ids slice.
+	grouped := make(map[int64][]dto.UserStateResponse, len(ids))
+	for _, state := range s.mapper.ToBatchStateDTOs(states) {
+		grouped[state.UserID] = append(grouped[state.UserID], state)
+	}
+	out := make([]dto.UserStatesResponse, 0, len(ids))
+	for _, id := range ids {
+		days := grouped[id]
+		if days == nil {
+			days = []dto.UserStateResponse{}
+		}
+		out = append(out, dto.UserStatesResponse{UserID: id, Days: days})
+	}
+	return out, nil
+}
+
+// checkBatchScopes verifies existence and the worker.view scope of every
+// requested id (deduplicated, order preserved) and returns the allowed set.
+// The checks run concurrently but with bounded parallelism, because each one
+// costs a query.
+func (s *UserService) checkBatchScopes(
+	ctx context.Context,
+	caller userctx.UserContext,
+	userIDs []int64,
+) ([]int64, error) {
+	ids := dedupeIDs(userIDs)
+	errs := make([]error, len(ids))
+	guard := make(chan struct{}, stateBatchParallelism)
+	var wg sync.WaitGroup
+	for i, id := range ids {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			guard <- struct{}{}
+			defer func() { <-guard }()
+			errs[i] = s.checkUserViewable(ctx, caller, id)
+		}()
+	}
+	wg.Wait()
+
+	for _, err := range errs {
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ids, nil
+}
+
+// checkUserViewable reports 404 when the user is missing or the caller may not
+// view them (worker.view semantics — a denial never discloses existence).
+func (s *UserService) checkUserViewable(
+	ctx context.Context,
+	caller userctx.UserContext,
+	id int64,
+) error {
+	user, err := s.repository.FindUser(ctx, id)
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return errors.ErrUserNotFound
+		}
+		return err
+	}
+	if user == nil {
+		return errors.ErrUserNotFound
+	}
+	// The owner of a worker row is the manager, or the worker themself when
+	// there is none — exactly the chain OwnerChain resolves for worker.view.
+	owner := user.ID
+	if user.ManagerID != nil {
+		owner = *user.ManagerID
+	}
+	if !policies.AuthorizeUser(caller, rbac.ResourceWorker, policies.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
+		return errors.ErrUserNotFound
+	}
+	return nil
+}
+
+// dedupeIDs drops repeated ids, preserving the first-occurrence order.
+func dedupeIDs(ids []int64) []int64 {
+	seen := make(map[int64]struct{}, len(ids))
+	out := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
 }
 
 func (s *UserService) SetDays(

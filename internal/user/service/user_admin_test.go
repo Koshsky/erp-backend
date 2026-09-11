@@ -92,12 +92,12 @@ func (r *stubRepo) DeleteUser(_ context.Context, _ int64) error               { 
 
 func (r *stubRepo) ListUsers(
 	_ context.Context,
-	_ int64, _ string, _ string, _ int64, _ int, _ int,
+	_ int64, _ string, _ string, _ int64, _ string, _ int, _ int,
 ) ([]userdomain.User, error) {
 	return nil, nil
 }
 
-func (r *stubRepo) CountUsers(_ context.Context, _ int64, _ string, presetFilter string, _ int64) (int64, error) {
+func (r *stubRepo) CountUsers(_ context.Context, _ int64, _ string, presetFilter string, _ int64, _ string) (int64, error) {
 	if presetFilter == userdomain.PresetAdmin {
 		return r.adminCount, nil
 	}
@@ -107,6 +107,10 @@ func (r *stubRepo) CountUsers(_ context.Context, _ int64, _ string, presetFilter
 func (r *stubRepo) ListAllUsers(_ context.Context) ([]userdomain.User, error) { return nil, nil }
 
 func (r *stubRepo) ListStates(_ context.Context, _ int64, _, _ time.Time) ([]userdomain.UserState, error) {
+	return nil, nil
+}
+
+func (r *stubRepo) ListStatesByUsers(_ context.Context, _ []int64, _, _ time.Time) ([]userdomain.UserState, error) {
 	return nil, nil
 }
 

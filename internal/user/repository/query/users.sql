@@ -11,6 +11,17 @@ WHERE deleted_at IS NULL
   )
   AND (@preset_filter::text = '' OR preset = @preset_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
+  -- Optional search: a case-insensitive substring over the composed full name
+  -- (last + first + middle) or the login; an empty pattern disables the filter.
+  -- The caller passes the pattern already lowercased and escaped (see the
+  -- normalizeSearch helper in user/service).
+  AND (
+    @search::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || @search::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || @search::text || '%' ESCAPE '\'
+  )
 ORDER BY id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 
@@ -23,7 +34,14 @@ WHERE deleted_at IS NULL
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
   )
   AND (@preset_filter::text = '' OR preset = @preset_filter::text)
-  AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint);
+  AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
+  AND (
+    @search::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || @search::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || @search::text || '%' ESCAPE '\'
+  );
 
 -- name: ListAllUsers :many
 SELECT *
@@ -113,6 +131,19 @@ WHERE es.user_id = @user_id::bigint
 	AND es.end_date >= @start_date::date
 	AND es.start_date <= @end_date::date
 ORDER BY es.start_date ASC;
+
+-- name: ListStatesByUsersRange :many
+-- Batch variant of ListStatesByUserRange for a set of workers in one request
+-- (no N+1 per employee). The rows of the range are ordered by user so the
+-- caller can group them without sorting.
+SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id,
+	s.code AS state_code, s.name AS state_name, s.is_available
+FROM user_states es
+JOIN states s ON s.id = es.state_id
+WHERE es.user_id = ANY(@user_ids::bigint[])
+	AND es.end_date >= @start_date::date
+	AND es.start_date <= @end_date::date
+ORDER BY es.user_id ASC, es.start_date ASC;
 
 -- name: ListOverlappingStates :many
 SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id

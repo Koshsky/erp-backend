@@ -11,13 +11,13 @@ import (
 )
 
 type Assignment struct {
-	ID         int64       `json:"id"`
-	TaskID     int64       `json:"task_id"`
-	ResourceID int64       `json:"resource_id"`
-	Quantity   int32       `json:"quantity"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
-	DeletedAt  **time.Time `json:"deleted_at"`
+	ID         int64              `json:"id"`
+	TaskID     int64              `json:"task_id"`
+	ResourceID int64              `json:"resource_id"`
+	Quantity   int32              `json:"quantity"`
+	CreatedAt  time.Time          `json:"created_at"`
+	UpdatedAt  time.Time          `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type IdempotencyKey struct {
@@ -32,42 +32,42 @@ type IdempotencyKey struct {
 }
 
 type Milestone struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	Color     pgtype.Text `json:"color"`
-	Date      pgtype.Date `json:"date"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64              `json:"id"`
+	ProcessID int64              `json:"process_id"`
+	Title     string             `json:"title"`
+	Content   string             `json:"content"`
+	Color     pgtype.Text        `json:"color"`
+	Date      pgtype.Date        `json:"date"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Process struct {
-	ID        int64       `json:"id"`
-	ProjectID int64       `json:"project_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	Color     pgtype.Text `json:"color"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	SortOrder int32       `json:"sort_order"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64              `json:"id"`
+	ProjectID int64              `json:"project_id"`
+	OwnerID   pgtype.Int8        `json:"owner_id"`
+	Title     string             `json:"title"`
+	Color     pgtype.Text        `json:"color"`
+	StartDate pgtype.Date        `json:"start_date"`
+	EndDate   pgtype.Date        `json:"end_date"`
+	SortOrder int32              `json:"sort_order"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Project struct {
-	ID        int64       `json:"id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Code      string      `json:"code"`
-	Color     pgtype.Text `json:"color"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	Priority  int32       `json:"priority"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64              `json:"id"`
+	OwnerID   pgtype.Int8        `json:"owner_id"`
+	Code      string             `json:"code"`
+	Color     pgtype.Text        `json:"color"`
+	StartDate pgtype.Date        `json:"start_date"`
+	EndDate   pgtype.Date        `json:"end_date"`
+	Priority  int32              `json:"priority"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type ProjectAutoCreate struct {
@@ -79,56 +79,56 @@ type ProjectAutoCreate struct {
 }
 
 type RbacPreset struct {
-	ID          int64       `json:"id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-	DeletedAt   **time.Time `json:"deleted_at"`
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type RbacPresetRule struct {
-	ID        int64       `json:"id"`
-	Preset    string      `json:"preset"`
-	Resource  string      `json:"resource"`
-	Action    string      `json:"action"`
-	Scope     string      `json:"scope"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
-	UpdatedBy pgtype.Int8 `json:"updated_by"`
+	ID        int64              `json:"id"`
+	Preset    string             `json:"preset"`
+	Resource  string             `json:"resource"`
+	Action    string             `json:"action"`
+	Scope     string             `json:"scope"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+	UpdatedBy pgtype.Int8        `json:"updated_by"`
 }
 
 type RbacRoutePolicy struct {
-	Name      string      `json:"name"`
-	Kind      string      `json:"kind"`
-	Params    []byte      `json:"params"`
-	Active    bool        `json:"active"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
-	UpdatedBy pgtype.Int8 `json:"updated_by"`
+	Name      string             `json:"name"`
+	Kind      string             `json:"kind"`
+	Params    []byte             `json:"params"`
+	Active    bool               `json:"active"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+	UpdatedBy pgtype.Int8        `json:"updated_by"`
 }
 
 type RefreshSession struct {
-	ID         int64       `json:"id"`
-	UserID     int64       `json:"user_id"`
-	TokenHash  string      `json:"token_hash"`
-	CreatedAt  time.Time   `json:"created_at"`
-	ExpiresAt  time.Time   `json:"expires_at"`
-	RevokedAt  **time.Time `json:"revoked_at"`
-	ReplacedBy pgtype.Int8 `json:"replaced_by"`
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy pgtype.Int8        `json:"replaced_by"`
 }
 
 type Resource struct {
-	ID        int64       `json:"id"`
-	Title     string      `json:"title"`
-	Code      string      `json:"code"`
-	Color     pgtype.Text `json:"color"`
-	OwnerID   int64       `json:"owner_id"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64              `json:"id"`
+	Title     string             `json:"title"`
+	Code      string             `json:"code"`
+	Color     pgtype.Text        `json:"color"`
+	OwnerID   int64              `json:"owner_id"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type ResourceMember struct {
@@ -138,68 +138,70 @@ type ResourceMember struct {
 }
 
 type State struct {
-	ID          int64       `json:"id"`
-	Code        string      `json:"code"`
-	Name        string      `json:"name"`
-	IsAvailable bool        `json:"is_available"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-	DeletedAt   **time.Time `json:"deleted_at"`
+	ID          int64              `json:"id"`
+	Code        string             `json:"code"`
+	Name        string             `json:"name"`
+	IsAvailable bool               `json:"is_available"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Task struct {
-	ID        int64       `json:"id"`
-	ProcessID int64       `json:"process_id"`
-	OwnerID   pgtype.Int8 `json:"owner_id"`
-	Title     string      `json:"title"`
-	Color     pgtype.Text `json:"color"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	SortOrder int32       `json:"sort_order"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64              `json:"id"`
+	ProcessID int64              `json:"process_id"`
+	ParentID  pgtype.Int8        `json:"parent_id"`
+	OwnerID   pgtype.Int8        `json:"owner_id"`
+	Title     string             `json:"title"`
+	Color     pgtype.Text        `json:"color"`
+	Status    string             `json:"status"`
+	StartDate pgtype.Date        `json:"start_date"`
+	EndDate   pgtype.Date        `json:"end_date"`
+	SortOrder int32              `json:"sort_order"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type TaskComment struct {
-	ID        int64       `json:"id"`
-	TaskID    int64       `json:"task_id"`
-	AuthorID  int64       `json:"author_id"`
-	ParentID  pgtype.Int8 `json:"parent_id"`
-	Content   string      `json:"content"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
+	ID        int64              `json:"id"`
+	TaskID    int64              `json:"task_id"`
+	AuthorID  int64              `json:"author_id"`
+	ParentID  pgtype.Int8        `json:"parent_id"`
+	Content   string             `json:"content"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type User struct {
-	ID              int64       `json:"id"`
-	LastName        string      `json:"last_name"`
-	FirstName       string      `json:"first_name"`
-	MiddleName      pgtype.Text `json:"middle_name"`
-	Preset          pgtype.Text `json:"preset"`
-	Username        string      `json:"username"`
-	PasswordHash    string      `json:"password_hash"`
-	ManagerID       pgtype.Int8 `json:"manager_id"`
-	Position        string      `json:"position"`
-	HireDate        pgtype.Date `json:"hire_date"`
-	TerminationDate pgtype.Date `json:"termination_date"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	DeletedAt       **time.Time `json:"deleted_at"`
+	ID              int64              `json:"id"`
+	LastName        string             `json:"last_name"`
+	FirstName       string             `json:"first_name"`
+	MiddleName      pgtype.Text        `json:"middle_name"`
+	Preset          pgtype.Text        `json:"preset"`
+	Username        string             `json:"username"`
+	PasswordHash    string             `json:"password_hash"`
+	ManagerID       pgtype.Int8        `json:"manager_id"`
+	Position        string             `json:"position"`
+	HireDate        pgtype.Date        `json:"hire_date"`
+	TerminationDate pgtype.Date        `json:"termination_date"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type UserPermission struct {
-	ID        int64       `json:"id"`
-	UserID    int64       `json:"user_id"`
-	Resource  string      `json:"resource"`
-	Action    string      `json:"action"`
-	Scope     string      `json:"scope"`
-	Granted   bool        `json:"granted"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	DeletedAt **time.Time `json:"deleted_at"`
-	UpdatedBy pgtype.Int8 `json:"updated_by"`
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	Resource  string             `json:"resource"`
+	Action    string             `json:"action"`
+	Scope     string             `json:"scope"`
+	Granted   bool               `json:"granted"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+	UpdatedBy pgtype.Int8        `json:"updated_by"`
 }
 
 type UserState struct {

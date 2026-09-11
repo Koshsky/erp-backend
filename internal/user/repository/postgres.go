@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -170,6 +171,7 @@ func (r *UserRepository) ListUsers(
 	viewScope string,
 	presetFilter string,
 	managerID int64,
+	search string,
 	limit, offset int,
 ) ([]domain.User, error) {
 	rows, err := r.db.ListUsers(ctx, sqlc.ListUsersParams{
@@ -177,6 +179,7 @@ func (r *UserRepository) ListUsers(
 		ScopeView:    viewScope,
 		UserID:       userID,
 		ManagerID:    managerID,
+		Search:       search,
 		PageLimit:    int64(limit),
 		PageOffset:   int64(offset),
 	})
@@ -197,12 +200,14 @@ func (r *UserRepository) CountUsers(
 	viewScope string,
 	presetFilter string,
 	managerID int64,
+	search string,
 ) (int64, error) {
 	return r.db.CountUsers(ctx, sqlc.CountUsersParams{
 		PresetFilter: presetFilter,
 		ScopeView:    viewScope,
 		UserID:       userID,
 		ManagerID:    managerID,
+		Search:       search,
 	})
 }
 
@@ -240,6 +245,29 @@ func (r *UserRepository) ListStates(
 	return states, nil
 }
 
+// ListStatesByUsers returns the states of several workers over one date range in
+// a single query (batch variant of ListStates — avoids one request per employee).
+// Rows come ordered by user_id, start_date, so the caller groups them in order.
+func (r *UserRepository) ListStatesByUsers(
+	ctx context.Context,
+	userIDs []int64,
+	start, end time.Time,
+) ([]domain.UserState, error) {
+	rows, err := r.db.ListStatesByUsersRange(ctx, sqlc.ListStatesByUsersRangeParams{
+		UserIds:   userIDs,
+		StartDate: start,
+		EndDate:   end,
+	})
+	if err != nil {
+		return nil, err
+	}
+	states := make([]domain.UserState, 0, len(rows))
+	for _, row := range rows {
+		states = append(states, mapBatchStateRow(row))
+	}
+	return states, nil
+}
+
 // overlapState is an overlapping interval with its state.
 type overlapState struct {
 	StateID   int64
@@ -260,6 +288,10 @@ func (r *UserRepository) SetStateRange(
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err = lockUserStates(ctx, tx, userID); err != nil {
+		return err
+	}
 
 	q := sqlc.New(tx)
 	rows, err := q.ListOverlappingStates(ctx, sqlc.ListOverlappingStatesParams{
@@ -313,6 +345,10 @@ func (r *UserRepository) DeleteStateRange(
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	if err = lockUserStates(ctx, tx, userID); err != nil {
+		return err
+	}
+
 	q := sqlc.New(tx)
 	var overlaps []overlapState
 	if stateID == nil {
@@ -328,6 +364,17 @@ func (r *UserRepository) DeleteStateRange(
 	}
 
 	return tx.Commit(ctx)
+}
+
+// lockUserStates serializes state-range writes for one user inside the calling
+// transaction (released automatically on commit/rollback). Without it, two
+// concurrent SetStateRange/DeleteStateRange calls for the same user can both
+// pass the overlap read and then one violates the EXCLUDE constraint (23P01)
+// at insert time; the advisory lock turns that race into a clean serialized
+// write (the mapped error stays 409 for genuinely conflicting input).
+func lockUserStates(ctx context.Context, tx pgx.Tx, userID int64) error {
+	_, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtext('user_states:' || $1::bigint))", userID)
+	return err
 }
 
 // loadAndDeleteAll loads and deletes all intervals overlapping [start, end].
@@ -452,6 +499,19 @@ func mapUser(row sqlc.User) domain.User {
 }
 
 func mapStateRow(row sqlc.ListStatesByUserRangeRow) domain.UserState {
+	return domain.UserState{
+		ID:          row.ID,
+		UserID:      row.UserID,
+		StateID:     row.StateID,
+		StateCode:   row.StateCode,
+		StateName:   row.StateName,
+		IsAvailable: row.IsAvailable,
+		StartDate:   row.StartDate,
+		EndDate:     row.EndDate,
+	}
+}
+
+func mapBatchStateRow(row sqlc.ListStatesByUsersRangeRow) domain.UserState {
 	return domain.UserState{
 		ID:          row.ID,
 		UserID:      row.UserID,

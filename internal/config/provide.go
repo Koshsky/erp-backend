@@ -24,5 +24,8 @@ func ProvideRBACRefreshInterval(cfg *Config) Duration { return cfg.RBAC.RefreshI
 // ProvideAuditConfig extracts the audit-log capture settings (Loki storage).
 func ProvideAuditConfig(cfg *Config) AuditConfig { return cfg.Audit }
 
+// ProvideRedisConfig extracts the Redis settings (rate limiter backend, M1).
+func ProvideRedisConfig(cfg *Config) RedisConfig { return cfg.Redis }
+
 // ProvideSecurityConfig extracts the password-policy security settings.
 func ProvideSecurityConfig(cfg *Config) SecurityConfig { return cfg.Security }

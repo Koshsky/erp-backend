@@ -22,7 +22,13 @@ const (
 	loginCleanupEvery   = time.Minute
 	loginLimitExpiresIn = 10 * time.Minute
 	// loginResponseDelay uniformly slows every /auth/login response so that
-	// timing does not reveal whether a username exists.
+	// timing does not reveal whether a username exists (anti-enumeration).
+	//
+	// Deliberately kept synchronous (L10): each 500 ms sleep occupies only a
+	// goroutine — no DB connection, pool slot or rate-limit bucket is held —
+	// and the login limiter (1 rps/ip, burst 5) caps how many sleeps can run
+	// concurrently per client. An async "delayed response" would require
+	// buffering replies per connection and buy nothing here.
 	loginResponseDelay = 500 * time.Millisecond
 )
 
@@ -49,40 +55,44 @@ var ProviderSet = wire.NewSet(
 // Module registers the auth module's routes. All auth routes are public
 // (register/login/refresh); there are no protected auth routes.
 type Module struct {
-	handler *delivery.AuthHandler
-	logger  *slog.Logger
+	handler     *delivery.AuthHandler
+	logger      *slog.Logger
+	rateLimiter *ratelimit.Provider
 }
 
 // ProvideModule builds the auth module.
-func ProvideModule(handler *delivery.AuthHandler, logger *slog.Logger) Module {
-	return Module{handler: handler, logger: logger}
+func ProvideModule(
+	handler *delivery.AuthHandler,
+	logger *slog.Logger,
+	rateLimiter *ratelimit.Provider,
+) Module {
+	return Module{handler: handler, logger: logger, rateLimiter: rateLimiter}
 }
 
 // loginGuard returns a per-IP rate limiter applied to the login endpoint.
 // The uniform loginResponseDelay is applied before the limiter so that timing
 // does not reveal whether a username exists.
 func (m Module) loginGuard() gin.HandlerFunc {
-	limiter := ratelimit.New(ratelimit.Config{
-		RequestsPerSecond: loginRatePerSecond,
-		Burst:             loginBurst,
-		CleanupInterval:   loginCleanupEvery,
-		Expiration:        loginLimitExpiresIn,
-	}, m.logger)
-
 	return func(c *gin.Context) {
 		time.Sleep(loginResponseDelay)
-		limiter(c)
+		m.limiter(loginRatePerSecond, loginBurst, loginCleanupEvery, loginLimitExpiresIn)(c)
 	}
 }
 
 // refreshGuard returns a per-IP rate limiter applied to the endpoint /auth/refresh.
 func (m Module) refreshGuard() gin.HandlerFunc {
-	return ratelimit.New(ratelimit.Config{
-		RequestsPerSecond: refreshRatePerSecond,
-		Burst:             refreshBurst,
-		CleanupInterval:   refreshCleanupEvery,
-		Expiration:        refreshLimitExpiresIn,
-	}, m.logger)
+	return m.limiter(refreshRatePerSecond, refreshBurst, refreshCleanupEvery, refreshLimitExpiresIn)
+}
+
+// limiter builds a per-IP token bucket middleware (Redis-backed when the
+// provider has a live client, in-memory otherwise, M1).
+func (m Module) limiter(perSecond float64, burst int, cleanup, expiration time.Duration) gin.HandlerFunc {
+	return m.rateLimiter.New(ratelimit.Config{
+		RequestsPerSecond: perSecond,
+		Burst:             burst,
+		CleanupInterval:   cleanup,
+		Expiration:        expiration,
+	})
 }
 
 // RegisterPublicRoutes registers the auth routes without authentication.

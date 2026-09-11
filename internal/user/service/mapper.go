@@ -121,6 +121,29 @@ func (m *UserMapper) ToStateDTOs(states []domain.UserState) []dto.UserStateRespo
 	return responses
 }
 
+// ToBatchStateDTOs maps batch rows (ListStatesBatch): the items carry the
+// worker's user_id so the caller can group them without re-reading the row.
+func (m *UserMapper) ToBatchStateDTOs(states []domain.UserState) []dto.UserStateResponse {
+	if states == nil {
+		return []dto.UserStateResponse{}
+	}
+
+	responses := make([]dto.UserStateResponse, len(states))
+	for i, state := range states {
+		responses[i] = dto.UserStateResponse{
+			ID:          state.ID,
+			UserID:      state.UserID,
+			StateID:     state.StateID,
+			StateCode:   state.StateCode,
+			StateName:   state.StateName,
+			IsAvailable: state.IsAvailable,
+			StartDate:   date.From(state.StartDate),
+			EndDate:     date.From(state.EndDate),
+		}
+	}
+	return responses
+}
+
 func datePtr(t *time.Time) *date.Date {
 	if t == nil {
 		return nil

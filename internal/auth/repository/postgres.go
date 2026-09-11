@@ -92,12 +92,12 @@ func toSession(
 	tokenHash string,
 	createdAt time.Time,
 	expiresAt time.Time,
-	revokedAt **time.Time,
+	revokedAt pgtype.Timestamptz,
 	replacedBy int64,
 ) Session {
 	var revoked *time.Time
-	if revokedAt != nil && *revokedAt != nil {
-		revoked = *revokedAt
+	if revokedAt.Valid {
+		revoked = &revokedAt.Time
 	}
 	return Session{
 		ID:         id,

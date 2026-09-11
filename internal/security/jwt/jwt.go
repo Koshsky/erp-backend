@@ -37,14 +37,18 @@ func (s *Service) GenerateAccessToken(userID int64, email string) (string, error
 	return token.SignedString(s.secretKey)
 }
 
-// ValidateAccessToken checks and validates the access token.
+// ValidateAccessToken checks and validates the access token: signature, expiry,
+// issuer and the signing algorithm (strictly HS256; weaker or none are rejected).
 func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return s.secretKey, nil
-	})
+	},
+		jwt.WithIssuer(s.issuer),
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("invalid access token: %w", err)
 	}

@@ -23,9 +23,15 @@ func IsForbidden(err error) bool {
 	return stderrors.Is(err, ErrForbidden)
 }
 
-// IsConflictError reports whether the error is a business-key conflict (409).
+// IsConflictError reports whether the error is a business-key conflict (409):
+// our ErrConflict sentinel or a Postgres exclusion violation (23P01 — e.g.
+// overlapping user_state ranges).
 func IsConflictError(err error) bool {
-	return stderrors.Is(err, ErrConflict)
+	if stderrors.Is(err, ErrConflict) {
+		return true
+	}
+	var pgErr *pgconn.PgError
+	return stderrors.As(err, &pgErr) && pgErr.Code == "23P01"
 }
 
 // IsValidationError reports whether the error is a validation failure: our
@@ -60,6 +66,8 @@ func StatusCode(err error) int {
 		return http.StatusNotFound
 	case IsForbidden(err):
 		return http.StatusForbidden
+	case IsConflictError(err):
+		return http.StatusConflict
 	case IsValidationError(err):
 		return http.StatusBadRequest
 	default:

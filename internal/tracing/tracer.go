@@ -23,7 +23,13 @@ const (
 	AttrUserID         = "user.id"
 	AttrUserRole       = "user.role"
 	AttrErrorMessage   = "error.message"
+	AttrRequestID      = "request.id"
 )
+
+// RequestIDKey is the gin context key under which the per-request id is
+// stored (assigned by the server's requestID middleware, L6). Kept here so
+// the root span middleware can read it without a server import cycle.
+const RequestIDKey = "x-request-id"
 
 // ginSpanKey stores the root span on the gin context so handlers and later
 // middleware can attach attributes (e.g. the authenticated user id).
@@ -117,6 +123,7 @@ func (t *Tracer) HTTPRootSpan() gin.HandlerFunc {
 			attribute.String(AttrHTTPMethod, c.Request.Method),
 			attribute.String(AttrHTTPPath, c.Request.RequestURI),
 			attribute.Int(AttrHTTPStatusCode, status),
+			attribute.String(AttrRequestID, c.GetString(RequestIDKey)),
 		)
 		if status >= http.StatusInternalServerError {
 			span.SetStatus(codes.Error, "http server error")

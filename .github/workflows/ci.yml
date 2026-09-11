@@ -1,7 +1,10 @@
 # CI for erp-backend.
-# The "CI / Branch policy" check is the required status check for main/staging/dev
-# (see scripts/branch-protection/ in erp-infra). Lint and tests are optional
-# checks; they can be added to the required set later if desired.
+# Checks: branch policy, build + vet + unit tests, generated-code drift
+# (sqlc/wire/swag), integration tests (auth sessions against real postgres),
+# golangci-lint. The "CI / Branch policy" check is the required status check
+# for main/staging/dev (see scripts/branch-protection/ in erp-infra); the
+# rest are gating checks that should be added to the required set in the
+# repository settings (M8).
 name: CI
 
 on:
@@ -57,7 +60,63 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: go build ./...
+      - run: go vet ./...
       - run: go test ./...
+
+  generated:
+    name: Generated code is in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Regenerate sqlc + wire
+        run: |
+          go generate ./...
+          go run github.com/google/wire/cmd/wire@latest ./internal/server/...
+      - name: Regenerate swagger docs
+        run: go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/service/main.go -o docs/swagger
+      - name: Fail on drift
+        run: git diff --exit-code
+
+  integration:
+    name: Integration (auth sessions)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: erp_test
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U erp -d erp_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run Flyway migrations
+        run: |
+          docker run --rm \
+            -v "$PWD/migrations:/flyway/sql" \
+            flyway/flyway:9.20.0 \
+            -url=jdbc:postgresql://127.0.0.1:5432/erp_test \
+            -user=erp -password=erp \
+            -locations=filesystem:/flyway/sql,filesystem:/flyway/sql/plugins,filesystem:/flyway/sql/seed \
+            -outOfOrder=true migrate
+      - name: Run integration tests (auth refresh sessions)
+        env:
+          DATABASE_URL: postgres://erp:erp@127.0.0.1:5432/erp_test?sslmode=disable
+        run: go test -tags integration ./internal/auth/repository/...
 
   lint:
     name: Golangci-lint

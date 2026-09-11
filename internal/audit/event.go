@@ -22,6 +22,18 @@ type Event struct {
 	DurationMS   *int            `json:"duration_ms,omitempty"`
 	RequestBody  json.RawMessage `json:"request_body,omitempty"`
 	ResponseBody json.RawMessage `json:"response_body,omitempty"`
+
+	// Critical marks security-relevant events (login/logout) that must not be
+	// dropped: they bypass the async buffer and are delivered synchronously
+	// with retries (M2). Not serialized — delivery metadata, not event data.
+	Critical bool `json:"-"`
+}
+
+// isCriticalAction reports whether an action must be delivered even under
+// buffer pressure (M2): authentication events are the security trail that
+// matters most for incident response.
+func isCriticalAction(action string) bool {
+	return action == actionLogin || action == actionLogout
 }
 
 // entity/action values used in route classification (see route.go).

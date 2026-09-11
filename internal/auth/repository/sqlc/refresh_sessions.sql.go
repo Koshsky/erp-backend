@@ -26,13 +26,13 @@ type CreateSessionParams struct {
 }
 
 type CreateSessionRow struct {
-	ID         int64       `json:"id"`
-	UserID     int64       `json:"user_id"`
-	TokenHash  string      `json:"token_hash"`
-	CreatedAt  time.Time   `json:"created_at"`
-	ExpiresAt  time.Time   `json:"expires_at"`
-	RevokedAt  **time.Time `json:"revoked_at"`
-	ReplacedBy int64       `json:"replaced_by"`
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy int64              `json:"replaced_by"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error) {
@@ -75,13 +75,13 @@ LIMIT 1
 `
 
 type FindActiveSessionRow struct {
-	ID         int64       `json:"id"`
-	UserID     int64       `json:"user_id"`
-	TokenHash  string      `json:"token_hash"`
-	CreatedAt  time.Time   `json:"created_at"`
-	ExpiresAt  time.Time   `json:"expires_at"`
-	RevokedAt  **time.Time `json:"revoked_at"`
-	ReplacedBy int64       `json:"replaced_by"`
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy int64              `json:"replaced_by"`
 }
 
 // Check: whether the token is considered active (revoked_at IS NULL AND expires_at > NOW()).
@@ -108,13 +108,13 @@ LIMIT 1
 `
 
 type FindSessionByHashRow struct {
-	ID         int64       `json:"id"`
-	UserID     int64       `json:"user_id"`
-	TokenHash  string      `json:"token_hash"`
-	CreatedAt  time.Time   `json:"created_at"`
-	ExpiresAt  time.Time   `json:"expires_at"`
-	RevokedAt  **time.Time `json:"revoked_at"`
-	ReplacedBy int64       `json:"replaced_by"`
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy int64              `json:"replaced_by"`
 }
 
 // Find a session by hash (including revoked/expired ones — to detect token reuse).
