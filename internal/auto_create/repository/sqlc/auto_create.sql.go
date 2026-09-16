@@ -34,7 +34,6 @@ const listExistingResources = `-- name: ListExistingResources :many
 SELECT id
 FROM resources
 WHERE id = ANY($1::bigint[])
-  AND deleted_at IS NULL
 `
 
 func (q *Queries) ListExistingResources(ctx context.Context, ids []int64) ([]int64, error) {
@@ -61,7 +60,6 @@ const listExistingUsers = `-- name: ListExistingUsers :many
 SELECT id
 FROM users
 WHERE id = ANY($1::bigint[])
-  AND deleted_at IS NULL
 `
 
 func (q *Queries) ListExistingUsers(ctx context.Context, ids []int64) ([]int64, error) {

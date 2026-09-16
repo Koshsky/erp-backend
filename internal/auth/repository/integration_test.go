@@ -42,7 +42,7 @@ func TestRevokedSessionRoundTrip(t *testing.T) {
 	// The schema is seeded (V1000 admin/worker accounts); pick any live user
 	// for the session's owner.
 	var userID int64
-	if err = pool.QueryRow(ctx, "SELECT id FROM users WHERE deleted_at IS NULL ORDER BY id LIMIT 1").Scan(&userID); err != nil {
+	if err = pool.QueryRow(ctx, "SELECT id FROM users ORDER BY id LIMIT 1").Scan(&userID); err != nil {
 		t.Fatalf("no seeded user available: %v", err)
 	}
 
@@ -98,7 +98,7 @@ func TestRevokeAllUserSessions(t *testing.T) {
 	defer pool.Close()
 
 	var userID int64
-	if err = pool.QueryRow(ctx, "SELECT id FROM users WHERE deleted_at IS NULL ORDER BY id LIMIT 1").Scan(&userID); err != nil {
+	if err = pool.QueryRow(ctx, "SELECT id FROM users ORDER BY id LIMIT 1").Scan(&userID); err != nil {
 		t.Fatalf("no seeded user available: %v", err)
 	}
 

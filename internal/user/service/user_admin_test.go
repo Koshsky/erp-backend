@@ -97,7 +97,14 @@ func (r *stubRepo) ListUsers(
 	return nil, nil
 }
 
-func (r *stubRepo) CountUsers(_ context.Context, _ int64, _ string, presetFilter string, _ int64, _ string) (int64, error) {
+func (r *stubRepo) CountUsers(
+	_ context.Context,
+	_ int64,
+	_ string,
+	presetFilter string,
+	_ int64,
+	_ string,
+) (int64, error) {
 	if presetFilter == userdomain.PresetAdmin {
 		return r.adminCount, nil
 	}

@@ -303,12 +303,13 @@ func (h *UserHandler) UpdateManager(c *gin.Context) {
 //
 //	@Tags			Users
 //	@Summary		Delete a user
-//	@Description	Delete a user by ID (soft delete)
+//	@Description	Delete a user by ID (moves the account to the archive; 409 if the user is referenced)
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path	int	true	"User ID"
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		409	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
@@ -452,7 +453,7 @@ func (h *UserHandler) ListDaysBatch(c *gin.Context) {
 // ignored, a non-numeric or non-positive value is an error.
 func parseIDList(raw string) ([]int64, error) {
 	var ids []int64
-	for _, part := range strings.Split(raw, ",") {
+	for part := range strings.SplitSeq(raw, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue

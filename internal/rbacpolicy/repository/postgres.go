@@ -88,14 +88,14 @@ func (r *RuleRepository) UpsertRule(ctx context.Context, rule domain.PresetRule)
 	}, nil
 }
 
-// SoftDeleteRule marks a matrix row as deleted (no-op if already deleted).
-func (r *RuleRepository) SoftDeleteRule(ctx context.Context, id int64) error {
-	return r.db.SoftDeletePresetRule(ctx, id)
+// DeleteRule removes a matrix row (archived by the DB trigger).
+func (r *RuleRepository) DeleteRule(ctx context.Context, id int64) error {
+	return r.db.DeletePresetRule(ctx, id)
 }
 
-// SoftDeleteAllRules marks every matrix row as deleted (for reset).
-func (r *RuleRepository) SoftDeleteAllRules(ctx context.Context) error {
-	return r.db.SoftDeleteAllPresetRules(ctx)
+// DeleteAllRules removes every matrix row (for reset); each row is archived.
+func (r *RuleRepository) DeleteAllRules(ctx context.Context) error {
+	return r.db.DeleteAllPresetRules(ctx)
 }
 
 // ListActiveRoutePolicies returns all active route policy definitions.
@@ -156,17 +156,17 @@ func (r *RuleRepository) UpsertRoutePolicy(ctx context.Context, p domain.RoutePo
 	}, nil
 }
 
-// SoftDeleteRoutePolicy marks a route policy as deleted by name.
-func (r *RuleRepository) SoftDeleteRoutePolicy(ctx context.Context, name string) error {
-	return r.db.SoftDeleteRoutePolicy(ctx, name)
+// DeleteRoutePolicy removes a route policy by name (archived).
+func (r *RuleRepository) DeleteRoutePolicy(ctx context.Context, name string) error {
+	return r.db.DeleteRoutePolicy(ctx, name)
 }
 
-// SoftDeleteAllRoutePolicies marks every route policy as deleted (for reset).
-func (r *RuleRepository) SoftDeleteAllRoutePolicies(ctx context.Context) error {
-	return r.db.SoftDeleteAllRoutePolicies(ctx)
+// DeleteAllRoutePolicies removes every route policy (for reset); each is archived.
+func (r *RuleRepository) DeleteAllRoutePolicies(ctx context.Context) error {
+	return r.db.DeleteAllRoutePolicies(ctx)
 }
 
-// UpsertPreset creates a preset (or revives a soft-deleted one by name).
+// UpsertPreset creates a preset (or updates it by name).
 func (r *RuleRepository) UpsertPreset(ctx context.Context, name, description string) (domain.Preset, error) {
 	row, err := r.db.UpsertPreset(ctx, sqlc.UpsertPresetParams{Name: name, Description: description})
 	if err != nil {
@@ -189,9 +189,11 @@ func (r *RuleRepository) UpdatePresetDescription(
 	return domain.Preset{ID: row.ID, Name: row.Name, Description: row.Description}, nil
 }
 
-// SoftDeletePreset softly deletes a preset together with its rules and clears
-// the preset ref on users (base rights vanish; individual overrides survive).
-func (r *RuleRepository) SoftDeletePreset(ctx context.Context, name string) error {
+// DeletePreset deletes a preset together with its rules and clears the preset
+// ref on users (base rights vanish; individual overrides survive). The users
+// ref must be cleared before the preset row is removed (FK users.preset →
+// rbac_presets(name) is RESTRICT).
+func (r *RuleRepository) DeletePreset(ctx context.Context, name string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -199,13 +201,13 @@ func (r *RuleRepository) SoftDeletePreset(ctx context.Context, name string) erro
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := sqlc.New(tx)
-	if err = q.SoftDeletePreset(ctx, name); err != nil {
-		return err
-	}
-	if err = q.SoftDeletePresetRulesByPreset(ctx, name); err != nil {
-		return err
-	}
 	if err = q.ClearPresetOnUsers(ctx, name); err != nil {
+		return err
+	}
+	if err = q.DeletePresetRulesByPreset(ctx, name); err != nil {
+		return err
+	}
+	if err = q.DeletePreset(ctx, name); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
@@ -234,7 +236,7 @@ func (r *RuleRepository) ListUserPermissions(ctx context.Context, userID int64) 
 }
 
 // ReplaceUserPermissions atomically replaces the user's override set:
-// soft-deletes the previous rows and inserts the new ones.
+// deletes (archives) the previous rows and inserts the new ones.
 func (r *RuleRepository) ReplaceUserPermissions(
 	ctx context.Context,
 	userID int64,
@@ -247,7 +249,7 @@ func (r *RuleRepository) ReplaceUserPermissions(
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := sqlc.New(tx)
-	if err = q.SoftDeleteAllUserPermissions(ctx, userID); err != nil {
+	if err = q.DeleteAllUserPermissions(ctx, userID); err != nil {
 		return err
 	}
 	for _, p := range rows {

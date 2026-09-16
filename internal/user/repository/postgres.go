@@ -3,10 +3,12 @@ package repository
 
 import (
 	"context"
+	stderrors "errors"
 	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -58,7 +60,7 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID int64, hash 
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
-	return r.db.DeleteUser(ctx, id)
+	return mapUserDeleteErr(r.db.DeleteUser(ctx, id))
 }
 
 func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
@@ -554,4 +556,17 @@ func (r *UserRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners,
 // constraint errors (unique login 409, role/manager FK 400, CHECK 400).
 func mapUserErr(err error) error {
 	return errapi.MapPgConstraint(err)
+}
+
+// mapUserDeleteErr turns the FK violation raised when a referenced user is
+// deleted (Postgres picks one of the RESTRICT constraints — resources,
+// comments, projects/processes/tasks ownership, manager_id) into a 409.
+func mapUserDeleteErr(err error) error {
+	var pgErr *pgconn.PgError
+	if stderrors.As(err, &pgErr) && pgErr.Code == "23503" {
+		return errapi.Conflict(
+			"пользователя нельзя удалить: на него ссылаются связанные записи — сначала переназначьте или удалите их",
+		)
+	}
+	return mapUserErr(err)
 }

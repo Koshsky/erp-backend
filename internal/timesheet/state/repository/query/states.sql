@@ -1,12 +1,10 @@
 -- name: ListStates :many
 SELECT * FROM states
-WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
 -- name: FindState :one
 SELECT * FROM states
-WHERE deleted_at IS NULL
-	AND id = @state_id::bigint;
+WHERE id = @state_id::bigint;
 
 -- name: CreateState :one
 -- Idempotent create by business key code: if the code already exists we
@@ -25,11 +23,8 @@ SET
 	is_available = @is_available,
 	updated_at = NOW()
 WHERE id = @state_id
-	AND deleted_at IS NULL
 RETURNING *;
 
 -- name: DeleteState :exec
-UPDATE states
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = @state_id
-	AND deleted_at IS NULL;
+DELETE FROM states
+WHERE id = @state_id;

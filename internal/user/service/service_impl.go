@@ -542,8 +542,9 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 		return err
 	}
 
-	// The account is gone (soft delete): revoke sessions so a deleted user
-	// cannot refresh, and a restored account does not resurrect old tokens.
+	// The account is gone (moved to users_deleted): revoke sessions so a
+	// deleted user cannot refresh, and a restored account does not resurrect
+	// old tokens.
 	s.revokeSessions(ctx, id)
 	return nil
 }
@@ -685,13 +686,11 @@ func (s *UserService) checkBatchScopes(
 	guard := make(chan struct{}, stateBatchParallelism)
 	var wg sync.WaitGroup
 	for i, id := range ids {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			guard <- struct{}{}
 			defer func() { <-guard }()
 			errs[i] = s.checkUserViewable(ctx, caller, id)
-		}()
+		})
 	}
 	wg.Wait()
 

@@ -16,16 +16,14 @@ import (
 const countAutoCreatedEntities = `-- name: CountAutoCreatedEntities :one
 SELECT
   (SELECT COUNT(*) FROM processes
-     WHERE project_id = $1::bigint AND deleted_at IS NULL) AS processes,
+     WHERE project_id = $1::bigint) AS processes,
   (SELECT COUNT(*) FROM tasks t
      JOIN processes p ON p.id = t.process_id
-     WHERE p.project_id = $1::bigint
-       AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS tasks,
+     WHERE p.project_id = $1::bigint) AS tasks,
   (SELECT COUNT(*) FROM assignments a
      JOIN tasks t ON t.id = a.task_id
      JOIN processes p ON p.id = t.process_id
-     WHERE p.project_id = $1::bigint
-       AND a.deleted_at IS NULL AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS assignments
+     WHERE p.project_id = $1::bigint) AS assignments
 `
 
 type CountAutoCreatedEntitiesRow struct {
@@ -47,8 +45,7 @@ func (q *Queries) CountAutoCreatedEntities(ctx context.Context, projectID int64)
 const countProjects = `-- name: CountProjects :one
 SELECT COUNT(*)
 FROM projects
-WHERE deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'own' AND owner_id = $2::bigint)
   )
@@ -78,9 +75,9 @@ VALUES (
   $5,
   $6
 )
-ON CONFLICT (code) WHERE deleted_at IS NULL
+ON CONFLICT (code)
 DO NOTHING
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 `
 
 type CreateProjectParams struct {
@@ -114,16 +111,13 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteProject = `-- name: DeleteProject :exec
-UPDATE projects
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = $1::bigint
+DELETE FROM projects
+WHERE id = $1::bigint
 `
 
 func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
@@ -132,10 +126,9 @@ func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
 }
 
 const findProject = `-- name: FindProject :one
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 FROM projects
-WHERE deleted_at IS NULL
-  AND id = $1::bigint
+WHERE id = $1::bigint
 `
 
 func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, error) {
@@ -151,16 +144,14 @@ func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, er
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 FROM projects
-WHERE deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'own' AND owner_id = $2::bigint)
   )
@@ -202,7 +193,6 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -218,7 +208,6 @@ const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(owner_id, 0)::bigint AS owner_id
 FROM projects
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
@@ -238,9 +227,8 @@ SET
 	end_date = $5,
   owner_id = $6,
 	updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = $7::bigint
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+WHERE id = $7::bigint
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 `
 
 type UpdateProjectParams struct {
@@ -274,7 +262,6 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

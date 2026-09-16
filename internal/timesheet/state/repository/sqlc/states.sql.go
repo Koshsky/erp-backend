@@ -14,7 +14,7 @@ INSERT INTO states (code, name, is_available)
 VALUES ($1, $2, $3)
 ON CONFLICT ON CONSTRAINT states_code_key
 DO NOTHING
-RETURNING id, code, name, is_available, created_at, updated_at, deleted_at
+RETURNING id, code, name, is_available, created_at, updated_at
 `
 
 type CreateStateParams struct {
@@ -35,16 +35,13 @@ func (q *Queries) CreateState(ctx context.Context, arg CreateStateParams) (State
 		&i.IsAvailable,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteState = `-- name: DeleteState :exec
-UPDATE states
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM states
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteState(ctx context.Context, stateID int64) error {
@@ -53,9 +50,8 @@ func (q *Queries) DeleteState(ctx context.Context, stateID int64) error {
 }
 
 const findState = `-- name: FindState :one
-SELECT id, code, name, is_available, created_at, updated_at, deleted_at FROM states
-WHERE deleted_at IS NULL
-	AND id = $1::bigint
+SELECT id, code, name, is_available, created_at, updated_at FROM states
+WHERE id = $1::bigint
 `
 
 func (q *Queries) FindState(ctx context.Context, stateID int64) (State, error) {
@@ -68,14 +64,12 @@ func (q *Queries) FindState(ctx context.Context, stateID int64) (State, error) {
 		&i.IsAvailable,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listStates = `-- name: ListStates :many
-SELECT id, code, name, is_available, created_at, updated_at, deleted_at FROM states
-WHERE deleted_at IS NULL
+SELECT id, code, name, is_available, created_at, updated_at FROM states
 ORDER BY id ASC
 `
 
@@ -95,7 +89,6 @@ func (q *Queries) ListStates(ctx context.Context) ([]State, error) {
 			&i.IsAvailable,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -115,8 +108,7 @@ SET
 	is_available = $3,
 	updated_at = NOW()
 WHERE id = $4
-	AND deleted_at IS NULL
-RETURNING id, code, name, is_available, created_at, updated_at, deleted_at
+RETURNING id, code, name, is_available, created_at, updated_at
 `
 
 type UpdateStateParams struct {
@@ -141,7 +133,6 @@ func (q *Queries) UpdateState(ctx context.Context, arg UpdateStateParams) (State
 		&i.IsAvailable,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

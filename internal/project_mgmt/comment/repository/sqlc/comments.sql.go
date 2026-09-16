@@ -14,7 +14,7 @@ import (
 const createComment = `-- name: CreateComment :one
 INSERT INTO task_comments (task_id, author_id, parent_id, content)
 VALUES ($1, $2, $3, $4)
-RETURNING id, task_id, author_id, parent_id, content, created_at, updated_at, deleted_at
+RETURNING id, task_id, author_id, parent_id, content, created_at, updated_at
 `
 
 type CreateCommentParams struct {
@@ -40,16 +40,13 @@ func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (T
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteComment = `-- name: DeleteComment :exec
-UPDATE task_comments
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM task_comments
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteComment(ctx context.Context, commentID int64) error {
@@ -58,10 +55,9 @@ func (q *Queries) DeleteComment(ctx context.Context, commentID int64) error {
 }
 
 const findComment = `-- name: FindComment :one
-SELECT id, task_id, author_id, parent_id, content, created_at, updated_at, deleted_at
+SELECT id, task_id, author_id, parent_id, content, created_at, updated_at
 FROM task_comments
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) FindComment(ctx context.Context, commentID int64) (TaskComment, error) {
@@ -75,16 +71,14 @@ func (q *Queries) FindComment(ctx context.Context, commentID int64) (TaskComment
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listComments = `-- name: ListComments :many
-SELECT id, task_id, author_id, parent_id, content, created_at, updated_at, deleted_at
+SELECT id, task_id, author_id, parent_id, content, created_at, updated_at
 FROM task_comments
 WHERE task_id = $1::bigint
-	AND deleted_at IS NULL
 ORDER BY created_at ASC, id ASC
 `
 
@@ -105,7 +99,6 @@ func (q *Queries) ListComments(ctx context.Context, taskID int64) ([]TaskComment
 			&i.Content,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -122,11 +115,10 @@ SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
        COALESCE(p.owner_id, 0)::bigint  AS process_owner,
        tc.author_id                      AS author
 FROM task_comments tc
-JOIN tasks t ON t.id = tc.task_id AND t.deleted_at IS NULL
-JOIN processes p ON p.id = t.process_id AND p.deleted_at IS NULL
-JOIN projects pr ON pr.id = p.project_id AND pr.deleted_at IS NULL
+JOIN tasks t ON t.id = tc.task_id
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
 WHERE tc.id = $1::bigint
-	AND tc.deleted_at IS NULL
 `
 
 type OwnerChainRow struct {

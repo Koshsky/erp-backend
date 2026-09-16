@@ -1,4 +1,4 @@
-package service
+package service //nolint:testpackage // tests exercise unexported helpers (normalizeSearch, dedupeIDs)
 
 import "testing"
 

@@ -1,3 +1,4 @@
+//nolint:testpackage // parseIDList is unexported; the test runs inside the package
 package delivery
 
 import (
@@ -30,24 +31,32 @@ func TestParseIDList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := parseIDList(tt.raw)
-			if tt.wantErr {
-				if err == nil {
-					t.Fatalf("parseIDList(%q) = %v, want error", tt.raw, got)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("parseIDList(%q) unexpected error: %v", tt.raw, err)
-			}
-			if len(got) != len(tt.want) {
-				t.Fatalf("parseIDList(%q) = %v, want %v", tt.raw, got, tt.want)
-			}
-			for i := range got {
-				if got[i] != tt.want[i] {
-					t.Fatalf("parseIDList(%q) = %v, want %v", tt.raw, got, tt.want)
-				}
-			}
+			assertParseIDList(t, tt.raw, tt.want, tt.wantErr)
 		})
+	}
+}
+
+// assertParseIDList runs parseIDList and checks the result against the
+// expectation (error or exact values).
+func assertParseIDList(t *testing.T, raw string, want []int64, wantErr bool) {
+	t.Helper()
+
+	got, err := parseIDList(raw)
+	if wantErr {
+		if err == nil {
+			t.Fatalf("parseIDList(%q) = %v, want error", raw, got)
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("parseIDList(%q) unexpected error: %v", raw, err)
+	}
+	if len(got) != len(want) {
+		t.Fatalf("parseIDList(%q) = %v, want %v", raw, got, want)
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Fatalf("parseIDList(%q) = %v, want %v", raw, got, want)
+		}
 	}
 }

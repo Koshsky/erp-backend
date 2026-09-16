@@ -16,8 +16,7 @@ import (
 const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*)
 FROM users
-WHERE deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'own' AND manager_id = $2::bigint)
   )
@@ -56,7 +55,7 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (last_name, first_name, middle_name, username, preset, password_hash, manager_id, position, hire_date, termination_date)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -100,7 +99,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -149,10 +147,8 @@ func (q *Queries) DeleteOverlappingByState(ctx context.Context, arg DeleteOverla
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-UPDATE users
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM users
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
@@ -161,10 +157,9 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
 WHERE id = $1
-	AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -185,16 +180,14 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const findUserByUsername = `-- name: FindUserByUsername :one
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
 WHERE username = $1
-	AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -215,7 +208,6 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -282,9 +274,8 @@ func (q *Queries) InsertUserPermission(ctx context.Context, arg InsertUserPermis
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
-WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
@@ -311,7 +302,6 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.TerminationDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -550,16 +540,15 @@ func (q *Queries) ListStatesByUsersRange(ctx context.Context, arg ListStatesByUs
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
-WHERE deleted_at IS NULL
-  -- For non-admin: only direct subordinates (manager_id = current user);
-  -- admin sees everyone. The user himself is not included here (the timesheet
-  -- adds oneself on the client separately).
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'own' AND manager_id = $2::bigint)
   )
+  -- For non-admin: only direct subordinates (manager_id = current user);
+  -- admin sees everyone. The user himself is not included here (the timesheet
+  -- adds oneself on the client separately).
   AND ($3::text = '' OR preset = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
   -- Optional search: a case-insensitive substring over the composed full name
@@ -618,7 +607,6 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.TerminationDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -644,7 +632,6 @@ const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(manager_id, id)::bigint AS owner_id
 FROM users
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 // Record owner: the manager, or the user himself when there is none
@@ -671,8 +658,7 @@ SET
 	termination_date = $10,
 	updated_at = NOW()
 WHERE id = $11
-	AND deleted_at IS NULL
-RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -718,7 +704,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -727,7 +712,6 @@ const updateUserPassword = `-- name: UpdateUserPassword :exec
 UPDATE users
 SET password_hash = $1, updated_at = NOW()
 WHERE id = $2
-	AND deleted_at IS NULL
 `
 
 type UpdateUserPasswordParams struct {
@@ -745,7 +729,6 @@ SELECT EXISTS(
 	SELECT 1
 	FROM users
 	WHERE username = $1
-		AND deleted_at IS NULL
 )
 `
 

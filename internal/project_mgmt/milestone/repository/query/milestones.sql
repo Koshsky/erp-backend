@@ -8,8 +8,7 @@ SELECT m.*
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE m.deleted_at IS NULL
-  AND (
+WHERE (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
     (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
@@ -23,8 +22,7 @@ SELECT COUNT(*)
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE m.deleted_at IS NULL
-  AND (
+WHERE (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
     (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
@@ -34,8 +32,7 @@ WHERE m.deleted_at IS NULL
 -- name: FindMilestone :one
 SELECT *
 FROM milestones
-WHERE id = @milestone_id
-	AND deleted_at IS NULL;
+WHERE id = @milestone_id;
 	
 -- name: UpdateMilestone :one
 UPDATE milestones
@@ -47,14 +44,11 @@ SET
 	date = @date,
 	updated_at = NOW()
 WHERE id = @milestone_id
-	AND deleted_at IS NULL
 RETURNING *;
 	
 -- name: DeleteMilestone :exec
-UPDATE milestones
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = @milestone_id
-	AND deleted_at IS NULL;
+DELETE FROM milestones
+WHERE id = @milestone_id;
 
 -- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
@@ -62,7 +56,4 @@ SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE m.id = @id::bigint
-	AND m.deleted_at IS NULL
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL;
+WHERE m.id = @id::bigint;

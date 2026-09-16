@@ -1,7 +1,6 @@
 -- name: ListResources :many
 SELECT id, title, code, owner_id
 FROM resources
-WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
 -- Members that could be active within the [start_date, end_date] window
@@ -10,8 +9,7 @@ ORDER BY id ASC;
 SELECT u.id, rm.resource_id, u.hire_date, u.termination_date
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
-WHERE u.deleted_at IS NULL
-    AND (u.hire_date IS NULL OR u.hire_date <= @end_date::date)
+WHERE (u.hire_date IS NULL OR u.hire_date <= @end_date::date)
     AND (u.termination_date IS NULL OR u.termination_date >= @start_date::date)
 ORDER BY rm.resource_id ASC, u.id ASC;
 

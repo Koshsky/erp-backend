@@ -15,12 +15,11 @@ BEGIN
 	SELECT p.start_date, p.end_date
 	INTO parent_start, parent_end
 	FROM projects p
-	WHERE p.id = NEW.project_id
-	  AND p.deleted_at IS NULL;
+	WHERE p.id = NEW.project_id;
 
 	IF parent_start IS NULL OR parent_end IS NULL THEN
 		RAISE EXCEPTION
-			'Parent project % not found or deleted',
+			'Parent project % not found',
 			NEW.project_id;
 	END IF;
 
@@ -44,7 +43,6 @@ $$;
 CREATE TRIGGER trg_processes_validate_within_project_dates
 BEFORE INSERT OR UPDATE OF start_date, end_date, project_id ON processes
 FOR EACH ROW
-WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_processes_validate_within_project_dates();
 
 -- =============================================
@@ -61,12 +59,11 @@ BEGIN
 	SELECT p.start_date, p.end_date
 	INTO parent_start, parent_end
 	FROM processes p
-	WHERE p.id = NEW.process_id
-	  AND p.deleted_at IS NULL;
+	WHERE p.id = NEW.process_id;
 
 	IF parent_start IS NULL OR parent_end IS NULL THEN
 		RAISE EXCEPTION
-			'Parent process % not found or deleted',
+			'Parent process % not found',
 			NEW.process_id;
 	END IF;
 
@@ -90,7 +87,6 @@ $$;
 CREATE TRIGGER trg_tasks_validate_within_process_dates
 BEFORE INSERT OR UPDATE OF start_date, end_date, process_id ON tasks
 FOR EACH ROW
-WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_tasks_validate_within_process_dates();
 
 -- =============================================
@@ -107,12 +103,11 @@ BEGIN
 	SELECT p.start_date, p.end_date
 	INTO parent_start, parent_end
 	FROM processes p
-	WHERE p.id = NEW.process_id
-	  AND p.deleted_at IS NULL;
+	WHERE p.id = NEW.process_id;
 
 	IF parent_start IS NULL OR parent_end IS NULL THEN
 		RAISE EXCEPTION
-			'Parent process % not found or deleted',
+			'Parent process % not found',
 			NEW.process_id;
 	END IF;
 
@@ -130,5 +125,4 @@ $$;
 CREATE TRIGGER trg_milestones_validate_within_process_dates
 BEFORE INSERT OR UPDATE OF date, process_id ON milestones
 FOR EACH ROW
-WHEN (NEW.deleted_at IS NULL)
 EXECUTE FUNCTION fn_milestones_validate_within_process_dates();

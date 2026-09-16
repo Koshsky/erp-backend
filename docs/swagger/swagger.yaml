@@ -4675,7 +4675,8 @@ paths:
       - Users
   /user/{id}:
     delete:
-      description: Delete a user by ID (soft delete)
+      description: Delete a user by ID (moves the account to the archive; 409 if the
+        user is referenced)
       parameters:
       - description: User ID
         in: path
@@ -4689,6 +4690,15 @@ paths:
           description: No Content
         "400":
           description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "409":
+          description: Conflict
           schema:
             allOf:
             - $ref: '#/definitions/response.ErrorResponse'
