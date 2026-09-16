@@ -15,6 +15,7 @@ sql:
         emit_empty_slices: true
         out: "./sqlc"
         emit_interface: false
+        omit_unused_structs: true
         overrides:
           - db_type: "timestamptz"
             go_type: "time.Time"
