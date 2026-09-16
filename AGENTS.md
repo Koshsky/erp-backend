@@ -10,7 +10,7 @@ Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 ## Commands
 - `make dev` — dev stack: `docker compose up -d db flyway` + the API served locally by `air` (auto-reload on change; binary in `build/`, ignored). `make infra` only starts db+flyway, `make reset` wipes the DB volume (`docker compose down -v`), `make stop` stops the containers. `Makefile` includes `backend/.env` (symlink to the repo-root `.env`).
 - `go run ./cmd/service` — run the API server directly (config comes from env vars, see below).
-- `golangci-lint run` — lint (v2 golden config, requires golangci-lint ≥ 2.12). `--fix` also runs the formatters (`goimports` + `golines`, max line 120). Import groups must keep local `github.com/Koshsky/erp-backend` last.
+- `make lint` (= `GOTOOLCHAIN=go1.25.14 golangci-lint run`) — lint (v2 golden config, requires golangci-lint ≥ 2.12). The toolchain pin is required: golangci-lint v2 is built with an older Go and cannot type-check the stdlib of a newer system Go (`math/rand/v2 … method must have no type parameters` / panic). `--fix` also runs the formatters (`goimports` + `golines`, max line 120). Import groups must keep local `github.com/Koshsky/erp-backend` last.
 - `go test ./...` — tests (currently minimal).
 - `swag fmt` then `swag init -g cmd/service/main.go -o docs/swagger` — regenerate swagger after touching handler annotations or global docs.
 - `GOTOOLCHAIN=go1.25.0 go run github.com/google/wire/cmd/wire@latest ./internal/server/...` — regenerate `internal/server/wire_gen.go` after touching any provider or `internal/server/wire.go` (commit `wire_gen.go`; `wire.go` carries the `//go:generate` directive).

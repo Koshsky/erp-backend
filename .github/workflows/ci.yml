@@ -106,7 +106,11 @@ jobs:
           cache: true
       - name: Run Flyway migrations
         run: |
-          docker run --rm \
+          # --network host: the flyway container must reach the postgres
+          # service container's published port on the runner host; without it
+          # 127.0.0.1:5432 points at the container's own loopback ("Connection
+          # refused").
+          docker run --rm --network host \
             -v "$PWD/migrations:/flyway/sql" \
             flyway/flyway:9.20.0 \
             -url=jdbc:postgresql://127.0.0.1:5432/erp_test \
