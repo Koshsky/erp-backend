@@ -97,13 +97,11 @@ func TestValidateRejectsNoneAlg(t *testing.T) {
 	svc := newTestService(testIssuer)
 	now := time.Now()
 	unsigned := jwt.NewWithClaims(jwt.SigningMethodNone, erpjwt.Claims{
-		UserID: 1,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(testAccessTTL)),
-			IssuedAt:  jwt.NewNumericDate(now),
-			NotBefore: jwt.NewNumericDate(now),
-			Issuer:    testIssuer,
-		},
+		UserID:    1,
+		ExpiresAt: jwt.NewNumericDate(now.Add(testAccessTTL)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		NotBefore: jwt.NewNumericDate(now),
+		Issuer:    testIssuer,
 	})
 	token, err := unsigned.SignedString(jwt.UnsafeAllowNoneSignatureType)
 	if err != nil {

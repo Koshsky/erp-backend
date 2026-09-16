@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-backend`). Sibling `../frontend` (Vue) consumes the OpenAPI contract in `docs/swagger/swagger.yaml`.
+Go 1.27 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-backend`). Sibling `../frontend` (Vue) consumes the OpenAPI contract in `docs/swagger/swagger.yaml`.
 
 ## Language rule (mandatory)
 
@@ -10,10 +10,10 @@ Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 ## Commands
 - `make dev` — dev stack: `docker compose up -d db flyway` + the API served locally by `air` (auto-reload on change; binary in `build/`, ignored). `make infra` only starts db+flyway, `make reset` wipes the DB volume (`docker compose down -v`), `make stop` stops the containers. `Makefile` includes `backend/.env` (symlink to the repo-root `.env`).
 - `go run ./cmd/service` — run the API server directly (config comes from env vars, see below).
-- `make lint` (= `GOTOOLCHAIN=go1.25.14 golangci-lint run`) — lint (v2 golden config, requires golangci-lint ≥ 2.12). The toolchain pin is required: golangci-lint v2 is built with an older Go and cannot type-check the stdlib of a newer system Go (`math/rand/v2 … method must have no type parameters` / panic). `--fix` also runs the formatters (`goimports` + `golines`, max line 120). Import groups must keep local `github.com/Koshsky/erp-backend` last.
+- `golangci-lint run ./...` (or `make lint`) — lint (v2 golden config, requires golangci-lint ≥ 2.13.2, i.e. built with Go ≥ 1.27: older builds cannot type-check the Go 1.27 stdlib or the module's `go 1.27` language version and fail with stdlib `typecheck` errors / `the Go language version used to build golangci-lint is lower than the targeted Go version`). Install via `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2`. `--fix` also runs the formatters (`goimports` + `golines`, max line 120). Import groups must keep local `github.com/Koshsky/erp-backend` last.
 - `go test ./...` — tests (currently minimal).
 - `swag fmt` then `swag init -g cmd/service/main.go -o docs/swagger` — regenerate swagger after touching handler annotations or global docs.
-- `GOTOOLCHAIN=go1.25.0 go run github.com/google/wire/cmd/wire@latest ./internal/server/...` — regenerate `internal/server/wire_gen.go` after touching any provider or `internal/server/wire.go` (commit `wire_gen.go`; `wire.go` carries the `//go:generate` directive).
+- `GOTOOLCHAIN=go1.27.1 go run github.com/google/wire/cmd/wire@latest ./internal/server/...` — regenerate `internal/server/wire_gen.go` after touching any provider or `internal/server/wire.go` (commit `wire_gen.go`; `wire.go` carries the `//go:generate` directive).
 
 ## Generated code — never hand-edit
 - `docs/swagger/` (`docs.go`, `swagger.json`, `swagger.yaml`): regenerate via `swag init` and commit the result. The frontend regenerates its entire API client from `docs/swagger/swagger.yaml`, so API contract changes must land there.

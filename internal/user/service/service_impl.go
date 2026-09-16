@@ -152,7 +152,7 @@ func (s *UserService) createUserInternal(
 	// preset defaults to worker); the other presets require the admin bypass.
 	if !caller.Admin {
 		if req.Preset == nil {
-			req.Preset = stringPtr(userdomain.PresetWorker)
+			req.Preset = new(userdomain.PresetWorker)
 		}
 		if *req.Preset != userdomain.PresetWorker {
 			return nil, errors.ErrForbidden
@@ -461,11 +461,6 @@ func presetName(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-// stringPtr returns a pointer to a string.
-func stringPtr(s string) *string {
-	return &s
 }
 
 // UpdateManager explicitly sets (or clears) a user's manager. Covered by the

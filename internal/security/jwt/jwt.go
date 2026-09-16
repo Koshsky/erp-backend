@@ -21,16 +21,14 @@ type Service struct {
 func (s *Service) GenerateAccessToken(userID int64, email string) (string, error) {
 	now := time.Now()
 	claims := Claims{
-		UserID: userID,
-		Email:  email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
-			IssuedAt:  jwt.NewNumericDate(now),
-			NotBefore: jwt.NewNumericDate(now),
-			Issuer:    s.issuer,
-			Subject:   strconv.FormatInt(userID, 10),
-			ID:        randomTokenID(),
-		},
+		UserID:    userID,
+		Email:     email,
+		ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		NotBefore: jwt.NewNumericDate(now),
+		Issuer:    s.issuer,
+		Subject:   strconv.FormatInt(userID, 10),
+		ID:        randomTokenID(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

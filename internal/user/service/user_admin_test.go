@@ -146,11 +146,6 @@ func admin(userID int64) userctx.UserContext {
 	return userctx.UserContext{ID: userID, Preset: "admin", Admin: true}
 }
 
-// presetPtr returns a pointer to a preset code.
-func presetPtr(p string) *string {
-	return &p
-}
-
 // Creating a user is covered by the grantable user_admin.create right, but
 // preset assignment stays admin-only: non-admin callers may only create workers
 // (a missing preset defaults to worker). Prevents privilege escalation through
@@ -166,7 +161,7 @@ func TestCreateUserPresetRule(t *testing.T) {
 		userdomain.PresetProjectDirector, userdomain.PresetProjectManager, userdomain.PresetAdmin,
 	} {
 		r := req
-		r.Preset = presetPtr(preset)
+		r.Preset = new(preset)
 		if _, loopErr := svc.CreateUserWithCreds(
 			context.Background(), r, vp(10),
 		); !errors.IsForbidden(loopErr) {
@@ -184,7 +179,7 @@ func TestCreateUserPresetRule(t *testing.T) {
 	}
 
 	worker := req
-	worker.Preset = presetPtr(userdomain.PresetWorker)
+	worker.Preset = new(userdomain.PresetWorker)
 	if _, wErr := svc.CreateUserWithCreds(
 		context.Background(), worker, vp(10),
 	); wErr != nil {
@@ -192,7 +187,7 @@ func TestCreateUserPresetRule(t *testing.T) {
 	}
 
 	adminReq := req
-	adminReq.Preset = presetPtr(userdomain.PresetAdmin)
+	adminReq.Preset = new(userdomain.PresetAdmin)
 	if _, aErr := svc.CreateUserWithCreds(context.Background(), adminReq, admin(1)); aErr != nil {
 		t.Errorf("админ создаёт админа: %v; want ok", aErr)
 	}
@@ -205,7 +200,7 @@ func TestCreateUserWithPermissions(t *testing.T) {
 	svc := newStubService(newStubRepo())
 	req := dto.CreateUserRequest{
 		LastName: "И", FirstName: "И", Username: "user1", PasswordHash: "hash",
-		Preset: presetPtr(userdomain.PresetWorker),
+		Preset: new(userdomain.PresetWorker),
 		Permissions: []dto.UserPermissionInput{
 			{Resource: "project", Action: "view", Scope: "own", Granted: true},
 			{Resource: "task", Action: "delete", Granted: false},
@@ -265,14 +260,14 @@ func TestUpdateManagerGrantable(t *testing.T) {
 			Username:  "vp1",
 			LastName:  "В",
 			FirstName: "П",
-			Preset:    presetPtr(userdomain.PresetProcessOwner),
+			Preset:    new(userdomain.PresetProcessOwner),
 		},
 		&userdomain.User{
 			ID:        2,
 			Username:  "worker2",
 			LastName:  "Р",
 			FirstName: "а",
-			Preset:    presetPtr(userdomain.PresetWorker),
+			Preset:    new(userdomain.PresetWorker),
 		},
 	)
 	svc := newStubService(repo)
@@ -309,14 +304,14 @@ func TestUpdateUserManagerAndPreset(t *testing.T) {
 			Username:  "vp1",
 			LastName:  "В",
 			FirstName: "П",
-			Preset:    presetPtr(userdomain.PresetProcessOwner),
+			Preset:    new(userdomain.PresetProcessOwner),
 		},
 		&userdomain.User{
 			ID:        2,
 			Username:  "worker2",
 			LastName:  "Р",
 			FirstName: "а",
-			Preset:    presetPtr(userdomain.PresetWorker),
+			Preset:    new(userdomain.PresetWorker),
 		},
 	)
 	svc := newStubService(repo)
@@ -357,14 +352,14 @@ func TestUpdateUserLastAdminGuard(t *testing.T) {
 			Username:  "admin2",
 			LastName:  "Ад",
 			FirstName: "м",
-			Preset:    presetPtr(userdomain.PresetAdmin),
+			Preset:    new(userdomain.PresetAdmin),
 		},
 		&userdomain.User{
 			ID:        2,
 			Username:  "worker2",
 			LastName:  "Р",
 			FirstName: "а",
-			Preset:    presetPtr(userdomain.PresetWorker),
+			Preset:    new(userdomain.PresetWorker),
 		},
 	)
 	svc := newStubService(repo)

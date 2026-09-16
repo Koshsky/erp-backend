@@ -15,11 +15,12 @@ dev:
 	TRACING_ENDPOINT=localhost:4317 \
 	air
 
-# Lint with the go.mod toolchain pinned: golangci-lint v2 is built with an
-# older Go, so against a newer system Go it fails to type-check the standard
-# library (math/rand/v2 "method must have no type parameters" / panic).
+# Lint with the checked-in golangci-lint: needs golangci-lint >= 2.13.2
+# (built with Go >= 1.27) to type-check the Go 1.27 stdlib and the module's
+# go 1.27 language version. Install: go install
+# github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
 lint:
-	GOTOOLCHAIN=go1.25.14 golangci-lint run
+	golangci-lint run
 
 reset:
 	docker compose down -v
