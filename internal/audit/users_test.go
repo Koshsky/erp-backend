@@ -8,8 +8,6 @@ import (
 	userdto "github.com/Koshsky/erp-backend/internal/user/dto"
 )
 
-func strp(s string) *string { return &s }
-
 func TestMatchUser(t *testing.T) {
 	t.Parallel()
 	u := userdto.UserResponse{
@@ -18,7 +16,7 @@ func TestMatchUser(t *testing.T) {
 		Name:       "Иванов Иван",
 		LastName:   "Иванов",
 		FirstName:  "Иван",
-		MiddleName: strp("Иванович"),
+		MiddleName: new("Иванович"),
 	}
 	cases := []struct {
 		needle string
@@ -86,9 +84,9 @@ func TestEnrichNamesFillsNameAndLogin(t *testing.T) {
 	c := &Client{lookup: lk}
 
 	views := []lokiView{
-		{ActorUserID: int64Ptr(1), ActorEmail: "admin"}, // login already known
-		{ActorUserID: int64Ptr(1)},                      // refresh: no email in event
-		{ActorUserID: nil, ActorEmail: "unknown@x.ru"},  // no id — untouched
+		{ActorUserID: new(int64(1)), ActorEmail: "admin"}, // login already known
+		{ActorUserID: new(int64(1))},                      // refresh: no email in event
+		{ActorUserID: nil, ActorEmail: "unknown@x.ru"},    // no id — untouched
 	}
 	c.enrichNames(context.Background(), views)
 

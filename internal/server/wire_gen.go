@@ -17,11 +17,13 @@ import (
 	delivery13 "github.com/Koshsky/erp-backend/internal/auto_create/delivery"
 	repository13 "github.com/Koshsky/erp-backend/internal/auto_create/repository"
 	service14 "github.com/Koshsky/erp-backend/internal/auto_create/service"
+	"github.com/Koshsky/erp-backend/internal/cache"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/logger"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
+	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
 	delivery3 "github.com/Koshsky/erp-backend/internal/planning/delivery"
@@ -115,16 +117,22 @@ func InitializeApp() (*App, error) {
 	idempotencyRepository := idempotency.ProvideIdempotencyRepository(pool)
 	idempotencyMiddleware := idempotency.ProvideIdempotencyMiddleware(idempotencyRepository, slogLogger, tracer)
 	auditConfig := config.ProvideAuditConfig(configConfig)
+	authRepository := repository9.NewAuthRepository(pool)
 	securityConfig := config.ProvideSecurityConfig(configConfig)
 	checker := hibp.ProvideChecker(securityConfig)
-	userService := service2.NewUserService(slogLogger, tracer, userRepository, policyStore, checker)
+	userService := service2.NewUserService(slogLogger, tracer, userRepository, policyStore, authRepository, checker)
 	client := audit.NewClient(slogLogger, auditConfig, userService)
 	sender := audit.NewSender(slogLogger, client, auditConfig)
 	auditMiddleware := audit.NewMiddleware(slogLogger, auditConfig, sender)
-	authRepository := repository9.NewAuthRepository(pool)
-	authService := service3.NewAuthService(userService, jwtService, authRepository, tracer)
+	redisConfig := config.ProvideRedisConfig(configConfig)
+	redisClient, err := cache.ProvideRedisClient(redisConfig, slogLogger)
+	if err != nil {
+		return nil, err
+	}
+	provider := ratelimit.ProvideProvider(redisClient, redisConfig, slogLogger)
+	authService := service3.NewAuthService(slogLogger, userService, jwtService, authRepository, tracer)
 	authHandler := delivery.NewAuthHandler(slogLogger, authService, jwtConfig)
-	module := auth2.ProvideModule(authHandler, slogLogger)
+	module := auth2.ProvideModule(authHandler, slogLogger, provider)
 	userHandler := delivery2.NewUserHandler(slogLogger, userService, middleware)
 	userModule := user.ProvideModule(userHandler, slogLogger)
 	planningRepository := repository10.NewPlanningRepository(slogLogger, pool)
@@ -163,7 +171,7 @@ func InitializeApp() (*App, error) {
 	auditHandler := delivery15.NewAuditHandler(slogLogger, client, middleware)
 	auditModule := audit.ProvideModule(auditHandler, auditConfig)
 	v2 := ProvideModules(module, userModule, planningModule, projectmgmtModule, timesheetModule, autocreateModule, rbacpolicyModule, auditModule)
-	app, err := New(configConfig, slogLogger, pool, authMiddleware, profilerProfiler, tracer, idempotencyMiddleware, auditMiddleware, policyStore, v2)
+	app, err := New(configConfig, slogLogger, pool, authMiddleware, profilerProfiler, tracer, idempotencyMiddleware, auditMiddleware, policyStore, redisClient, provider, v2)
 	if err != nil {
 		return nil, err
 	}

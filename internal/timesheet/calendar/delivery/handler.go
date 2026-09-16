@@ -55,7 +55,7 @@ func (h *CalendarHandler) GetCalendar(c *gin.Context) {
 
 	planning, err := h.service.GetCalendar(c.Request.Context(), start, end)
 	if err != nil {
-		response.InternalError(c, h.logger, err.Error(), err)
+		response.Error(c, h.logger, err)
 		return
 	}
 	response.OK(c, planning)

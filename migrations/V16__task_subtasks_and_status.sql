@@ -27,35 +27,13 @@ END $$;
 -- top-level tasks (parent_id IS NULL → COALESCE 0) must stay unique within
 -- their process, subtasks within their parent task. Since subtask process_id
 -- always equals the parent's (enforced in the service), (process_id, parent
--- group, sort_order) covers both levels in a single unique index.
+-- group, sort_order) covers both levels in a single unique index. Deleted
+-- rows are physically removed (archive triggers, V5), so no partial predicate
+-- is needed.
 DROP INDEX IF EXISTS idx_tasks_process_sort_order;
 CREATE UNIQUE INDEX idx_tasks_parent_sort_order
-ON tasks(process_id, COALESCE(parent_id, 0), sort_order)
-WHERE deleted_at IS NULL;
+ON tasks(process_id, COALESCE(parent_id, 0), sort_order);
 
 -- FK lookup for subtasks.
 CREATE INDEX IF NOT EXISTS idx_tasks_parent_id
 ON tasks(parent_id) WHERE parent_id IS NOT NULL;
-
--- =============================================
--- CASCADE SOFT DELETE: parent task → its subtasks
--- =============================================
--- Soft-deleting a top-level task also soft-deletes every attached subtask
--- (the V5 pattern; hard DELETE stays blocked globally).
-CREATE OR REPLACE FUNCTION cascade_soft_delete_subtasks()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE tasks
-    SET deleted_at = NOW()
-    WHERE parent_id = OLD.id
-      AND deleted_at IS NULL;
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trigger_cascade_soft_delete_subtasks ON tasks;
-CREATE TRIGGER trigger_cascade_soft_delete_subtasks
-AFTER UPDATE OF deleted_at ON tasks
-FOR EACH ROW
-WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
-EXECUTE FUNCTION cascade_soft_delete_subtasks();

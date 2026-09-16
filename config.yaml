@@ -3,6 +3,13 @@ server:
   read_timeout: 15s
   write_timeout: 15s
   idle_timeout: 60s
+  # Max request body size (H3): larger bodies are rejected with a 400-class
+  # error instead of being buffered unboundedly.
+  max_body_bytes: 1048576
+  # Per-request context timeout (H3): cancels long-running handlers/DB queries
+  # (planning/calendar aggregates) so goroutines and pool connections are
+  # released. Must be lower than write_timeout to take effect.
+  request_timeout: 10s
   # Trusted reverse-proxy networks that may supply the real client IP via
   # X-Forwarded-For / X-Real-IP. Only nginx (in the docker app-network) is
   # allowed; never 0.0.0.0/0. MUST match the app-network subnet fixed in
@@ -67,21 +74,34 @@ postgres:
   health_check_period: 5m
   connect_timeout: 10s
 
+redis:
+  # Shared Redis (M1): the rate limiter token buckets live here so N instances
+  # enforce one global limit per client. When disabled/unreachable the limiter
+  # falls back to the in-memory implementation (same behavior as before).
+  enabled: true
+  address: "redis:6379"
+  password: ""
+  db: 0
+  dial_timeout: 3s
+  read_timeout: 1s
+  write_timeout: 1s
+  pool_size: 20
+  key_prefix: "erp:ratelimit"
+
 logging:
   level: debug
   format: json
 
 swagger:
-  enabled: true
+  # Disabled in production (M6): the API schema is not exposed. Dev-only
+  # standalone UI stays available via cmd/swagger/main.go; enable locally by
+  # flipping this to true.
+  enabled: false
 
 profiling:
   enabled: false
   # pprof on loopback only (AD-13): even when enabled it is not exposed.
   address: "127.0.0.1:6060"
-
-maintenance:
-  enabled: false
-  interval: 5m
 
 tracing:
   enabled: true

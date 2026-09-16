@@ -6,7 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
@@ -22,21 +24,31 @@ import (
 // activeSessionSweepWindow — how long expired sessions are kept before background cleanup.
 const activeSessionSweepWindow = 30 * 24 * time.Hour
 
+// sessionSweepInterval — how often the background expired-session sweep runs.
+const sessionSweepInterval = 1 * time.Hour
+
 type AuthService struct {
+	logger   *slog.Logger
 	users    UserService
 	jwt      *jwt.Service
 	sessions *repository.AuthRepository
 	tracer   *tracingpkg.Tracer
+
+	// cleanupOnce guarantees the expired-session sweep loop starts at most once
+	// (on the first auth call, see startSweep).
+	cleanupOnce sync.Once
 }
 
 // NewAuthService builds the auth service.
 func NewAuthService(
+	logger *slog.Logger,
 	users *userservice.UserService,
 	jwtService *jwt.Service,
 	sessions *repository.AuthRepository,
 	tracer *tracingpkg.Tracer,
 ) *AuthService {
 	return &AuthService{
+		logger:   logger,
 		users:    users,
 		jwt:      jwtService,
 		sessions: sessions,
@@ -47,6 +59,7 @@ func NewAuthService(
 func (s *AuthService) Login(ctx context.Context, username, password string) (*dto.SessionResult, error) {
 	ctx, end := s.tracer.Start(ctx, "auth.Login")
 	defer end(nil)
+	s.startSweep()
 
 	// Logins are stored lowercase; normalize the input so case-insensitive
 	// login matches the stored value without leaking case sensitivity.
@@ -80,6 +93,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*dt
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.SessionResult, error) {
 	ctx, end := s.tracer.Start(ctx, "auth.RefreshToken")
 	defer end(nil)
+	s.startSweep()
 
 	session, err := s.findSession(ctx, refreshToken)
 	if err != nil {
@@ -87,9 +101,17 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	if session.RevokedAt != nil {
-		// Reusing a revoked token indicates theft: revoke
-		// all of the user's active sessions.
-		_ = s.sessions.RevokeAllUserSessions(ctx, session.UserID)
+		// Reusing a revoked token indicates theft: revoke all of the user's
+		// active sessions. The failure is logged loudly — a failed revocation
+		// must never be silently swallowed, and no new pair is issued either
+		// (a still-valid stolen token would otherwise keep rotating).
+		if rerr := s.sessions.RevokeAllUserSessions(ctx, session.UserID); rerr != nil {
+			s.logger.ErrorContext(ctx,
+				"auth: не удалось отозвать сессии при повторном использовании токена",
+				"user_id", session.UserID,
+				"error", rerr,
+			)
+		}
 		return nil, fmt.Errorf("invalid refresh token")
 	}
 	if !session.ExpiresAt.After(time.Now()) {
@@ -113,7 +135,6 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token")
 	}
-	s.sweepExpired(ctx)
 
 	return &dto.SessionResult{
 		Auth:         s.newAuthResponse(user, access),
@@ -125,6 +146,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 	ctx, end := s.tracer.Start(ctx, "auth.Logout")
 	defer end(nil)
+	s.startSweep()
 
 	if refreshToken == "" {
 		return nil
@@ -160,6 +182,21 @@ func (s *AuthService) issueSession(ctx context.Context, userID int64) (string, e
 		return "", fmt.Errorf("failed to create session")
 	}
 	return refresh, nil
+}
+
+// startSweep launches the background expired-session sweep exactly once (the
+// first auth call triggers it): dead sessions older than the sweep window are
+// deleted hourly instead of only when a refresh happens.
+func (s *AuthService) startSweep() {
+	s.cleanupOnce.Do(func() {
+		go func() {
+			ticker := time.NewTicker(sessionSweepInterval)
+			defer ticker.Stop()
+			for range ticker.C {
+				s.sweepExpired(context.Background())
+			}
+		}()
+	})
 }
 
 // sweepExpired — background cleanup of long-expired sessions (best-effort).

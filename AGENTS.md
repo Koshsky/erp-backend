@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-backend`). Sibling `../frontend` (Vue) consumes the OpenAPI contract in `docs/swagger/swagger.yaml`.
+Go 1.27 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-backend`). Sibling `../frontend` (Vue) consumes the OpenAPI contract in `docs/swagger/swagger.yaml`.
 
 ## Language rule (mandatory)
 
@@ -10,10 +10,10 @@ Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 ## Commands
 - `make dev` — dev stack: `docker compose up -d db flyway` + the API served locally by `air` (auto-reload on change; binary in `build/`, ignored). `make infra` only starts db+flyway, `make reset` wipes the DB volume (`docker compose down -v`), `make stop` stops the containers. `Makefile` includes `backend/.env` (symlink to the repo-root `.env`).
 - `go run ./cmd/service` — run the API server directly (config comes from env vars, see below).
-- `golangci-lint run` — lint (v2 golden config, requires golangci-lint ≥ 2.12). `--fix` also runs the formatters (`goimports` + `golines`, max line 120). Import groups must keep local `github.com/Koshsky/erp-backend` last.
+- `golangci-lint run ./...` (or `make lint`) — lint (v2 golden config, requires golangci-lint ≥ 2.13.2, i.e. built with Go ≥ 1.27: older builds cannot type-check the Go 1.27 stdlib or the module's `go 1.27` language version and fail with stdlib `typecheck` errors / `the Go language version used to build golangci-lint is lower than the targeted Go version`). Install via `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2`. `--fix` also runs the formatters (`goimports` + `golines`, max line 120). Import groups must keep local `github.com/Koshsky/erp-backend` last.
 - `go test ./...` — tests (currently minimal).
 - `swag fmt` then `swag init -g cmd/service/main.go -o docs/swagger` — regenerate swagger after touching handler annotations or global docs.
-- `GOTOOLCHAIN=go1.25.0 go run github.com/google/wire/cmd/wire@latest ./internal/server/...` — regenerate `internal/server/wire_gen.go` after touching any provider or `internal/server/wire.go` (commit `wire_gen.go`; `wire.go` carries the `//go:generate` directive).
+- `GOTOOLCHAIN=go1.27.1 go run github.com/google/wire/cmd/wire@latest ./internal/server/...` — regenerate `internal/server/wire_gen.go` after touching any provider or `internal/server/wire.go` (commit `wire_gen.go`; `wire.go` carries the `//go:generate` directive).
 
 ## Generated code — never hand-edit
 - `docs/swagger/` (`docs.go`, `swagger.json`, `swagger.yaml`): regenerate via `swag init` and commit the result. The frontend regenerates its entire API client from `docs/swagger/swagger.yaml`, so API contract changes must land there.
@@ -29,8 +29,9 @@ Go 1.25 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 ## DB & migrations
 - Postgres 16; schema is Flyway migrations in `migrations/` (core V1..V10: the whole schema and constraints are inline in V1, indexes in V2, functions/triggers in V3+, RBAC seeds in V10; applied by the `flyway` docker service; both compose files add `-locations` for `plugins/` and `seed/` subfolders). Editing existing migration files is allowed (repo policy). Every `sqlc.yaml` references only `V1__initial_schema.sql` (all tables are created in V1), so column-type changes (nullability, types) must land in `V1` for `go generate` to pick them up.
 - `migrations/plugins/` (untracked, gitignored `*.sql`): enterprise plugin, e.g. `V900__enterprise_plugin.sql` — users + auto-create template trigger. Dir ship `.gitkeep` so the folders exist on fresh clones; the flyway locations are explicit, so empty dirs are fine. Version ranges: core V1+, plugins V900+, seed V1000+.
-- Soft delete and date-shift are enforced by DB triggers (V4–V5): SQL queries must filter `deleted_at IS NULL`.
-- Config: non-secret settings live in the committed `config.yaml` (server timeouts, postgres pool, jwt expiry/issuer, logging, swagger, profiling); only secrets + DB URL come from env vars — `DATABASE_URL`, `JWT_SECRET_KEY`, `JWT_REFRESH_KEY`. `CONFIG_PATH` env overrides the file (default `./config.yaml`). Compose mounts `config.yaml` read-only (not baked into the image), so config edits need no rebuild. No `.env` is auto-loaded in code; `backend/.env` is a symlink to the repo-root `.env` and is injected by docker-compose (it also keeps `DATABASE_NAME/USER/PASSWORD` for the postgres+flyway containers — the app ignores them). Running natively: point `DATABASE_URL` at localhost (the committed `.env` uses host `db` for docker); the swagger `@host` annotation stays `localhost:8080`.
+- Soft delete is move-to-archive: a DELETE copies the row into the `<table>_deleted` archive (V5) and really removes it from the live table; date-shift is enforced by triggers (V4). Live tables have no `deleted_at` — queries never filter on it.
+- Config: non-secret settings live in the committed `config.yaml` (server timeouts + body/timeout limits, postgres pool, jwt expiry/issuer, logging, swagger, profiling, redis, rate limits); only secrets + DB URL come from env vars — `DATABASE_URL`, `JWT_SECRET_KEY` (required, ≥ 32 chars), `JWT_REFRESH_KEY` (**legacy-optional**, L8: refresh tokens are opaque in the DB, the key is never used). `CONFIG_PATH` env overrides the file (default `./config.yaml`). Compose mounts `config.yaml` read-only (not baked into the image), so config edits need no rebuild. No `.env` is auto-loaded in code; `backend/.env` is a symlink to the repo-root `.env` and is injected by docker-compose (it also keeps `DATABASE_NAME/USER/PASSWORD` for the postgres+flyway containers — the app ignores them). Running natively: point `DATABASE_URL` at localhost (the committed `.env` uses host `db` for docker); the swagger `@host` annotation stays `localhost:8080`.
+- `redis.enabled: true` in config.yaml backs the rate limiter with shared Redis token buckets (M1); when disabled or unreachable (fail-open) the limiter falls back to the in-memory implementation.
 - `profiling.enabled: true` in config.yaml starts a pprof server on `profiling.address` (`:6060`), `/debug/pprof/*`.
 
 ## Running the stack

@@ -15,8 +15,7 @@ CREATE TABLE rbac_presets (
     name        TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL DEFAULT '',
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- People (a single table). A worker is a user with the worker preset; the worker's
@@ -42,7 +41,6 @@ CREATE TABLE users (
 	termination_date DATE DEFAULT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
 	CHECK (termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date)
 );
 
@@ -57,7 +55,6 @@ CREATE TABLE projects (
 	priority INTEGER NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
 	CHECK (end_date >= start_date),
 	CHECK (priority >= 0)
 );
@@ -77,7 +74,6 @@ CREATE TABLE processes (
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
 	CHECK (end_date >= start_date)
 );
 
@@ -102,7 +98,6 @@ CREATE TABLE tasks (
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
 	CHECK (end_date >= start_date),
 	CHECK (status IN ('not_started', 'in_progress', 'done'))
 );
@@ -118,7 +113,6 @@ CREATE TABLE resources (
 	owner_id BIGINT NOT NULL REFERENCES users(id),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
 	CHECK (length(trim(code)) > 0)
 );
 
@@ -129,8 +123,7 @@ CREATE TABLE states (
 	name TEXT NOT NULL,
 	is_available BOOLEAN NOT NULL DEFAULT TRUE,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Worker states (absence only): one row = interval [start_date, end_date].
@@ -168,7 +161,6 @@ CREATE TABLE assignments (
 	quantity INTEGER NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL,
 	CHECK (quantity > 0)
 );
 
@@ -181,8 +173,7 @@ CREATE TABLE milestones (
 	color TEXT,
 	date DATE NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Auto-creation config for processes/tasks on project insert (V8).
@@ -231,8 +222,7 @@ CREATE TABLE task_comments (
 	parent_id BIGINT REFERENCES task_comments(id) ON DELETE CASCADE,
 	content TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	deleted_at TIMESTAMPTZ DEFAULT NULL
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- The rights matrix (rbac_preset_rules) and route-policy definitions
@@ -246,7 +236,6 @@ CREATE TABLE rbac_preset_rules (
     scope       TEXT NOT NULL, -- all|own|parent|ancestor
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ,
     updated_by  BIGINT,        -- user who made the last change (from JWT)
     UNIQUE (preset, resource, action)
 );
@@ -254,7 +243,7 @@ CREATE TABLE rbac_preset_rules (
 -- Per-user permission overrides: an explicit grant (granted=true, scope) or
 -- revoke (granted=false, scope ignored) that shadows the preset rule for the
 -- same (resource, action); no row — fall back to the assigned preset.
--- Soft-deleted on replacement; unique per active (user_id, resource, action).
+-- Deleted (archived) on replacement; unique per (user_id, resource, action).
 CREATE TABLE user_permissions (
     id          BIGSERIAL PRIMARY KEY,
     user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -264,7 +253,6 @@ CREATE TABLE user_permissions (
     granted     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ,
     updated_by  BIGINT,        -- user who made the last change (from JWT)
     CHECK (NOT granted OR scope IN ('all', 'own', 'parent', 'ancestor'))
 );
@@ -276,6 +264,174 @@ CREATE TABLE rbac_route_policies (
     active      BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ,
+    updated_by  BIGINT
+);
+
+-- =============================================
+-- DELETED ROW ARCHIVES (soft delete by move)
+-- Every DELETE on an archived table first copies the row here (the generic
+-- trigger fn_archive_row, created in V5) and then really removes it from the
+-- live table. The archive keeps the same columns as its source table plus a
+-- trailing deleted_at (when the row was removed). No FKs/unique/CHECK
+-- constraints — an archive is a plain snapshot; the original ids and
+-- business keys are preserved as data so a row can be restored later.
+-- =============================================
+
+CREATE TABLE rbac_presets_deleted (
+    id          BIGINT NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE users_deleted (
+    id               BIGINT NOT NULL,
+    last_name        TEXT NOT NULL,
+    first_name       TEXT NOT NULL,
+    middle_name      TEXT,
+    preset           TEXT,
+    username         TEXT NOT NULL,
+    password_hash    TEXT NOT NULL,
+    manager_id       BIGINT,
+    position         TEXT NOT NULL DEFAULT '',
+    hire_date        DATE,
+    termination_date DATE,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE projects_deleted (
+    id         BIGINT NOT NULL,
+    owner_id   BIGINT,
+    code       TEXT NOT NULL,
+    color      TEXT,
+    start_date DATE NOT NULL,
+    end_date   DATE NOT NULL,
+    priority   INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE processes_deleted (
+    id         BIGINT NOT NULL,
+    project_id BIGINT NOT NULL,
+    owner_id   BIGINT,
+    title      TEXT NOT NULL,
+    color      TEXT,
+    start_date DATE NOT NULL,
+    end_date   DATE NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE tasks_deleted (
+    id         BIGINT NOT NULL,
+    process_id BIGINT NOT NULL,
+    parent_id  BIGINT,
+    owner_id   BIGINT,
+    title      TEXT NOT NULL,
+    color      TEXT,
+    status     TEXT NOT NULL DEFAULT 'not_started',
+    start_date DATE NOT NULL,
+    end_date   DATE NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE resources_deleted (
+    id         BIGINT NOT NULL,
+    title      TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    color      TEXT,
+    owner_id   BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE states_deleted (
+    id           BIGINT NOT NULL,
+    code         TEXT NOT NULL,
+    name         TEXT NOT NULL,
+    is_available BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE assignments_deleted (
+    id          BIGINT NOT NULL,
+    task_id     BIGINT NOT NULL,
+    resource_id BIGINT NOT NULL,
+    quantity    INTEGER NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE milestones_deleted (
+    id         BIGINT NOT NULL,
+    process_id BIGINT NOT NULL,
+    title      TEXT NOT NULL,
+    content    TEXT NOT NULL,
+    color      TEXT,
+    date       DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE task_comments_deleted (
+    id         BIGINT NOT NULL,
+    task_id    BIGINT NOT NULL,
+    author_id  BIGINT NOT NULL,
+    parent_id  BIGINT,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE rbac_preset_rules_deleted (
+    id         BIGINT NOT NULL,
+    preset     TEXT NOT NULL,
+    resource   TEXT NOT NULL,
+    action     TEXT NOT NULL,
+    scope      TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT
+);
+
+CREATE TABLE user_permissions_deleted (
+    id         BIGINT NOT NULL,
+    user_id    BIGINT NOT NULL,
+    resource   TEXT NOT NULL,
+    action     TEXT NOT NULL,
+    scope      TEXT NOT NULL DEFAULT 'all',
+    granted    BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT
+);
+
+CREATE TABLE rbac_route_policies_deleted (
+    name        TEXT NOT NULL,
+    kind        TEXT NOT NULL,
+    params      JSONB NOT NULL,
+    active      BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by  BIGINT
 );

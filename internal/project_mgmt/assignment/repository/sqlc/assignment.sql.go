@@ -15,8 +15,7 @@ FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE a.deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
     ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
@@ -40,9 +39,9 @@ func (q *Queries) CountAssignments(ctx context.Context, arg CountAssignmentsPara
 const createAssignment = `-- name: CreateAssignment :one
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES ($1, $2, $3::bigint)
-ON CONFLICT (task_id, resource_id) WHERE deleted_at IS NULL
+ON CONFLICT (task_id, resource_id)
 DO NOTHING
-RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
+RETURNING id, task_id, resource_id, quantity, created_at, updated_at
 `
 
 type CreateAssignmentParams struct {
@@ -64,16 +63,13 @@ func (q *Queries) CreateAssignment(ctx context.Context, arg CreateAssignmentPara
 		&i.Quantity,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteAssignment = `-- name: DeleteAssignment :exec
-UPDATE assignments
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM assignments
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteAssignment(ctx context.Context, assignmentID int64) error {
@@ -82,10 +78,9 @@ func (q *Queries) DeleteAssignment(ctx context.Context, assignmentID int64) erro
 }
 
 const findAssignment = `-- name: FindAssignment :one
-SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
+SELECT id, task_id, resource_id, quantity, created_at, updated_at
 FROM assignments
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) FindAssignment(ctx context.Context, assignmentID int64) (Assignment, error) {
@@ -98,17 +93,15 @@ func (q *Queries) FindAssignment(ctx context.Context, assignmentID int64) (Assig
 		&i.Quantity,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const findAssignmentByKey = `-- name: FindAssignmentByKey :one
-SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
+SELECT id, task_id, resource_id, quantity, created_at, updated_at
 FROM assignments
 WHERE task_id = $1::bigint
 	AND resource_id = $2::bigint
-	AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -127,19 +120,17 @@ func (q *Queries) FindAssignmentByKey(ctx context.Context, arg FindAssignmentByK
 		&i.Quantity,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listAssigments = `-- name: ListAssigments :many
-SELECT a.id, a.task_id, a.resource_id, a.quantity, a.created_at, a.updated_at, a.deleted_at
+SELECT a.id, a.task_id, a.resource_id, a.quantity, a.created_at, a.updated_at
 FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE a.deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
     ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
@@ -179,7 +170,6 @@ func (q *Queries) ListAssigments(ctx context.Context, arg ListAssigmentsParams) 
 			&i.Quantity,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -200,10 +190,6 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE a.id = $1::bigint
-	AND a.deleted_at IS NULL
-	AND t.deleted_at IS NULL
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL
 `
 
 type OwnerChainRow struct {
@@ -227,8 +213,7 @@ SET
 	quantity = $3::bigint,
 	updated_at = NOW()
 WHERE id = $4
-	AND deleted_at IS NULL
-RETURNING id, task_id, resource_id, quantity, created_at, updated_at, deleted_at
+RETURNING id, task_id, resource_id, quantity, created_at, updated_at
 `
 
 type UpdateAssignmentParams struct {
@@ -253,7 +238,6 @@ func (q *Queries) UpdateAssignment(ctx context.Context, arg UpdateAssignmentPara
 		&i.Quantity,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

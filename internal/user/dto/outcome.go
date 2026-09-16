@@ -64,6 +64,17 @@ type UserStateResponse struct {
 	IsAvailable bool      `json:"is_available" example:"false"`
 	StartDate   date.Date `json:"start_date"   example:"2026-07-20" format:"date"`
 	EndDate     date.Date `json:"end_date"     example:"2026-08-02" format:"date"`
+	// UserID is set only in batch responses (GET /user/days), where one worker's
+	// ranges are nested among several — hence omitempty.
+	UserID int64 `json:"user_id,omitempty" example:"7"`
+}
+
+// UserStatesResponse — the calendar states of one worker inside a batch
+// response; days has the same shape as the single-worker listing and is an
+// empty array (never null) when the worker has no states in the range.
+type UserStatesResponse struct {
+	UserID int64               `json:"user_id" example:"7"`
+	Days   []UserStateResponse `json:"days"`
 }
 
 type ChangePasswordResponse struct {

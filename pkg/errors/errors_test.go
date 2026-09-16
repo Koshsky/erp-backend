@@ -61,14 +61,14 @@ func TestFromPgInvalidParam(t *testing.T) {
 	if got.Error() != pgErr.Message {
 		t.Errorf("Message = %q, want %q", got.Error(), pgErr.Message)
 	}
-	// Другие коды и чужие ошибки — без изменений.
+	// Other codes and foreign errors pass through unchanged.
 	other := &pgconn.PgError{Code: "23505", Message: "dup"}
 	if !stdErrors.Is(errapi.FromPgInvalidParam(other), other) {
-		t.Errorf("23505 не должен мапиться")
+		t.Errorf("23505 must not be mapped")
 	}
 	sentinel := stdErrors.New("boom")
 	if !stdErrors.Is(errapi.FromPgInvalidParam(sentinel), sentinel) {
-		t.Errorf("сторонняя ошибка не должна мапиться")
+		t.Errorf("foreign error must not be mapped")
 	}
 }
 
@@ -79,7 +79,13 @@ func TestMapPgConstraint(t *testing.T) {
 	if errapi.StatusCode(dup) != http.StatusConflict {
 		t.Errorf("23505: StatusCode = %d, want 409", errapi.StatusCode(dup))
 	}
-	// 23503 role fk -> 400 "неизвестная роль"
+	// 23P01 exclusion (overlapping user_state ranges) -> 409 + wire code
+	excl := errapi.MapPgConstraint(&pgconn.PgError{Code: "23P01", ConstraintName: "user_states_excl"})
+	var de *errapi.DomainError
+	if !stdErrors.As(excl, &de) || de.StatusCode() != http.StatusConflict || de.ErrorCode() != errapi.CodeConflict {
+		t.Errorf("23P01: got %v, want 409 CONFLICT", excl)
+	}
+	// 23503 role fk -> 400 "unknown role"
 	role := errapi.MapPgConstraint(&pgconn.PgError{Code: "23503", ConstraintName: "users_role_fk"})
 	if errapi.StatusCode(role) != http.StatusBadRequest || !strings.Contains(role.Error(), "каталоге ролей") {
 		t.Errorf("23503 role: got %v", role)
@@ -89,13 +95,26 @@ func TestMapPgConstraint(t *testing.T) {
 	if errapi.StatusCode(chk) != http.StatusBadRequest {
 		t.Errorf("23514: StatusCode = %d, want 400", errapi.StatusCode(chk))
 	}
-	// чужие ошибки без изменений
+	// foreign errors pass through unchanged
 	other := &pgconn.PgError{Code: "22023", Message: "x"}
 	if !stdErrors.Is(errapi.MapPgConstraint(other), other) {
-		t.Errorf("22023 не должен мапиться")
+		t.Errorf("22023 must not be mapped")
 	}
 	sentinel := stdErrors.New("boom")
 	if !stdErrors.Is(errapi.MapPgConstraint(sentinel), sentinel) {
-		t.Errorf("сторонняя ошибка не должна мапиться")
+		t.Errorf("foreign error must not be mapped")
+	}
+}
+
+func TestStatusCodeClassifiesExclusionViolation(t *testing.T) {
+	t.Parallel()
+	// A raw 23P01 (not wrapped by MapPgConstraint) must still map to 409 so
+	// handlers using response.Error do not surface it as an unmapped 500.
+	raw := &pgconn.PgError{Code: "23P01", ConstraintName: "user_states_excl"}
+	if got := errapi.StatusCode(raw); got != http.StatusConflict {
+		t.Errorf("StatusCode(23P01) = %d, want 409", got)
+	}
+	if !errapi.IsConflictError(raw) {
+		t.Error("IsConflictError(23P01) = false, want true")
 	}
 }

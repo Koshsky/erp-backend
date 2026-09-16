@@ -8,12 +8,15 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/audit"
 	"github.com/Koshsky/erp-backend/internal/auth"
+	authRepo "github.com/Koshsky/erp-backend/internal/auth/repository"
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
+	"github.com/Koshsky/erp-backend/internal/cache"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/logger"
 	authMw "github.com/Koshsky/erp-backend/internal/middleware/auth"
+	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
 	"github.com/Koshsky/erp-backend/internal/policies"
@@ -43,6 +46,12 @@ func InitializeApp() (*App, error) {
 		config.ProvideRBACRefreshInterval,
 		config.ProvideAuditConfig,
 		config.ProvideSecurityConfig,
+		config.ProvideRedisConfig,
+		// Shared Redis client (rate limiter backend, M1); nil when disabled.
+		cache.ProvideRedisClient,
+		// Shared rate limiting provider used by the app routes and the auth
+		// module (login/refresh guards).
+		ratelimit.ProvideProvider,
 		// HIBP breach check for password changes; built from the security config.
 		hibp.ProvideChecker,
 		idempotency.ProvideIdempotencyRepository,
@@ -62,6 +71,9 @@ func InitializeApp() (*App, error) {
 		// User mutations (preset/account changes) refresh the same snapshot
 		// immediately (TTL heals multi-instance).
 		wire.Bind(new(userservice.RBACReloader), new(*rbacpolicyService.PolicyStore)),
+		// Credential changes and account deletion revoke the user's refresh
+		// sessions (implemented by the auth session repository).
+		wire.Bind(new(userservice.SessionRevoker), new(*authRepo.AuthRepository)),
 
 		user.ProviderSet,
 		auth.ProviderSet,

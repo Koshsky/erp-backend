@@ -18,8 +18,7 @@ SELECT COUNT(*)
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE t.deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
     ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
@@ -62,7 +61,7 @@ SELECT
 			(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks
 			 WHERE parent_id = $2)
 	END
-RETURNING id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+RETURNING id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
 `
 
 type CreateTaskParams struct {
@@ -101,16 +100,13 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteTask = `-- name: DeleteTask :exec
-UPDATE tasks
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM tasks
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
@@ -119,10 +115,9 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
 }
 
 const findTask = `-- name: FindTask :one
-SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
 FROM tasks
-WHERE deleted_at IS NULL
-	AND id = $1::bigint
+WHERE id = $1::bigint
 `
 
 func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) {
@@ -141,16 +136,14 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listSubtasksByParent = `-- name: ListSubtasksByParent :many
-SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
 FROM tasks
 WHERE parent_id = $1::bigint
-	AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC
 `
 
@@ -176,7 +169,6 @@ func (q *Queries) ListSubtasksByParent(ctx context.Context, parentID int64) ([]T
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -193,7 +185,6 @@ SELECT id
 FROM tasks
 WHERE process_id = $1::bigint
 	AND parent_id IS NULL
-	AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC
 `
 
@@ -221,12 +212,11 @@ func (q *Queries) ListTaskIdsByProcess(ctx context.Context, processID int64) ([]
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT t.id, t.process_id, t.parent_id, t.owner_id, t.title, t.color, t.status, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at, t.deleted_at
+SELECT t.id, t.process_id, t.parent_id, t.owner_id, t.title, t.color, t.status, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE t.deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
     ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
@@ -273,7 +263,6 @@ func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, e
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -293,9 +282,6 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.id = $1::bigint
-	AND t.deleted_at IS NULL
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL
 `
 
 type OwnerChainRow struct {
@@ -315,7 +301,7 @@ const reorderTasksApply = `-- name: ReorderTasksApply :exec
 UPDATE tasks t
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE t.id = x.id AND t.deleted_at IS NULL
+WHERE t.id = x.id
 `
 
 // Phase 2 of the two-phase reorder: write the final positions. The group is
@@ -330,12 +316,12 @@ const reorderTasksMark = `-- name: ReorderTasksMark :exec
 UPDATE tasks t
 SET sort_order = x.ord + 1000000, updated_at = NOW()
 FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE t.id = x.id AND t.deleted_at IS NULL
+WHERE t.id = x.id
 `
 
 // Phase 1 of the two-phase reorder (runs inside one transaction with
 // ReorderTasksApply): park every task on a temporary offset slot so the
-// follow-up write cannot transiently violate the partial unique index
+// follow-up write cannot transiently violate the unique index
 // (process_id, parent group, sort_order) when values swap. The caller sends
 // the whole top-level group (subtasks keep their positions).
 func (q *Queries) ReorderTasksMark(ctx context.Context, ids []int64) error {
@@ -354,8 +340,7 @@ SET
 	end_date = $6,
 	updated_at = NOW()
 WHERE id = $7
-	AND deleted_at IS NULL
-RETURNING id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+RETURNING id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
 `
 
 type UpdateTaskParams struct {
@@ -392,7 +377,6 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

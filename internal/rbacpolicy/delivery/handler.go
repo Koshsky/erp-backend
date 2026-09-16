@@ -89,7 +89,7 @@ func (h *RBACHandler) UpsertRule(c *gin.Context) {
 	response.OK(c, in)
 }
 
-// DeleteRule handles soft-deleting a matrix row.
+// DeleteRule handles removing a matrix row (archived by the DB trigger).
 //
 //	@Tags		RBAC
 //	@Summary	Delete a matrix rule
@@ -156,7 +156,7 @@ func (h *RBACHandler) UpsertRoutePolicy(c *gin.Context) {
 	response.OK(c, in)
 }
 
-// DeleteRoutePolicy handles soft-deleting a route policy by name.
+// DeleteRoutePolicy handles removing a route policy by name (archived).
 //
 //	@Tags		RBAC
 //	@Summary	Delete a route policy
@@ -319,7 +319,7 @@ func (h *RBACHandler) UpdatePreset(c *gin.Context) {
 	response.OK(c, preset)
 }
 
-// DeletePreset handles soft-deleting a preset (and its rules); assigned users
+// DeletePreset handles removing a preset (and its rules); assigned users
 // keep existing but lose the preset's base rights.
 //
 //	@Tags		RBAC

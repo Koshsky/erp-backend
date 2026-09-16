@@ -18,8 +18,8 @@ BEGIN
         RAISE EXCEPTION 'manager cannot be the user themself';
     END IF;
 
-    -- Walk up the manager chain (without a deleted_at filter so the
-    -- cycle cannot "slip through" soft-deleted records).
+    -- Walk up the manager chain covering the whole live hierarchy
+    -- (archived users are physically removed from this table).
     cur := NEW.manager_id;
     WHILE cur IS NOT NULL LOOP
         depth := depth + 1;

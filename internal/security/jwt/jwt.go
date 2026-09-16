@@ -21,30 +21,32 @@ type Service struct {
 func (s *Service) GenerateAccessToken(userID int64, email string) (string, error) {
 	now := time.Now()
 	claims := Claims{
-		UserID: userID,
-		Email:  email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
-			IssuedAt:  jwt.NewNumericDate(now),
-			NotBefore: jwt.NewNumericDate(now),
-			Issuer:    s.issuer,
-			Subject:   strconv.FormatInt(userID, 10),
-			ID:        randomTokenID(),
-		},
+		UserID:    userID,
+		Email:     email,
+		ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		NotBefore: jwt.NewNumericDate(now),
+		Issuer:    s.issuer,
+		Subject:   strconv.FormatInt(userID, 10),
+		ID:        randomTokenID(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.secretKey)
 }
 
-// ValidateAccessToken checks and validates the access token.
+// ValidateAccessToken checks and validates the access token: signature, expiry,
+// issuer and the signing algorithm (strictly HS256; weaker or none are rejected).
 func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return s.secretKey, nil
-	})
+	},
+		jwt.WithIssuer(s.issuer),
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("invalid access token: %w", err)
 	}

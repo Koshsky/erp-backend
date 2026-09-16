@@ -10,15 +10,14 @@ VALUES (
   @owner_id,
   @color
 )
-ON CONFLICT (code) WHERE deleted_at IS NULL
+ON CONFLICT (code)
 DO NOTHING
 RETURNING *;
 
 -- name: ListProjects :many
 SELECT *
 FROM projects
-WHERE deleted_at IS NULL
-  AND (
+WHERE (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
   )
@@ -29,8 +28,7 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 -- name: CountProjects :one
 SELECT COUNT(*)
 FROM projects
-WHERE deleted_at IS NULL
-  AND (
+WHERE (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
   )
@@ -39,8 +37,7 @@ WHERE deleted_at IS NULL
 -- name: FindProject :one
 SELECT *
 FROM projects
-WHERE deleted_at IS NULL
-  AND id = @project_id::bigint;
+WHERE id = @project_id::bigint;
 
 -- name: UpdateProject :one
 UPDATE projects
@@ -52,21 +49,17 @@ SET
 	end_date = @end_date,
   owner_id = @owner_id,
 	updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = @project_id::bigint
+WHERE id = @project_id::bigint
 RETURNING *;
 
 -- name: DeleteProject :exec
-UPDATE projects
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = @project_id::bigint;
+DELETE FROM projects
+WHERE id = @project_id::bigint;
 
 -- name: OwnerChain :one
 SELECT COALESCE(owner_id, 0)::bigint AS owner_id
 FROM projects
-WHERE id = @id::bigint
-	AND deleted_at IS NULL;
+WHERE id = @id::bigint;
 
 -- name: CountAutoCreatedEntities :one
 -- The auto-create trigger (V8) fills a project with processes/tasks/assignments
@@ -74,13 +67,11 @@ WHERE id = @id::bigint
 -- created (all zero when the template is disabled or empty).
 SELECT
   (SELECT COUNT(*) FROM processes
-     WHERE project_id = @project_id::bigint AND deleted_at IS NULL) AS processes,
+     WHERE project_id = @project_id::bigint) AS processes,
   (SELECT COUNT(*) FROM tasks t
      JOIN processes p ON p.id = t.process_id
-     WHERE p.project_id = @project_id::bigint
-       AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS tasks,
+     WHERE p.project_id = @project_id::bigint) AS tasks,
   (SELECT COUNT(*) FROM assignments a
      JOIN tasks t ON t.id = a.task_id
      JOIN processes p ON p.id = t.process_id
-     WHERE p.project_id = @project_id::bigint
-       AND a.deleted_at IS NULL AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS assignments;
+     WHERE p.project_id = @project_id::bigint) AS assignments;

@@ -76,9 +76,9 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, update
 	return s.apply(ctx)
 }
 
-// DeleteRule softly deletes a matrix row.
+// DeleteRule removes a matrix row (archived by the DB trigger).
 func (s *Service) DeleteRule(ctx context.Context, id int64) error {
-	if err := s.repo.SoftDeleteRule(ctx, id); err != nil {
+	if err := s.repo.DeleteRule(ctx, id); err != nil {
 		return err
 	}
 	return s.apply(ctx)
@@ -108,9 +108,9 @@ func (s *Service) UpsertRoutePolicy(ctx context.Context, in dto.RoutePolicyInput
 	return s.apply(ctx)
 }
 
-// DeleteRoutePolicy softly deletes a route policy by name.
+// DeleteRoutePolicy removes a route policy by name (archived).
 func (s *Service) DeleteRoutePolicy(ctx context.Context, name string) error {
-	if err := s.repo.SoftDeleteRoutePolicy(ctx, name); err != nil {
+	if err := s.repo.DeleteRoutePolicy(ctx, name); err != nil {
 		return err
 	}
 	return s.apply(ctx)
@@ -119,10 +119,10 @@ func (s *Service) DeleteRoutePolicy(ctx context.Context, name string) error {
 // Reset restores rules and route policies to the built-in defaults
 // (an escape hatch after erroneous edits).
 func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
-	if err := s.repo.SoftDeleteAllRules(ctx); err != nil {
+	if err := s.repo.DeleteAllRules(ctx); err != nil {
 		return err
 	}
-	if err := s.repo.SoftDeleteAllRoutePolicies(ctx); err != nil {
+	if err := s.repo.DeleteAllRoutePolicies(ctx); err != nil {
 		return err
 	}
 	for _, r := range policies.DefaultMatrixRules() {
@@ -363,7 +363,7 @@ func presetNameRef(p *string) string {
 // maxPresetNameLen — maximum preset name length.
 const maxPresetNameLen = 32
 
-// CreatePreset creates a preset (or revives a deleted one) and returns it.
+// CreatePreset creates a preset (or updates an existing one) and applies it.
 func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (domain.Preset, error) {
 	if err := validatePresetName(in.Name); err != nil {
 		return domain.Preset{}, err
@@ -385,11 +385,11 @@ func (s *Service) UpdatePreset(ctx context.Context, name string, in dto.PresetUp
 	return preset, nil
 }
 
-// DeletePreset softly deletes a preset, its rules and clears the preset ref on
+// DeletePreset deletes a preset, its rules and clears the preset ref on
 // assigned users (they keep the account but lose the preset's base rights;
 // individual overrides survive).
 func (s *Service) DeletePreset(ctx context.Context, name string) error {
-	if err := s.repo.SoftDeletePreset(ctx, name); err != nil {
+	if err := s.repo.DeletePreset(ctx, name); err != nil {
 		return err
 	}
 	return s.apply(ctx)

@@ -4,6 +4,7 @@ import (
 	stderrors "errors"
 	"log/slog"
 	"strconv"
+	"strings"
 
 	"github.com/Koshsky/erp-backend/internal/policies"
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
@@ -52,7 +53,7 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 	response.OK(c, users)
 }
 
-// ListUsers handles the request to list users with preset/manager filters.
+// ListUsers handles the request to list users with preset/manager/search filters.
 //
 //	@Summary		List users
 //	@Description	Returns a paged list of users; admin sees all, vp sees own subordinates + self.
@@ -63,6 +64,7 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 //	@Param			preset			query		string	false	"Filter by preset (e.g. worker)"
 //	@Param			manager_id		query		int		false	"Filter by manager (admin)"
 //	@Param			include_hash	query		bool	false	"Include password_hash (admin only)"
+//	@Param			search			query		string	false	"Case-insensitive substring of the full name or login (max 128 chars)"
 //	@Param			offset			query		int		false	"Page offset"
 //	@Success		200				{object}	response.SuccessResponse{data=response.Page{items=[]dto.AdminUserResponse},error=nil}
 //	@Failure		400				{object}	response.ErrorResponse{data=nil}
@@ -88,12 +90,18 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		response.Error(c, h.logger, errors.ErrForbidden)
 		return
 	}
+	search, err := h.service.NormalizeSearch(c.Query("search"))
+	if err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
 	items, total, err := h.service.ListUsers(
 		c.Request.Context(),
 		user.ID,
 		policies.ViewScopeCodeUser(user, rbac.ResourceWorker),
 		c.Query("preset"),
 		response.QueryID(c, "manager_id"),
+		search,
 		limit,
 		offset,
 	)
@@ -295,12 +303,13 @@ func (h *UserHandler) UpdateManager(c *gin.Context) {
 //
 //	@Tags			Users
 //	@Summary		Delete a user
-//	@Description	Delete a user by ID (soft delete)
+//	@Description	Delete a user by ID (moves the account to the archive; 409 if the user is referenced)
 //	@Security		ApiKeyAuth
 //	@Produce		json
 //	@Param			id	path	int	true	"User ID"
 //	@Success		204
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
+//	@Failure		409	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
 //	@Router			/user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
@@ -390,6 +399,75 @@ func (h *UserHandler) ListDays(c *gin.Context) {
 		return
 	}
 	response.OK(c, states)
+}
+
+// ListDaysBatch handles the request to list calendar states of several users.
+//
+//	@Tags			Users
+//	@Summary		Batch list worker days
+//	@Description	Batch replacement of GET /user/{id}/days: returns the state ranges of several workers over one date range, with one entry per requested id (empty days when the worker has none) and no N+1 requests per employee.
+//	@Security		ApiKeyAuth
+//	@Produce		json
+//	@Param			ids			query		string	true	"Comma-separated user IDs (max 200)"
+//	@Param			start_date	query		string	true	"Start date (YYYY-MM-DD)"
+//	@Param			end_date	query		string	true	"End date (YYYY-MM-DD)"
+//	@Success		200			{object}	response.SuccessResponse{data=[]dto.UserStatesResponse,error=nil}
+//	@Failure		400			{object}	response.ErrorResponse{data=nil}
+//	@Failure		403			{object}	response.ErrorResponse{data=nil}
+//	@Failure		404			{object}	response.ErrorResponse{data=nil}
+//	@Failure		500			{object}	response.ErrorResponse{data=nil}
+//	@Router			/user/days [get]
+func (h *UserHandler) ListDaysBatch(c *gin.Context) {
+	ids, err := parseIDList(c.Query("ids"))
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid ids")
+		return
+	}
+
+	start, err := date.Parse(c.Query("start_date"))
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid start_date")
+		return
+	}
+	end, err := date.Parse(c.Query("end_date"))
+	if err != nil {
+		response.BadRequest(c, errors.CodeBadRequest, "invalid end_date")
+		return
+	}
+
+	user, err := userctx.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
+		return
+	}
+
+	states, err := h.service.ListStatesBatch(c.Request.Context(), user, ids, start, end)
+	if err != nil {
+		response.Error(c, h.logger, err)
+		return
+	}
+	response.OK(c, states)
+}
+
+// parseIDList parses a comma-separated id list ("1,2,3"); empty values are
+// ignored, a non-numeric or non-positive value is an error.
+func parseIDList(raw string) ([]int64, error) {
+	var ids []int64
+	for part := range strings.SplitSeq(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		id, err := strconv.ParseInt(part, 10, 64)
+		if err != nil || id <= 0 {
+			return nil, errors.ErrBadRequest
+		}
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 {
+		return nil, errors.ErrBadRequest
+	}
+	return ids, nil
 }
 
 // SetDays handles the request to set a state for a range of days.

@@ -2,11 +2,15 @@
 package service
 
 import (
+	"context"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
+	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 func dt(s string) time.Time {
@@ -85,5 +89,45 @@ func TestBuildPeriodsTerminationAndMerge(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("period %d: got %+v, want %+v", i, got[i], want[i])
 		}
+	}
+}
+
+// newTestCalendarService builds a CalendarService whose repository is never
+// reached by the validation tests (validation runs before any repo call).
+func newTestCalendarService() *CalendarService {
+	return &CalendarService{tracer: tracing.New(nil)}
+}
+
+// TestGetCalendarReversedRangeIsBadRequest checks that an inverted date range
+// is a client error (400), not a 500.
+func TestGetCalendarReversedRangeIsBadRequest(t *testing.T) {
+	t.Parallel()
+	_, err := newTestCalendarService().GetCalendar(
+		context.Background(),
+		date.From(dt("2026-03-01")),
+		date.From(dt("2026-01-01")),
+	)
+	if err == nil {
+		t.Fatal("GetCalendar() succeeded with a reversed range")
+	}
+	if got := errapi.StatusCode(err); got != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, want 400 (client error, not 500)", got)
+	}
+}
+
+// TestGetCalendarTooWideRangeIsBadRequest checks the 730-day limit is a client
+// error (400), not a 500.
+func TestGetCalendarTooWideRangeIsBadRequest(t *testing.T) {
+	t.Parallel()
+	_, err := newTestCalendarService().GetCalendar(
+		context.Background(),
+		date.From(dt("2024-01-01")),
+		date.From(dt("2026-06-01")),
+	)
+	if err == nil {
+		t.Fatal("GetCalendar() succeeded with an over-wide range")
+	}
+	if got := errapi.StatusCode(err); got != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, want 400 (client error, not 500)", got)
 	}
 }

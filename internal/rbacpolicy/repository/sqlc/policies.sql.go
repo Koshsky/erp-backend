@@ -17,20 +17,88 @@ import (
 const clearPresetOnUsers = `-- name: ClearPresetOnUsers :exec
 UPDATE users
 SET preset = NULL, updated_at = NOW()
-WHERE preset = $1::text AND deleted_at IS NULL
+WHERE preset = $1::text
 `
 
-// Removes the preset ref from users after its soft delete (base rights vanish;
+// Removes the preset ref from users after its deletion (base rights vanish;
 // individual overrides survive).
 func (q *Queries) ClearPresetOnUsers(ctx context.Context, preset string) error {
 	_, err := q.db.Exec(ctx, clearPresetOnUsers, preset)
 	return err
 }
 
+const deleteAllPresetRules = `-- name: DeleteAllPresetRules :exec
+DELETE FROM rbac_preset_rules
+`
+
+func (q *Queries) DeleteAllPresetRules(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllPresetRules)
+	return err
+}
+
+const deleteAllRoutePolicies = `-- name: DeleteAllRoutePolicies :exec
+DELETE FROM rbac_route_policies
+`
+
+func (q *Queries) DeleteAllRoutePolicies(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllRoutePolicies)
+	return err
+}
+
+const deleteAllUserPermissions = `-- name: DeleteAllUserPermissions :exec
+DELETE FROM user_permissions
+WHERE user_id = $1::bigint
+`
+
+func (q *Queries) DeleteAllUserPermissions(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, deleteAllUserPermissions, userID)
+	return err
+}
+
+const deletePreset = `-- name: DeletePreset :exec
+DELETE FROM rbac_presets
+WHERE name = $1::text
+`
+
+func (q *Queries) DeletePreset(ctx context.Context, name string) error {
+	_, err := q.db.Exec(ctx, deletePreset, name)
+	return err
+}
+
+const deletePresetRule = `-- name: DeletePresetRule :exec
+DELETE FROM rbac_preset_rules
+WHERE id = $1::bigint
+`
+
+func (q *Queries) DeletePresetRule(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deletePresetRule, id)
+	return err
+}
+
+const deletePresetRulesByPreset = `-- name: DeletePresetRulesByPreset :exec
+DELETE FROM rbac_preset_rules
+WHERE preset = $1::text
+`
+
+func (q *Queries) DeletePresetRulesByPreset(ctx context.Context, preset string) error {
+	_, err := q.db.Exec(ctx, deletePresetRulesByPreset, preset)
+	return err
+}
+
+const deleteRoutePolicy = `-- name: DeleteRoutePolicy :exec
+DELETE FROM rbac_route_policies
+WHERE name = $1::text
+`
+
+func (q *Queries) DeleteRoutePolicy(ctx context.Context, name string) error {
+	_, err := q.db.Exec(ctx, deleteRoutePolicy, name)
+	return err
+}
+
 const findUserPreset = `-- name: FindUserPreset :one
 SELECT preset
 FROM users
-WHERE id = $1::bigint AND deleted_at IS NULL
+WHERE id = $1::bigint
 `
 
 func (q *Queries) FindUserPreset(ctx context.Context, userID int64) (sql.NullString, error) {
@@ -92,7 +160,6 @@ func (q *Queries) InsertUserPermission(ctx context.Context, arg InsertUserPermis
 const listActivePresetRules = `-- name: ListActivePresetRules :many
 SELECT id, preset, resource, action, scope, updated_by, updated_at
 FROM rbac_preset_rules
-WHERE deleted_at IS NULL
 `
 
 type ListActivePresetRulesRow struct {
@@ -136,7 +203,6 @@ func (q *Queries) ListActivePresetRules(ctx context.Context) ([]ListActivePreset
 const listActivePresets = `-- name: ListActivePresets :many
 SELECT id, name, description
 FROM rbac_presets
-WHERE deleted_at IS NULL
 ORDER BY name
 `
 
@@ -169,7 +235,7 @@ func (q *Queries) ListActivePresets(ctx context.Context) ([]ListActivePresetsRow
 const listActiveRoutePolicies = `-- name: ListActiveRoutePolicies :many
 SELECT name, kind, params, active, updated_by, updated_at
 FROM rbac_route_policies
-WHERE deleted_at IS NULL AND active = TRUE
+WHERE active = TRUE
 `
 
 type ListActiveRoutePoliciesRow struct {
@@ -211,7 +277,6 @@ func (q *Queries) ListActiveRoutePolicies(ctx context.Context) ([]ListActiveRout
 const listAllUserPermissions = `-- name: ListAllUserPermissions :many
 SELECT user_id, resource, action, scope, granted
 FROM user_permissions
-WHERE deleted_at IS NULL
 `
 
 type ListAllUserPermissionsRow struct {
@@ -253,7 +318,7 @@ const listUserPermissions = `-- name: ListUserPermissions :many
 
 SELECT id, user_id, resource, action, scope, granted, updated_by, updated_at
 FROM user_permissions
-WHERE user_id = $1::bigint AND deleted_at IS NULL
+WHERE user_id = $1::bigint
 `
 
 type ListUserPermissionsRow struct {
@@ -302,7 +367,6 @@ func (q *Queries) ListUserPermissions(ctx context.Context, userID int64) ([]List
 const listUserPrincipals = `-- name: ListUserPrincipals :many
 SELECT id AS user_id, preset
 FROM users
-WHERE deleted_at IS NULL
 `
 
 type ListUserPrincipalsRow struct {
@@ -331,87 +395,10 @@ func (q *Queries) ListUserPrincipals(ctx context.Context) ([]ListUserPrincipalsR
 	return items, nil
 }
 
-const softDeleteAllPresetRules = `-- name: SoftDeleteAllPresetRules :exec
-UPDATE rbac_preset_rules
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeleteAllPresetRules(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, softDeleteAllPresetRules)
-	return err
-}
-
-const softDeleteAllRoutePolicies = `-- name: SoftDeleteAllRoutePolicies :exec
-UPDATE rbac_route_policies
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeleteAllRoutePolicies(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, softDeleteAllRoutePolicies)
-	return err
-}
-
-const softDeleteAllUserPermissions = `-- name: SoftDeleteAllUserPermissions :exec
-UPDATE user_permissions
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE user_id = $1::bigint AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeleteAllUserPermissions(ctx context.Context, userID int64) error {
-	_, err := q.db.Exec(ctx, softDeleteAllUserPermissions, userID)
-	return err
-}
-
-const softDeletePreset = `-- name: SoftDeletePreset :exec
-UPDATE rbac_presets
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE name = $1::text AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeletePreset(ctx context.Context, name string) error {
-	_, err := q.db.Exec(ctx, softDeletePreset, name)
-	return err
-}
-
-const softDeletePresetRule = `-- name: SoftDeletePresetRule :exec
-UPDATE rbac_preset_rules
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1::bigint AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeletePresetRule(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, softDeletePresetRule, id)
-	return err
-}
-
-const softDeletePresetRulesByPreset = `-- name: SoftDeletePresetRulesByPreset :exec
-UPDATE rbac_preset_rules
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE preset = $1::text AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeletePresetRulesByPreset(ctx context.Context, preset string) error {
-	_, err := q.db.Exec(ctx, softDeletePresetRulesByPreset, preset)
-	return err
-}
-
-const softDeleteRoutePolicy = `-- name: SoftDeleteRoutePolicy :exec
-UPDATE rbac_route_policies
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE name = $1::text AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeleteRoutePolicy(ctx context.Context, name string) error {
-	_, err := q.db.Exec(ctx, softDeleteRoutePolicy, name)
-	return err
-}
-
 const updatePresetDescription = `-- name: UpdatePresetDescription :one
 UPDATE rbac_presets
 SET description = $1::text, updated_at = NOW()
-WHERE name = $2::text AND deleted_at IS NULL
+WHERE name = $2::text
 RETURNING id, name, description
 `
 
@@ -438,7 +425,6 @@ INSERT INTO rbac_presets (name, description)
 VALUES ($1::text, $2::text)
 ON CONFLICT (name) DO UPDATE
 SET description = EXCLUDED.description,
-    deleted_at = NULL, -- upsert "revives" a soft-deleted preset
     updated_at = NOW()
 RETURNING id, name, description
 `
@@ -467,7 +453,6 @@ VALUES ($1::text, $2::text, $3::text, $4::text, $5)
 ON CONFLICT (preset, resource, action) DO UPDATE
 SET scope = EXCLUDED.scope,
     updated_by = EXCLUDED.updated_by,
-    deleted_at = NULL, -- upsert "revives" a soft-deleted row (reset/re-grant of a permission)
     updated_at = NOW()
 RETURNING id, preset, resource, action, scope, updated_by, updated_at
 `
@@ -519,7 +504,6 @@ SET kind = EXCLUDED.kind,
     params = EXCLUDED.params,
     active = EXCLUDED.active,
     updated_by = EXCLUDED.updated_by,
-    deleted_at = NULL, -- upsert "revives" a soft-deleted row (reset)
     updated_at = NOW()
 RETURNING name, kind, params, active, updated_by, updated_at
 `

@@ -16,13 +16,19 @@ import (
 const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*)
 FROM users
-WHERE deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'own' AND manager_id = $2::bigint)
   )
   AND ($3::text = '' OR preset = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
+  AND (
+    $5::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || $5::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || $5::text || '%' ESCAPE '\'
+  )
 `
 
 type CountUsersParams struct {
@@ -30,6 +36,7 @@ type CountUsersParams struct {
 	UserID       int64  `json:"user_id"`
 	PresetFilter string `json:"preset_filter"`
 	ManagerID    int64  `json:"manager_id"`
+	Search       string `json:"search"`
 }
 
 func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
@@ -38,6 +45,7 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 		arg.UserID,
 		arg.PresetFilter,
 		arg.ManagerID,
+		arg.Search,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -47,7 +55,7 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (last_name, first_name, middle_name, username, preset, password_hash, manager_id, position, hire_date, termination_date)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -91,7 +99,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -140,10 +147,8 @@ func (q *Queries) DeleteOverlappingByState(ctx context.Context, arg DeleteOverla
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-UPDATE users
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM users
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
@@ -152,10 +157,9 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
 WHERE id = $1
-	AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -176,16 +180,14 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const findUserByUsername = `-- name: FindUserByUsername :one
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
 WHERE username = $1
-	AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -206,7 +208,6 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -273,9 +274,8 @@ func (q *Queries) InsertUserPermission(ctx context.Context, arg InsertUserPermis
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
-WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
@@ -302,7 +302,6 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.TerminationDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -480,21 +479,91 @@ func (q *Queries) ListStatesByUserRange(ctx context.Context, arg ListStatesByUse
 	return items, nil
 }
 
+const listStatesByUsersRange = `-- name: ListStatesByUsersRange :many
+SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id,
+	s.code AS state_code, s.name AS state_name, s.is_available
+FROM user_states es
+JOIN states s ON s.id = es.state_id
+WHERE es.user_id = ANY($1::bigint[])
+	AND es.end_date >= $2::date
+	AND es.start_date <= $3::date
+ORDER BY es.user_id ASC, es.start_date ASC
+`
+
+type ListStatesByUsersRangeParams struct {
+	UserIds   []int64   `json:"user_ids"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+type ListStatesByUsersRangeRow struct {
+	ID          int64     `json:"id"`
+	UserID      int64     `json:"user_id"`
+	StartDate   time.Time `json:"start_date"`
+	EndDate     time.Time `json:"end_date"`
+	StateID     int64     `json:"state_id"`
+	StateCode   string    `json:"state_code"`
+	StateName   string    `json:"state_name"`
+	IsAvailable bool      `json:"is_available"`
+}
+
+// Batch variant of ListStatesByUserRange for a set of workers in one request
+// (no N+1 per employee). The rows of the range are ordered by user so the
+// caller can group them without sorting.
+func (q *Queries) ListStatesByUsersRange(ctx context.Context, arg ListStatesByUsersRangeParams) ([]ListStatesByUsersRangeRow, error) {
+	rows, err := q.db.Query(ctx, listStatesByUsersRange, arg.UserIds, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStatesByUsersRangeRow{}
+	for rows.Next() {
+		var i ListStatesByUsersRangeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.StateID,
+			&i.StateCode,
+			&i.StateName,
+			&i.IsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
-WHERE deleted_at IS NULL
-  -- For non-admin: only direct subordinates (manager_id = current user);
-  -- admin sees everyone. The user himself is not included here (the timesheet
-  -- adds oneself on the client separately).
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'own' AND manager_id = $2::bigint)
   )
+  -- For non-admin: only direct subordinates (manager_id = current user);
+  -- admin sees everyone. The user himself is not included here (the timesheet
+  -- adds oneself on the client separately).
   AND ($3::text = '' OR preset = $3::text)
   AND ($4::bigint = 0 OR manager_id = $4::bigint)
+  -- Optional search: a case-insensitive substring over the composed full name
+  -- (last + first + middle) or the login; an empty pattern disables the filter.
+  -- The caller passes the pattern already lowercased and escaped (see the
+  -- normalizeSearch helper in user/service).
+  AND (
+    $5::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || $5::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || $5::text || '%' ESCAPE '\'
+  )
 ORDER BY id ASC
-LIMIT $6::bigint OFFSET $5::bigint
+LIMIT $7::bigint OFFSET $6::bigint
 `
 
 type ListUsersParams struct {
@@ -502,6 +571,7 @@ type ListUsersParams struct {
 	UserID       int64  `json:"user_id"`
 	PresetFilter string `json:"preset_filter"`
 	ManagerID    int64  `json:"manager_id"`
+	Search       string `json:"search"`
 	PageOffset   int64  `json:"page_offset"`
 	PageLimit    int64  `json:"page_limit"`
 }
@@ -512,6 +582,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		arg.UserID,
 		arg.PresetFilter,
 		arg.ManagerID,
+		arg.Search,
 		arg.PageOffset,
 		arg.PageLimit,
 	)
@@ -536,7 +607,6 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.TerminationDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -562,7 +632,6 @@ const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(manager_id, id)::bigint AS owner_id
 FROM users
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 // Record owner: the manager, or the user himself when there is none
@@ -589,8 +658,7 @@ SET
 	termination_date = $10,
 	updated_at = NOW()
 WHERE id = $11
-	AND deleted_at IS NULL
-RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -636,7 +704,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -645,7 +712,6 @@ const updateUserPassword = `-- name: UpdateUserPassword :exec
 UPDATE users
 SET password_hash = $1, updated_at = NOW()
 WHERE id = $2
-	AND deleted_at IS NULL
 `
 
 type UpdateUserPasswordParams struct {
@@ -663,7 +729,6 @@ SELECT EXISTS(
 	SELECT 1
 	FROM users
 	WHERE username = $1
-		AND deleted_at IS NULL
 )
 `
 

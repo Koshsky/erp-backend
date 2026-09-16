@@ -19,6 +19,9 @@ sql:
             go_type: "time.Time"
           - db_type: "timestamp"
             go_type: "time.Time"
-          - db_type: "timestamptz"
-            nullable: true
-            go_type: "*time.Time"
+          # NOTE: no nullable timestamptz override. With pgx/v5 a nullable
+          # timestamp defaults to pgtype.Timestamptz (NULL-safe both ways). A
+          # "*time.Time" override is double-wrapped into **time.Time by sqlc,
+          # which pgx/v5 cannot scan for non-NULL values — this made reuse
+          # detection fail: scanning revoked_at of a revoked session errored
+          # with "cannot scan timestamptz into ***time.Time".

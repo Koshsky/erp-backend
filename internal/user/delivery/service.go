@@ -9,6 +9,9 @@ import (
 )
 
 type UserService interface {
+	// NormalizeSearch prepares a free-text search pattern for the user list
+	// (lowercased and LIKE-escaped); validates its length too.
+	NormalizeSearch(search string) (string, error)
 	ListAllUsers(ctx context.Context) ([]dto.UserResponse, error)
 	ListUsers(
 		ctx context.Context,
@@ -16,6 +19,7 @@ type UserService interface {
 		viewScope string,
 		presetFilter string,
 		managerID int64,
+		search string,
 		limit, offset int,
 	) ([]dto.UserResponse, int64, error)
 	FindUser(ctx context.Context, id int64) (*dto.UserResponse, error)
@@ -41,6 +45,15 @@ type UserService interface {
 	) (*dto.UserResponse, error)
 
 	ListStates(ctx context.Context, userID int64, start, end date.Date) ([]dto.UserStateResponse, error)
+	// ListStatesBatch returns the calendar states of several workers over one
+	// date range in a single request (replaces one ListStates call per employee);
+	// each requested id is authorized like the single worker.view endpoint.
+	ListStatesBatch(
+		ctx context.Context,
+		caller userctx.UserContext,
+		userIDs []int64,
+		start, end date.Date,
+	) ([]dto.UserStatesResponse, error)
 	SetDays(ctx context.Context, userID int64, req dto.SetDaysRequest) error
 	DeleteDays(ctx context.Context, userID int64, start, end date.Date, stateID *int64) error
 }

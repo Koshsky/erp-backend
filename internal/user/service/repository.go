@@ -29,12 +29,23 @@ type UserRepository interface {
 		viewScope string,
 		presetFilter string,
 		managerID int64,
+		search string,
 		limit, offset int,
 	) ([]domain.User, error)
-	CountUsers(ctx context.Context, userID int64, viewScope string, presetFilter string, managerID int64) (int64, error)
+	CountUsers(
+		ctx context.Context,
+		userID int64,
+		viewScope string,
+		presetFilter string,
+		managerID int64,
+		search string,
+	) (int64, error)
 	ListAllUsers(ctx context.Context) ([]domain.User, error)
 
 	ListStates(ctx context.Context, userID int64, start, end time.Time) ([]domain.UserState, error)
+	// ListStatesByUsers is the batch variant of ListStates: the states of a set
+	// of workers over one date range, in a single query.
+	ListStatesByUsers(ctx context.Context, userIDs []int64, start, end time.Time) ([]domain.UserState, error)
 	SetStateRange(ctx context.Context, userID, stateID int64, start, end time.Time) error
 	DeleteStateRange(ctx context.Context, userID int64, start, end time.Time, stateID *int64) error
 }

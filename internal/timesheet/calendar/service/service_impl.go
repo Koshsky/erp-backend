@@ -12,6 +12,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
+	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 // maxCalendarRange is the maximum calendar range width per request (in days).
@@ -47,10 +48,10 @@ func (s *CalendarService) GetCalendar(
 
 	startT, endT := start.Time(), end.Time()
 	if endT.Before(startT) {
-		return nil, fmt.Errorf("end_date must be greater than or equal to start_date")
+		return nil, errors.BadRequest("end_date must be greater than or equal to start_date")
 	}
 	if int(endT.Sub(startT).Hours()/hoursPerDay) > maxCalendarRange-1 {
-		return nil, fmt.Errorf("date range must not exceed %d days", maxCalendarRange)
+		return nil, errors.BadRequest(fmt.Sprintf("date range must not exceed %d days", maxCalendarRange))
 	}
 
 	resources, err := s.repository.ListResources(ctx)

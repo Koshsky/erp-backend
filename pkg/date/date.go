@@ -18,7 +18,7 @@ const Layout = "2006-01-02"
 
 // Date — a calendar date without time, stored as a YYYY-MM-DD string.
 // The string representation lets swag (OpenAPI) treat it as a string.
-type Date string //nolint:recvcheck // json.Unmarshaler needs a pointer, the other methods are on value
+type Date string
 
 // Parse parses a YYYY-MM-DD string.
 func Parse(s string) (Date, error) {

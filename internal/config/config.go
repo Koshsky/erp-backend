@@ -3,7 +3,7 @@
 // Non-secret settings are read from config.yaml (the path is set by the
 // CONFIG_PATH environment variable, defaulting to ./config.yaml). Secrets and
 // the DB URL come only from environment variables: DATABASE_URL, JWT_SECRET_KEY,
-// JWT_REFRESH_KEY.
+// JWT_REFRESH_KEY (legacy-optional, see applyEnv).
 package config
 
 import (
@@ -37,13 +37,13 @@ type Config struct {
 	CORS       CORSConfig       `yaml:"cors"`
 	RateLimit  RateLimitConfig  `yaml:"rate_limiting"`
 	// UserRateLimit is the per authenticated user limit for protected routes.
-	UserRateLimit RateLimitConfig   `yaml:"user_rate_limiting"`
-	Profiling     ProfilingConfig   `yaml:"profiling"`
-	Maintenance   MaintenanceConfig `yaml:"maintenance"`
-	Tracing       TracingConfig     `yaml:"tracing"`
-	RBAC          RBACConfig        `yaml:"rbac"`
-	Audit         AuditConfig       `yaml:"audit"`
-	Security      SecurityConfig    `yaml:"security"`
+	UserRateLimit RateLimitConfig `yaml:"user_rate_limiting"`
+	Redis         RedisConfig     `yaml:"redis"`
+	Profiling     ProfilingConfig `yaml:"profiling"`
+	Tracing       TracingConfig   `yaml:"tracing"`
+	RBAC          RBACConfig      `yaml:"rbac"`
+	Audit         AuditConfig     `yaml:"audit"`
+	Security      SecurityConfig  `yaml:"security"`
 }
 
 // SecurityConfig — password policy extras.
@@ -78,6 +78,14 @@ type HTTPServerConfig struct {
 	ReadTimeout  Duration `yaml:"read_timeout"`
 	WriteTimeout Duration `yaml:"write_timeout"`
 	IdleTimeout  Duration `yaml:"idle_timeout"`
+	// MaxBodyBytes is the per-request body size limit (bytes); larger bodies
+	// are rejected with a 400-class error (H3 — DoS protection).
+	MaxBodyBytes int64 `yaml:"max_body_bytes"`
+	// RequestTimeout is the per-request context timeout (H3): the handler
+	// context is canceled after this duration, aborting long DB queries
+	// (planning/calendar aggregates) so goroutines and pool connections are
+	// released. Must be lower than WriteTimeout to take effect.
+	RequestTimeout Duration `yaml:"request_timeout"`
 	// TrustedProxies is the CIDR/client networks allowed to forward client IP
 	// headers (X-Forwarded-For / X-Real-IP) to the backend. It MUST list only
 	// the reverse proxy (nginx) networks; trusting all networks lets remote
@@ -139,13 +147,6 @@ type ProfilingConfig struct {
 	Address string `yaml:"address"`
 }
 
-// MaintenanceConfig — background data normalization (periodic run of
-// fn_normalize_employee_states for employee_states).
-type MaintenanceConfig struct {
-	Enabled  bool     `yaml:"enabled"`
-	Interval Duration `yaml:"interval"`
-}
-
 // TracingConfig — OpenTelemetry distributed tracing settings (OTLP/gRPC
 // exporter, by default the in-stack Jaeger collector).
 type TracingConfig struct {
@@ -178,6 +179,24 @@ type RateLimitConfig struct {
 	Expiration        Duration `yaml:"expiration"`
 }
 
+// RedisConfig is the shared Redis connection settings. Redis backs the rate
+// limiter (M1): when enabled, token buckets are shared across instances; when
+// disabled or unreachable the limiter falls back to the in-memory
+// implementation. Credentials are non-secret infra settings (prod may add an
+// optional REDIS_PASSWORD-style env override later).
+type RedisConfig struct {
+	Enabled      bool     `yaml:"enabled"`
+	Address      string   `yaml:"address"`
+	Password     string   `yaml:"password"`
+	DB           int      `yaml:"db"`
+	DialTimeout  Duration `yaml:"dial_timeout"`
+	ReadTimeout  Duration `yaml:"read_timeout"`
+	WriteTimeout Duration `yaml:"write_timeout"`
+	PoolSize     int      `yaml:"pool_size"`
+	// KeyPrefix namespaces all Redis keys owned by the application.
+	KeyPrefix string `yaml:"key_prefix"`
+}
+
 // Load loads the configuration: config.yaml plus secrets from environment variables.
 func Load() (*Config, error) {
 	path := getEnv("CONFIG_PATH", "config.yaml")
@@ -199,6 +218,10 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
+// minJWTSecretLen is the minimum accepted length of JWT_SECRET_KEY (256-bit
+// equivalent in ASCII hex; shorter keys weaken HMAC-SHA256 signatures).
+const minJWTSecretLen = 32
+
 // applyEnv applies secrets and the DB URL from environment variables to the configuration.
 func applyEnv(cfg *Config) error {
 	cfg.Postgres.URL = getEnv("DATABASE_URL", "")
@@ -210,11 +233,14 @@ func applyEnv(cfg *Config) error {
 	if cfg.JWT.SecretKey == "" {
 		return fmt.Errorf("JWT_SECRET_KEY is required")
 	}
+	if len(cfg.JWT.SecretKey) < minJWTSecretLen {
+		return fmt.Errorf("JWT_SECRET_KEY must be at least %d characters", minJWTSecretLen)
+	}
 
 	cfg.JWT.RefreshKey = getEnv("JWT_REFRESH_KEY", "")
-	if cfg.JWT.RefreshKey == "" {
-		return fmt.Errorf("JWT_REFRESH_KEY is required")
-	}
+	// JWT_REFRESH_KEY is legacy (AD-06): refresh tokens are opaque and stored
+	// in the DB, the key is never used. It is read for compatibility but is no
+	// longer required on startup (L8).
 
 	// TRACING_ENDPOINT overrides the OTLP exporter endpoint (dev: host-run air
 	// reaches the in-docker Jaeger collector via its published port; kept empty

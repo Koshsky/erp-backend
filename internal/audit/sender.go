@@ -24,25 +24,38 @@ const (
 	clientTimeoutForRetry = 5 * time.Second
 )
 
+// eventSender ships one event to the audit store (implemented by *Client).
+type eventSender interface {
+	Send(ctx context.Context, ev Event) error
+}
+
 // Sender drains audit events to the auditlog service. In the default async
 // mode events are buffered and retried without blocking the request; with
 // sync=true each event is sent synchronously (strict durability, slower).
+// Critical events (login/logout, M2) are always delivered synchronously so a
+// buffer overflow can never lose the authentication trail.
 type Sender struct {
 	logger  *slog.Logger
-	client  *Client
+	client  eventSender
 	sync    bool
 	queue   chan Event
 	done    chan struct{}
 	stopped atomic.Bool
+	dropped atomic.Int64
 	wg      sync.WaitGroup
 }
 
 // NewSender builds the sender and, in async mode, starts its worker.
 func NewSender(logger *slog.Logger, client *Client, cfg config.AuditConfig) *Sender {
+	return newSender(logger, client, cfg.Sync)
+}
+
+// newSender builds the sender around the given event sender (test seam).
+func newSender(logger *slog.Logger, client eventSender, syncMode bool) *Sender {
 	s := &Sender{
 		logger: logger,
 		client: client,
-		sync:   cfg.Sync,
+		sync:   syncMode,
 	}
 	if !s.sync {
 		s.queue = make(chan Event, senderQueueCapacity)
@@ -53,13 +66,16 @@ func NewSender(logger *slog.Logger, client *Client, cfg config.AuditConfig) *Sen
 	return s
 }
 
-// Enqueue schedules an event for delivery (async) or sends it immedately
-// (sync mode). In async mode a full queue drops the event with a warning.
+// Enqueue schedules an event for delivery (async) or sends it immediately
+// (sync mode). Critical events are always sent synchronously; in async mode a
+// full queue drops a non-critical event with an error log and a running
+// dropped counter (M2).
 func (s *Sender) Enqueue(ev Event) {
-	if s.sync {
+	if s.sync || ev.Critical {
 		if err := s.sendWithRetry(ev); err != nil {
 			s.logger.Error("audit send failed",
-				"error", err, "entity", ev.Entity, "action", ev.Action, "path", ev.Path)
+				"error", err, "entity", ev.Entity, "action", ev.Action, "path", ev.Path,
+				"critical", ev.Critical)
 		}
 		return
 	}
@@ -69,10 +85,15 @@ func (s *Sender) Enqueue(ev Event) {
 	select {
 	case s.queue <- ev:
 	default:
-		s.logger.Warn("audit queue full, dropping event",
-			"entity", ev.Entity, "action", ev.Action, "path", ev.Path)
+		dropped := s.dropped.Add(1)
+		s.logger.Error("audit queue full, dropping event",
+			"entity", ev.Entity, "action", ev.Action, "path", ev.Path,
+			"dropped_total", dropped)
 	}
 }
+
+// Dropped returns how many buffered events were dropped since startup.
+func (s *Sender) Dropped() int64 { return s.dropped.Load() }
 
 // Stop signals the worker and waits (bounded by ctx) for the buffer to drain.
 func (s *Sender) Stop(ctx context.Context) {
@@ -96,25 +117,27 @@ func (s *Sender) run() {
 	for {
 		select {
 		case ev := <-s.queue:
-			if err := s.sendWithRetry(ev); err != nil {
-				s.logger.Error("audit send failed",
-					"error", err, "entity", ev.Entity, "action", ev.Action, "path", ev.Path)
-			}
+			s.deliver(ev)
 		case <-s.done:
 			// Drain the remaining buffered events (best effort, bounded by the
 			// client timeout) before exiting.
 			for {
 				select {
 				case ev := <-s.queue:
-					if err := s.sendWithRetry(ev); err != nil {
-						s.logger.Error("audit send failed",
-							"error", err, "entity", ev.Entity, "action", ev.Action, "path", ev.Path)
-					}
+					s.deliver(ev)
 				default:
 					return
 				}
 			}
 		}
+	}
+}
+
+// deliver sends one buffered event and logs failures.
+func (s *Sender) deliver(ev Event) {
+	if err := s.sendWithRetry(ev); err != nil {
+		s.logger.Error("audit send failed",
+			"error", err, "entity", ev.Entity, "action", ev.Action, "path", ev.Path)
 	}
 }
 

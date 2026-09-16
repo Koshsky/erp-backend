@@ -16,8 +16,7 @@ SELECT COUNT(*)
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE m.deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
     ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
@@ -41,7 +40,7 @@ func (q *Queries) CountMilestones(ctx context.Context, arg CountMilestonesParams
 const createMilestone = `-- name: CreateMilestone :one
 INSERT INTO milestones (process_id, title, content, color, date)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, process_id, title, content, color, date, created_at, updated_at, deleted_at
+RETURNING id, process_id, title, content, color, date, created_at, updated_at
 `
 
 type CreateMilestoneParams struct {
@@ -70,16 +69,13 @@ func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteMilestone = `-- name: DeleteMilestone :exec
-UPDATE milestones
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM milestones
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteMilestone(ctx context.Context, milestoneID int64) error {
@@ -88,10 +84,9 @@ func (q *Queries) DeleteMilestone(ctx context.Context, milestoneID int64) error 
 }
 
 const findMilestone = `-- name: FindMilestone :one
-SELECT id, process_id, title, content, color, date, created_at, updated_at, deleted_at
+SELECT id, process_id, title, content, color, date, created_at, updated_at
 FROM milestones
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milestone, error) {
@@ -106,18 +101,16 @@ func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milesto
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listMilestones = `-- name: ListMilestones :many
-SELECT m.id, m.process_id, m.title, m.content, m.color, m.date, m.created_at, m.updated_at, m.deleted_at
+SELECT m.id, m.process_id, m.title, m.content, m.color, m.date, m.created_at, m.updated_at
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE m.deleted_at IS NULL
-  AND (
+WHERE (
     $1::text = 'all' OR
     ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
     ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
@@ -159,7 +152,6 @@ func (q *Queries) ListMilestones(ctx context.Context, arg ListMilestonesParams) 
 			&i.Date,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -178,9 +170,6 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE m.id = $1::bigint
-	AND m.deleted_at IS NULL
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL
 `
 
 type OwnerChainRow struct {
@@ -205,8 +194,7 @@ SET
 	date = $5,
 	updated_at = NOW()
 WHERE id = $6
-	AND deleted_at IS NULL
-RETURNING id, process_id, title, content, color, date, created_at, updated_at, deleted_at
+RETURNING id, process_id, title, content, color, date, created_at, updated_at
 `
 
 type UpdateMilestoneParams struct {
@@ -237,7 +225,6 @@ func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

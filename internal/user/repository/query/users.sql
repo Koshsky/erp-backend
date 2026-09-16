@@ -1,48 +1,61 @@
 -- name: ListUsers :many
 SELECT *
 FROM users
-WHERE deleted_at IS NULL
-  -- For non-admin: only direct subordinates (manager_id = current user);
-  -- admin sees everyone. The user himself is not included here (the timesheet
-  -- adds oneself on the client separately).
-  AND (
+WHERE (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
   )
+  -- For non-admin: only direct subordinates (manager_id = current user);
+  -- admin sees everyone. The user himself is not included here (the timesheet
+  -- adds oneself on the client separately).
   AND (@preset_filter::text = '' OR preset = @preset_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
+  -- Optional search: a case-insensitive substring over the composed full name
+  -- (last + first + middle) or the login; an empty pattern disables the filter.
+  -- The caller passes the pattern already lowercased and escaped (see the
+  -- normalizeSearch helper in user/service).
+  AND (
+    @search::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || @search::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || @search::text || '%' ESCAPE '\'
+  )
 ORDER BY id ASC
 LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 
 -- name: CountUsers :one
 SELECT COUNT(*)
 FROM users
-WHERE deleted_at IS NULL
-  AND (
+WHERE (
     @scope_view::text = 'all' OR
     (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
   )
   AND (@preset_filter::text = '' OR preset = @preset_filter::text)
-  AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint);
+  AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)
+  AND (
+    @search::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || @search::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || @search::text || '%' ESCAPE '\'
+  );
 
 -- name: ListAllUsers :many
 SELECT *
 FROM users
-WHERE deleted_at IS NULL
 ORDER BY id ASC;
 
 -- name: FindUser :one
 SELECT *
 FROM users
 WHERE id = @user_id
-	AND deleted_at IS NULL
 LIMIT 1;
 
 -- name: FindUserByUsername :one
 SELECT *
 FROM users
 WHERE username = @username
-	AND deleted_at IS NULL
 LIMIT 1;
 
 -- name: UsernameExists :one
@@ -50,7 +63,6 @@ SELECT EXISTS(
 	SELECT 1
 	FROM users
 	WHERE username = @username
-		AND deleted_at IS NULL
 );
 
 -- name: CreateUser :one
@@ -73,14 +85,12 @@ SET
 	termination_date = @termination_date,
 	updated_at = NOW()
 WHERE id = @user_id
-	AND deleted_at IS NULL
 RETURNING *;
 
 -- name: UpdateUserPassword :exec
 UPDATE users
 SET password_hash = @password_hash, updated_at = NOW()
-WHERE id = @user_id
-	AND deleted_at IS NULL;
+WHERE id = @user_id;
 
 -- name: InsertUserPermission :exec
 -- Individual permission override created together with the user account
@@ -89,18 +99,15 @@ INSERT INTO user_permissions (user_id, resource, action, scope, granted, updated
 VALUES (@user_id::bigint, @resource::text, @action::text, @scope::text, @granted, @updated_by);
 
 -- name: DeleteUser :exec
-UPDATE users
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = @user_id
-	AND deleted_at IS NULL;
+DELETE FROM users
+WHERE id = @user_id;
 
 -- name: OwnerChain :one
 -- Record owner: the manager, or the user himself when there is none
 -- (so a user can see/edit their own timesheet).
 SELECT COALESCE(manager_id, id)::bigint AS owner_id
 FROM users
-WHERE id = @id::bigint
-	AND deleted_at IS NULL;
+WHERE id = @id::bigint;
 
 -- ================= worker days (user_states) =================
 
@@ -113,6 +120,19 @@ WHERE es.user_id = @user_id::bigint
 	AND es.end_date >= @start_date::date
 	AND es.start_date <= @end_date::date
 ORDER BY es.start_date ASC;
+
+-- name: ListStatesByUsersRange :many
+-- Batch variant of ListStatesByUserRange for a set of workers in one request
+-- (no N+1 per employee). The rows of the range are ordered by user so the
+-- caller can group them without sorting.
+SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id,
+	s.code AS state_code, s.name AS state_name, s.is_available
+FROM user_states es
+JOIN states s ON s.id = es.state_id
+WHERE es.user_id = ANY(@user_ids::bigint[])
+	AND es.end_date >= @start_date::date
+	AND es.start_date <= @end_date::date
+ORDER BY es.user_id ASC, es.start_date ASC;
 
 -- name: ListOverlappingStates :many
 SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id
