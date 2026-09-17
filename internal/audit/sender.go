@@ -53,7 +53,7 @@ func NewSender(logger *slog.Logger, client *Client, cfg config.AuditConfig) *Sen
 // newSender builds the sender around the given event sender (test seam).
 func newSender(logger *slog.Logger, client eventSender, syncMode bool) *Sender {
 	s := &Sender{
-		logger: logger,
+		logger: logger.With("component", "audit_sender"),
 		client: client,
 		sync:   syncMode,
 	}

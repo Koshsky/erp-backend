@@ -22,7 +22,7 @@ type CalendarHandler struct {
 // NewCalendarHandler builds the CalendarHandler handler.
 func NewCalendarHandler(logger *slog.Logger, svc *service.CalendarService, mw *rbac.Middleware) *CalendarHandler {
 	return &CalendarHandler{
-		logger:  logger,
+		logger:  logger.With("component", "calendar_handler"),
 		service: svc,
 		mw:      mw,
 	}

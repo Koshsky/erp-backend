@@ -66,7 +66,7 @@ func NewUserService(
 	hibpChecker *hibp.Checker,
 ) *UserService {
 	return &UserService{
-		logger:     logger,
+		logger:     logger.With("component", "user_service"),
 		repository: r,
 		mapper:     &UserMapper{},
 		validator:  &UserValidator{},

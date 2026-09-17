@@ -25,7 +25,7 @@ type ProcessService struct {
 // NewProcessService builds the ProcessService service.
 func NewProcessService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ProcessRepository) *ProcessService {
 	return &ProcessService{
-		logger:     logger,
+		logger:     logger.With("component", "process_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewProcessMapper(),

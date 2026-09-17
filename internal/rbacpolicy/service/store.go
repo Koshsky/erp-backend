@@ -47,7 +47,7 @@ func NewPolicyStore(
 	interval config.Duration,
 ) *PolicyStore {
 	return &PolicyStore{
-		logger:   logger,
+		logger:   logger.With("component", "rbacpolicy_store"),
 		repo:     repo,
 		mw:       mw,
 		interval: time.Duration(interval),
@@ -64,7 +64,7 @@ func (s *PolicyStore) Start() {
 	s.mu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), reloadTimeout)
 	if err := s.Reload(ctx); err != nil {
-		s.logger.Warn("rbac: стартовая загрузка правил не удалась, работаю на дефолтах", "error", err)
+		s.logger.WarnContext(ctx, "rbac: стартовая загрузка правил не удалась, работаю на дефолтах", "error", err)
 	}
 	cancel()
 	go s.refreshLoop()
@@ -83,7 +83,8 @@ func (s *PolicyStore) refreshLoop() {
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), reloadTimeout)
 			if err := s.Reload(ctx); err != nil {
-				s.logger.Warn(
+				s.logger.WarnContext(
+					ctx,
 					"rbac: фоновая перезагрузка правил не удалась, остаюсь на последнем снапшоте",
 					"error",
 					err,

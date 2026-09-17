@@ -25,7 +25,7 @@ type TaskHandler struct {
 // NewTaskHandler builds the TaskHandler handler.
 func NewTaskHandler(logger *slog.Logger, svc *service.TaskService, mw *rbac.Middleware) *TaskHandler {
 	return &TaskHandler{
-		logger:  logger,
+		logger:  logger.With("component", "task_handler"),
 		service: svc,
 		mw:      mw,
 	}

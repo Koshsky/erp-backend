@@ -27,7 +27,7 @@ func NewPlanningHandler(
 	mw *rbac.Middleware,
 ) *PlanningHandler {
 	return &PlanningHandler{
-		logger:  logger,
+		logger:  logger.With("component", "planning_handler"),
 		service: svc,
 		mw:      mw,
 	}

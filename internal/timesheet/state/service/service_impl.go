@@ -22,7 +22,7 @@ type StateService struct {
 // NewStateService builds the StateService service.
 func NewStateService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.StateRepository) *StateService {
 	return &StateService{
-		logger:     logger,
+		logger:     logger.With("component", "state_service"),
 		repository: r,
 		mapper:     NewStateMapper(),
 		validator:  &StateValidator{},

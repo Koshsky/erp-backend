@@ -28,7 +28,7 @@ type TaskService struct {
 // NewTaskService builds the TaskService service.
 func NewTaskService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.TaskRepository) *TaskService {
 	return &TaskService{
-		logger:     logger,
+		logger:     logger.With("component", "task_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     &TaskMapper{},

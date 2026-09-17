@@ -32,7 +32,7 @@ type Module struct {
 
 // ProvideModule builds the rbacpolicy module.
 func ProvideModule(handler *delivery.RBACHandler, logger *slog.Logger) Module {
-	return Module{handler: handler, logger: logger}
+	return Module{handler: handler, logger: logger.With("component", "rbacpolicy_module")}
 }
 
 // RegisterPublicRoutes is a no-op: the module has no public routes.

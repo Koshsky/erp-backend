@@ -49,7 +49,7 @@ func NewAuthService(
 	tracer *tracingpkg.Tracer,
 ) *AuthService {
 	return &AuthService{
-		logger:   logger,
+		logger:   logger.With("component", "auth_service"),
 		users:    users,
 		jwt:      jwtService,
 		sessions: sessions,

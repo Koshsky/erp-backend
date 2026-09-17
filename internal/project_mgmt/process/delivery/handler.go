@@ -25,7 +25,7 @@ type ProcessHandler struct {
 // NewProcessHandler builds the ProcessHandler handler.
 func NewProcessHandler(logger *slog.Logger, svc *service.ProcessService, mw *rbac.Middleware) *ProcessHandler {
 	return &ProcessHandler{
-		logger:  logger,
+		logger:  logger.With("component", "process_handler"),
 		service: svc,
 		mw:      mw,
 	}

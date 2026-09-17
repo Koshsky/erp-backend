@@ -25,7 +25,7 @@ type ProjectHandler struct {
 // NewProjectHandler builds the ProjectHandler handler.
 func NewProjectHandler(logger *slog.Logger, svc *service.ProjectService, mw *rbac.Middleware) *ProjectHandler {
 	return &ProjectHandler{
-		logger:  logger,
+		logger:  logger.With("component", "project_handler"),
 		service: svc,
 		mw:      mw,
 	}

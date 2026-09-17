@@ -23,7 +23,7 @@ type RBACHandler struct {
 
 // NewRBACHandler builds the RBAC administration handler.
 func NewRBACHandler(logger *slog.Logger, svc *service.Service, mw *rbac.Middleware) *RBACHandler {
-	return &RBACHandler{logger: logger, service: svc, mw: mw}
+	return &RBACHandler{logger: logger.With("component", "rbacpolicy_handler"), service: svc, mw: mw}
 }
 
 // ListPresets handles the preset catalog listing.

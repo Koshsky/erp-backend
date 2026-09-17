@@ -15,6 +15,8 @@ import (
 func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger, tracer *tracingpkg.Tracer) (*pgxpool.Pool, error) {
 	const op = "initDBPool"
 
+	logger = logger.With("component", "database")
+
 	cfg, err := pgxpool.ParseConfig(pgCfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("%s: parse config: %w", op, err)

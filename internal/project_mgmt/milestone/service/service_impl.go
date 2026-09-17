@@ -28,7 +28,7 @@ func NewMilestoneService(
 	r *repo.MilestoneRepository,
 ) *MilestoneService {
 	return &MilestoneService{
-		logger:     logger,
+		logger:     logger.With("component", "milestone_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewMilestoneMapper(),

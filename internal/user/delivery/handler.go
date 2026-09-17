@@ -28,7 +28,7 @@ type UserHandler struct {
 // NewUserHandler builds the user handler.
 func NewUserHandler(logger *slog.Logger, svc *userservice.UserService, mw *rbac.Middleware) *UserHandler {
 	return &UserHandler{
-		logger:  logger,
+		logger:  logger.With("component", "user_handler"),
 		service: svc,
 		mw:      mw,
 	}

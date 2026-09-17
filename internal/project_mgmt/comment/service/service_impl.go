@@ -27,7 +27,7 @@ func NewCommentService(
 	r *repo.CommentRepository,
 ) *CommentService {
 	return &CommentService{
-		logger:     logger,
+		logger:     logger.With("component", "comment_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewCommentMapper(),

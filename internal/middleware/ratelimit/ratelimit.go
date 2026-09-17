@@ -74,6 +74,7 @@ func New(config Config, logger *slog.Logger) gin.HandlerFunc {
 	if logger == nil {
 		logger = slog.Default()
 	}
+	logger = logger.With("component", "ratelimit")
 
 	clientLimit := rate.Limit(config.RequestsPerSecond)
 	keyFunc := config.Key
@@ -109,7 +110,7 @@ func New(config Config, logger *slog.Logger) gin.HandlerFunc {
 
 		if !cl.limiter.Allow() {
 			c.Header("Retry-After", retryAfterSeconds)
-			logger.Warn("rate limit exceeded", "client_ip", key)
+			logger.WarnContext(c.Request.Context(), "rate limit exceeded", "client_ip", key)
 			response.TooManyRequests(c, "too many requests")
 			c.Abort()
 			return

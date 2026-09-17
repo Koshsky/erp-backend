@@ -26,7 +26,7 @@ type ResourceHandler struct {
 // NewResourceHandler builds the ResourceHandler handler.
 func NewResourceHandler(logger *slog.Logger, svc *service.ResourceService, mw *rbac.Middleware) *ResourceHandler {
 	return &ResourceHandler{
-		logger:  logger,
+		logger:  logger.With("component", "resource_handler"),
 		service: svc,
 		mw:      mw,
 	}

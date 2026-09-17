@@ -33,7 +33,7 @@ type CalendarService struct {
 // NewCalendarService builds the CalendarService service.
 func NewCalendarService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.CalendarRepository) *CalendarService {
 	return &CalendarService{
-		logger:     logger,
+		logger:     logger.With("component", "calendar_service"),
 		repository: r,
 		tracer:     tracer,
 	}

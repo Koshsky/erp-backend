@@ -26,7 +26,7 @@ func NewAssignmentService(
 	r *repo.AssignmentRepository,
 ) *AssignmentService {
 	return &AssignmentService{
-		logger:     logger,
+		logger:     logger.With("component", "assignment_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewAssignmentMapper(),

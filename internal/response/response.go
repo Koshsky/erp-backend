@@ -97,7 +97,7 @@ func Unauthorized(c *gin.Context, code errors.Code, msg string) {
 // client always receives the generic internalErrorMessage; msg and err (which
 // may contain internal details) are only written to the logs.
 func InternalError(c *gin.Context, logger *slog.Logger, msg string, err error) {
-	logger.Error(msg, "error", err)
+	logger.ErrorContext(c.Request.Context(), msg, "error", err)
 	c.JSON(http.StatusInternalServerError, Response{Error: errorBody(errors.CodeInternal, internalErrorMessage)})
 }
 
@@ -124,7 +124,7 @@ func Error(c *gin.Context, logger *slog.Logger, err error) {
 	status := errors.StatusCode(err)
 	code := errors.CodeOf(err, status)
 	if status == http.StatusInternalServerError {
-		logger.Error("internal error", "error", err)
+		logger.ErrorContext(c.Request.Context(), "internal error", "error", err)
 		c.JSON(status, Response{Error: errorBody(code, internalErrorMessage)})
 		return
 	}

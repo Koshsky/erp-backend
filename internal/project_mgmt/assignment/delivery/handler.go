@@ -25,7 +25,7 @@ type AssignmentHandler struct {
 // NewAssignmentHandler builds the AssignmentHandler handler.
 func NewAssignmentHandler(logger *slog.Logger, svc *service.AssignmentService, mw *rbac.Middleware) *AssignmentHandler {
 	return &AssignmentHandler{
-		logger:  logger,
+		logger:  logger.With("component", "assignment_handler"),
 		service: svc,
 		mw:      mw,
 	}

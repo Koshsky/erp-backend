@@ -29,7 +29,7 @@ type Service struct {
 
 // NewRBACService builds the RBAC administration service.
 func NewRBACService(logger *slog.Logger, repo *repository.RuleRepository, store *PolicyStore) *Service {
-	return &Service{logger: logger, repo: repo, store: store}
+	return &Service{logger: logger.With("component", "rbacpolicy_service"), repo: repo, store: store}
 }
 
 // ListPresets returns the preset catalog.

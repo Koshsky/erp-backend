@@ -25,7 +25,7 @@ type MilestoneHandler struct {
 // NewMilestoneHandler builds the MilestoneHandler handler.
 func NewMilestoneHandler(logger *slog.Logger, svc *service.MilestoneService, mw *rbac.Middleware) *MilestoneHandler {
 	return &MilestoneHandler{
-		logger:  logger,
+		logger:  logger.With("component", "milestone_handler"),
 		service: svc,
 		mw:      mw,
 	}

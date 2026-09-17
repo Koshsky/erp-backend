@@ -26,7 +26,7 @@ type Middleware struct {
 
 // NewMiddleware builds the audit capture middleware.
 func NewMiddleware(logger *slog.Logger, cfg config.AuditConfig, sender *Sender) *Middleware {
-	return &Middleware{logger: logger, cfg: cfg, sender: sender}
+	return &Middleware{logger: logger.With("component", "audit_middleware"), cfg: cfg, sender: sender}
 }
 
 // Start starts the async sender worker (no-op in sync mode).

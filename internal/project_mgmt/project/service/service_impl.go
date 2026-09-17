@@ -24,7 +24,7 @@ type ProjectService struct {
 // NewProjectService builds the ProjectService service.
 func NewProjectService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ProjectRepository) *ProjectService {
 	return &ProjectService{
-		logger:     logger,
+		logger:     logger.With("component", "project_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewProjectMapper(),

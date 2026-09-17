@@ -25,7 +25,7 @@ type ResourceService struct {
 // NewResourceService builds the ResourceService service.
 func NewResourceService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ResourceRepository) *ResourceService {
 	return &ResourceService{
-		logger:     logger,
+		logger:     logger.With("component", "resource_service"),
 		repository: r,
 		mapper:     NewResourceMapper(),
 		validator:  &ResourceValidator{},
