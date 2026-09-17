@@ -180,10 +180,11 @@ type RateLimitConfig struct {
 }
 
 // RedisConfig is the shared Redis connection settings. Redis backs the rate
-// limiter (M1): when enabled, token buckets are shared across instances; when
-// disabled or unreachable the limiter falls back to the in-memory
-// implementation. Credentials are non-secret infra settings (prod may add an
-// optional REDIS_PASSWORD-style env override later).
+// limiter (M1): the backend is chosen explicitly by config — when enabled,
+// token buckets are shared across instances and an unreachable Redis fails
+// application startup (fail-fast); when disabled, the limiter uses the
+// in-memory implementation. Credentials are non-secret infra settings (prod
+// may add an optional REDIS_PASSWORD-style env override later).
 type RedisConfig struct {
 	Enabled      bool     `yaml:"enabled"`
 	Address      string   `yaml:"address"`
