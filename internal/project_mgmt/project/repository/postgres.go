@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
@@ -29,14 +29,21 @@ func NewProjectRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProjectRepos
 	}
 }
 
-func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Project) (*domain.Project, error) {
+func (r *ProjectRepository) CreateProject(
+	ctx context.Context,
+	ownerID *int64,
+	code string,
+	color *string,
+	startDate, endDate time.Time,
+	priority int,
+) (*sqlc.Project, error) {
 	created, err := r.db.CreateProject(ctx, sqlc.CreateProjectParams{
-		Code:      project.Code,
-		OwnerID:   nullable.ToInt8(project.OwnerID),
-		Color:     nullable.ToString(project.Color),
-		StartDate: project.StartDate,
-		EndDate:   project.EndDate,
-		Priority:  int64(project.Priority),
+		Code:      code,
+		OwnerID:   nullable.ToInt8(ownerID),
+		Color:     nullable.ToString(color),
+		StartDate: startDate,
+		EndDate:   endDate,
+		Priority:  int64(priority),
 	})
 	if err != nil {
 		// Idempotent create: the active code already exists (ON CONFLICT inserted
@@ -47,27 +54,29 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, project domain.Pr
 		return nil, mapProjectCreateError(err)
 	}
 
-	mapped := mapProject(created)
-	return &mapped, nil
+	return &created, nil
 }
 
-func (r *ProjectRepository) FindProject(ctx context.Context, id int64) (*domain.Project, error) {
+func (r *ProjectRepository) FindProject(ctx context.Context, id int64) (*sqlc.Project, error) {
 	project, err := r.db.FindProject(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapProject(project)
-	return &mapped, nil
+	return &project, nil
 }
 
-func (r *ProjectRepository) UpdateProject(ctx context.Context, project domain.Project) (*domain.Project, error) {
+func (r *ProjectRepository) UpdateProject(
+	ctx context.Context,
+	project sqlc.Project,
+	priority int,
+) (*sqlc.Project, error) {
 	updated, err := r.db.UpdateProject(ctx, sqlc.UpdateProjectParams{
 		ProjectID: project.ID,
-		OwnerID:   nullable.ToInt8(project.OwnerID),
+		OwnerID:   project.OwnerID,
 		Code:      project.Code,
-		Color:     nullable.ToString(project.Color),
-		Priority:  int64(project.Priority),
+		Color:     project.Color,
+		Priority:  int64(priority),
 		StartDate: project.StartDate,
 		EndDate:   project.EndDate,
 	})
@@ -75,8 +84,7 @@ func (r *ProjectRepository) UpdateProject(ctx context.Context, project domain.Pr
 		return nil, err
 	}
 
-	mapped := mapProject(updated)
-	return &mapped, nil
+	return &updated, nil
 }
 
 func (r *ProjectRepository) DeleteProject(ctx context.Context, id int64) error {
@@ -89,22 +97,14 @@ func (r *ProjectRepository) ListProjects(
 	viewScope string,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Project, error) {
-	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
+) ([]sqlc.Project, error) {
+	return r.db.ListProjects(ctx, sqlc.ListProjectsParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-	projects := make([]domain.Project, 0, len(rows))
-	for _, row := range rows {
-		projects = append(projects, mapProject(row))
-	}
-	return projects, nil
 }
 
 func (r *ProjectRepository) CountProjects(
@@ -123,31 +123,14 @@ func (r *ProjectRepository) CountProjects(
 	)
 }
 
-func mapProject(row sqlc.Project) domain.Project {
-	return domain.Project{
-		ID:        row.ID,
-		OwnerID:   nullable.Int64Ptr(row.OwnerID),
-		Code:      row.Code,
-		Color:     nullable.StringPtr(row.Color),
-		StartDate: row.StartDate,
-		EndDate:   row.EndDate,
-		Priority:  int(row.Priority),
-	}
-}
-
 // AutoCreatedCounts returns what the auto-create trigger (V8) created for the
 // project on insert (processes/tasks/assignments). All zero when the template
 // is disabled or empty.
-func (r *ProjectRepository) AutoCreatedCounts(ctx context.Context, projectID int64) (domain.AutoCreatedCounts, error) {
-	row, err := r.db.CountAutoCreatedEntities(ctx, projectID)
-	if err != nil {
-		return domain.AutoCreatedCounts{}, err
-	}
-	return domain.AutoCreatedCounts{
-		Processes:   row.Processes,
-		Tasks:       row.Tasks,
-		Assignments: row.Assignments,
-	}, nil
+func (r *ProjectRepository) AutoCreatedCounts(
+	ctx context.Context,
+	projectID int64,
+) (sqlc.CountAutoCreatedEntitiesRow, error) {
+	return r.db.CountAutoCreatedEntities(ctx, projectID)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

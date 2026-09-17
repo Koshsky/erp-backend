@@ -10,7 +10,6 @@ import (
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
@@ -30,15 +29,15 @@ func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository 
 	}
 }
 
-func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
+func (r *TaskRepository) CreateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
 	row, err := r.db.CreateTask(ctx, sqlc.CreateTaskParams{
 		ProcessID: task.ProcessID,
 		// 0 means "no parent" (the query NULLIFs it to NULL); the real parent
 		// id for subtasks. Both map to the same NULLIF branch in the INSERT.
-		ParentID:  nullable.PtrValueOr(task.ParentID, 0),
-		OwnerID:   nullable.ToInt8(task.OwnerID),
+		ParentID:  nullable.PtrValueOr(nullable.Int64Ptr(task.ParentID), 0),
+		OwnerID:   task.OwnerID,
 		Title:     task.Title,
-		Color:     nullable.ToString(task.Color),
+		Color:     task.Color,
 		Status:    task.Status,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
@@ -47,26 +46,24 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapTask(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*domain.Task, error) {
+func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*sqlc.Task, error) {
 	row, err := r.db.FindTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapTask(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
+func (r *TaskRepository) UpdateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
 	row, err := r.db.UpdateTask(ctx, sqlc.UpdateTaskParams{
 		TaskID:    task.ID,
-		OwnerID:   nullable.ToInt8(task.OwnerID),
+		OwnerID:   task.OwnerID,
 		Title:     task.Title,
-		Color:     nullable.ToString(task.Color),
+		Color:     task.Color,
 		Status:    task.Status,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
@@ -75,8 +72,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapTask(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
@@ -89,22 +85,14 @@ func (r *TaskRepository) ListTasks(
 	viewScope string,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Task, error) {
-	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
+) ([]sqlc.Task, error) {
+	return r.db.ListTasks(ctx, sqlc.ListTasksParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-	tasks := make([]domain.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTask(row))
-	}
-	return tasks, nil
 }
 
 func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error) {
@@ -118,32 +106,9 @@ func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope
 	)
 }
 
-func mapTask(row sqlc.Task) domain.Task {
-	return domain.Task{
-		ID:        row.ID,
-		ProcessID: row.ProcessID,
-		ParentID:  nullable.Int64Ptr(row.ParentID),
-		OwnerID:   nullable.Int64Ptr(row.OwnerID),
-		Title:     row.Title,
-		Color:     nullable.StringPtr(row.Color),
-		Status:    row.Status,
-		StartDate: row.StartDate,
-		EndDate:   row.EndDate,
-		SortOrder: int(row.SortOrder),
-	}
-}
-
 // ListSubtasksByParent returns the active subtasks of a task in display order.
-func (r *TaskRepository) ListSubtasksByParent(ctx context.Context, parentID int64) ([]domain.Task, error) {
-	rows, err := r.db.ListSubtasksByParent(ctx, parentID)
-	if err != nil {
-		return nil, err
-	}
-	tasks := make([]domain.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTask(row))
-	}
-	return tasks, nil
+func (r *TaskRepository) ListSubtasksByParent(ctx context.Context, parentID int64) ([]sqlc.Task, error) {
+	return r.db.ListSubtasksByParent(ctx, parentID)
 }
 
 // ListTaskIDsByProcess returns the active task ids of a process in their

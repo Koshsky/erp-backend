@@ -10,7 +10,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/tracing"
-	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
+	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 )
 
 // stubSessionRevoker records the revoked user ids (and can fail on demand).
@@ -47,9 +47,9 @@ const testUserID int64 = 7
 
 // stubUserWithPassword builds a user row whose bcrypt hash matches the
 // fixed "OldPass9!" password used across these tests.
-func stubUserWithPassword() *userdomain.User {
+func stubUserWithPassword() *sqlc.User {
 	hash, _ := hasher.Hash("OldPass9!")
-	return &userdomain.User{
+	return &sqlc.User{
 		ID:           testUserID,
 		Username:     "worker1",
 		PasswordHash: hash,

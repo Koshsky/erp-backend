@@ -12,6 +12,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/domain"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
+	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository/sqlc"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
@@ -198,7 +199,7 @@ func (s *PolicyStore) IsReady() bool {
 }
 
 // rulesToMatrix converts DB rows into a matrix, validating the codecs.
-func rulesToMatrix(rules []domain.PresetRule) (policies.Matrix, error) {
+func rulesToMatrix(rules []sqlc.ListActivePresetRulesRow) (policies.Matrix, error) {
 	rows := make([]policies.MatrixRule, 0, len(rules))
 	for _, r := range rules {
 		res, ok := policies.ParseResource(r.Resource)

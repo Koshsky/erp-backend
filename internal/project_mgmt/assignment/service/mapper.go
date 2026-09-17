@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
 
 type AssignmentMapper struct{}
@@ -11,7 +11,7 @@ func NewAssignmentMapper() *AssignmentMapper {
 	return &AssignmentMapper{}
 }
 
-func (m *AssignmentMapper) ToDTO(assignment *domain.Assignment) *dto.AssignmentResponse {
+func (m *AssignmentMapper) ToDTO(assignment *sqlc.Assignment) *dto.AssignmentResponse {
 	if assignment == nil {
 		return nil
 	}
@@ -19,11 +19,11 @@ func (m *AssignmentMapper) ToDTO(assignment *domain.Assignment) *dto.AssignmentR
 		ID:         assignment.ID,
 		TaskID:     assignment.TaskID,
 		ResourceID: assignment.ResourceID,
-		Quantity:   assignment.Quantity,
+		Quantity:   int(assignment.Quantity),
 	}
 }
 
-func (m *AssignmentMapper) ToDTOs(assignments []domain.Assignment) []dto.AssignmentResponse {
+func (m *AssignmentMapper) ToDTOs(assignments []sqlc.Assignment) []dto.AssignmentResponse {
 	if assignments == nil {
 		return []dto.AssignmentResponse{}
 	}
@@ -32,24 +32,4 @@ func (m *AssignmentMapper) ToDTOs(assignments []domain.Assignment) []dto.Assignm
 		responses[i] = *m.ToDTO(&assignment)
 	}
 	return responses
-}
-
-func (m *AssignmentMapper) ToDomainFromCreate(req dto.CreateAssignmentRequest) domain.Assignment {
-	return domain.Assignment{
-		TaskID:     req.TaskID,
-		ResourceID: req.ResourceID,
-		Quantity:   req.Quantity,
-	}
-}
-
-func (m *AssignmentMapper) ApplyUpdateToDomain(assignment *domain.Assignment, req dto.UpdateAssignmentRequest) {
-	if req.TaskID != nil {
-		assignment.TaskID = *req.TaskID
-	}
-	if req.ResourceID != nil {
-		assignment.ResourceID = *req.ResourceID
-	}
-	if req.Quantity != nil {
-		assignment.Quantity = *req.Quantity
-	}
 }

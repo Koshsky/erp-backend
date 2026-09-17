@@ -4,13 +4,13 @@ package repository
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
@@ -30,40 +30,45 @@ func NewProcessRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProcessRepos
 	}
 }
 
-func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Process) (*domain.Process, error) {
+func (r *ProcessRepository) CreateProcess(
+	ctx context.Context,
+	projectID int64,
+	title string,
+	color *string,
+	ownerID *int64,
+	startDate, endDate time.Time,
+) (*sqlc.Process, error) {
 	row, err := r.db.CreateProcess(ctx, sqlc.CreateProcessParams{
-		ProjectID: process.ProjectID,
-		Title:     process.Title,
-		Color:     nullable.ToString(process.Color),
-		StartDate: process.StartDate,
-		EndDate:   process.EndDate,
-		OwnerID:   nullable.ToInt8(process.OwnerID),
+		ProjectID: projectID,
+		Title:     title,
+		Color:     nullable.ToString(color),
+		StartDate: startDate,
+		EndDate:   endDate,
+		OwnerID:   nullable.ToInt8(ownerID),
 	})
 	if err != nil {
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapProcess(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *ProcessRepository) FindProcess(ctx context.Context, id int64) (*domain.Process, error) {
+func (r *ProcessRepository) FindProcess(ctx context.Context, id int64) (*sqlc.Process, error) {
 	row, err := r.db.FindProcess(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapProcess(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Process) (*domain.Process, error) {
+func (r *ProcessRepository) UpdateProcess(ctx context.Context, process sqlc.Process) (*sqlc.Process, error) {
 	row, err := r.db.UpdateProcess(ctx, sqlc.UpdateProcessParams{
 		ProcessID: process.ID,
-		OwnerID:   nullable.ToInt8(process.OwnerID),
+		OwnerID:   process.OwnerID,
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
-		Color:     nullable.ToString(process.Color),
+		Color:     process.Color,
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
 	})
@@ -71,8 +76,7 @@ func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Pr
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapProcess(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *ProcessRepository) DeleteProcess(ctx context.Context, id int64) error {
@@ -85,22 +89,14 @@ func (r *ProcessRepository) ListProcesss(
 	viewScope string,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Process, error) {
-	rows, err := r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
+) ([]sqlc.Process, error) {
+	return r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-	processes := make([]domain.Process, 0, len(rows))
-	for _, row := range rows {
-		processes = append(processes, mapProcess(row))
-	}
-	return processes, nil
 }
 
 func (r *ProcessRepository) CountProcesses(
@@ -117,19 +113,6 @@ func (r *ProcessRepository) CountProcesses(
 			OwnerID:   ownerID,
 		},
 	)
-}
-
-func mapProcess(row sqlc.Process) domain.Process {
-	return domain.Process{
-		ID:        row.ID,
-		OwnerID:   nullable.Int64Ptr(row.OwnerID),
-		ProjectID: row.ProjectID,
-		Title:     row.Title,
-		Color:     nullable.StringPtr(row.Color),
-		StartDate: row.StartDate,
-		EndDate:   row.EndDate,
-		SortOrder: int(row.SortOrder),
-	}
 }
 
 // ListProcessIDsByProject returns the active process ids of a project in their

@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -67,12 +69,11 @@ func (s *ResourceService) CreateResource(
 		req.OwnerID = &userID
 	}
 
-	resource := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateResource(&resource); err != nil {
+	if err := s.validator.ValidateResource(req.Code, req.Title, req.Color); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateResource(ctx, resource)
+	created, err := s.repository.CreateResource(ctx, req.Code, req.Title, req.Color, req.OwnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +110,38 @@ func (s *ResourceService) UpdateResource(
 		return nil, errors.ErrResourceNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(resource, req)
-	if err = s.validator.ValidateResource(resource); err != nil {
+	if req.Code != nil {
+		resource.Code = *req.Code
+	}
+	if req.Title != nil {
+		resource.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			resource.Color = sql.NullString{}
+		} else {
+			resource.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.OwnerID != nil {
+		resource.OwnerID = *req.OwnerID
+	}
+	if err = s.validator.ValidateResource(
+		resource.Code,
+		resource.Title,
+		nullable.StringPtr(resource.Color),
+	); err != nil {
 		return nil, err
 	}
 
-	updated, err := s.repository.UpdateResource(ctx, *resource)
+	updated, err := s.repository.UpdateResource(
+		ctx,
+		resource.ID,
+		resource.Code,
+		resource.Title,
+		nullable.StringPtr(resource.Color),
+		&resource.OwnerID,
+	)
 	if err != nil {
 		return nil, err
 	}

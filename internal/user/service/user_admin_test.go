@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"net/http"
 	"testing"
@@ -11,32 +12,33 @@ import (
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
+	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
 // stubRepo is a minimal UserRepository for the user-admin rule tests.
 type stubRepo struct {
-	users      map[int64]*userdomain.User
+	users      map[int64]*sqlc.User
 	adminCount int64
 }
 
-func newStubRepo(users ...*userdomain.User) *stubRepo {
-	r := &stubRepo{users: map[int64]*userdomain.User{}}
+func newStubRepo(users ...*sqlc.User) *stubRepo {
+	r := &stubRepo{users: map[int64]*sqlc.User{}}
 	for _, u := range users {
 		if u != nil {
 			r.users[u.ID] = u
 		}
 	}
 	for _, u := range r.users {
-		if u.PresetName() == userdomain.PresetAdmin {
+		if presetCode(u.Preset) == userdomain.PresetAdmin {
 			r.adminCount++
 		}
 	}
 	return r
 }
 
-func (r *stubRepo) CreateUser(_ context.Context, user userdomain.User) (*userdomain.User, error) {
+func (r *stubRepo) CreateUser(_ context.Context, user sqlc.User) (*sqlc.User, error) {
 	created := user
 	if created.ID == 0 {
 		created.ID = int64(len(r.users) + 100)
@@ -47,14 +49,14 @@ func (r *stubRepo) CreateUser(_ context.Context, user userdomain.User) (*userdom
 
 func (r *stubRepo) CreateUserWithPermissions(
 	_ context.Context,
-	user userdomain.User,
+	user sqlc.User,
 	_ []userdomain.UserPermission,
 	_ int64,
-) (*userdomain.User, error) {
+) (*sqlc.User, error) {
 	return r.CreateUser(context.Background(), user)
 }
 
-func (r *stubRepo) FindUser(_ context.Context, id int64) (*userdomain.User, error) {
+func (r *stubRepo) FindUser(_ context.Context, id int64) (*sqlc.User, error) {
 	u, ok := r.users[id]
 	if !ok {
 		return nil, errors.NotFound("not found")
@@ -63,7 +65,7 @@ func (r *stubRepo) FindUser(_ context.Context, id int64) (*userdomain.User, erro
 	return &cp, nil
 }
 
-func (r *stubRepo) FindUserByUsername(_ context.Context, username string) (*userdomain.User, error) {
+func (r *stubRepo) FindUserByUsername(_ context.Context, username string) (*sqlc.User, error) {
 	for _, u := range r.users {
 		if u.Username == username {
 			return u, nil
@@ -81,7 +83,7 @@ func (r *stubRepo) UsernameExists(_ context.Context, username string) (bool, err
 	return false, nil
 }
 
-func (r *stubRepo) UpdateUser(_ context.Context, user userdomain.User) (*userdomain.User, error) {
+func (r *stubRepo) UpdateUser(_ context.Context, user sqlc.User) (*sqlc.User, error) {
 	cp := user
 	r.users[user.ID] = &cp
 	return &cp, nil
@@ -93,7 +95,7 @@ func (r *stubRepo) DeleteUser(_ context.Context, _ int64) error               { 
 func (r *stubRepo) ListUsers(
 	_ context.Context,
 	_ int64, _ string, _ string, _ int64, _ string, _ int, _ int,
-) ([]userdomain.User, error) {
+) ([]sqlc.User, error) {
 	return nil, nil
 }
 
@@ -111,13 +113,17 @@ func (r *stubRepo) CountUsers(
 	return 0, nil
 }
 
-func (r *stubRepo) ListAllUsers(_ context.Context) ([]userdomain.User, error) { return nil, nil }
+func (r *stubRepo) ListAllUsers(_ context.Context) ([]sqlc.User, error) { return nil, nil }
 
-func (r *stubRepo) ListStates(_ context.Context, _ int64, _, _ time.Time) ([]userdomain.UserState, error) {
+func (r *stubRepo) ListStates(_ context.Context, _ int64, _, _ time.Time) ([]sqlc.ListStatesByUserRangeRow, error) {
 	return nil, nil
 }
 
-func (r *stubRepo) ListStatesByUsers(_ context.Context, _ []int64, _, _ time.Time) ([]userdomain.UserState, error) {
+func (r *stubRepo) ListStatesByUsers(
+	_ context.Context,
+	_ []int64,
+	_, _ time.Time,
+) ([]sqlc.ListStatesByUsersRangeRow, error) {
 	return nil, nil
 }
 
@@ -126,6 +132,7 @@ func (r *stubRepo) DeleteStateRange(_ context.Context, _ int64, _, _ time.Time, 
 	return nil
 }
 
+// newStubService builds a UserService over the stub repo.
 func newStubService(repo *stubRepo) *UserService {
 	return &UserService{
 		logger:     slog.New(slog.DiscardHandler),
@@ -134,6 +141,33 @@ func newStubService(repo *stubRepo) *UserService {
 		validator:  &UserValidator{},
 		tracer:     tracing.New(nil),
 	}
+}
+
+// userRow builds a user row (preset as [sql.NullString]; "" = no preset).
+func userRow(id int64, username, lastName, firstName, preset string) *sqlc.User {
+	return &sqlc.User{
+		ID:        id,
+		Username:  username,
+		LastName:  lastName,
+		FirstName: firstName,
+		Preset:    presetString(preset),
+	}
+}
+
+// presetString wraps a preset code into a [sql.NullString] ("" — not set).
+func presetString(preset string) sql.NullString {
+	if preset == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: preset, Valid: true}
+}
+
+// presetCode unwraps a user row preset ("" — not set).
+func presetCode(p sql.NullString) string {
+	if !p.Valid {
+		return ""
+	}
+	return p.String
 }
 
 // vp is a non-admin caller principal (the vp preset).
@@ -255,20 +289,8 @@ func TestCreateUserWithPermissions(t *testing.T) {
 func TestUpdateManagerGrantable(t *testing.T) {
 	t.Parallel()
 	repo := newStubRepo(
-		&userdomain.User{
-			ID:        1,
-			Username:  "vp1",
-			LastName:  "В",
-			FirstName: "П",
-			Preset:    new(userdomain.PresetProcessOwner),
-		},
-		&userdomain.User{
-			ID:        2,
-			Username:  "worker2",
-			LastName:  "Р",
-			FirstName: "а",
-			Preset:    new(userdomain.PresetWorker),
-		},
+		userRow(1, "vp1", "В", "П", userdomain.PresetProcessOwner),
+		userRow(2, "worker2", "Р", "а", userdomain.PresetWorker),
 	)
 	svc := newStubService(repo)
 
@@ -276,7 +298,7 @@ func TestUpdateManagerGrantable(t *testing.T) {
 	if _, err := svc.UpdateManager(context.Background(), 2, &mgr); err != nil {
 		t.Fatalf("назначение руководителя не-админом: %v; want ok", err)
 	}
-	if got := repo.users[2].ManagerID; got == nil || *got != mgr {
+	if got := repo.users[2].ManagerID; !got.Valid || got.Int64 != mgr {
 		t.Errorf("менеджер не сохранён: got %v; want %d", got, mgr)
 	}
 
@@ -288,7 +310,7 @@ func TestUpdateManagerGrantable(t *testing.T) {
 	if _, err := svc.UpdateManager(context.Background(), 2, nil); err != nil {
 		t.Fatalf("сброс руководителя: %v; want ok", err)
 	}
-	if repo.users[2].ManagerID != nil {
+	if repo.users[2].ManagerID.Valid {
 		t.Errorf("менеджер не сброшен: %v", repo.users[2].ManagerID)
 	}
 }
@@ -299,20 +321,8 @@ func TestUpdateManagerGrantable(t *testing.T) {
 func TestUpdateUserManagerAndPreset(t *testing.T) {
 	t.Parallel()
 	repo := newStubRepo(
-		&userdomain.User{
-			ID:        1,
-			Username:  "vp1",
-			LastName:  "В",
-			FirstName: "П",
-			Preset:    new(userdomain.PresetProcessOwner),
-		},
-		&userdomain.User{
-			ID:        2,
-			Username:  "worker2",
-			LastName:  "Р",
-			FirstName: "а",
-			Preset:    new(userdomain.PresetWorker),
-		},
+		userRow(1, "vp1", "В", "П", userdomain.PresetProcessOwner),
+		userRow(2, "worker2", "Р", "а", userdomain.PresetWorker),
 	)
 	svc := newStubService(repo)
 
@@ -322,7 +332,7 @@ func TestUpdateUserManagerAndPreset(t *testing.T) {
 	); err != nil {
 		t.Fatalf("manager_id в теле от не-админа: %v; want ok", err)
 	}
-	if got := repo.users[2].ManagerID; got == nil || *got != mgr {
+	if got := repo.users[2].ManagerID; !got.Valid || got.Int64 != mgr {
 		t.Errorf("manager_id не применён: got %v; want %d", got, mgr)
 	}
 
@@ -338,8 +348,8 @@ func TestUpdateUserManagerAndPreset(t *testing.T) {
 	); err != nil {
 		t.Fatalf("смена пресета админом: %v; want ok", err)
 	}
-	if presetName(repo.users[2].Preset) != preset {
-		t.Errorf("пресет не применён: got %q; want %q", presetName(repo.users[2].Preset), preset)
+	if presetCode(repo.users[2].Preset) != preset {
+		t.Errorf("пресет не применён: got %q; want %q", presetCode(repo.users[2].Preset), preset)
 	}
 }
 
@@ -347,20 +357,8 @@ func TestUpdateUserManagerAndPreset(t *testing.T) {
 func TestUpdateUserLastAdminGuard(t *testing.T) {
 	t.Parallel()
 	repo := newStubRepo(
-		&userdomain.User{
-			ID:        1,
-			Username:  "admin2",
-			LastName:  "Ад",
-			FirstName: "м",
-			Preset:    new(userdomain.PresetAdmin),
-		},
-		&userdomain.User{
-			ID:        2,
-			Username:  "worker2",
-			LastName:  "Р",
-			FirstName: "а",
-			Preset:    new(userdomain.PresetWorker),
-		},
+		userRow(1, "admin2", "Ад", "м", userdomain.PresetAdmin),
+		userRow(2, "worker2", "Р", "а", userdomain.PresetWorker),
 	)
 	svc := newStubService(repo)
 

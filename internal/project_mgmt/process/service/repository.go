@@ -2,14 +2,22 @@ package service
 
 import (
 	"context"
+	"time"
 
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 )
 
 type ProcessRepository interface {
-	CreateProcess(ctx context.Context, Process domain.Process) (*domain.Process, error)
-	FindProcess(ctx context.Context, id int64) (*domain.Process, error)
-	UpdateProcess(ctx context.Context, process domain.Process) (*domain.Process, error)
+	CreateProcess(
+		ctx context.Context,
+		projectID int64,
+		title string,
+		color *string,
+		ownerID *int64,
+		startDate, endDate time.Time,
+	) (*sqlc.Process, error)
+	FindProcess(ctx context.Context, id int64) (*sqlc.Process, error)
+	UpdateProcess(ctx context.Context, process sqlc.Process) (*sqlc.Process, error)
 	DeleteProcess(ctx context.Context, id int64) error
 	ListProcesss(
 		ctx context.Context,
@@ -17,7 +25,7 @@ type ProcessRepository interface {
 		viewScope string,
 		ownerID int64,
 		limit, offset int,
-	) ([]domain.Process, error)
+	) ([]sqlc.Process, error)
 	CountProcesses(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error)
 	ListProcessIDsByProject(ctx context.Context, projectID int64) ([]int64, error)
 	ReorderProcesses(ctx context.Context, ids []int64) error

@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
 
@@ -29,61 +28,67 @@ func NewAssignmentRepository(logger *slog.Logger, pool *pgxpool.Pool) *Assignmen
 
 func (r *AssignmentRepository) CreateAssignment(
 	ctx context.Context,
-	assignment domain.Assignment,
-) (*domain.Assignment, error) {
+	taskID, resourceID int64,
+	quantity int,
+) (*sqlc.Assignment, error) {
 	row, err := r.db.CreateAssignment(ctx, sqlc.CreateAssignmentParams{
-		TaskID:     assignment.TaskID,
-		ResourceID: assignment.ResourceID,
-		Quantity:   int64(assignment.Quantity),
+		TaskID:     taskID,
+		ResourceID: resourceID,
+		Quantity:   int64(quantity),
 	})
 	if err != nil {
 		// Idempotent create: for an already-active (task_id, resource_id) pair,
 		// INSERT ... ON CONFLICT DO NOTHING inserts no row and RETURNING comes
 		// back empty. Return the already existing record.
 		if errors.Is(err, pgx.ErrNoRows) {
-			existing, ferr := r.db.FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
-				TaskID:     assignment.TaskID,
-				ResourceID: assignment.ResourceID,
-			})
-			if ferr != nil {
-				return nil, ferr
-			}
-			mapped := mapAssignment(existing)
-			return &mapped, nil
+			return r.FindAssignmentByKey(ctx, taskID, resourceID)
 		}
 		return nil, err
 	}
 
-	mapped := mapAssignment(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *AssignmentRepository) FindAssignment(ctx context.Context, id int64) (*domain.Assignment, error) {
+// FindAssignmentByKey returns the assignment for the active (task_id, resource_id) pair.
+func (r *AssignmentRepository) FindAssignmentByKey(
+	ctx context.Context,
+	taskID, resourceID int64,
+) (*sqlc.Assignment, error) {
+	row, err := r.db.FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
+		TaskID:     taskID,
+		ResourceID: resourceID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+func (r *AssignmentRepository) FindAssignment(ctx context.Context, id int64) (*sqlc.Assignment, error) {
 	row, err := r.db.FindAssignment(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapAssignment(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *AssignmentRepository) UpdateAssignment(
 	ctx context.Context,
-	assignment domain.Assignment,
-) (*domain.Assignment, error) {
+	assignment sqlc.Assignment,
+	quantity int,
+) (*sqlc.Assignment, error) {
 	row, err := r.db.UpdateAssignment(ctx, sqlc.UpdateAssignmentParams{
 		AssignmentID: assignment.ID,
 		TaskID:       assignment.TaskID,
 		ResourceID:   assignment.ResourceID,
-		Quantity:     int64(assignment.Quantity),
+		Quantity:     int64(quantity),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapAssignment(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *AssignmentRepository) DeleteAssignment(ctx context.Context, id int64) error {
@@ -96,22 +101,14 @@ func (r *AssignmentRepository) ListAssignments(
 	viewScope string,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Assignment, error) {
-	rows, err := r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
+) ([]sqlc.Assignment, error) {
+	return r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-	assignments := make([]domain.Assignment, 0, len(rows))
-	for _, row := range rows {
-		assignments = append(assignments, mapAssignment(row))
-	}
-	return assignments, nil
 }
 
 func (r *AssignmentRepository) CountAssignments(
@@ -128,15 +125,6 @@ func (r *AssignmentRepository) CountAssignments(
 			OwnerID:   ownerID,
 		},
 	)
-}
-
-func mapAssignment(row sqlc.Assignment) domain.Assignment {
-	return domain.Assignment{
-		ID:         row.ID,
-		TaskID:     row.TaskID,
-		ResourceID: row.ResourceID,
-		Quantity:   int(row.Quantity),
-	}
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).

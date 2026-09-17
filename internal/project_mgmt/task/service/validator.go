@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
@@ -10,32 +12,39 @@ type TaskValidator struct {
 	validator.Validator
 }
 
-func (v *TaskValidator) ValidateTask(task *domain.Task) error {
-	if err := v.ValidatePositiveID(task.ProcessID, "process_id"); err != nil {
+func (v *TaskValidator) ValidateTask(
+	processID int64,
+	title string,
+	color *string,
+	status string,
+	parentID *int64,
+	startDate, endDate time.Time,
+) error {
+	if err := v.ValidatePositiveID(processID, "process_id"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredText(task.Title, "title"); err != nil {
+	if err := v.ValidateRequiredText(title, "title"); err != nil {
 		return err
 	}
-	if err := v.ValidateOptionalColor(task.Color, "color"); err != nil {
+	if err := v.ValidateOptionalColor(color, "color"); err != nil {
 		return err
 	}
-	if err := v.validateStatus(task.Status); err != nil {
+	if err := v.validateStatus(status); err != nil {
 		return err
 	}
-	if err := v.ValidateOptionalPositiveID(task.ParentID, "parent_id"); err != nil {
+	if err := v.ValidateOptionalPositiveID(parentID, "parent_id"); err != nil {
 		return err
 	}
 	// Subtasks inherit the parent's dates, top-level tasks require their own.
-	if task.ParentID == nil {
-		if err := v.ValidateRequiredDate(task.StartDate, "start_date"); err != nil {
+	if parentID == nil {
+		if err := v.ValidateRequiredDate(startDate, "start_date"); err != nil {
 			return err
 		}
-		if err := v.ValidateRequiredDate(task.EndDate, "end_date"); err != nil {
+		if err := v.ValidateRequiredDate(endDate, "end_date"); err != nil {
 			return err
 		}
 	}
-	return v.ValidateDateRange(task.StartDate, task.EndDate, "task")
+	return v.ValidateDateRange(startDate, endDate, "task")
 }
 
 // validateStatus rejects values outside the fixed 3-state catalog.

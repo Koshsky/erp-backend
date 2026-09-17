@@ -41,12 +41,11 @@ func (s *AssignmentService) CreateAssignment(
 	ctx, end := s.tracer.Start(ctx, "assignment.CreateAssignment")
 	defer end(nil)
 
-	assignment := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateAssignment(&assignment); err != nil {
+	if err := s.validator.ValidateAssignment(req.TaskID, req.ResourceID, req.Quantity); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateAssignment(ctx, assignment)
+	created, err := s.repository.CreateAssignment(ctx, req.TaskID, req.ResourceID, req.Quantity)
 	if err != nil {
 		return nil, err
 	}
@@ -84,12 +83,21 @@ func (s *AssignmentService) UpdateAssignment(
 		return nil, errors.ErrAssignmentNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(assignment, req)
-	if err = s.validator.ValidateAssignment(assignment); err != nil {
+	if req.TaskID != nil {
+		assignment.TaskID = *req.TaskID
+	}
+	if req.ResourceID != nil {
+		assignment.ResourceID = *req.ResourceID
+	}
+	quantity := int(assignment.Quantity)
+	if req.Quantity != nil {
+		quantity = *req.Quantity
+	}
+	if err = s.validator.ValidateAssignment(assignment.TaskID, assignment.ResourceID, quantity); err != nil {
 		return nil, err
 	}
 
-	updated, err := s.repository.UpdateAssignment(ctx, *assignment)
+	updated, err := s.repository.UpdateAssignment(ctx, *assignment, quantity)
 	if err != nil {
 		return nil, err
 	}

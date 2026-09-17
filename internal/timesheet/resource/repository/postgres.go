@@ -8,11 +8,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
@@ -31,12 +29,17 @@ func NewResourceRepository(logger *slog.Logger, pool *pgxpool.Pool) *ResourceRep
 	}
 }
 
-func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
+func (r *ResourceRepository) CreateResource(
+	ctx context.Context,
+	code, title string,
+	color *string,
+	ownerID *int64,
+) (*sqlc.ListResourcesRow, error) {
 	row, err := r.db.CreateResource(ctx, sqlc.CreateResourceParams{
-		Title:   resource.Title,
-		Code:    resource.Code,
-		Color:   nullable.ToString(resource.Color),
-		OwnerID: ownerIDValue(resource.OwnerID),
+		Title:   title,
+		Code:    code,
+		Color:   nullable.ToString(color),
+		OwnerID: ownerIDValue(ownerID),
 	})
 	if err != nil {
 		// Idempotent create: the active code already exists (ON CONFLICT
@@ -50,29 +53,29 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 	return r.withEmployeesCount(ctx, row)
 }
 
-func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*domain.Resource, error) {
+func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*sqlc.ListResourcesRow, error) {
 	row, err := r.db.FindResource(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &domain.Resource{
-		ID:             row.ID,
-		Title:          row.Title,
-		Code:           row.Code,
-		Color:          nullable.StringPtr(row.Color),
-		OwnerID:        &row.OwnerID,
-		EmployeesCount: int(row.EmployeesCount),
-	}, nil
+	converted := sqlc.ListResourcesRow(row)
+	return &converted, nil
 }
 
-func (r *ResourceRepository) UpdateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
+func (r *ResourceRepository) UpdateResource(
+	ctx context.Context,
+	id int64,
+	code, title string,
+	color *string,
+	ownerID *int64,
+) (*sqlc.ListResourcesRow, error) {
 	row, err := r.db.UpdateResource(ctx, sqlc.UpdateResourceParams{
-		ResourceID: resource.ID,
-		Title:      resource.Title,
-		Code:       resource.Code,
-		Color:      nullable.ToString(resource.Color),
-		OwnerID:    ownerIDValue(resource.OwnerID),
+		ResourceID: id,
+		Title:      title,
+		Code:       code,
+		Color:      nullable.ToString(color),
+		OwnerID:    ownerIDValue(ownerID),
 	})
 	if err != nil {
 		return nil, err
@@ -91,30 +94,14 @@ func (r *ResourceRepository) ListResources(
 	viewScope string,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Resource, error) {
-	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
+) ([]sqlc.ListResourcesRow, error) {
+	return r.db.ListResources(ctx, sqlc.ListResourcesParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	resources := make([]domain.Resource, 0, len(rows))
-	for _, row := range rows {
-		resources = append(resources, domain.Resource{
-			ID:             row.ID,
-			Title:          row.Title,
-			Code:           row.Code,
-			Color:          nullable.StringPtr(row.Color),
-			OwnerID:        &row.OwnerID,
-			EmployeesCount: int(row.EmployeesCount),
-		})
-	}
-	return resources, nil
 }
 
 func (r *ResourceRepository) CountResources(
@@ -133,40 +120,41 @@ func (r *ResourceRepository) CountResources(
 	)
 }
 
-func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error) {
+func (r *ResourceRepository) ListResourcesByOwnerID(
+	ctx context.Context,
+	ownerID int64,
+) ([]sqlc.ListResourcesRow, error) {
 	rows, err := r.db.ListResourcesByOwnerID(ctx, ownerID)
 	if err != nil {
 		return nil, err
 	}
 
-	resources := make([]domain.Resource, 0, len(rows))
-	for _, row := range rows {
-		resources = append(resources, domain.Resource{
-			ID:             row.ID,
-			Title:          row.Title,
-			Code:           row.Code,
-			Color:          nullable.StringPtr(row.Color),
-			OwnerID:        &row.OwnerID,
-			EmployeesCount: int(row.EmployeesCount),
-		})
+	resources := make([]sqlc.ListResourcesRow, len(rows))
+	for i, row := range rows {
+		resources[i] = sqlc.ListResourcesRow(row)
 	}
 	return resources, nil
 }
 
-// withEmployeesCount enriches the resource model with the members count.
-func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Resource) (*domain.Resource, error) {
+// withEmployeesCount enriches the resource row with the members count.
+func (r *ResourceRepository) withEmployeesCount(
+	ctx context.Context,
+	row sqlc.Resource,
+) (*sqlc.ListResourcesRow, error) {
 	count, err := r.db.CountMembersByResourceID(ctx, row.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &domain.Resource{
+	return &sqlc.ListResourcesRow{
 		ID:             row.ID,
-		Title:          row.Title,
 		Code:           row.Code,
-		Color:          nullable.StringPtr(row.Color),
-		OwnerID:        &row.OwnerID,
-		EmployeesCount: int(count),
+		Title:          row.Title,
+		Color:          row.Color,
+		OwnerID:        row.OwnerID,
+		EmployeesCount: count,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
 	}, nil
 }
 
@@ -174,16 +162,8 @@ func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Re
 func (r *ResourceRepository) ListMembersByResourceID(
 	ctx context.Context,
 	resourceID int64,
-) ([]domain.ResourceMember, error) {
-	rows, err := r.db.ListMembersByResourceID(ctx, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	members := make([]domain.ResourceMember, 0, len(rows))
-	for _, row := range rows {
-		members = append(members, mapMember(row))
-	}
-	return members, nil
+) ([]sqlc.ListMembersByResourceIDRow, error) {
+	return r.db.ListMembersByResourceID(ctx, resourceID)
 }
 
 func (r *ResourceRepository) AddMember(ctx context.Context, resourceID, userID int64) error {
@@ -203,55 +183,18 @@ func (r *ResourceRepository) FindUserManager(ctx context.Context, userID int64) 
 	return nullable.Int64Ptr(managerID), nil
 }
 
-func mapMember(row sqlc.ListMembersByResourceIDRow) domain.ResourceMember {
-	return domain.ResourceMember{
-		ID:              row.ID,
-		Name:            row.Name,
-		Preset:          nullable.StringPtr(row.Preset),
-		Position:        row.Position,
-		ManagerID:       nullable.Int64Ptr(row.ManagerID),
-		HireDate:        fromDate(row.HireDate),
-		TerminationDate: fromDate(row.TerminationDate),
-	}
-}
-
 // ListAbsence returns the absence ranges (is_available=false states) of the
 // resource members overlapping [start, end].
 func (r *ResourceRepository) ListAbsence(
 	ctx context.Context,
 	resourceID int64,
 	start, end time.Time,
-) ([]domain.ResourceAbsence, error) {
-	rows, err := r.db.ListResourceAbsence(ctx, sqlc.ListResourceAbsenceParams{
+) ([]sqlc.ListResourceAbsenceRow, error) {
+	return r.db.ListResourceAbsence(ctx, sqlc.ListResourceAbsenceParams{
 		ResourceID: resourceID,
 		StartDate:  start,
 		EndDate:    end,
 	})
-	if err != nil {
-		return nil, err
-	}
-	absences := make([]domain.ResourceAbsence, 0, len(rows))
-	for _, row := range rows {
-		absences = append(absences, domain.ResourceAbsence{
-			UserID:    row.UserID,
-			UserName:  row.UserName,
-			StateID:   row.StateID,
-			StateCode: row.StateCode,
-			StateName: row.StateName,
-			StartDate: row.StartDate,
-			EndDate:   row.EndDate,
-		})
-	}
-	return absences, nil
-}
-
-// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
-func fromDate(v pgtype.Date) *time.Time {
-	if !v.Valid {
-		return nil
-	}
-	t := v.Time
-	return &t
 }
 
 // ownerIDValue unwraps a nullable owner into a required value.

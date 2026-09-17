@@ -99,6 +99,13 @@ type UserPermissionsInput struct {
 	Overrides []PermissionOverride `json:"overrides"`
 }
 
+// PresetView — a preset catalog entry (a named set of permissions).
+type PresetView struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 // PresetUpsertInput — preset creation (name = system access code).
 type PresetUpsertInput struct {
 	Name        string `json:"name"        example:"auditor"       binding:"required"`

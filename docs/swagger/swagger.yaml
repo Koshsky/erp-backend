@@ -1,14 +1,5 @@
 basePath: /api/v1
 definitions:
-  domain.Preset:
-    properties:
-      description:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
   dto.AddMemberRequest:
     properties:
       user_id:
@@ -723,6 +714,15 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  dto.PresetView:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
     type: object
   dto.Process:
     properties:
@@ -3218,7 +3218,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/domain.Preset'
+                    $ref: '#/definitions/dto.PresetView'
                   type: array
                 error:
                   type: object
@@ -3248,7 +3248,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/domain.Preset'
+                  $ref: '#/definitions/dto.PresetView'
                 error:
                   type: object
               type: object
@@ -3307,7 +3307,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/domain.Preset'
+                  $ref: '#/definitions/dto.PresetView'
                 error:
                   type: object
               type: object

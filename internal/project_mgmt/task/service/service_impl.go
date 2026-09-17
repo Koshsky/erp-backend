@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
+	"time"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
@@ -10,6 +12,9 @@ import (
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -36,8 +41,30 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 	ctx, end := s.tracer.Start(ctx, "task.CreateTask")
 	defer end(nil)
 
-	task := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateTask(&task); err != nil {
+	status := domain.StatusNotStarted
+	if req.Status != nil && *req.Status != "" {
+		status = *req.Status
+	}
+
+	task := sqlc.Task{
+		ProcessID: req.ProcessID,
+		ParentID:  nullable.ToInt8(req.ParentID),
+		OwnerID:   nullable.ToInt8(req.OwnerID),
+		Title:     req.Title,
+		Color:     nullable.ToString(req.Color),
+		Status:    status,
+		StartDate: dateFromPtr(req.StartDate),
+		EndDate:   dateFromPtr(req.EndDate),
+	}
+	if err := s.validator.ValidateTask(
+		task.ProcessID,
+		task.Title,
+		nullable.StringPtr(task.Color),
+		task.Status,
+		req.ParentID,
+		task.StartDate,
+		task.EndDate,
+	); err != nil {
 		return nil, err
 	}
 
@@ -58,9 +85,18 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 	return s.mapper.ToDTO(created), nil
 }
 
+// dateFromPtr converts a nullable request date; a nil pointer yields the zero
+// time (subtask dates are inherited from the parent by the service).
+func dateFromPtr(d *date.Date) time.Time {
+	if d == nil {
+		return time.Time{}
+	}
+	return d.Time()
+}
+
 // applyParent resolves the parent for a subtask request: inherits the
 // parent's process and dates and rejects a parent that is itself a subtask.
-func (s *TaskService) applyParent(ctx context.Context, task *domain.Task, parentID *int64) error {
+func (s *TaskService) applyParent(ctx context.Context, task *sqlc.Task, parentID *int64) error {
 	if parentID == nil {
 		return nil
 	}
@@ -74,7 +110,7 @@ func (s *TaskService) applyParent(ctx context.Context, task *domain.Task, parent
 	if parent == nil {
 		return errors.NewValidationError("родительская задача не найдена")
 	}
-	if parent.ParentID != nil {
+	if parent.ParentID.Valid {
 		return errors.NewValidationError("подзадача не может иметь собственные подзадачи")
 	}
 	task.ProcessID = parent.ProcessID
@@ -109,8 +145,38 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 		return nil, errors.ErrTaskNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(task, req)
-	if err = s.validator.ValidateTask(task); err != nil {
+	if req.OwnerID != nil {
+		task.OwnerID = nullable.ToInt8(req.OwnerID)
+	}
+	if req.Title != nil {
+		task.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			task.Color = sql.NullString{}
+		} else {
+			task.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.Status != nil {
+		task.Status = *req.Status
+	}
+	if req.StartDate != nil {
+		task.StartDate = req.StartDate.Time()
+	}
+	if req.EndDate != nil {
+		task.EndDate = req.EndDate.Time()
+	}
+
+	if err = s.validator.ValidateTask(
+		task.ProcessID,
+		task.Title,
+		nullable.StringPtr(task.Color),
+		task.Status,
+		nullable.Int64Ptr(task.ParentID),
+		task.StartDate,
+		task.EndDate,
+	); err != nil {
 		return nil, err
 	}
 

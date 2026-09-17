@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
@@ -12,23 +13,23 @@ func NewProcessMapper() *ProcessMapper {
 	return &ProcessMapper{}
 }
 
-func (m *ProcessMapper) ToDTO(process *domain.Process) *dto.ProcessResponse {
+func (m *ProcessMapper) ToDTO(process *sqlc.Process) *dto.ProcessResponse {
 	if process == nil {
 		return nil
 	}
 	return &dto.ProcessResponse{
 		ID:        process.ID,
-		OwnerID:   process.OwnerID,
+		OwnerID:   nullable.Int64Ptr(process.OwnerID),
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
-		Color:     process.Color,
+		Color:     nullable.StringPtr(process.Color),
 		StartDate: date.From(process.StartDate),
 		EndDate:   date.From(process.EndDate),
-		Order:     process.SortOrder,
+		Order:     int(process.SortOrder),
 	}
 }
 
-func (m *ProcessMapper) ToDTOs(processes []domain.Process) []dto.ProcessResponse {
+func (m *ProcessMapper) ToDTOs(processes []sqlc.Process) []dto.ProcessResponse {
 	if processes == nil {
 		return []dto.ProcessResponse{}
 	}
@@ -38,44 +39,4 @@ func (m *ProcessMapper) ToDTOs(processes []domain.Process) []dto.ProcessResponse
 		responses[i] = *m.ToDTO(&process)
 	}
 	return responses
-}
-
-func (m *ProcessMapper) ToDomainFromCreate(req dto.CreateProcessRequest) domain.Process {
-	return domain.Process{
-		ProjectID: req.ProjectID,
-		Title:     req.Title,
-		Color:     req.Color,
-		StartDate: req.StartDate.Time(),
-		EndDate:   req.EndDate.Time(),
-		OwnerID:   req.OwnerID,
-	}
-}
-
-func (m *ProcessMapper) ApplyUpdateToDomain(process *domain.Process, req dto.UpdateProcessRequest) {
-	if process == nil {
-		return
-	}
-
-	if req.Title != nil {
-		process.Title = *req.Title
-	}
-	if req.Color != nil {
-		if *req.Color == "" {
-			process.Color = nil
-		} else {
-			process.Color = req.Color
-		}
-	}
-	if req.StartDate != nil {
-		process.StartDate = req.StartDate.Time()
-	}
-	if req.EndDate != nil {
-		process.EndDate = req.EndDate.Time()
-	}
-	if req.OwnerID != nil {
-		process.OwnerID = req.OwnerID
-	}
-	if req.ProjectID != nil {
-		process.ProjectID = *req.ProjectID
-	}
 }

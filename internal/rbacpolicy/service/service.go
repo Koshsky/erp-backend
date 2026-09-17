@@ -6,11 +6,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/domain"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/dto"
 	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
+	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository/sqlc"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -30,12 +33,12 @@ func NewRBACService(logger *slog.Logger, repo *repository.RuleRepository, store 
 }
 
 // ListPresets returns the preset catalog.
-func (s *Service) ListPresets(ctx context.Context) ([]domain.Preset, error) {
+func (s *Service) ListPresets(ctx context.Context) ([]sqlc.ListActivePresetsRow, error) {
 	return s.repo.ListActivePresets(ctx)
 }
 
 // ListRules returns the active matrix rows.
-func (s *Service) ListRules(ctx context.Context) ([]domain.PresetRule, error) {
+func (s *Service) ListRules(ctx context.Context) ([]sqlc.ListActivePresetRulesRow, error) {
 	return s.repo.ListActiveRules(ctx)
 }
 
@@ -67,10 +70,14 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, update
 		return errors.BadRequest("зона " + in.Scope + " неприменима к ресурсу " + in.Resource)
 	}
 
-	if _, upsertErr := s.repo.UpsertRule(ctx, domain.PresetRule{
-		Preset: in.Preset, Resource: in.Resource, Action: in.Action, Scope: in.Scope,
-		UpdatedBy: &updatedBy,
-	}); upsertErr != nil {
+	if _, upsertErr := s.repo.UpsertRule(
+		ctx,
+		in.Preset,
+		in.Resource,
+		in.Action,
+		in.Scope,
+		&updatedBy,
+	); upsertErr != nil {
 		return upsertErr
 	}
 	return s.apply(ctx)
@@ -127,10 +134,14 @@ func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 	}
 	for _, r := range policies.DefaultMatrixRules() {
 		scope := policies.ScopeName(r.Scope)
-		if _, err := s.repo.UpsertRule(ctx, domain.PresetRule{
-			Preset: r.Role, Resource: policies.ResourceName(r.Res), Action: policies.ActionName(r.Act),
-			Scope: scope, UpdatedBy: &updatedBy,
-		}); err != nil {
+		if _, err := s.repo.UpsertRule(
+			ctx,
+			r.Role,
+			policies.ResourceName(r.Res),
+			policies.ActionName(r.Act),
+			scope,
+			&updatedBy,
+		); err != nil {
 			return err
 		}
 	}
@@ -211,7 +222,7 @@ func (s *Service) apply(ctx context.Context) error {
 	return nil
 }
 
-func presetExists(presets []domain.Preset, name string) bool {
+func presetExists(presets []sqlc.ListActivePresetsRow, name string) bool {
 	for _, p := range presets {
 		if p.Name == name {
 			return true
@@ -297,7 +308,7 @@ func (s *Service) ReplaceUserPermissions(
 	in dto.UserPermissionsInput,
 	updatedBy int64,
 ) error {
-	rows := make([]domain.UserPermission, 0, len(in.Overrides))
+	rows := make([]sqlc.InsertUserPermissionParams, 0, len(in.Overrides))
 	seen := map[string]bool{}
 	for _, o := range in.Overrides {
 		res, ok := policies.ParseResource(o.Resource)
@@ -323,13 +334,13 @@ func (s *Service) ReplaceUserPermissions(
 			}
 			scope = o.Scope
 		}
-		rows = append(rows, domain.UserPermission{
+		rows = append(rows, sqlc.InsertUserPermissionParams{
 			UserID:    userID,
 			Resource:  o.Resource,
 			Action:    o.Action,
 			Scope:     scope,
 			Granted:   o.Granted,
-			UpdatedBy: &updatedBy,
+			UpdatedBy: pgtype.Int8{Int64: updatedBy, Valid: true},
 		})
 	}
 	if err := s.repo.ReplaceUserPermissions(ctx, userID, rows); err != nil {
@@ -364,23 +375,27 @@ func presetNameRef(p *string) string {
 const maxPresetNameLen = 32
 
 // CreatePreset creates a preset (or updates an existing one) and applies it.
-func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (domain.Preset, error) {
+func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (sqlc.UpsertPresetRow, error) {
 	if err := validatePresetName(in.Name); err != nil {
-		return domain.Preset{}, err
+		return sqlc.UpsertPresetRow{}, err
 	}
 	preset, err := s.repo.UpsertPreset(ctx, in.Name, in.Description)
 	if err != nil {
-		return domain.Preset{}, err
+		return sqlc.UpsertPresetRow{}, err
 	}
 	_ = s.apply(ctx)
 	return preset, nil
 }
 
 // UpdatePreset updates the preset description.
-func (s *Service) UpdatePreset(ctx context.Context, name string, in dto.PresetUpdateInput) (domain.Preset, error) {
+func (s *Service) UpdatePreset(
+	ctx context.Context,
+	name string,
+	in dto.PresetUpdateInput,
+) (sqlc.UpdatePresetDescriptionRow, error) {
 	preset, err := s.repo.UpdatePresetDescription(ctx, name, in.Description)
 	if err != nil {
-		return domain.Preset{}, err
+		return sqlc.UpdatePresetDescriptionRow{}, err
 	}
 	return preset, nil
 }

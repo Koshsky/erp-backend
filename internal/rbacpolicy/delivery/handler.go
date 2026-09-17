@@ -32,7 +32,7 @@ func NewRBACHandler(logger *slog.Logger, svc *service.Service, mw *rbac.Middlewa
 //	@Summary	List presets
 //	@Security	ApiKeyAuth
 //	@Produce	json
-//	@Success	200	{object}	response.SuccessResponse{data=[]domain.Preset,error=nil}
+//	@Success	200	{object}	response.SuccessResponse{data=[]dto.PresetView,error=nil}
 //	@Router		/rbac/presets [get]
 func (h *RBACHandler) ListPresets(c *gin.Context) {
 	presets, err := h.service.ListPresets(c.Request.Context())
@@ -276,7 +276,7 @@ func (h *RBACHandler) MyPermissions(c *gin.Context) {
 //	@Accept		json
 //	@Produce	json
 //	@Param		preset	body		dto.PresetUpsertInput	true	"Preset"
-//	@Success	201		{object}	response.SuccessResponse{data=domain.Preset,error=nil}
+//	@Success	201		{object}	response.SuccessResponse{data=dto.PresetView,error=nil}
 //	@Failure	400		{object}	response.ErrorResponse{data=nil}
 //	@Router		/rbac/presets [post]
 func (h *RBACHandler) CreatePreset(c *gin.Context) {
@@ -302,7 +302,7 @@ func (h *RBACHandler) CreatePreset(c *gin.Context) {
 //	@Produce	json
 //	@Param		name	path		string					true	"Preset name"
 //	@Param		preset	body		dto.PresetUpdateInput	true	"Preset"
-//	@Success	200		{object}	response.SuccessResponse{data=domain.Preset,error=nil}
+//	@Success	200		{object}	response.SuccessResponse{data=dto.PresetView,error=nil}
 //	@Failure	400		{object}	response.ErrorResponse{data=nil}
 //	@Router		/rbac/presets/{name} [put]
 func (h *RBACHandler) UpdatePreset(c *gin.Context) {

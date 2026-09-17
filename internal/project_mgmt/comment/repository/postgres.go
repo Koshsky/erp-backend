@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
@@ -26,56 +25,40 @@ func NewCommentRepository(logger *slog.Logger, pool *pgxpool.Pool) *CommentRepos
 	}
 }
 
-func (r *CommentRepository) CreateComment(ctx context.Context, comment domain.Comment) (*domain.Comment, error) {
+func (r *CommentRepository) CreateComment(
+	ctx context.Context,
+	taskID, authorID int64,
+	parentID *int64,
+	content string,
+) (*sqlc.TaskComment, error) {
 	row, err := r.db.CreateComment(ctx, sqlc.CreateCommentParams{
-		TaskID:   comment.TaskID,
-		AuthorID: comment.AuthorID,
-		ParentID: nullable.ToInt8(comment.ParentID),
-		Content:  comment.Content,
+		TaskID:   taskID,
+		AuthorID: authorID,
+		ParentID: nullable.ToInt8(parentID),
+		Content:  content,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapComment(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *CommentRepository) FindComment(ctx context.Context, id int64) (*domain.Comment, error) {
+func (r *CommentRepository) FindComment(ctx context.Context, id int64) (*sqlc.TaskComment, error) {
 	row, err := r.db.FindComment(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapComment(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *CommentRepository) DeleteComment(ctx context.Context, id int64) error {
 	return r.db.DeleteComment(ctx, id)
 }
 
-func (r *CommentRepository) ListComments(ctx context.Context, taskID int64) ([]domain.Comment, error) {
-	rows, err := r.db.ListComments(ctx, taskID)
-	if err != nil {
-		return nil, err
-	}
-	comments := make([]domain.Comment, 0, len(rows))
-	for _, row := range rows {
-		comments = append(comments, mapComment(row))
-	}
-	return comments, nil
-}
-
-func mapComment(row sqlc.TaskComment) domain.Comment {
-	return domain.Comment{
-		ID:        row.ID,
-		TaskID:    row.TaskID,
-		AuthorID:  row.AuthorID,
-		ParentID:  nullable.Int64Ptr(row.ParentID),
-		Content:   row.Content,
-		CreatedAt: row.CreatedAt,
-	}
+func (r *CommentRepository) ListComments(ctx context.Context, taskID int64) ([]sqlc.TaskComment, error) {
+	return r.db.ListComments(ctx, taskID)
 }
 
 // OwnerChain returns the owner chain of a comment (task owners + the author).

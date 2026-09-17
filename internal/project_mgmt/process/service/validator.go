@@ -1,7 +1,8 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
+	"time"
+
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -9,21 +10,26 @@ type ProcessValidator struct {
 	validator.Validator
 }
 
-func (v *ProcessValidator) ValidateProcess(process *domain.Process) error {
-	if err := v.ValidatePositiveID(process.ProjectID, "project_id"); err != nil {
+func (v *ProcessValidator) ValidateProcess(
+	projectID int64,
+	title string,
+	color *string,
+	startDate, endDate time.Time,
+) error {
+	if err := v.ValidatePositiveID(projectID, "project_id"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredText(process.Title, "title"); err != nil {
+	if err := v.ValidateRequiredText(title, "title"); err != nil {
 		return err
 	}
-	if err := v.ValidateOptionalColor(process.Color, "color"); err != nil {
+	if err := v.ValidateOptionalColor(color, "color"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredDate(process.StartDate, "start_date"); err != nil {
+	if err := v.ValidateRequiredDate(startDate, "start_date"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredDate(process.EndDate, "end_date"); err != nil {
+	if err := v.ValidateRequiredDate(endDate, "end_date"); err != nil {
 		return err
 	}
-	return v.ValidateDateRange(process.StartDate, process.EndDate, "process")
+	return v.ValidateDateRange(startDate, endDate, "process")
 }

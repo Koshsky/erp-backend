@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/dto"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type CommentMapper struct{}
@@ -11,7 +12,7 @@ func NewCommentMapper() *CommentMapper {
 	return &CommentMapper{}
 }
 
-func (m *CommentMapper) ToDTO(comment *domain.Comment) *dto.CommentResponse {
+func (m *CommentMapper) ToDTO(comment *sqlc.TaskComment) *dto.CommentResponse {
 	if comment == nil {
 		return nil
 	}
@@ -19,13 +20,13 @@ func (m *CommentMapper) ToDTO(comment *domain.Comment) *dto.CommentResponse {
 		ID:        comment.ID,
 		TaskID:    comment.TaskID,
 		AuthorID:  comment.AuthorID,
-		ParentID:  comment.ParentID,
+		ParentID:  nullable.Int64Ptr(comment.ParentID),
 		Content:   comment.Content,
 		CreatedAt: comment.CreatedAt,
 	}
 }
 
-func (m *CommentMapper) ToDTOs(comments []domain.Comment) []dto.CommentResponse {
+func (m *CommentMapper) ToDTOs(comments []sqlc.TaskComment) []dto.CommentResponse {
 	if comments == nil {
 		return []dto.CommentResponse{}
 	}
@@ -35,15 +36,4 @@ func (m *CommentMapper) ToDTOs(comments []domain.Comment) []dto.CommentResponse 
 		responses[i] = *m.ToDTO(&comment)
 	}
 	return responses
-}
-
-// ToDomainFromCreate builds a comment from the request: the author always
-// comes from the authorization context (authorID), not from the request body.
-func (m *CommentMapper) ToDomainFromCreate(taskID int64, req dto.CreateCommentRequest, authorID int64) domain.Comment {
-	return domain.Comment{
-		TaskID:   taskID,
-		AuthorID: authorID,
-		ParentID: req.ParentID,
-		Content:  req.Content,
-	}
 }

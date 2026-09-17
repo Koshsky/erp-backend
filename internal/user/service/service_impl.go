@@ -16,7 +16,9 @@ import (
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
+	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -190,7 +192,7 @@ func (s *UserService) createUserInternal(
 		return nil, permsErr
 	}
 
-	user := s.mapper.ToDomainFromCreate(req)
+	user := s.mapper.ToCreateUser(req)
 	if err := s.validator.ValidateUser(&user); err != nil {
 		return nil, err
 	}
@@ -381,7 +383,7 @@ func (s *UserService) UpdateUser(
 		}
 	}
 
-	s.mapper.ApplyUpdateToDomain(user, req)
+	s.mapper.ApplyUpdateToUser(user, req)
 	if err = s.validator.ValidateUser(user); err != nil {
 		return nil, err
 	}
@@ -399,7 +401,7 @@ func (s *UserService) UpdateUser(
 // never removing the last active admin.
 func (s *UserService) checkPresetChange(
 	ctx context.Context,
-	user *userdomain.User,
+	user *sqlc.User,
 	newPreset *string,
 	caller userctx.UserContext,
 	callerID int64,
@@ -413,7 +415,7 @@ func (s *UserService) checkPresetChange(
 	if user.ID == callerID {
 		return errors.NewValidationError("нельзя менять пресет прав самому себе")
 	}
-	if *newPreset == userdomain.PresetAdmin || presetName(user.Preset) != userdomain.PresetAdmin {
+	if *newPreset == userdomain.PresetAdmin || !user.Preset.Valid || user.Preset.String != userdomain.PresetAdmin {
 		return nil
 	}
 	admins, err := s.repository.CountUsers(ctx, 0, scopeAllCode, userdomain.PresetAdmin, 0, "")
@@ -482,7 +484,7 @@ func (s *UserService) UpdateManager(
 		return nil, err
 	}
 
-	user.ManagerID = managerID
+	user.ManagerID = nullable.ToInt8(managerID)
 	if err = s.validator.ValidateUser(user); err != nil {
 		return nil, err
 	}
@@ -512,15 +514,15 @@ func (s *UserService) validateManager(ctx context.Context, userID int64, manager
 
 	cur := manager.ManagerID
 	depth := 0
-	for cur != nil {
+	for cur.Valid {
 		depth++
 		if depth > maxManagerDepth {
 			return errors.NewValidationError("иерархия руководителей слишком глубокая")
 		}
-		if *cur == userID {
+		if cur.Int64 == userID {
 			return errors.NewValidationError("кольцевая зависимость в руководстве не допускается")
 		}
-		u, ferr := s.repository.FindUser(ctx, *cur)
+		u, ferr := s.repository.FindUser(ctx, cur.Int64)
 		if ferr != nil || u == nil {
 			return errors.NotFound("руководитель не найден")
 		}
@@ -717,8 +719,8 @@ func (s *UserService) checkUserViewable(
 	// The owner of a worker row is the manager, or the worker themself when
 	// there is none — exactly the chain OwnerChain resolves for worker.view.
 	owner := user.ID
-	if user.ManagerID != nil {
-		owner = *user.ManagerID
+	if user.ManagerID.Valid {
+		owner = user.ManagerID.Int64
 	}
 	if !policies.AuthorizeUser(caller, rbac.ResourceWorker, policies.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
 		return errors.ErrUserNotFound

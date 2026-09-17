@@ -1,7 +1,8 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/domain"
+	"time"
+
 	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
@@ -10,21 +11,26 @@ type ProjectValidator struct {
 	validator.Validator
 }
 
-func (v *ProjectValidator) ValidateProject(project *domain.Project) error {
-	if err := v.ValidateRequiredText(project.Code, "code"); err != nil {
+func (v *ProjectValidator) ValidateProject(
+	code string,
+	color *string,
+	priority int,
+	startDate, endDate time.Time,
+) error {
+	if err := v.ValidateRequiredText(code, "code"); err != nil {
 		return err
 	}
-	if err := v.ValidateOptionalColor(project.Color, "color"); err != nil {
+	if err := v.ValidateOptionalColor(color, "color"); err != nil {
 		return err
 	}
-	if project.Priority < 0 {
+	if priority < 0 {
 		return errors.NewValidationError("priority must be positive")
 	}
-	if err := v.ValidateRequiredDate(project.StartDate, "start_date"); err != nil {
+	if err := v.ValidateRequiredDate(startDate, "start_date"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredDate(project.EndDate, "end_date"); err != nil {
+	if err := v.ValidateRequiredDate(endDate, "end_date"); err != nil {
 		return err
 	}
-	return v.ValidateDateRange(project.StartDate, project.EndDate, "project")
+	return v.ValidateDateRange(startDate, endDate, "project")
 }

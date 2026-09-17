@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -41,12 +43,17 @@ func (s *MilestoneService) CreateMilestone(
 	ctx, end := s.tracer.Start(ctx, "milestone.CreateMilestone")
 	defer end(nil)
 
-	milestone := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateMilestone(&milestone); err != nil {
+	if err := s.validator.ValidateMilestone(
+		req.ProcessID,
+		req.Title,
+		req.Content,
+		req.Color,
+		req.Date.Time(),
+	); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateMilestone(ctx, milestone)
+	created, err := s.repository.CreateMilestone(ctx, req.ProcessID, req.Title, req.Content, req.Color, req.Date.Time())
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +91,32 @@ func (s *MilestoneService) UpdateMilestone(
 		return nil, errors.ErrMilestoneNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(milestone, req)
-	if err = s.validator.ValidateMilestone(milestone); err != nil {
+	if req.Title != nil {
+		milestone.Title = *req.Title
+	}
+	if req.Content != nil {
+		milestone.Content = *req.Content
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			milestone.Color = sql.NullString{}
+		} else {
+			milestone.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.Date != nil {
+		milestone.Date = req.Date.Time()
+	}
+	if req.ProcessID != nil {
+		milestone.ProcessID = *req.ProcessID
+	}
+	if err = s.validator.ValidateMilestone(
+		milestone.ProcessID,
+		milestone.Title,
+		milestone.Content,
+		nullable.StringPtr(milestone.Color),
+		milestone.Date,
+	); err != nil {
 		return nil, err
 	}
 

@@ -3,8 +3,11 @@ package service
 import (
 	"time"
 
-	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
@@ -14,7 +17,7 @@ func NewResourceMapper() *ResourceMapper {
 	return &ResourceMapper{}
 }
 
-func (m *ResourceMapper) ToDTO(resource *domain.Resource) *dto.ResourceResponse {
+func (m *ResourceMapper) ToDTO(resource *sqlc.ListResourcesRow) *dto.ResourceResponse {
 	if resource == nil {
 		return nil
 	}
@@ -22,13 +25,13 @@ func (m *ResourceMapper) ToDTO(resource *domain.Resource) *dto.ResourceResponse 
 		ID:             resource.ID,
 		Code:           resource.Code,
 		Title:          resource.Title,
-		Color:          resource.Color,
-		OwnerID:        resource.OwnerID,
-		EmployeesCount: resource.EmployeesCount,
+		Color:          nullable.StringPtr(resource.Color),
+		OwnerID:        &resource.OwnerID,
+		EmployeesCount: int(resource.EmployeesCount),
 	}
 }
 
-func (m *ResourceMapper) ToDTOs(resources []domain.Resource) []dto.ResourceResponse {
+func (m *ResourceMapper) ToDTOs(resources []sqlc.ListResourcesRow) []dto.ResourceResponse {
 	if resources == nil {
 		return []dto.ResourceResponse{}
 	}
@@ -40,54 +43,22 @@ func (m *ResourceMapper) ToDTOs(resources []domain.Resource) []dto.ResourceRespo
 	return responses
 }
 
-func (m *ResourceMapper) ToDomainFromCreate(req dto.CreateResourceRequest) domain.Resource {
-	return domain.Resource{
-		Code:    req.Code,
-		Title:   req.Title,
-		Color:   req.Color,
-		OwnerID: req.OwnerID,
-	}
-}
-
-func (m *ResourceMapper) ApplyUpdateToDomain(resource *domain.Resource, req dto.UpdateResourceRequest) {
-	if resource == nil {
-		return
-	}
-
-	if req.Code != nil {
-		resource.Code = *req.Code
-	}
-	if req.Title != nil {
-		resource.Title = *req.Title
-	}
-	if req.Color != nil {
-		if *req.Color == "" {
-			resource.Color = nil
-		} else {
-			resource.Color = req.Color
-		}
-	}
-	if req.OwnerID != nil {
-		resource.OwnerID = req.OwnerID
-	}
-}
-
-func (m *ResourceMapper) ToMemberDTO(member *domain.ResourceMember) *dto.ResourceMemberResponse {
+func (m *ResourceMapper) ToMemberDTO(member *sqlc.ListMembersByResourceIDRow) *dto.ResourceMemberResponse {
 	if member == nil {
 		return nil
 	}
 	return &dto.ResourceMemberResponse{
 		ID:              member.ID,
 		Name:            member.Name,
-		Preset:          member.Preset,
+		Preset:          nullable.StringPtr(member.Preset),
 		Position:        member.Position,
-		ManagerID:       member.ManagerID,
-		HireDate:        datePtr(member.HireDate),
-		TerminationDate: datePtr(member.TerminationDate),
+		ManagerID:       nullable.Int64Ptr(member.ManagerID),
+		HireDate:        datePtr(fromDate(member.HireDate)),
+		TerminationDate: datePtr(fromDate(member.TerminationDate)),
 	}
 }
 
-func (m *ResourceMapper) ToMemberDTOs(members []domain.ResourceMember) []dto.ResourceMemberResponse {
+func (m *ResourceMapper) ToMemberDTOs(members []sqlc.ListMembersByResourceIDRow) []dto.ResourceMemberResponse {
 	if members == nil {
 		return []dto.ResourceMemberResponse{}
 	}
@@ -98,7 +69,7 @@ func (m *ResourceMapper) ToMemberDTOs(members []domain.ResourceMember) []dto.Res
 	return responses
 }
 
-func (m *ResourceMapper) ToAbsenceDTOs(absences []domain.ResourceAbsence) []dto.ResourceAbsenceResponse {
+func (m *ResourceMapper) ToAbsenceDTOs(absences []sqlc.ListResourceAbsenceRow) []dto.ResourceAbsenceResponse {
 	if absences == nil {
 		return []dto.ResourceAbsenceResponse{}
 	}
@@ -115,6 +86,15 @@ func (m *ResourceMapper) ToAbsenceDTOs(absences []domain.ResourceAbsence) []dto.
 		}
 	}
 	return responses
+}
+
+// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
+func fromDate(v pgtype.Date) *time.Time {
+	if !v.Valid {
+		return nil
+	}
+	t := v.Time
+	return &t
 }
 
 func datePtr(t *time.Time) *date.Date {

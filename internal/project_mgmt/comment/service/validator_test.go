@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/service"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -16,32 +15,36 @@ func TestCommentValidator(t *testing.T) {
 	t.Parallel()
 	v := &service.CommentValidator{}
 
-	valid := domain.Comment{TaskID: 1, AuthorID: 2, Content: "Перенести сроки?"}
+	type args struct {
+		taskID, authorID int64
+		content          string
+	}
+	valid := args{taskID: 1, authorID: 2, content: "Перенести сроки?"}
 
 	cases := []struct {
 		name    string
-		comment domain.Comment
+		args    args
 		wantErr bool
 	}{
 		{"valid root comment", valid, false},
-		{"zero task id", domain.Comment{TaskID: 0, AuthorID: 2, Content: "x"}, true},
-		{"zero author id", domain.Comment{TaskID: 1, AuthorID: 0, Content: "x"}, true},
-		{"empty content", domain.Comment{TaskID: 1, AuthorID: 2, Content: "   "}, true},
+		{"zero task id", args{taskID: 0, authorID: 2, content: "x"}, true},
+		{"zero author id", args{taskID: 1, authorID: 0, content: "x"}, true},
+		{"empty content", args{taskID: 1, authorID: 2, content: "   "}, true},
 		{
 			"max length is allowed",
-			domain.Comment{TaskID: 1, AuthorID: 2, Content: strings.Repeat("x", maxCommentContentLen)},
+			args{taskID: 1, authorID: 2, content: strings.Repeat("x", maxCommentContentLen)},
 			false,
 		},
 		{
 			"over max length",
-			domain.Comment{TaskID: 1, AuthorID: 2, Content: strings.Repeat("x", maxCommentContentLen+1)},
+			args{taskID: 1, authorID: 2, content: strings.Repeat("x", maxCommentContentLen+1)},
 			true,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := v.ValidateComment(&tc.comment)
+			err := v.ValidateComment(tc.args.taskID, tc.args.authorID, tc.args.content)
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("ValidateComment() error = %v, wantErr %v", err, tc.wantErr)
 			}

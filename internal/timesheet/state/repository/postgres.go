@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/timesheet/state/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/repository/sqlc"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -27,11 +26,11 @@ func NewStateRepository(logger *slog.Logger, pool *pgxpool.Pool) *StateRepositor
 	}
 }
 
-func (r *StateRepository) CreateState(ctx context.Context, state domain.State) (*domain.State, error) {
+func (r *StateRepository) CreateState(ctx context.Context, code, name string, isAvailable bool) (*sqlc.State, error) {
 	row, err := r.db.CreateState(ctx, sqlc.CreateStateParams{
-		Code:        state.Code,
-		Name:        state.Name,
-		IsAvailable: state.IsAvailable,
+		Code:        code,
+		Name:        name,
+		IsAvailable: isAvailable,
 	})
 	if err != nil {
 		// Idempotent create: the code already exists (ON CONFLICT
@@ -41,20 +40,18 @@ func (r *StateRepository) CreateState(ctx context.Context, state domain.State) (
 		}
 		return nil, err
 	}
-	mapped := mapState(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *StateRepository) FindState(ctx context.Context, id int64) (*domain.State, error) {
+func (r *StateRepository) FindState(ctx context.Context, id int64) (*sqlc.State, error) {
 	row, err := r.db.FindState(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	mapped := mapState(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *StateRepository) UpdateState(ctx context.Context, state domain.State) (*domain.State, error) {
+func (r *StateRepository) UpdateState(ctx context.Context, state sqlc.State) (*sqlc.State, error) {
 	row, err := r.db.UpdateState(ctx, sqlc.UpdateStateParams{
 		StateID:     state.ID,
 		Code:        state.Code,
@@ -64,31 +61,13 @@ func (r *StateRepository) UpdateState(ctx context.Context, state domain.State) (
 	if err != nil {
 		return nil, err
 	}
-	mapped := mapState(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *StateRepository) DeleteState(ctx context.Context, id int64) error {
 	return r.db.DeleteState(ctx, id)
 }
 
-func (r *StateRepository) ListStates(ctx context.Context) ([]domain.State, error) {
-	rows, err := r.db.ListStates(ctx)
-	if err != nil {
-		return nil, err
-	}
-	states := make([]domain.State, 0, len(rows))
-	for _, row := range rows {
-		states = append(states, mapState(row))
-	}
-	return states, nil
-}
-
-func mapState(row sqlc.State) domain.State {
-	return domain.State{
-		ID:          row.ID,
-		Code:        row.Code,
-		Name:        row.Name,
-		IsAvailable: row.IsAvailable,
-	}
+func (r *StateRepository) ListStates(ctx context.Context) ([]sqlc.State, error) {
+	return r.db.ListStates(ctx)
 }

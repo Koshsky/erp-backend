@@ -31,61 +31,29 @@ func NewRuleRepository(logger *slog.Logger, pool *pgxpool.Pool) *RuleRepository 
 }
 
 // ListActivePresets returns the preset catalog.
-func (r *RuleRepository) ListActivePresets(ctx context.Context) ([]domain.Preset, error) {
-	rows, err := r.db.ListActivePresets(ctx)
-	if err != nil {
-		return nil, err
-	}
-	presets := make([]domain.Preset, 0, len(rows))
-	for _, row := range rows {
-		presets = append(presets, domain.Preset{ID: row.ID, Name: row.Name, Description: row.Description})
-	}
-	return presets, nil
+func (r *RuleRepository) ListActivePresets(ctx context.Context) ([]sqlc.ListActivePresetsRow, error) {
+	return r.db.ListActivePresets(ctx)
 }
 
 // ListActiveRules returns all active matrix rows.
-func (r *RuleRepository) ListActiveRules(ctx context.Context) ([]domain.PresetRule, error) {
-	rows, err := r.db.ListActivePresetRules(ctx)
-	if err != nil {
-		return nil, err
-	}
-	rules := make([]domain.PresetRule, 0, len(rows))
-	for _, row := range rows {
-		rules = append(rules, domain.PresetRule{
-			ID:        row.ID,
-			Preset:    row.Preset,
-			Resource:  row.Resource,
-			Action:    row.Action,
-			Scope:     row.Scope,
-			UpdatedBy: fromInt8(row.UpdatedBy),
-			UpdatedAt: row.UpdatedAt,
-		})
-	}
-	return rules, nil
+func (r *RuleRepository) ListActiveRules(ctx context.Context) ([]sqlc.ListActivePresetRulesRow, error) {
+	return r.db.ListActivePresetRules(ctx)
 }
 
 // UpsertRule writes (or updates) a matrix row by the unique key
 // (preset, resource, action) and returns the stored row.
-func (r *RuleRepository) UpsertRule(ctx context.Context, rule domain.PresetRule) (domain.PresetRule, error) {
-	row, err := r.db.UpsertPresetRule(ctx, sqlc.UpsertPresetRuleParams{
-		Preset:    rule.Preset,
-		Resource:  rule.Resource,
-		Action:    rule.Action,
-		Scope:     rule.Scope,
-		UpdatedBy: toInt8(rule.UpdatedBy),
+func (r *RuleRepository) UpsertRule(
+	ctx context.Context,
+	preset, resource, action, scope string,
+	updatedBy *int64,
+) (sqlc.UpsertPresetRuleRow, error) {
+	return r.db.UpsertPresetRule(ctx, sqlc.UpsertPresetRuleParams{
+		Preset:    preset,
+		Resource:  resource,
+		Action:    action,
+		Scope:     scope,
+		UpdatedBy: toInt8(updatedBy),
 	})
-	if err != nil {
-		return domain.PresetRule{}, err
-	}
-	return domain.PresetRule{
-		ID:        row.ID,
-		Preset:    row.Preset,
-		Resource:  row.Resource,
-		Action:    row.Action,
-		Scope:     row.Scope,
-		UpdatedBy: fromInt8(row.UpdatedBy),
-		UpdatedAt: row.UpdatedAt,
-	}, nil
 }
 
 // DeleteRule removes a matrix row (archived by the DB trigger).
@@ -167,26 +135,18 @@ func (r *RuleRepository) DeleteAllRoutePolicies(ctx context.Context) error {
 }
 
 // UpsertPreset creates a preset (or updates it by name).
-func (r *RuleRepository) UpsertPreset(ctx context.Context, name, description string) (domain.Preset, error) {
-	row, err := r.db.UpsertPreset(ctx, sqlc.UpsertPresetParams{Name: name, Description: description})
-	if err != nil {
-		return domain.Preset{}, err
-	}
-	return domain.Preset{ID: row.ID, Name: row.Name, Description: row.Description}, nil
+func (r *RuleRepository) UpsertPreset(ctx context.Context, name, description string) (sqlc.UpsertPresetRow, error) {
+	return r.db.UpsertPreset(ctx, sqlc.UpsertPresetParams{Name: name, Description: description})
 }
 
 // UpdatePresetDescription updates the preset description.
 func (r *RuleRepository) UpdatePresetDescription(
 	ctx context.Context,
 	name, description string,
-) (domain.Preset, error) {
-	row, err := r.db.UpdatePresetDescription(ctx, sqlc.UpdatePresetDescriptionParams{
+) (sqlc.UpdatePresetDescriptionRow, error) {
+	return r.db.UpdatePresetDescription(ctx, sqlc.UpdatePresetDescriptionParams{
 		Name: name, Description: description,
 	})
-	if err != nil {
-		return domain.Preset{}, err
-	}
-	return domain.Preset{ID: row.ID, Name: row.Name, Description: row.Description}, nil
 }
 
 // DeletePreset deletes a preset together with its rules and clears the preset
@@ -214,25 +174,8 @@ func (r *RuleRepository) DeletePreset(ctx context.Context, name string) error {
 }
 
 // ListUserPermissions returns the active per-user overrides of a user.
-func (r *RuleRepository) ListUserPermissions(ctx context.Context, userID int64) ([]domain.UserPermission, error) {
-	rows, err := r.db.ListUserPermissions(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]domain.UserPermission, 0, len(rows))
-	for _, row := range rows {
-		out = append(out, domain.UserPermission{
-			ID:        row.ID,
-			UserID:    row.UserID,
-			Resource:  row.Resource,
-			Action:    row.Action,
-			Scope:     row.Scope,
-			Granted:   row.Granted,
-			UpdatedBy: fromInt8(row.UpdatedBy),
-			UpdatedAt: row.UpdatedAt,
-		})
-	}
-	return out, nil
+func (r *RuleRepository) ListUserPermissions(ctx context.Context, userID int64) ([]sqlc.ListUserPermissionsRow, error) {
+	return r.db.ListUserPermissions(ctx, userID)
 }
 
 // ReplaceUserPermissions atomically replaces the user's override set:
@@ -240,7 +183,7 @@ func (r *RuleRepository) ListUserPermissions(ctx context.Context, userID int64) 
 func (r *RuleRepository) ReplaceUserPermissions(
 	ctx context.Context,
 	userID int64,
-	rows []domain.UserPermission,
+	perms []sqlc.InsertUserPermissionParams,
 ) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -252,15 +195,8 @@ func (r *RuleRepository) ReplaceUserPermissions(
 	if err = q.DeleteAllUserPermissions(ctx, userID); err != nil {
 		return err
 	}
-	for _, p := range rows {
-		if _, err = q.InsertUserPermission(ctx, sqlc.InsertUserPermissionParams{
-			UserID:    p.UserID,
-			Resource:  p.Resource,
-			Action:    p.Action,
-			Scope:     p.Scope,
-			Granted:   p.Granted,
-			UpdatedBy: toInt8(p.UpdatedBy),
-		}); err != nil {
+	for _, p := range perms {
+		if _, err = q.InsertUserPermission(ctx, p); err != nil {
 			return err
 		}
 	}

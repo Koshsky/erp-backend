@@ -3108,7 +3108,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/domain.Preset"
+                                                "$ref": "#/definitions/dto.PresetView"
                                             }
                                         },
                                         "error": {
@@ -3160,7 +3160,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/domain.Preset"
+                                            "$ref": "#/definitions/dto.PresetView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -3238,7 +3238,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/domain.Preset"
+                                            "$ref": "#/definitions/dto.PresetView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -6715,20 +6715,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Preset": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.AddMemberRequest": {
             "type": "object",
             "properties": {
@@ -7707,6 +7693,20 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "auditor"
+                }
+            }
+        },
+        "dto.PresetView": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

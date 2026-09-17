@@ -7,8 +7,8 @@ import (
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/dto"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/repository/sqlc"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -46,18 +46,17 @@ func (s *CommentService) CreateComment(
 	ctx, end := s.tracer.Start(ctx, "comment.CreateComment")
 	defer end(nil)
 
-	comment := s.mapper.ToDomainFromCreate(taskID, req, authorID)
-	if err := s.validator.ValidateComment(&comment); err != nil {
+	if err := s.validator.ValidateComment(taskID, authorID, req.Content); err != nil {
 		return nil, err
 	}
 
-	if comment.ParentID != nil {
-		if _, err := s.findValidParent(ctx, taskID, *comment.ParentID); err != nil {
+	if req.ParentID != nil {
+		if _, err := s.findValidParent(ctx, taskID, *req.ParentID); err != nil {
 			return nil, err
 		}
 	}
 
-	created, err := s.repository.CreateComment(ctx, comment)
+	created, err := s.repository.CreateComment(ctx, taskID, authorID, req.ParentID, req.Content)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +66,7 @@ func (s *CommentService) CreateComment(
 
 // findValidParent checks that the parent comment exists and belongs to the
 // same task (replies cannot reference comments of other tasks).
-func (s *CommentService) findValidParent(ctx context.Context, taskID int64, parentID int64) (*domain.Comment, error) {
+func (s *CommentService) findValidParent(ctx context.Context, taskID int64, parentID int64) (*sqlc.TaskComment, error) {
 	parent, err := s.repository.FindComment(ctx, parentID)
 	if err != nil {
 		if errors.IsNotFoundError(err) {

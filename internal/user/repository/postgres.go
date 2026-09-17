@@ -15,7 +15,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
-	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -34,21 +33,19 @@ func NewUserRepository(logger *slog.Logger, pool *pgxpool.Pool) *UserRepository 
 	}
 }
 
-func (r *UserRepository) FindUserByUsername(ctx context.Context, username string) (*domain.User, error) {
+func (r *UserRepository) FindUserByUsername(ctx context.Context, username string) (*sqlc.User, error) {
 	row, err := r.db.FindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}
-
-	mapped := mapUser(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *UserRepository) UsernameExists(ctx context.Context, username string) (bool, error) {
 	return r.db.UsernameExists(ctx, username)
 }
 
-func (r *UserRepository) FindUserByID(ctx context.Context, userID int64) (*domain.User, error) {
+func (r *UserRepository) FindUserByID(ctx context.Context, userID int64) (*sqlc.User, error) {
 	return r.FindUser(ctx, userID)
 }
 
@@ -63,25 +60,24 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
 	return mapUserDeleteErr(r.db.DeleteUser(ctx, id))
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (r *UserRepository) CreateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error) {
 	row, err := r.db.CreateUser(ctx, sqlc.CreateUserParams{
 		LastName:        user.LastName,
 		FirstName:       user.FirstName,
-		MiddleName:      nullable.ToString(user.MiddleName),
+		MiddleName:      user.MiddleName,
 		Username:        user.Username,
-		Preset:          nullable.ToString(user.Preset),
+		Preset:          user.Preset,
 		PasswordHash:    user.PasswordHash,
-		ManagerID:       nullable.ToInt8(user.ManagerID),
+		ManagerID:       user.ManagerID,
 		Position:        user.Position,
-		HireDate:        toDate(user.HireDate),
-		TerminationDate: toDate(user.TerminationDate),
+		HireDate:        user.HireDate,
+		TerminationDate: user.TerminationDate,
 	})
 	if err != nil {
 		return nil, mapUserErr(err)
 	}
 
-	mapped := mapUser(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 // CreateUserWithPermissions creates the user and its individual permission
@@ -89,10 +85,10 @@ func (r *UserRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 // together; on any error nothing is persisted).
 func (r *UserRepository) CreateUserWithPermissions(
 	ctx context.Context,
-	user domain.User,
+	user sqlc.User,
 	perms []domain.UserPermission,
 	updatedBy int64,
-) (*domain.User, error) {
+) (*sqlc.User, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -103,14 +99,14 @@ func (r *UserRepository) CreateUserWithPermissions(
 	row, err := q.CreateUser(ctx, sqlc.CreateUserParams{
 		LastName:        user.LastName,
 		FirstName:       user.FirstName,
-		MiddleName:      nullable.ToString(user.MiddleName),
+		MiddleName:      user.MiddleName,
 		Username:        user.Username,
-		Preset:          nullable.ToString(user.Preset),
+		Preset:          user.Preset,
 		PasswordHash:    user.PasswordHash,
-		ManagerID:       nullable.ToInt8(user.ManagerID),
+		ManagerID:       user.ManagerID,
 		Position:        user.Position,
-		HireDate:        toDate(user.HireDate),
-		TerminationDate: toDate(user.TerminationDate),
+		HireDate:        user.HireDate,
+		TerminationDate: user.TerminationDate,
 	})
 	if err != nil {
 		return nil, mapUserErr(err)
@@ -122,7 +118,7 @@ func (r *UserRepository) CreateUserWithPermissions(
 			Action:    p.Action,
 			Scope:     p.Scope,
 			Granted:   p.Granted,
-			UpdatedBy: nullable.ToInt8(&updatedBy),
+			UpdatedBy: pgtypeInt8(updatedBy),
 		}); err != nil {
 			return nil, err
 		}
@@ -131,40 +127,37 @@ func (r *UserRepository) CreateUserWithPermissions(
 		return nil, err
 	}
 
-	mapped := mapUser(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *UserRepository) FindUser(ctx context.Context, id int64) (*domain.User, error) {
+func (r *UserRepository) FindUser(ctx context.Context, id int64) (*sqlc.User, error) {
 	row, err := r.db.FindUser(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapUser(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *UserRepository) UpdateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (r *UserRepository) UpdateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error) {
 	row, err := r.db.UpdateUser(ctx, sqlc.UpdateUserParams{
 		UserID:          user.ID,
 		LastName:        user.LastName,
 		FirstName:       user.FirstName,
-		MiddleName:      nullable.ToString(user.MiddleName),
+		MiddleName:      user.MiddleName,
 		Username:        user.Username,
-		Preset:          nullable.ToString(user.Preset),
+		Preset:          user.Preset,
 		PasswordHash:    user.PasswordHash,
-		ManagerID:       nullable.ToInt8(user.ManagerID),
+		ManagerID:       user.ManagerID,
 		Position:        user.Position,
-		HireDate:        toDate(user.HireDate),
-		TerminationDate: toDate(user.TerminationDate),
+		HireDate:        user.HireDate,
+		TerminationDate: user.TerminationDate,
 	})
 	if err != nil {
 		return nil, mapUserErr(err)
 	}
 
-	mapped := mapUser(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *UserRepository) ListUsers(
@@ -175,8 +168,8 @@ func (r *UserRepository) ListUsers(
 	managerID int64,
 	search string,
 	limit, offset int,
-) ([]domain.User, error) {
-	rows, err := r.db.ListUsers(ctx, sqlc.ListUsersParams{
+) ([]sqlc.User, error) {
+	return r.db.ListUsers(ctx, sqlc.ListUsersParams{
 		PresetFilter: presetFilter,
 		ScopeView:    viewScope,
 		UserID:       userID,
@@ -185,15 +178,6 @@ func (r *UserRepository) ListUsers(
 		PageLimit:    int64(limit),
 		PageOffset:   int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	users := make([]domain.User, 0, len(rows))
-	for _, row := range rows {
-		users = append(users, mapUser(row))
-	}
-	return users, nil
 }
 
 func (r *UserRepository) CountUsers(
@@ -213,16 +197,8 @@ func (r *UserRepository) CountUsers(
 	})
 }
 
-func (r *UserRepository) ListAllUsers(ctx context.Context) ([]domain.User, error) {
-	rows, err := r.db.ListAllUsers(ctx)
-	if err != nil {
-		return nil, err
-	}
-	users := make([]domain.User, 0, len(rows))
-	for _, row := range rows {
-		users = append(users, mapUser(row))
-	}
-	return users, nil
+func (r *UserRepository) ListAllUsers(ctx context.Context) ([]sqlc.User, error) {
+	return r.db.ListAllUsers(ctx)
 }
 
 // ================= worker days (user_states) =================
@@ -231,20 +207,12 @@ func (r *UserRepository) ListStates(
 	ctx context.Context,
 	userID int64,
 	start, end time.Time,
-) ([]domain.UserState, error) {
-	rows, err := r.db.ListStatesByUserRange(ctx, sqlc.ListStatesByUserRangeParams{
+) ([]sqlc.ListStatesByUserRangeRow, error) {
+	return r.db.ListStatesByUserRange(ctx, sqlc.ListStatesByUserRangeParams{
 		UserID:    userID,
 		StartDate: start,
 		EndDate:   end,
 	})
-	if err != nil {
-		return nil, err
-	}
-	states := make([]domain.UserState, 0, len(rows))
-	for _, row := range rows {
-		states = append(states, mapStateRow(row))
-	}
-	return states, nil
 }
 
 // ListStatesByUsers returns the states of several workers over one date range in
@@ -254,20 +222,12 @@ func (r *UserRepository) ListStatesByUsers(
 	ctx context.Context,
 	userIDs []int64,
 	start, end time.Time,
-) ([]domain.UserState, error) {
-	rows, err := r.db.ListStatesByUsersRange(ctx, sqlc.ListStatesByUsersRangeParams{
+) ([]sqlc.ListStatesByUsersRangeRow, error) {
+	return r.db.ListStatesByUsersRange(ctx, sqlc.ListStatesByUsersRangeParams{
 		UserIds:   userIDs,
 		StartDate: start,
 		EndDate:   end,
 	})
-	if err != nil {
-		return nil, err
-	}
-	states := make([]domain.UserState, 0, len(rows))
-	for _, row := range rows {
-		states = append(states, mapBatchStateRow(row))
-	}
-	return states, nil
 }
 
 // overlapState is an overlapping interval with its state.
@@ -483,64 +443,9 @@ func toOverlapStatesByState(rows []sqlc.ListOverlappingStatesByStateRow) []overl
 	return result
 }
 
-func mapUser(row sqlc.User) domain.User {
-	return domain.User{
-		ID:              row.ID,
-		LastName:        row.LastName,
-		FirstName:       row.FirstName,
-		MiddleName:      nullable.StringPtr(row.MiddleName),
-		Preset:          nullable.StringPtr(row.Preset),
-		Username:        row.Username,
-		PasswordHash:    row.PasswordHash,
-		ManagerID:       nullable.Int64Ptr(row.ManagerID),
-		Position:        row.Position,
-		HireDate:        fromDate(row.HireDate),
-		TerminationDate: fromDate(row.TerminationDate),
-		CreatedAt:       row.CreatedAt,
-	}
-}
-
-func mapStateRow(row sqlc.ListStatesByUserRangeRow) domain.UserState {
-	return domain.UserState{
-		ID:          row.ID,
-		UserID:      row.UserID,
-		StateID:     row.StateID,
-		StateCode:   row.StateCode,
-		StateName:   row.StateName,
-		IsAvailable: row.IsAvailable,
-		StartDate:   row.StartDate,
-		EndDate:     row.EndDate,
-	}
-}
-
-func mapBatchStateRow(row sqlc.ListStatesByUsersRangeRow) domain.UserState {
-	return domain.UserState{
-		ID:          row.ID,
-		UserID:      row.UserID,
-		StateID:     row.StateID,
-		StateCode:   row.StateCode,
-		StateName:   row.StateName,
-		IsAvailable: row.IsAvailable,
-		StartDate:   row.StartDate,
-		EndDate:     row.EndDate,
-	}
-}
-
-// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
-func fromDate(v pgtype.Date) *time.Time {
-	if !v.Valid {
-		return nil
-	}
-	t := v.Time
-	return &t
-}
-
-// toDate wraps [time.Time] into a nullable date (pgtype.Date).
-func toDate(v *time.Time) pgtype.Date {
-	if v == nil {
-		return pgtype.Date{}
-	}
-	return pgtype.Date{Time: *v, Valid: true}
+// pgtypeInt8 wraps an int64 into a NOT-NULL pgtype.Int8.
+func pgtypeInt8(v int64) pgtype.Int8 {
+	return pgtype.Int8{Int64: v, Valid: true}
 }
 
 // OwnerChain returns the owner chain (manager_id → the vp) for RBAC checks.
