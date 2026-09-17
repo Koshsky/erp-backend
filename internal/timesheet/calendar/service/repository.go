@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
 )
 
 type CalendarRepository interface {
-	ListResources(ctx context.Context) ([]dto.ResourceInfo, error)
-	ListEmployeesForCalendar(ctx context.Context, start, end time.Time) ([]dto.CalendarMember, error)
-	ListUnavailableRanges(ctx context.Context, start, end time.Time) ([]dto.UnavailableRange, error)
+	ListResources(ctx context.Context) ([]sqlc.ListResourcesRow, error)
+	ListEmployeesForCalendar(ctx context.Context, start, end time.Time) ([]sqlc.ListEmployeesForCalendarRow, error)
+	ListUnavailableRanges(ctx context.Context, start, end time.Time) ([]sqlc.ListUnavailableRangesRow, error)
 }

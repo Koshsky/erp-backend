@@ -14,7 +14,8 @@ import (
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 
 	"github.com/Koshsky/erp-backend/internal/auth/dto"
-	"github.com/Koshsky/erp-backend/internal/auth/repository"
+	repo "github.com/Koshsky/erp-backend/internal/auth/repository"
+	"github.com/Koshsky/erp-backend/internal/auth/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/security/hasher"
 	"github.com/Koshsky/erp-backend/internal/security/jwt"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
@@ -31,7 +32,7 @@ type AuthService struct {
 	logger   *slog.Logger
 	users    UserService
 	jwt      *jwt.Service
-	sessions *repository.AuthRepository
+	sessions *repo.AuthRepository
 	tracer   *tracingpkg.Tracer
 
 	// cleanupOnce guarantees the expired-session sweep loop starts at most once
@@ -44,7 +45,7 @@ func NewAuthService(
 	logger *slog.Logger,
 	users *userservice.UserService,
 	jwtService *jwt.Service,
-	sessions *repository.AuthRepository,
+	sessions *repo.AuthRepository,
 	tracer *tracingpkg.Tracer,
 ) *AuthService {
 	return &AuthService{
@@ -100,7 +101,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 		return nil, err
 	}
 
-	if session.RevokedAt != nil {
+	if session.RevokedAt.Valid {
 		// Reusing a revoked token indicates theft: revoke all of the user's
 		// active sessions. The failure is logged loudly — a failed revocation
 		// must never be silently swallowed, and no new pair is issued either
@@ -162,7 +163,7 @@ func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 	return nil
 }
 
-func (s *AuthService) findSession(ctx context.Context, refreshToken string) (repository.Session, error) {
+func (s *AuthService) findSession(ctx context.Context, refreshToken string) (sqlc.FindSessionByHashRow, error) {
 	return s.sessions.FindSessionByHash(ctx, hashToken(refreshToken))
 }
 

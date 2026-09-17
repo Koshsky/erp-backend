@@ -7,9 +7,12 @@ import (
 	"slices"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -54,17 +57,30 @@ func (s *CalendarService) GetCalendar(
 		return nil, errors.BadRequest(fmt.Sprintf("date range must not exceed %d days", maxCalendarRange))
 	}
 
-	resources, err := s.repository.ListResources(ctx)
+	resourceRows, err := s.repository.ListResources(ctx)
 	if err != nil {
 		return nil, err
 	}
-	members, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
+	memberRows, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
 	if err != nil {
 		return nil, err
 	}
-	ranges, err := s.repository.ListUnavailableRanges(ctx, startT, endT)
+	rangeRows, err := s.repository.ListUnavailableRanges(ctx, startT, endT)
 	if err != nil {
 		return nil, err
+	}
+
+	resources := make([]dto.ResourceInfo, len(resourceRows))
+	for i, row := range resourceRows {
+		resources[i] = toResourceInfo(row)
+	}
+	members := make([]dto.CalendarMember, len(memberRows))
+	for i, row := range memberRows {
+		members[i] = toCalendarMember(row)
+	}
+	ranges := make([]dto.UnavailableRange, len(rangeRows))
+	for i, row := range rangeRows {
+		ranges[i] = toUnavailableRange(row)
 	}
 
 	membersByResource := groupMembers(members)
@@ -89,6 +105,44 @@ func (s *CalendarService) GetCalendar(
 	}
 
 	return planning, nil
+}
+
+// toResourceInfo converts a resource row for the calendar view.
+func toResourceInfo(row sqlc.ListResourcesRow) dto.ResourceInfo {
+	return dto.ResourceInfo{
+		ID:      row.ID,
+		Title:   row.Title,
+		Code:    row.Code,
+		OwnerID: &row.OwnerID,
+	}
+}
+
+// toCalendarMember converts a resource member row (work interval for the calendar).
+func toCalendarMember(row sqlc.ListEmployeesForCalendarRow) dto.CalendarMember {
+	return dto.CalendarMember{
+		UserID:          row.ID,
+		ResourceID:      row.ResourceID,
+		HireDate:        fromDate(row.HireDate),
+		TerminationDate: fromDate(row.TerminationDate),
+	}
+}
+
+// toUnavailableRange converts an absence interval row.
+func toUnavailableRange(row sqlc.ListUnavailableRangesRow) dto.UnavailableRange {
+	return dto.UnavailableRange{
+		ResourceID: row.ResourceID,
+		StartDate:  row.StartDate,
+		EndDate:    row.EndDate,
+	}
+}
+
+// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
+func fromDate(v pgtype.Date) *time.Time {
+	if !v.Valid {
+		return nil
+	}
+	t := v.Time
+	return &t
 }
 
 func groupMembers(members []dto.CalendarMember) map[int64][]dto.CalendarMember {

@@ -3,19 +3,22 @@ package service
 import (
 	"context"
 
-	"github.com/Koshsky/erp-backend/internal/planning/dto"
+	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 )
 
 type PlanningRepository interface {
-	ListProjects(ctx context.Context, userID int64, viewScope string) ([]dto.Project, error)
-	ListProjectsByIDs(ctx context.Context, ids []int64) ([]dto.Project, error)
-	ListProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error)
-	ListProcessesByTaskScope(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error)
-	ListResources(ctx context.Context) ([]dto.Resource, error)
+	ListProjects(ctx context.Context, userID int64, viewScope string) ([]sqlc.Project, error)
+	ListProjectsByIDs(ctx context.Context, ids []int64) ([]sqlc.Project, error)
+	ListProcesses(ctx context.Context, userID int64, viewScope string) ([]sqlc.ListProcessesRow, error)
+	ListProcessesByTaskScope(
+		ctx context.Context,
+		userID int64,
+		viewScope string,
+	) ([]sqlc.ListProcessesByTaskScopeRow, error)
+	ListResources(ctx context.Context) ([]sqlc.Resource, error)
 
-	ListProcessesByProjectIDs(ctx context.Context, projectIDs []int64) (map[int64][]dto.Process, error)
-	ListMilestonesByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]dto.Milestone, error)
-	ListTasksByProcessIDs(ctx context.Context, processIDs []int64) (map[int64][]dto.Task, error)
-	ListAssignmentsByTaskIDs(ctx context.Context, taskIDs []int64) (map[int64][]dto.Assignment, error)
+	ListMilestonesByProcessIDs(ctx context.Context, processIDs []int64) ([]sqlc.Milestone, error)
+	ListTasksByProcessIDs(ctx context.Context, processIDs []int64) ([]sqlc.Task, error)
+	ListAssignmentsByTaskIDs(ctx context.Context, taskIDs []int64) ([]sqlc.Assignment, error)
 	ListTaskCommentCountsByTaskIDs(ctx context.Context, taskIDs []int64) (map[int64]int64, error)
 }

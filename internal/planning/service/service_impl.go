@@ -38,9 +38,13 @@ func (s *PlanningService) GetProjectPlanning(
 	if err != nil {
 		return nil, err
 	}
+	projectDTOs := make([]dto.Project, len(projects))
+	for i, p := range projects {
+		projectDTOs[i] = toProject(p)
+	}
 
 	return &dto.ProjectPlanning{
-		Projects: projects,
+		Projects: projectDTOs,
 	}, nil
 }
 
@@ -60,7 +64,8 @@ func (s *PlanningService) GetProcessPlanning(
 		return nil, err
 	}
 	grouped := make(map[int64][]dto.Process)
-	for _, p := range processes {
+	for _, row := range processes {
+		p := toProcess(row)
 		grouped[p.ProjectID] = append(grouped[p.ProjectID], p)
 	}
 	projectIDs := make([]int64, 0, len(grouped))
@@ -73,7 +78,7 @@ func (s *PlanningService) GetProcessPlanning(
 	}
 	byID := make(map[int64]dto.Project, len(projects))
 	for _, p := range projects {
-		byID[p.ID] = p
+		byID[p.ID] = toProject(p)
 	}
 
 	planning := dto.ProcessPlanning{Projects: make([]dto.DetailedProject, 0, len(byID))}

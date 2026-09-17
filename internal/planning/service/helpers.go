@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
+	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 )
 
 // getSlice returns the slice associated with the given key in the map.
@@ -20,9 +21,13 @@ func getSlice[T any](m map[int64][]T, key int64) []T {
 // owner (vp) must see on the task diagram. The process aggregate uses the
 // process scope directly (parent = "in my projects").
 func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error) {
-	processes, err := s.repository.ListProcessesByTaskScope(ctx, userID, viewScope)
+	rows, err := s.repository.ListProcessesByTaskScope(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
+	}
+	processes := make([]dto.Process, len(rows))
+	for i, row := range rows {
+		processes[i] = toTaskScopeProcess(row)
 	}
 	return processes, nil
 }
@@ -38,21 +43,48 @@ func (s *PlanningService) loadAllData(
 		processIDs[i] = p.ID
 	}
 
-	milestones, err := s.repository.ListMilestonesByProcessIDs(ctx, processIDs)
+	milestoneRows, err := s.repository.ListMilestonesByProcessIDs(ctx, processIDs)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
+	milestones := groupByKey(milestoneRows, func(m sqlc.Milestone) int64 { return m.ProcessID })
+	milestoneDTOs := make(map[int64][]dto.Milestone, len(milestones))
+	for processID, rows := range milestones {
+		items := make([]dto.Milestone, len(rows))
+		for i, row := range rows {
+			items[i] = toMilestone(row)
+		}
+		milestoneDTOs[processID] = items
+	}
 
-	tasks, err := s.repository.ListTasksByProcessIDs(ctx, processIDs)
+	taskRows, err := s.repository.ListTasksByProcessIDs(ctx, processIDs)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
+	tasks := groupByKey(taskRows, func(t sqlc.Task) int64 { return t.ProcessID })
+	taskDTOs := make(map[int64][]dto.Task, len(tasks))
+	for processID, rows := range tasks {
+		items := make([]dto.Task, len(rows))
+		for i, row := range rows {
+			items[i] = toTask(row)
+		}
+		taskDTOs[processID] = items
+	}
 
-	taskIDs := s.collectTaskIDs(tasks)
+	taskIDs := s.collectTaskIDs(taskDTOs)
 
-	assignments, err := s.repository.ListAssignmentsByTaskIDs(ctx, taskIDs)
+	assignmentRows, err := s.repository.ListAssignmentsByTaskIDs(ctx, taskIDs)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
+	}
+	assignments := groupByKey(assignmentRows, func(a sqlc.Assignment) int64 { return a.TaskID })
+	assignmentDTOs := make(map[int64][]dto.Assignment, len(assignments))
+	for taskID, rows := range assignments {
+		items := make([]dto.Assignment, len(rows))
+		for i, row := range rows {
+			items[i] = toAssignment(row)
+		}
+		assignmentDTOs[taskID] = items
 	}
 
 	commentCounts, err := s.repository.ListTaskCommentCountsByTaskIDs(ctx, taskIDs)
@@ -60,13 +92,17 @@ func (s *PlanningService) loadAllData(
 		return nil, nil, nil, nil, nil, err
 	}
 
-	resourcesList, err := s.repository.ListResources(ctx)
+	resourceRows, err := s.repository.ListResources(ctx)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	resourcesMap := s.buildResourceMap(resourcesList)
+	resources := make([]dto.Resource, len(resourceRows))
+	for i, row := range resourceRows {
+		resources[i] = toResource(row)
+	}
+	resourcesMap := s.buildResourceMap(resources)
 
-	return milestones, tasks, assignments, resourcesMap, commentCounts, nil
+	return milestoneDTOs, taskDTOs, assignmentDTOs, resourcesMap, commentCounts, nil
 }
 
 // collectTaskIDs collects all task IDs from the tasks map.
