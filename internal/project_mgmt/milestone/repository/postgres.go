@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -21,9 +22,18 @@ type MilestoneRepository struct {
 // NewMilestoneRepository builds the MilestoneRepository repository.
 func NewMilestoneRepository(logger *slog.Logger, pool *pgxpool.Pool) *MilestoneRepository {
 	return &MilestoneRepository{
-		logger: logger,
+		logger: logger.With("component", "milestone_repository"),
 		db:     sqlc.New(pool),
 	}
+}
+
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *MilestoneRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
 }
 
 func (r *MilestoneRepository) CreateMilestone(
@@ -33,7 +43,7 @@ func (r *MilestoneRepository) CreateMilestone(
 	color *string,
 	date date.Date,
 ) (*sqlc.Milestone, error) {
-	row, err := r.db.CreateMilestone(ctx, sqlc.CreateMilestoneParams{
+	row, err := r.q(ctx).CreateMilestone(ctx, sqlc.CreateMilestoneParams{
 		ProcessID: processID,
 		Title:     title,
 		Content:   content,
@@ -48,7 +58,7 @@ func (r *MilestoneRepository) CreateMilestone(
 }
 
 func (r *MilestoneRepository) FindMilestone(ctx context.Context, id int64) (*sqlc.Milestone, error) {
-	row, err := r.db.FindMilestone(ctx, id)
+	row, err := r.q(ctx).FindMilestone(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +70,7 @@ func (r *MilestoneRepository) UpdateMilestone(
 	ctx context.Context,
 	milestone sqlc.Milestone,
 ) (*sqlc.Milestone, error) {
-	row, err := r.db.UpdateMilestone(ctx, sqlc.UpdateMilestoneParams{
+	row, err := r.q(ctx).UpdateMilestone(ctx, sqlc.UpdateMilestoneParams{
 		MilestoneID: milestone.ID,
 		ProcessID:   milestone.ProcessID,
 		Date:        milestone.Date,
@@ -76,7 +86,7 @@ func (r *MilestoneRepository) UpdateMilestone(
 }
 
 func (r *MilestoneRepository) DeleteMilestone(ctx context.Context, id int64) error {
-	return r.db.DeleteMilestone(ctx, id)
+	return r.q(ctx).DeleteMilestone(ctx, id)
 }
 
 func (r *MilestoneRepository) ListMilestones(
@@ -86,7 +96,7 @@ func (r *MilestoneRepository) ListMilestones(
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Milestone, error) {
-	return r.db.ListMilestones(ctx, sqlc.ListMilestonesParams{
+	return r.q(ctx).ListMilestones(ctx, sqlc.ListMilestonesParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
@@ -101,7 +111,7 @@ func (r *MilestoneRepository) CountMilestones(
 	viewScope string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountMilestones(
+	return r.q(ctx).CountMilestones(
 		ctx,
 		sqlc.CountMilestonesParams{
 			ScopeView: viewScope,
@@ -113,7 +123,7 @@ func (r *MilestoneRepository) CountMilestones(
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).
 func (r *MilestoneRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	row, err := r.db.OwnerChain(ctx, id)
+	row, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}

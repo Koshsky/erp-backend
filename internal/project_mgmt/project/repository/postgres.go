@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -24,9 +25,18 @@ type ProjectRepository struct {
 // NewProjectRepository builds the ProjectRepository repository.
 func NewProjectRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProjectRepository {
 	return &ProjectRepository{
-		logger: logger,
+		logger: logger.With("component", "project_repository"),
 		db:     sqlc.New(pool),
 	}
+}
+
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *ProjectRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
 }
 
 func (r *ProjectRepository) CreateProject(
@@ -37,7 +47,7 @@ func (r *ProjectRepository) CreateProject(
 	startDate, endDate date.Date,
 	priority int,
 ) (*sqlc.Project, error) {
-	created, err := r.db.CreateProject(ctx, sqlc.CreateProjectParams{
+	created, err := r.q(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
 		Code:      code,
 		OwnerID:   nullable.ToInt8(ownerID),
 		Color:     nullable.ToString(color),
@@ -58,7 +68,7 @@ func (r *ProjectRepository) CreateProject(
 }
 
 func (r *ProjectRepository) FindProject(ctx context.Context, id int64) (*sqlc.Project, error) {
-	project, err := r.db.FindProject(ctx, id)
+	project, err := r.q(ctx).FindProject(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +81,7 @@ func (r *ProjectRepository) UpdateProject(
 	project sqlc.Project,
 	priority int,
 ) (*sqlc.Project, error) {
-	updated, err := r.db.UpdateProject(ctx, sqlc.UpdateProjectParams{
+	updated, err := r.q(ctx).UpdateProject(ctx, sqlc.UpdateProjectParams{
 		ProjectID: project.ID,
 		OwnerID:   project.OwnerID,
 		Code:      project.Code,
@@ -88,7 +98,7 @@ func (r *ProjectRepository) UpdateProject(
 }
 
 func (r *ProjectRepository) DeleteProject(ctx context.Context, id int64) error {
-	return r.db.DeleteProject(ctx, id)
+	return r.q(ctx).DeleteProject(ctx, id)
 }
 
 func (r *ProjectRepository) ListProjects(
@@ -98,7 +108,7 @@ func (r *ProjectRepository) ListProjects(
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Project, error) {
-	return r.db.ListProjects(ctx, sqlc.ListProjectsParams{
+	return r.q(ctx).ListProjects(ctx, sqlc.ListProjectsParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
@@ -113,7 +123,7 @@ func (r *ProjectRepository) CountProjects(
 	viewScope string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountProjects(
+	return r.q(ctx).CountProjects(
 		ctx,
 		sqlc.CountProjectsParams{
 			ScopeView: viewScope,
@@ -130,12 +140,12 @@ func (r *ProjectRepository) AutoCreatedCounts(
 	ctx context.Context,
 	projectID int64,
 ) (sqlc.CountAutoCreatedEntitiesRow, error) {
-	return r.db.CountAutoCreatedEntities(ctx, projectID)
+	return r.q(ctx).CountAutoCreatedEntities(ctx, projectID)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).
 func (r *ProjectRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	owner, err := r.db.OwnerChain(ctx, id)
+	owner, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}

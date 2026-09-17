@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/repository/sqlc"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -21,13 +22,22 @@ type StateRepository struct {
 // NewStateRepository builds the StateRepository repository.
 func NewStateRepository(logger *slog.Logger, pool *pgxpool.Pool) *StateRepository {
 	return &StateRepository{
-		logger: logger,
+		logger: logger.With("component", "state_repository"),
 		db:     sqlc.New(pool),
 	}
 }
 
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *StateRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
 func (r *StateRepository) CreateState(ctx context.Context, code, name string, isAvailable bool) (*sqlc.State, error) {
-	row, err := r.db.CreateState(ctx, sqlc.CreateStateParams{
+	row, err := r.q(ctx).CreateState(ctx, sqlc.CreateStateParams{
 		Code:        code,
 		Name:        name,
 		IsAvailable: isAvailable,
@@ -44,7 +54,7 @@ func (r *StateRepository) CreateState(ctx context.Context, code, name string, is
 }
 
 func (r *StateRepository) FindState(ctx context.Context, id int64) (*sqlc.State, error) {
-	row, err := r.db.FindState(ctx, id)
+	row, err := r.q(ctx).FindState(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +62,7 @@ func (r *StateRepository) FindState(ctx context.Context, id int64) (*sqlc.State,
 }
 
 func (r *StateRepository) UpdateState(ctx context.Context, state sqlc.State) (*sqlc.State, error) {
-	row, err := r.db.UpdateState(ctx, sqlc.UpdateStateParams{
+	row, err := r.q(ctx).UpdateState(ctx, sqlc.UpdateStateParams{
 		StateID:     state.ID,
 		Code:        state.Code,
 		Name:        state.Name,
@@ -65,9 +75,9 @@ func (r *StateRepository) UpdateState(ctx context.Context, state sqlc.State) (*s
 }
 
 func (r *StateRepository) DeleteState(ctx context.Context, id int64) error {
-	return r.db.DeleteState(ctx, id)
+	return r.q(ctx).DeleteState(ctx, id)
 }
 
 func (r *StateRepository) ListStates(ctx context.Context) ([]sqlc.State, error) {
-	return r.db.ListStates(ctx)
+	return r.q(ctx).ListStates(ctx)
 }

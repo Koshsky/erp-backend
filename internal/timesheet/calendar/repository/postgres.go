@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
@@ -19,13 +20,22 @@ type CalendarRepository struct {
 // NewCalendarRepository builds the CalendarRepository repository.
 func NewCalendarRepository(logger *slog.Logger, pool *pgxpool.Pool) *CalendarRepository {
 	return &CalendarRepository{
-		logger: logger,
+		logger: logger.With("component", "calendar_repository"),
 		db:     sqlc.New(pool),
 	}
 }
 
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *CalendarRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
 func (r *CalendarRepository) ListResources(ctx context.Context) ([]sqlc.ListResourcesRow, error) {
-	return r.db.ListResources(ctx)
+	return r.q(ctx).ListResources(ctx)
 }
 
 // ListEmployeesForCalendar returns resource members active within the window for the calendar.
@@ -33,7 +43,7 @@ func (r *CalendarRepository) ListEmployeesForCalendar(
 	ctx context.Context,
 	start, end date.Date,
 ) ([]sqlc.ListEmployeesForCalendarRow, error) {
-	return r.db.ListEmployeesForCalendar(ctx, sqlc.ListEmployeesForCalendarParams{
+	return r.q(ctx).ListEmployeesForCalendar(ctx, sqlc.ListEmployeesForCalendarParams{
 		StartDate: start,
 		EndDate:   end,
 	})
@@ -44,7 +54,7 @@ func (r *CalendarRepository) ListUnavailableRanges(
 	ctx context.Context,
 	start, end date.Date,
 ) ([]sqlc.ListUnavailableRangesRow, error) {
-	return r.db.ListUnavailableRanges(ctx, sqlc.ListUnavailableRangesParams{
+	return r.q(ctx).ListUnavailableRanges(ctx, sqlc.ListUnavailableRangesParams{
 		StartDate: start,
 		EndDate:   end,
 	})

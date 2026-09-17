@@ -3,6 +3,8 @@ package idempotency_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -10,6 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	idem "github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/idempotency/repository"
@@ -29,12 +33,14 @@ type keyScope struct {
 
 // fakeRepo is an in-memory Repo used to exercise the middleware without a DB.
 type fakeRepo struct {
-	mu        sync.Mutex
-	complete  map[keyScope]repository.StoredResult
-	inflight  map[keyScope]bool
-	claims    int
-	completes int
-	releases  int
+	mu          sync.Mutex
+	complete    map[keyScope]repository.StoredResult
+	inflight    map[keyScope]bool
+	claims      int
+	completes   int
+	releases    int
+	completeErr bool
+	lastTx      *fakeTx
 }
 
 func newFakeRepo() *fakeRepo {
@@ -54,20 +60,22 @@ func (f *fakeRepo) Claim(
 	userID int64,
 	method, path string,
 	_ time.Time,
-) (*repository.StoredResult, bool, error) {
+) (*repository.StoredResult, bool, pgx.Tx, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	s := scope(key, userID, method, path)
 	if res, ok := f.complete[s]; ok {
 		r := res
-		return &r, false, nil
+		return &r, false, nil, nil
 	}
 	if f.inflight[s] {
-		return nil, false, nil
+		return nil, false, nil, nil
 	}
 	f.inflight[s] = true
 	f.claims++
-	return nil, true, nil
+	tx := &fakeTx{}
+	f.lastTx = tx
+	return nil, true, tx, nil
 }
 
 func (f *fakeRepo) Complete(
@@ -80,6 +88,9 @@ func (f *fakeRepo) Complete(
 ) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.completeErr {
+		return errors.New("complete failed")
+	}
 	s := scope(key, userID, method, path)
 	f.complete[s] = repository.StoredResult{Status: status, Body: body}
 	delete(f.inflight, s)
@@ -105,10 +116,10 @@ func (f *fakeRepo) completesCount() int {
 	return f.completes
 }
 
-// setUser installs the authenticated user (id) into the gin context.
-func setUser(id int64) gin.HandlerFunc {
+// setUser installs the fixed test user (id 7) into the gin context.
+func setUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set(userctx.KeyUser, userctx.UserContext{ID: id})
+		c.Set(userctx.KeyUser, userctx.UserContext{ID: 7})
 		c.Next()
 	}
 }
@@ -118,7 +129,7 @@ func setUser(id int64) gin.HandlerFunc {
 func buildRouter(mw *idem.Middleware, counter *int) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(setUser(7))
+	router.Use(setUser())
 	router.Use(mw.Handler())
 	router.POST("/tasks", func(c *gin.Context) {
 		*counter++
@@ -220,7 +231,7 @@ func TestIdempotencyFiveHundredReleasesKey(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(setUser(7))
+	router.Use(setUser())
 	router.Use(mw.Handler())
 	router.POST("/boom", func(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "boom")
@@ -251,7 +262,7 @@ func TestIdempotencyFourXxReleasesKey(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(setUser(7))
+	router.Use(setUser())
 	router.Use(mw.Handler())
 	router.POST("/invalid", func(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "bad"})
@@ -351,5 +362,211 @@ func TestIdempotencyWithoutAuthPassesThrough(t *testing.T) {
 	defer repo.mu.Unlock()
 	if repo.claims != 0 {
 		t.Fatalf("claims = %d, want 0", repo.claims)
+	}
+}
+
+// fakeTx is a pgx.Tx stub recording commit/rollback; every other operation is
+// never reached by the middleware.
+type fakeTx struct {
+	mu         sync.Mutex
+	committed  bool
+	rolledBack bool
+}
+
+func (f *fakeTx) Commit(context.Context) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.committed = true
+	return nil
+}
+
+func (f *fakeTx) Rollback(context.Context) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.rolledBack = true
+	return nil
+}
+
+func (f *fakeTx) Begin(context.Context) (pgx.Tx, error) { return nil, errors.New("unused") }
+func (f *fakeTx) CopyFrom(context.Context, pgx.Identifier, []string, pgx.CopyFromSource) (int64, error) {
+	return 0, errors.New("unused")
+}
+func (f *fakeTx) SendBatch(context.Context, *pgx.Batch) pgx.BatchResults { return nil }
+func (f *fakeTx) LargeObjects() pgx.LargeObjects                         { return pgx.LargeObjects{} }
+func (f *fakeTx) Prepare(context.Context, string, string) (*pgconn.StatementDescription, error) {
+	return nil, errors.New("unused")
+}
+func (f *fakeTx) Exec(context.Context, string, ...any) (pgconn.CommandTag, error) {
+	return pgconn.CommandTag{}, errors.New("unused")
+}
+func (f *fakeTx) Query(context.Context, string, ...any) (pgx.Rows, error) {
+	return nil, errors.New("unused")
+}
+func (f *fakeTx) QueryRow(context.Context, string, ...any) pgx.Row { return nil }
+func (f *fakeTx) Conn() *pgx.Conn                                  { return nil }
+func (f *fakeTx) isCommitted() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.committed
+}
+func (f *fakeTx) isRolledBack() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.rolledBack
+}
+
+// tx returns the transaction of the most recent claim (under the repo mutex).
+func (f *fakeRepo) tx() *fakeTx {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.lastTx
+}
+
+// TestIdempotencyCommitFlushDeliversAfterCommit verifies the response reaches
+// the client only after the request transaction committed (2xx path).
+func TestIdempotencyCommitFlushDeliversAfterCommit(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	mw := idem.New(repo, nil, nil)
+	counter := 0
+	router := buildRouter(mw, &counter)
+
+	rec := doPost(router, "k-c")
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusCreated)
+	}
+	if rec.Body.Len() == 0 {
+		t.Fatal("response body must be delivered after commit")
+	}
+	if counter != 1 {
+		t.Fatalf("handler executed %d times, want 1", counter)
+	}
+	tx := repo.tx()
+	if tx == nil {
+		t.Fatal("claim must open a request transaction")
+	}
+	if !tx.isCommitted() {
+		t.Fatal("transaction must be committed on a 2xx response")
+	}
+	if tx.isRolledBack() {
+		t.Fatal("transaction must not be rolled back after commit")
+	}
+}
+
+// TestIdempotencyFiveHundredRollsBackAndReleases covers the 5xx path: the
+// transaction is rolled back, the key released and the error response still
+// delivered to the client.
+func TestIdempotencyFiveHundredRollsBackAndReleases(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	mw := idem.New(repo, nil, nil)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(setUser())
+	router.Use(mw.Handler())
+	router.POST("/boom", func(c *gin.Context) {
+		c.String(http.StatusInternalServerError, "boom")
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/boom", nil)
+	req.Header.Set(headerKey, "k-5")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", rec.Code)
+	}
+	if rec.Body.String() != "boom" {
+		t.Fatalf("body = %q, want %q", rec.Body.String(), "boom")
+	}
+	tx := repo.tx()
+	if tx == nil {
+		t.Fatal("claim must open a request transaction")
+	}
+	if !tx.isRolledBack() {
+		t.Fatal("transaction must be rolled back on a non-2xx response")
+	}
+	if tx.isCommitted() {
+		t.Fatal("transaction must not be committed on a non-2xx response")
+	}
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if repo.releases != 1 {
+		t.Fatalf("releases = %d, want 1 (5xx must release the key)", repo.releases)
+	}
+}
+
+// TestIdempotencyPanicRollsBackAndRestoresWriter verifies a panicking handler
+// rolls back the transaction and gin.Recovery() still reaches the client (the
+// buffered writer must not swallow the 500).
+func TestIdempotencyPanicRollsBackAndRestoresWriter(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	mw := idem.New(repo, nil, nil)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(gin.RecoveryWithWriter(io.Discard))
+	router.Use(setUser())
+	router.Use(mw.Handler())
+	counter := 0
+	router.POST("/panic", func(_ *gin.Context) {
+		counter++
+		panic("boom")
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/panic", nil)
+	req.Header.Set(headerKey, "k-p")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500 from gin.Recovery", rec.Code)
+	}
+	if counter != 1 {
+		t.Fatalf("handler executed %d times, want 1", counter)
+	}
+	tx := repo.tx()
+	if tx == nil {
+		t.Fatal("claim must open a request transaction")
+	}
+	if !tx.isRolledBack() {
+		t.Fatal("transaction must be rolled back after a panic")
+	}
+	if tx.isCommitted() {
+		t.Fatal("transaction must not be committed after a panic")
+	}
+}
+
+// TestIdempotencyCompleteFailureRollsBack verifies a storage failure while
+// completing the key rolls back the transaction and answers 500 instead of
+// delivering the handler's 2xx.
+func TestIdempotencyCompleteFailureRollsBack(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	repo.mu.Lock()
+	repo.completeErr = true
+	repo.mu.Unlock()
+	mw := idem.New(repo, nil, nil)
+	counter := 0
+	router := buildRouter(mw, &counter)
+
+	rec := doPost(router, "k-e")
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500 (complete failure must not deliver the 2xx)", rec.Code)
+	}
+	if counter != 1 {
+		t.Fatalf("handler executed %d times, want 1", counter)
+	}
+	tx := repo.tx()
+	if tx == nil {
+		t.Fatal("claim must open a request transaction")
+	}
+	if !tx.isRolledBack() {
+		t.Fatal("transaction must be rolled back when completion fails")
+	}
+	if tx.isCommitted() {
+		t.Fatal("transaction must not be committed when completion fails")
 	}
 }

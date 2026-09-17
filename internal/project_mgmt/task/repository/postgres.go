@@ -9,6 +9,7 @@ import (
 
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
@@ -23,14 +24,23 @@ type TaskRepository struct {
 // NewTaskRepository builds the TaskRepository repository.
 func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository {
 	return &TaskRepository{
-		logger: logger,
+		logger: logger.With("component", "task_repository"),
 		pool:   pool,
 		db:     sqlc.New(pool),
 	}
 }
 
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *TaskRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
 func (r *TaskRepository) CreateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
-	row, err := r.db.CreateTask(ctx, sqlc.CreateTaskParams{
+	row, err := r.q(ctx).CreateTask(ctx, sqlc.CreateTaskParams{
 		ProcessID: task.ProcessID,
 		// 0 means "no parent" (the query NULLIFs it to NULL); the real parent
 		// id for subtasks. Both map to the same NULLIF branch in the INSERT.
@@ -50,7 +60,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task sqlc.Task) (*sqlc.
 }
 
 func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*sqlc.Task, error) {
-	row, err := r.db.FindTask(ctx, id)
+	row, err := r.q(ctx).FindTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +69,7 @@ func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*sqlc.Task, er
 }
 
 func (r *TaskRepository) UpdateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
-	row, err := r.db.UpdateTask(ctx, sqlc.UpdateTaskParams{
+	row, err := r.q(ctx).UpdateTask(ctx, sqlc.UpdateTaskParams{
 		TaskID:    task.ID,
 		OwnerID:   task.OwnerID,
 		Title:     task.Title,
@@ -76,7 +86,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task sqlc.Task) (*sqlc.
 }
 
 func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
-	return r.db.DeleteTask(ctx, id)
+	return r.q(ctx).DeleteTask(ctx, id)
 }
 
 func (r *TaskRepository) ListTasks(
@@ -86,7 +96,7 @@ func (r *TaskRepository) ListTasks(
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Task, error) {
-	return r.db.ListTasks(ctx, sqlc.ListTasksParams{
+	return r.q(ctx).ListTasks(ctx, sqlc.ListTasksParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
@@ -96,7 +106,7 @@ func (r *TaskRepository) ListTasks(
 }
 
 func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error) {
-	return r.db.CountTasks(
+	return r.q(ctx).CountTasks(
 		ctx,
 		sqlc.CountTasksParams{
 			ScopeView: viewScope,
@@ -108,13 +118,13 @@ func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope
 
 // ListSubtasksByParent returns the active subtasks of a task in display order.
 func (r *TaskRepository) ListSubtasksByParent(ctx context.Context, parentID int64) ([]sqlc.Task, error) {
-	return r.db.ListSubtasksByParent(ctx, parentID)
+	return r.q(ctx).ListSubtasksByParent(ctx, parentID)
 }
 
 // ListTaskIDsByProcess returns the active task ids of a process in their
 // display order — to validate a reorder request covers the whole group.
 func (r *TaskRepository) ListTaskIDsByProcess(ctx context.Context, processID int64) ([]int64, error) {
-	return r.db.ListTaskIdsByProcess(ctx, processID)
+	return r.q(ctx).ListTaskIdsByProcess(ctx, processID)
 }
 
 // ReorderTasks rewrites the sort_order of the given task ids by list position
@@ -123,25 +133,33 @@ func (r *TaskRepository) ListTaskIDsByProcess(ctx context.Context, processID int
 // because a single-statement value swap would transiently violate the partial
 // unique index (process_id, sort_order).
 func (r *TaskRepository) ReorderTasks(ctx context.Context, ids []int64) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
 
-	q := r.db.WithTx(tx)
+	q := r.q(ctx)
+	if owned {
+		q = r.db.WithTx(tx)
+	}
 	if err = q.ReorderTasksMark(ctx, ids); err != nil {
 		return err
 	}
 	if err = q.ReorderTasksApply(ctx, ids); err != nil {
 		return err
 	}
+	if !owned {
+		return nil
+	}
 	return tx.Commit(ctx)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).
 func (r *TaskRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	row, err := r.db.OwnerChain(ctx, id)
+	row, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}

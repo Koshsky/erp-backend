@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/auth/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/database"
 )
 
 // AuthRepository persists refresh sessions (rotation/revocation, AD-06).
@@ -21,8 +22,17 @@ func NewAuthRepository(pool *pgxpool.Pool) *AuthRepository {
 	return &AuthRepository{db: sqlc.New(pool)}
 }
 
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *AuthRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
 func (r *AuthRepository) FindSessionByHash(ctx context.Context, tokenHash string) (sqlc.FindSessionByHashRow, error) {
-	return r.db.FindSessionByHash(ctx, tokenHash)
+	return r.q(ctx).FindSessionByHash(ctx, tokenHash)
 }
 
 func (r *AuthRepository) CreateSession(
@@ -31,7 +41,7 @@ func (r *AuthRepository) CreateSession(
 	tokenHash string,
 	expiresAt time.Time,
 ) (sqlc.CreateSessionRow, error) {
-	return r.db.CreateSession(ctx, sqlc.CreateSessionParams{
+	return r.q(ctx).CreateSession(ctx, sqlc.CreateSessionParams{
 		UserID:     userID,
 		TokenHash:  tokenHash,
 		ExpiresAt:  expiresAt,
@@ -40,13 +50,13 @@ func (r *AuthRepository) CreateSession(
 }
 
 func (r *AuthRepository) RevokeSession(ctx context.Context, id int64) error {
-	return r.db.RevokeSession(ctx, id)
+	return r.q(ctx).RevokeSession(ctx, id)
 }
 
 func (r *AuthRepository) RevokeAllUserSessions(ctx context.Context, userID int64) error {
-	return r.db.RevokeAllUserSessions(ctx, userID)
+	return r.q(ctx).RevokeAllUserSessions(ctx, userID)
 }
 
 func (r *AuthRepository) DeleteExpiredSessions(ctx context.Context, olderThan time.Time) error {
-	return r.db.DeleteExpiredSessions(ctx, olderThan)
+	return r.q(ctx).DeleteExpiredSessions(ctx, olderThan)
 }

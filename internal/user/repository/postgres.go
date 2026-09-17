@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
@@ -28,14 +29,23 @@ type UserRepository struct {
 // NewUserRepository builds the UserRepository repository.
 func NewUserRepository(logger *slog.Logger, pool *pgxpool.Pool) *UserRepository {
 	return &UserRepository{
-		logger: logger,
+		logger: logger.With("component", "user_repository"),
 		pool:   pool,
 		db:     sqlc.New(pool),
 	}
 }
 
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *UserRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
 func (r *UserRepository) FindUserByUsername(ctx context.Context, username string) (*sqlc.User, error) {
-	row, err := r.db.FindUserByUsername(ctx, username)
+	row, err := r.q(ctx).FindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +53,7 @@ func (r *UserRepository) FindUserByUsername(ctx context.Context, username string
 }
 
 func (r *UserRepository) UsernameExists(ctx context.Context, username string) (bool, error) {
-	return r.db.UsernameExists(ctx, username)
+	return r.q(ctx).UsernameExists(ctx, username)
 }
 
 func (r *UserRepository) FindUserByID(ctx context.Context, userID int64) (*sqlc.User, error) {
@@ -51,18 +61,18 @@ func (r *UserRepository) FindUserByID(ctx context.Context, userID int64) (*sqlc.
 }
 
 func (r *UserRepository) UpdatePassword(ctx context.Context, userID int64, hash string) error {
-	return r.db.UpdateUserPassword(ctx, sqlc.UpdateUserPasswordParams{
+	return r.q(ctx).UpdateUserPassword(ctx, sqlc.UpdateUserPasswordParams{
 		UserID:       userID,
 		PasswordHash: hash,
 	})
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
-	return mapUserDeleteErr(r.db.DeleteUser(ctx, id))
+	return mapUserDeleteErr(r.q(ctx).DeleteUser(ctx, id))
 }
 
 func (r *UserRepository) CreateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error) {
-	row, err := r.db.CreateUser(ctx, sqlc.CreateUserParams{
+	row, err := r.q(ctx).CreateUser(ctx, sqlc.CreateUserParams{
 		LastName:        user.LastName,
 		FirstName:       user.FirstName,
 		MiddleName:      user.MiddleName,
@@ -90,13 +100,18 @@ func (r *UserRepository) CreateUserWithPermissions(
 	perms []domain.UserPermission,
 	updatedBy int64,
 ) (*sqlc.User, error) {
-	tx, err := r.pool.Begin(ctx)
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
 
-	q := sqlc.New(tx)
+	q := r.q(ctx)
+	if owned {
+		q = sqlc.New(tx)
+	}
 	row, err := q.CreateUser(ctx, sqlc.CreateUserParams{
 		LastName:        user.LastName,
 		FirstName:       user.FirstName,
@@ -124,15 +139,17 @@ func (r *UserRepository) CreateUserWithPermissions(
 			return nil, err
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return nil, err
+	if owned {
+		if err = tx.Commit(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	return &row, nil
 }
 
 func (r *UserRepository) FindUser(ctx context.Context, id int64) (*sqlc.User, error) {
-	row, err := r.db.FindUser(ctx, id)
+	row, err := r.q(ctx).FindUser(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +158,7 @@ func (r *UserRepository) FindUser(ctx context.Context, id int64) (*sqlc.User, er
 }
 
 func (r *UserRepository) UpdateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error) {
-	row, err := r.db.UpdateUser(ctx, sqlc.UpdateUserParams{
+	row, err := r.q(ctx).UpdateUser(ctx, sqlc.UpdateUserParams{
 		UserID:          user.ID,
 		LastName:        user.LastName,
 		FirstName:       user.FirstName,
@@ -170,7 +187,7 @@ func (r *UserRepository) ListUsers(
 	search string,
 	limit, offset int,
 ) ([]sqlc.User, error) {
-	return r.db.ListUsers(ctx, sqlc.ListUsersParams{
+	return r.q(ctx).ListUsers(ctx, sqlc.ListUsersParams{
 		PresetFilter: presetFilter,
 		ScopeView:    viewScope,
 		UserID:       userID,
@@ -189,7 +206,7 @@ func (r *UserRepository) CountUsers(
 	managerID int64,
 	search string,
 ) (int64, error) {
-	return r.db.CountUsers(ctx, sqlc.CountUsersParams{
+	return r.q(ctx).CountUsers(ctx, sqlc.CountUsersParams{
 		PresetFilter: presetFilter,
 		ScopeView:    viewScope,
 		UserID:       userID,
@@ -199,7 +216,7 @@ func (r *UserRepository) CountUsers(
 }
 
 func (r *UserRepository) ListAllUsers(ctx context.Context) ([]sqlc.User, error) {
-	return r.db.ListAllUsers(ctx)
+	return r.q(ctx).ListAllUsers(ctx)
 }
 
 // ================= worker days (user_states) =================
@@ -209,7 +226,7 @@ func (r *UserRepository) ListStates(
 	userID int64,
 	start, end date.Date,
 ) ([]sqlc.ListStatesByUserRangeRow, error) {
-	return r.db.ListStatesByUserRange(ctx, sqlc.ListStatesByUserRangeParams{
+	return r.q(ctx).ListStatesByUserRange(ctx, sqlc.ListStatesByUserRangeParams{
 		UserID:    userID,
 		StartDate: start,
 		EndDate:   end,
@@ -224,7 +241,7 @@ func (r *UserRepository) ListStatesByUsers(
 	userIDs []int64,
 	start, end date.Date,
 ) ([]sqlc.ListStatesByUsersRangeRow, error) {
-	return r.db.ListStatesByUsersRange(ctx, sqlc.ListStatesByUsersRangeParams{
+	return r.q(ctx).ListStatesByUsersRange(ctx, sqlc.ListStatesByUsersRangeParams{
 		UserIds:   userIDs,
 		StartDate: start,
 		EndDate:   end,
@@ -246,17 +263,22 @@ func (r *UserRepository) SetStateRange(
 	userID, stateID int64,
 	start, end date.Date,
 ) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
 
 	if err = lockUserStates(ctx, tx, userID); err != nil {
 		return err
 	}
 
-	q := sqlc.New(tx)
+	q := r.q(ctx)
+	if owned {
+		q = sqlc.New(tx)
+	}
 	rows, err := q.ListOverlappingStates(ctx, sqlc.ListOverlappingStatesParams{
 		UserID:    userID,
 		StartDate: start,
@@ -291,6 +313,9 @@ func (r *UserRepository) SetStateRange(
 		return err
 	}
 
+	if !owned {
+		return nil
+	}
 	return tx.Commit(ctx)
 }
 
@@ -302,17 +327,22 @@ func (r *UserRepository) DeleteStateRange(
 	start, end date.Date,
 	stateID *int64,
 ) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
 
 	if err = lockUserStates(ctx, tx, userID); err != nil {
 		return err
 	}
 
-	q := sqlc.New(tx)
+	q := r.q(ctx)
+	if owned {
+		q = sqlc.New(tx)
+	}
 	var overlaps []overlapState
 	if stateID == nil {
 		overlaps, err = loadAndDeleteAll(ctx, q, userID, start, end)
@@ -326,6 +356,9 @@ func (r *UserRepository) DeleteStateRange(
 		return err
 	}
 
+	if !owned {
+		return nil
+	}
 	return tx.Commit(ctx)
 }
 
@@ -451,7 +484,7 @@ func pgtypeInt8(v int64) pgtype.Int8 {
 
 // OwnerChain returns the owner chain (manager_id → the vp) for RBAC checks.
 func (r *UserRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	owner, err := r.db.OwnerChain(ctx, id)
+	owner, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
@@ -21,9 +22,18 @@ type AssignmentRepository struct {
 // NewAssignmentRepository builds the AssignmentRepository repository.
 func NewAssignmentRepository(logger *slog.Logger, pool *pgxpool.Pool) *AssignmentRepository {
 	return &AssignmentRepository{
-		logger: logger,
+		logger: logger.With("component", "assignment_repository"),
 		db:     sqlc.New(pool),
 	}
+}
+
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *AssignmentRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
 }
 
 func (r *AssignmentRepository) CreateAssignment(
@@ -31,7 +41,7 @@ func (r *AssignmentRepository) CreateAssignment(
 	taskID, resourceID int64,
 	quantity int,
 ) (*sqlc.Assignment, error) {
-	row, err := r.db.CreateAssignment(ctx, sqlc.CreateAssignmentParams{
+	row, err := r.q(ctx).CreateAssignment(ctx, sqlc.CreateAssignmentParams{
 		TaskID:     taskID,
 		ResourceID: resourceID,
 		Quantity:   int64(quantity),
@@ -54,7 +64,7 @@ func (r *AssignmentRepository) FindAssignmentByKey(
 	ctx context.Context,
 	taskID, resourceID int64,
 ) (*sqlc.Assignment, error) {
-	row, err := r.db.FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
+	row, err := r.q(ctx).FindAssignmentByKey(ctx, sqlc.FindAssignmentByKeyParams{
 		TaskID:     taskID,
 		ResourceID: resourceID,
 	})
@@ -65,7 +75,7 @@ func (r *AssignmentRepository) FindAssignmentByKey(
 }
 
 func (r *AssignmentRepository) FindAssignment(ctx context.Context, id int64) (*sqlc.Assignment, error) {
-	row, err := r.db.FindAssignment(ctx, id)
+	row, err := r.q(ctx).FindAssignment(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +88,7 @@ func (r *AssignmentRepository) UpdateAssignment(
 	assignment sqlc.Assignment,
 	quantity int,
 ) (*sqlc.Assignment, error) {
-	row, err := r.db.UpdateAssignment(ctx, sqlc.UpdateAssignmentParams{
+	row, err := r.q(ctx).UpdateAssignment(ctx, sqlc.UpdateAssignmentParams{
 		AssignmentID: assignment.ID,
 		TaskID:       assignment.TaskID,
 		ResourceID:   assignment.ResourceID,
@@ -92,7 +102,7 @@ func (r *AssignmentRepository) UpdateAssignment(
 }
 
 func (r *AssignmentRepository) DeleteAssignment(ctx context.Context, id int64) error {
-	return r.db.DeleteAssignment(ctx, id)
+	return r.q(ctx).DeleteAssignment(ctx, id)
 }
 
 func (r *AssignmentRepository) ListAssignments(
@@ -102,7 +112,7 @@ func (r *AssignmentRepository) ListAssignments(
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Assignment, error) {
-	return r.db.ListAssigments(ctx, sqlc.ListAssigmentsParams{
+	return r.q(ctx).ListAssigments(ctx, sqlc.ListAssigmentsParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
@@ -117,7 +127,7 @@ func (r *AssignmentRepository) CountAssignments(
 	viewScope string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountAssignments(
+	return r.q(ctx).CountAssignments(
 		ctx,
 		sqlc.CountAssignmentsParams{
 			ScopeView: viewScope,
@@ -129,7 +139,7 @@ func (r *AssignmentRepository) CountAssignments(
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).
 func (r *AssignmentRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	row, err := r.db.OwnerChain(ctx, id)
+	row, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}
