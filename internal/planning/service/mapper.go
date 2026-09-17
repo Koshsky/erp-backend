@@ -4,7 +4,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
-	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 // toProject converts a project row (planning read model).
@@ -14,8 +13,8 @@ func toProject(p sqlc.Project) dto.Project {
 		OwnerID:   nullable.Int64Ptr(p.OwnerID),
 		Code:      p.Code,
 		Color:     nullable.StringPtr(p.Color),
-		StartDate: date.From(p.StartDate),
-		EndDate:   date.From(p.EndDate),
+		StartDate: p.StartDate,
+		EndDate:   p.EndDate,
 		Priority:  int(p.Priority),
 	}
 }
@@ -30,8 +29,8 @@ func toProcess(p sqlc.ListProcessesRow) dto.Process {
 		OwnerID:     nullable.Int64Ptr(p.Process.OwnerID),
 		ProjectID:   p.Process.ProjectID,
 		ProjectCode: p.ProjectCode,
-		StartDate:   date.From(p.Process.StartDate),
-		EndDate:     date.From(p.Process.EndDate),
+		StartDate:   p.Process.StartDate,
+		EndDate:     p.Process.EndDate,
 		Order:       int(p.Process.SortOrder),
 	}
 }
@@ -45,8 +44,8 @@ func toTaskScopeProcess(p sqlc.ListProcessesByTaskScopeRow) dto.Process {
 		OwnerID:     nullable.Int64Ptr(p.Process.OwnerID),
 		ProjectID:   p.Process.ProjectID,
 		ProjectCode: p.ProjectCode,
-		StartDate:   date.From(p.Process.StartDate),
-		EndDate:     date.From(p.Process.EndDate),
+		StartDate:   p.Process.StartDate,
+		EndDate:     p.Process.EndDate,
 		Order:       int(p.Process.SortOrder),
 	}
 }
@@ -61,8 +60,8 @@ func toTask(t sqlc.Task) dto.Task {
 		Title:     t.Title,
 		Color:     nullable.StringPtr(t.Color),
 		Status:    t.Status,
-		StartDate: date.From(t.StartDate),
-		EndDate:   date.From(t.EndDate),
+		StartDate: t.StartDate,
+		EndDate:   t.EndDate,
 		Order:     int(t.SortOrder),
 	}
 }
@@ -75,7 +74,7 @@ func toMilestone(m sqlc.Milestone) dto.Milestone {
 		Title:     m.Title,
 		Content:   m.Content,
 		Color:     nullable.StringPtr(m.Color),
-		Date:      date.From(m.Date),
+		Date:      m.Date,
 	}
 }
 

@@ -244,7 +244,7 @@ func (s *ResourceService) ListAbsence(
 	if err := s.validator.ValidateDayRange(start, end); err != nil {
 		return nil, err
 	}
-	absences, err := s.repository.ListAbsence(ctx, resourceID, start.Time(), end.Time())
+	absences, err := s.repository.ListAbsence(ctx, resourceID, start, end)
 	if err != nil {
 		return nil, err
 	}

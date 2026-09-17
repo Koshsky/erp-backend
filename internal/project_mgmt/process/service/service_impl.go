@@ -44,8 +44,8 @@ func (s *ProcessService) CreateProcess(
 		req.ProjectID,
 		req.Title,
 		req.Color,
-		req.StartDate.Time(),
-		req.EndDate.Time(),
+		req.StartDate,
+		req.EndDate,
 	); err != nil {
 		return nil, err
 	}
@@ -56,8 +56,8 @@ func (s *ProcessService) CreateProcess(
 		req.Title,
 		req.Color,
 		req.OwnerID,
-		req.StartDate.Time(),
-		req.EndDate.Time(),
+		req.StartDate,
+		req.EndDate,
 	)
 	if err != nil {
 		return nil, err
@@ -107,10 +107,10 @@ func (s *ProcessService) UpdateProcess(
 		}
 	}
 	if req.StartDate != nil {
-		process.StartDate = req.StartDate.Time()
+		process.StartDate = *req.StartDate
 	}
 	if req.EndDate != nil {
-		process.EndDate = req.EndDate.Time()
+		process.EndDate = *req.EndDate
 	}
 	if req.OwnerID != nil {
 		process.OwnerID = nullable.ToInt8(req.OwnerID)

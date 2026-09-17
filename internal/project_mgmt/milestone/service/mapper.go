@@ -4,7 +4,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
-	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type MilestoneMapper struct{}
@@ -22,7 +21,7 @@ func (m *MilestoneMapper) ToDTO(milestone *sqlc.Milestone) *dto.MilestoneRespons
 		Title:     milestone.Title,
 		Content:   milestone.Content,
 		Color:     nullable.StringPtr(milestone.Color),
-		Date:      date.From(milestone.Date),
+		Date:      milestone.Date,
 		ProcessID: milestone.ProcessID,
 	}
 }

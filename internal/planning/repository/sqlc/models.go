@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -26,7 +27,7 @@ type Milestone struct {
 	Title     string         `json:"title"`
 	Content   string         `json:"content"`
 	Color     sql.NullString `json:"color"`
-	Date      time.Time      `json:"date"`
+	Date      date.Date      `json:"date"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 }
@@ -37,8 +38,8 @@ type Process struct {
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	SortOrder int32          `json:"sort_order"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -49,8 +50,8 @@ type Project struct {
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Code      string         `json:"code"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	Priority  int32          `json:"priority"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -74,8 +75,8 @@ type Task struct {
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
 	Status    string         `json:"status"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	SortOrder int32          `json:"sort_order"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

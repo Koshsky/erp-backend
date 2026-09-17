@@ -1,8 +1,7 @@
 package service
 
 import (
-	"time"
-
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
@@ -15,7 +14,7 @@ func (v *ProjectValidator) ValidateProject(
 	code string,
 	color *string,
 	priority int,
-	startDate, endDate time.Time,
+	startDate, endDate date.Date,
 ) error {
 	if err := v.ValidateRequiredText(code, "code"); err != nil {
 		return err

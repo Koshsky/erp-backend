@@ -7,6 +7,8 @@ package sqlc
 import (
 	"database/sql"
 	"time"
+
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type Milestone struct {
@@ -15,7 +17,7 @@ type Milestone struct {
 	Title     string         `json:"title"`
 	Content   string         `json:"content"`
 	Color     sql.NullString `json:"color"`
-	Date      time.Time      `json:"date"`
+	Date      date.Date      `json:"date"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 }

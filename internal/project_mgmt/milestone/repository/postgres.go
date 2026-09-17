@@ -4,13 +4,13 @@ package postgres
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type MilestoneRepository struct {
@@ -31,7 +31,7 @@ func (r *MilestoneRepository) CreateMilestone(
 	processID int64,
 	title, content string,
 	color *string,
-	date time.Time,
+	date date.Date,
 ) (*sqlc.Milestone, error) {
 	row, err := r.db.CreateMilestone(ctx, sqlc.CreateMilestoneParams{
 		ProcessID: processID,

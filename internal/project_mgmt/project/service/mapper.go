@@ -4,7 +4,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
-	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ProjectMapper struct{}
@@ -22,8 +21,8 @@ func (m *ProjectMapper) ToDTO(project *sqlc.Project) *dto.ProjectResponse {
 		OwnerID:   nullable.Int64Ptr(project.OwnerID),
 		Code:      project.Code,
 		Color:     nullable.StringPtr(project.Color),
-		StartDate: date.From(project.StartDate),
-		EndDate:   date.From(project.EndDate),
+		StartDate: project.StartDate,
+		EndDate:   project.EndDate,
 		Priority:  int(project.Priority),
 	}
 }
@@ -54,8 +53,8 @@ func (m *ProjectMapper) ToCreateDTO(
 		OwnerID:   nullable.Int64Ptr(project.OwnerID),
 		Code:      project.Code,
 		Color:     nullable.StringPtr(project.Color),
-		StartDate: date.From(project.StartDate),
-		EndDate:   date.From(project.EndDate),
+		StartDate: project.StartDate,
+		EndDate:   project.EndDate,
 		Priority:  int(project.Priority),
 		AutoCreated: dto.AutoCreatedCounts{
 			Processes:   counts.Processes,

@@ -61,11 +61,11 @@ func (s *CalendarService) GetCalendar(
 	if err != nil {
 		return nil, err
 	}
-	memberRows, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
+	memberRows, err := s.repository.ListEmployeesForCalendar(ctx, start, end)
 	if err != nil {
 		return nil, err
 	}
-	rangeRows, err := s.repository.ListUnavailableRanges(ctx, startT, endT)
+	rangeRows, err := s.repository.ListUnavailableRanges(ctx, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -131,8 +131,8 @@ func toCalendarMember(row sqlc.ListEmployeesForCalendarRow) dto.CalendarMember {
 func toUnavailableRange(row sqlc.ListUnavailableRangesRow) dto.UnavailableRange {
 	return dto.UnavailableRange{
 		ResourceID: row.ResourceID,
-		StartDate:  row.StartDate,
-		EndDate:    row.EndDate,
+		StartDate:  row.StartDate.Time(),
+		EndDate:    row.EndDate.Time(),
 	}
 }
 

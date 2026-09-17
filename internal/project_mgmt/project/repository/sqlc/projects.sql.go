@@ -8,8 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -82,8 +82,8 @@ RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at,
 
 type CreateProjectParams struct {
 	Code      string         `json:"code"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	Priority  int64          `json:"priority"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Color     sql.NullString `json:"color"`
@@ -235,8 +235,8 @@ type UpdateProjectParams struct {
 	Code      string         `json:"code"`
 	Color     sql.NullString `json:"color"`
 	Priority  int64          `json:"priority"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	ProjectID int64          `json:"project_id"`
 }

@@ -48,12 +48,12 @@ func (s *MilestoneService) CreateMilestone(
 		req.Title,
 		req.Content,
 		req.Color,
-		req.Date.Time(),
+		req.Date,
 	); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateMilestone(ctx, req.ProcessID, req.Title, req.Content, req.Color, req.Date.Time())
+	created, err := s.repository.CreateMilestone(ctx, req.ProcessID, req.Title, req.Content, req.Color, req.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (s *MilestoneService) UpdateMilestone(
 		}
 	}
 	if req.Date != nil {
-		milestone.Date = req.Date.Time()
+		milestone.Date = *req.Date
 	}
 	if req.ProcessID != nil {
 		milestone.ProcessID = *req.ProcessID

@@ -81,8 +81,8 @@ func (m *ResourceMapper) ToAbsenceDTOs(absences []sqlc.ListResourceAbsenceRow) [
 			StateID:   a.StateID,
 			StateCode: a.StateCode,
 			StateName: a.StateName,
-			StartDate: date.From(a.StartDate),
-			EndDate:   date.From(a.EndDate),
+			StartDate: a.StartDate,
+			EndDate:   a.EndDate,
 		}
 	}
 	return responses

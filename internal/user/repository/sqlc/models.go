@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -31,8 +32,8 @@ type UserState struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

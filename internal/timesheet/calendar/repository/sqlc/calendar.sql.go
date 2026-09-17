@@ -7,8 +7,8 @@ package sqlc
 
 import (
 	"context"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -22,8 +22,8 @@ ORDER BY rm.resource_id ASC, u.id ASC
 `
 
 type ListEmployeesForCalendarParams struct {
-	EndDate   time.Time `json:"end_date"`
-	StartDate time.Time `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
 }
 
 type ListEmployeesForCalendarRow struct {
@@ -110,14 +110,14 @@ ORDER BY rm.resource_id ASC, es.start_date ASC
 `
 
 type ListUnavailableRangesParams struct {
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListUnavailableRangesRow struct {
 	ResourceID int64     `json:"resource_id"`
-	StartDate  time.Time `json:"start_date"`
-	EndDate    time.Time `json:"end_date"`
+	StartDate  date.Date `json:"start_date"`
+	EndDate    date.Date `json:"end_date"`
 }
 
 // Absence intervals (is_available = false) overlapping the window, without expansion.

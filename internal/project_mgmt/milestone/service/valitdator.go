@@ -1,8 +1,7 @@
 package service
 
 import (
-	"time"
-
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -14,7 +13,7 @@ func (v *MilestoneValidator) ValidateMilestone(
 	processID int64,
 	title, content string,
 	color *string,
-	date time.Time,
+	date date.Date,
 ) error {
 	if err := v.ValidatePositiveID(processID, "process_id"); err != nil {
 		return err

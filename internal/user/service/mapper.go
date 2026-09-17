@@ -123,8 +123,8 @@ func (m *UserMapper) ToStateDTOs(states []sqlc.ListStatesByUserRangeRow) []dto.U
 			StateCode:   state.StateCode,
 			StateName:   state.StateName,
 			IsAvailable: state.IsAvailable,
-			StartDate:   date.From(state.StartDate),
-			EndDate:     date.From(state.EndDate),
+			StartDate:   state.StartDate,
+			EndDate:     state.EndDate,
 		}
 	}
 	return responses
@@ -146,8 +146,8 @@ func (m *UserMapper) ToBatchStateDTOs(states []sqlc.ListStatesByUsersRangeRow) [
 			StateCode:   state.StateCode,
 			StateName:   state.StateName,
 			IsAvailable: state.IsAvailable,
-			StartDate:   date.From(state.StartDate),
-			EndDate:     date.From(state.EndDate),
+			StartDate:   state.StartDate,
+			EndDate:     state.EndDate,
 		}
 	}
 	return responses

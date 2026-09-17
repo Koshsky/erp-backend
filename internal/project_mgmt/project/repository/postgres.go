@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,6 +12,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -34,7 +34,7 @@ func (r *ProjectRepository) CreateProject(
 	ownerID *int64,
 	code string,
 	color *string,
-	startDate, endDate time.Time,
+	startDate, endDate date.Date,
 	priority int,
 ) (*sqlc.Project, error) {
 	created, err := r.db.CreateProject(ctx, sqlc.CreateProjectParams{

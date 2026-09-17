@@ -4,11 +4,11 @@ package repository
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type CalendarRepository struct {
@@ -31,7 +31,7 @@ func (r *CalendarRepository) ListResources(ctx context.Context) ([]sqlc.ListReso
 // ListEmployeesForCalendar returns resource members active within the window for the calendar.
 func (r *CalendarRepository) ListEmployeesForCalendar(
 	ctx context.Context,
-	start, end time.Time,
+	start, end date.Date,
 ) ([]sqlc.ListEmployeesForCalendarRow, error) {
 	return r.db.ListEmployeesForCalendar(ctx, sqlc.ListEmployeesForCalendarParams{
 		StartDate: start,
@@ -42,7 +42,7 @@ func (r *CalendarRepository) ListEmployeesForCalendar(
 // ListUnavailableRanges returns absence intervals overlapping the window.
 func (r *CalendarRepository) ListUnavailableRanges(
 	ctx context.Context,
-	start, end time.Time,
+	start, end date.Date,
 ) ([]sqlc.ListUnavailableRangesRow, error) {
 	return r.db.ListUnavailableRanges(ctx, sqlc.ListUnavailableRangesParams{
 		StartDate: start,

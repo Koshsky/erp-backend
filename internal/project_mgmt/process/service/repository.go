@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ProcessRepository interface {
@@ -14,7 +14,7 @@ type ProcessRepository interface {
 		title string,
 		color *string,
 		ownerID *int64,
-		startDate, endDate time.Time,
+		startDate, endDate date.Date,
 	) (*sqlc.Process, error)
 	FindProcess(ctx context.Context, id int64) (*sqlc.Process, error)
 	UpdateProcess(ctx context.Context, process sqlc.Process) (*sqlc.Process, error)

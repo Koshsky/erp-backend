@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // Layout — the only date format used in the API.
@@ -18,6 +20,10 @@ const Layout = "2006-01-02"
 
 // Date — a calendar date without time, stored as a YYYY-MM-DD string.
 // The string representation lets swag (OpenAPI) treat it as a string.
+//
+// the inline doc comments are written in English per repo policy.
+//
+//nolint:recvcheck // ScanDate needs a pointer receiver (pgtype.DateScanner);
 type Date string
 
 // Parse parses a YYYY-MM-DD string.
@@ -67,4 +73,16 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 // MarshalJSON encodes the date as a YYYY-MM-DD string.
 func (d Date) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + d + `"`), nil
+}
+
+// ScanDate implements [pgtype.DateScanner]: pgx scans DATE columns into [Date]
+// through it (the target it receives carries a Valid flag; a NULL date yields
+// the empty date, which is unreachable for NOT NULL columns).
+func (d *Date) ScanDate(v pgtype.Date) error {
+	if !v.Valid {
+		*d = ""
+		return nil
+	}
+	*d = From(v.Time)
+	return nil
 }

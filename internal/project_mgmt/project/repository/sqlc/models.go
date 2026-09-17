@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -16,8 +17,8 @@ type Project struct {
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Code      string         `json:"code"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	Priority  int32          `json:"priority"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

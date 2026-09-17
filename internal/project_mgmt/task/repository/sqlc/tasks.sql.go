@@ -8,8 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -71,8 +71,8 @@ type CreateTaskParams struct {
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
 	Status    string         `json:"status"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -348,8 +348,8 @@ type UpdateTaskParams struct {
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
 	Status    string         `json:"status"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	TaskID    int64          `json:"task_id"`
 }
 

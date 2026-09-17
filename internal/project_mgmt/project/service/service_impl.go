@@ -54,8 +54,8 @@ func (s *ProjectService) CreateProject(
 		req.Code,
 		req.Color,
 		req.Priority,
-		req.StartDate.Time(),
-		req.EndDate.Time(),
+		req.StartDate,
+		req.EndDate,
 	); err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (s *ProjectService) CreateProject(
 		req.OwnerID,
 		req.Code,
 		req.Color,
-		req.StartDate.Time(),
-		req.EndDate.Time(),
+		req.StartDate,
+		req.EndDate,
 		req.Priority,
 	)
 	if err != nil {
@@ -125,10 +125,10 @@ func (s *ProjectService) UpdateProject(
 		}
 	}
 	if req.StartDate != nil {
-		project.StartDate = req.StartDate.Time()
+		project.StartDate = *req.StartDate
 	}
 	if req.EndDate != nil {
-		project.EndDate = req.EndDate.Time()
+		project.EndDate = *req.EndDate
 	}
 	priority := int(project.Priority)
 	if req.Priority != nil {

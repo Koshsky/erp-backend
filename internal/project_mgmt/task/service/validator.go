@@ -1,9 +1,8 @@
 package service
 
 import (
-	"time"
-
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
@@ -18,7 +17,7 @@ func (v *TaskValidator) ValidateTask(
 	color *string,
 	status string,
 	parentID *int64,
-	startDate, endDate time.Time,
+	startDate, endDate date.Date,
 ) error {
 	if err := v.ValidatePositiveID(processID, "process_id"); err != nil {
 		return err

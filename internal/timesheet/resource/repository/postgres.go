@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,6 +12,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -188,7 +188,7 @@ func (r *ResourceRepository) FindUserManager(ctx context.Context, userID int64) 
 func (r *ResourceRepository) ListAbsence(
 	ctx context.Context,
 	resourceID int64,
-	start, end time.Time,
+	start, end date.Date,
 ) ([]sqlc.ListResourceAbsenceRow, error) {
 	return r.db.ListResourceAbsence(ctx, sqlc.ListResourceAbsenceParams{
 		ResourceID: resourceID,

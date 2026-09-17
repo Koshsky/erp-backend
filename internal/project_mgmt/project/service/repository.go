@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ProjectRepository interface {
@@ -13,7 +13,7 @@ type ProjectRepository interface {
 		ownerID *int64,
 		code string,
 		color *string,
-		startDate, endDate time.Time,
+		startDate, endDate date.Date,
 		priority int,
 	) (*sqlc.Project, error)
 	FindProject(ctx context.Context, id int64) (*sqlc.Project, error)

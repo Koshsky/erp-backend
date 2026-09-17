@@ -15,6 +15,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -206,7 +207,7 @@ func (r *UserRepository) ListAllUsers(ctx context.Context) ([]sqlc.User, error) 
 func (r *UserRepository) ListStates(
 	ctx context.Context,
 	userID int64,
-	start, end time.Time,
+	start, end date.Date,
 ) ([]sqlc.ListStatesByUserRangeRow, error) {
 	return r.db.ListStatesByUserRange(ctx, sqlc.ListStatesByUserRangeParams{
 		UserID:    userID,
@@ -221,7 +222,7 @@ func (r *UserRepository) ListStates(
 func (r *UserRepository) ListStatesByUsers(
 	ctx context.Context,
 	userIDs []int64,
-	start, end time.Time,
+	start, end date.Date,
 ) ([]sqlc.ListStatesByUsersRangeRow, error) {
 	return r.db.ListStatesByUsersRange(ctx, sqlc.ListStatesByUsersRangeParams{
 		UserIds:   userIDs,
@@ -243,7 +244,7 @@ type overlapState struct {
 func (r *UserRepository) SetStateRange(
 	ctx context.Context,
 	userID, stateID int64,
-	start, end time.Time,
+	start, end date.Date,
 ) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -271,7 +272,7 @@ func (r *UserRepository) SetStateRange(
 	}); err != nil {
 		return err
 	}
-	if err = insertResidues(ctx, q, userID, toOverlapStates(rows), start, end); err != nil {
+	if err = insertResidues(ctx, q, userID, toOverlapStates(rows), start.Time(), end.Time()); err != nil {
 		return err
 	}
 	if _, err = q.InsertStateRange(ctx, sqlc.InsertStateRangeParams{
@@ -298,7 +299,7 @@ func (r *UserRepository) SetStateRange(
 func (r *UserRepository) DeleteStateRange(
 	ctx context.Context,
 	userID int64,
-	start, end time.Time,
+	start, end date.Date,
 	stateID *int64,
 ) error {
 	tx, err := r.pool.Begin(ctx)
@@ -321,7 +322,7 @@ func (r *UserRepository) DeleteStateRange(
 	if err != nil {
 		return err
 	}
-	if err = insertResidues(ctx, q, userID, overlaps, start, end); err != nil {
+	if err = insertResidues(ctx, q, userID, overlaps, start.Time(), end.Time()); err != nil {
 		return err
 	}
 
@@ -344,7 +345,7 @@ func loadAndDeleteAll(
 	ctx context.Context,
 	q *sqlc.Queries,
 	userID int64,
-	start, end time.Time,
+	start, end date.Date,
 ) ([]overlapState, error) {
 	rows, err := q.ListOverlappingStates(ctx, sqlc.ListOverlappingStatesParams{
 		UserID:    userID,
@@ -366,7 +367,7 @@ func loadAndDeleteByState(
 	ctx context.Context,
 	q *sqlc.Queries,
 	userID, stateID int64,
-	start, end time.Time,
+	start, end date.Date,
 ) ([]overlapState, error) {
 	rows, err := q.ListOverlappingStatesByState(ctx, sqlc.ListOverlappingStatesByStateParams{
 		UserID:    userID,
@@ -399,8 +400,8 @@ func insertResidues(
 			if _, err := q.InsertStateRange(ctx, sqlc.InsertStateRangeParams{
 				UserID:    userID,
 				StateID:   o.StateID,
-				StartDate: o.StartDate,
-				EndDate:   start.AddDate(0, 0, -1),
+				StartDate: date.From(o.StartDate),
+				EndDate:   date.From(start.AddDate(0, 0, -1)),
 			}); err != nil {
 				return err
 			}
@@ -409,8 +410,8 @@ func insertResidues(
 			if _, err := q.InsertStateRange(ctx, sqlc.InsertStateRangeParams{
 				UserID:    userID,
 				StateID:   o.StateID,
-				StartDate: end.AddDate(0, 0, 1),
-				EndDate:   o.EndDate,
+				StartDate: date.From(end.AddDate(0, 0, 1)),
+				EndDate:   date.From(o.EndDate),
 			}); err != nil {
 				return err
 			}
@@ -424,8 +425,8 @@ func toOverlapStates(rows []sqlc.ListOverlappingStatesRow) []overlapState {
 	for _, row := range rows {
 		result = append(result, overlapState{
 			StateID:   row.StateID,
-			StartDate: row.StartDate,
-			EndDate:   row.EndDate,
+			StartDate: row.StartDate.Time(),
+			EndDate:   row.EndDate.Time(),
 		})
 	}
 	return result
@@ -436,8 +437,8 @@ func toOverlapStatesByState(rows []sqlc.ListOverlappingStatesByStateRow) []overl
 	for _, row := range rows {
 		result = append(result, overlapState{
 			StateID:   row.StateID,
-			StartDate: row.StartDate,
-			EndDate:   row.EndDate,
+			StartDate: row.StartDate.Time(),
+			EndDate:   row.EndDate.Time(),
 		})
 	}
 	return result

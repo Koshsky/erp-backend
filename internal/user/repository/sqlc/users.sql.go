@@ -8,8 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -112,8 +112,8 @@ WHERE user_id = $1::bigint
 
 type DeleteOverlappingParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) DeleteOverlapping(ctx context.Context, arg DeleteOverlappingParams) error {
@@ -132,8 +132,8 @@ WHERE user_id = $1::bigint
 type DeleteOverlappingByStateParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) DeleteOverlappingByState(ctx context.Context, arg DeleteOverlappingByStateParams) error {
@@ -221,8 +221,8 @@ RETURNING id, user_id, state_id, start_date, end_date, created_at, updated_at
 type InsertStateRangeParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) InsertStateRange(ctx context.Context, arg InsertStateRangeParams) (UserState, error) {
@@ -325,15 +325,15 @@ FOR UPDATE
 
 type ListOverlappingStatesParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListOverlappingStatesRow struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 	StateID   int64     `json:"state_id"`
 }
 
@@ -377,15 +377,15 @@ FOR UPDATE
 type ListOverlappingStatesByStateParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListOverlappingStatesByStateRow struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 	StateID   int64     `json:"state_id"`
 }
 
@@ -434,15 +434,15 @@ ORDER BY es.start_date ASC
 
 type ListStatesByUserRangeParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListStatesByUserRangeRow struct {
 	ID          int64     `json:"id"`
 	UserID      int64     `json:"user_id"`
-	StartDate   time.Time `json:"start_date"`
-	EndDate     time.Time `json:"end_date"`
+	StartDate   date.Date `json:"start_date"`
+	EndDate     date.Date `json:"end_date"`
 	StateID     int64     `json:"state_id"`
 	StateCode   string    `json:"state_code"`
 	StateName   string    `json:"state_name"`
@@ -492,15 +492,15 @@ ORDER BY es.user_id ASC, es.start_date ASC
 
 type ListStatesByUsersRangeParams struct {
 	UserIds   []int64   `json:"user_ids"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListStatesByUsersRangeRow struct {
 	ID          int64     `json:"id"`
 	UserID      int64     `json:"user_id"`
-	StartDate   time.Time `json:"start_date"`
-	EndDate     time.Time `json:"end_date"`
+	StartDate   date.Date `json:"start_date"`
+	EndDate     date.Date `json:"end_date"`
 	StateID     int64     `json:"state_id"`
 	StateCode   string    `json:"state_code"`
 	StateName   string    `json:"state_name"`

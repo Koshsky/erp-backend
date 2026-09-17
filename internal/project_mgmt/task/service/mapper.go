@@ -4,7 +4,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
-	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type TaskMapper struct{}
@@ -25,8 +24,8 @@ func (m *TaskMapper) ToDTO(task *sqlc.Task) *dto.TaskResponse {
 		Title:     task.Title,
 		Color:     nullable.StringPtr(task.Color),
 		Status:    task.Status,
-		StartDate: date.From(task.StartDate),
-		EndDate:   date.From(task.EndDate),
+		StartDate: task.StartDate,
+		EndDate:   task.EndDate,
 		Order:     int(task.SortOrder),
 	}
 }

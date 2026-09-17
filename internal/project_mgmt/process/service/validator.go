@@ -1,8 +1,7 @@
 package service
 
 import (
-	"time"
-
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -14,7 +13,7 @@ func (v *ProcessValidator) ValidateProcess(
 	projectID int64,
 	title string,
 	color *string,
-	startDate, endDate time.Time,
+	startDate, endDate date.Date,
 ) error {
 	if err := v.ValidatePositiveID(projectID, "project_id"); err != nil {
 		return err

@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ResourceRepository interface {
@@ -36,5 +36,5 @@ type ResourceRepository interface {
 	AddMember(ctx context.Context, resourceID, userID int64) error
 	RemoveMember(ctx context.Context, resourceID, userID int64) error
 	FindUserManager(ctx context.Context, userID int64) (*int64, error)
-	ListAbsence(ctx context.Context, resourceID int64, start, end time.Time) ([]sqlc.ListResourceAbsenceRow, error)
+	ListAbsence(ctx context.Context, resourceID int64, start, end date.Date) ([]sqlc.ListResourceAbsenceRow, error)
 }

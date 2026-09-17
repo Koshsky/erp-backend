@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type UserRepository interface {
@@ -43,14 +43,14 @@ type UserRepository interface {
 	) (int64, error)
 	ListAllUsers(ctx context.Context) ([]sqlc.User, error)
 
-	ListStates(ctx context.Context, userID int64, start, end time.Time) ([]sqlc.ListStatesByUserRangeRow, error)
+	ListStates(ctx context.Context, userID int64, start, end date.Date) ([]sqlc.ListStatesByUserRangeRow, error)
 	// ListStatesByUsers is the batch variant of ListStates: the states of a set
 	// of workers over one date range, in a single query.
 	ListStatesByUsers(
 		ctx context.Context,
 		userIDs []int64,
-		start, end time.Time,
+		start, end date.Date,
 	) ([]sqlc.ListStatesByUsersRangeRow, error)
-	SetStateRange(ctx context.Context, userID, stateID int64, start, end time.Time) error
-	DeleteStateRange(ctx context.Context, userID int64, start, end time.Time, stateID *int64) error
+	SetStateRange(ctx context.Context, userID, stateID int64, start, end date.Date) error
+	DeleteStateRange(ctx context.Context, userID int64, start, end date.Date, stateID *int64) error
 }

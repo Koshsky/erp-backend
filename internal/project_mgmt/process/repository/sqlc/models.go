@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -17,8 +18,8 @@ type Process struct {
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	SortOrder int32          `json:"sort_order"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

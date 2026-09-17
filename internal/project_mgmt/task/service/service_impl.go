@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
-	"time"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
@@ -85,13 +84,13 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 	return s.mapper.ToDTO(created), nil
 }
 
-// dateFromPtr converts a nullable request date; a nil pointer yields the zero
-// time (subtask dates are inherited from the parent by the service).
-func dateFromPtr(d *date.Date) time.Time {
+// dateFromPtr converts a nullable request date; a nil pointer yields the empty
+// calendar date (subtask dates are inherited from the parent by the service).
+func dateFromPtr(d *date.Date) date.Date {
 	if d == nil {
-		return time.Time{}
+		return ""
 	}
-	return d.Time()
+	return *d
 }
 
 // applyParent resolves the parent for a subtask request: inherits the
@@ -162,10 +161,10 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 		task.Status = *req.Status
 	}
 	if req.StartDate != nil {
-		task.StartDate = req.StartDate.Time()
+		task.StartDate = *req.StartDate
 	}
 	if req.EndDate != nil {
-		task.EndDate = req.EndDate.Time()
+		task.EndDate = *req.EndDate
 	}
 
 	if err = s.validator.ValidateTask(

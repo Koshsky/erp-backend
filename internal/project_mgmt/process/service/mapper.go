@@ -4,7 +4,6 @@ import (
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
-	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type ProcessMapper struct{}
@@ -23,8 +22,8 @@ func (m *ProcessMapper) ToDTO(process *sqlc.Process) *dto.ProcessResponse {
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
 		Color:     nullable.StringPtr(process.Color),
-		StartDate: date.From(process.StartDate),
-		EndDate:   date.From(process.EndDate),
+		StartDate: process.StartDate,
+		EndDate:   process.EndDate,
 		Order:     int(process.SortOrder),
 	}
 }

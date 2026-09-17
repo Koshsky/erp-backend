@@ -8,8 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -57,8 +57,8 @@ RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_ord
 type CreateProcessParams struct {
 	ProjectID int64          `json:"project_id"`
 	Title     string         `json:"title"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Color     sql.NullString `json:"color"`
 }
@@ -279,8 +279,8 @@ RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_ord
 type UpdateProcessParams struct {
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	ProjectID int64          `json:"project_id"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	ProcessID int64          `json:"process_id"`

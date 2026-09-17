@@ -7,13 +7,13 @@ import (
 	"log/slog"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -115,20 +115,20 @@ func (r *stubRepo) CountUsers(
 
 func (r *stubRepo) ListAllUsers(_ context.Context) ([]sqlc.User, error) { return nil, nil }
 
-func (r *stubRepo) ListStates(_ context.Context, _ int64, _, _ time.Time) ([]sqlc.ListStatesByUserRangeRow, error) {
+func (r *stubRepo) ListStates(_ context.Context, _ int64, _, _ date.Date) ([]sqlc.ListStatesByUserRangeRow, error) {
 	return nil, nil
 }
 
 func (r *stubRepo) ListStatesByUsers(
 	_ context.Context,
 	_ []int64,
-	_, _ time.Time,
+	_, _ date.Date,
 ) ([]sqlc.ListStatesByUsersRangeRow, error) {
 	return nil, nil
 }
 
-func (r *stubRepo) SetStateRange(_ context.Context, _, _ int64, _, _ time.Time) error { return nil }
-func (r *stubRepo) DeleteStateRange(_ context.Context, _ int64, _, _ time.Time, _ *int64) error {
+func (r *stubRepo) SetStateRange(_ context.Context, _, _ int64, _, _ date.Date) error { return nil }
+func (r *stubRepo) DeleteStateRange(_ context.Context, _ int64, _, _ date.Date, _ *int64) error {
 	return nil
 }
 

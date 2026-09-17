@@ -611,7 +611,7 @@ func (s *UserService) ListStates(
 		return nil, err
 	}
 
-	states, err := s.repository.ListStates(ctx, userID, start.Time(), end.Time())
+	states, err := s.repository.ListStates(ctx, userID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -647,7 +647,7 @@ func (s *UserService) ListStatesBatch(
 		return nil, err
 	}
 
-	states, err := s.repository.ListStatesByUsers(ctx, ids, start.Time(), end.Time())
+	states, err := s.repository.ListStatesByUsers(ctx, ids, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -764,7 +764,7 @@ func (s *UserService) SetDays(
 		return err
 	}
 
-	return s.repository.SetStateRange(ctx, userID, req.StateID, req.StartDate.Time(), req.EndDate.Time())
+	return s.repository.SetStateRange(ctx, userID, req.StateID, req.StartDate, req.EndDate)
 }
 
 func (s *UserService) DeleteDays(
@@ -792,7 +792,7 @@ func (s *UserService) DeleteDays(
 		return err
 	}
 
-	return s.repository.DeleteStateRange(ctx, userID, start.Time(), end.Time(), stateID)
+	return s.repository.DeleteStateRange(ctx, userID, start, end, stateID)
 }
 
 // ensureUserExists verifies the user exists (404 otherwise).

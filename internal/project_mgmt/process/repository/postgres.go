@@ -4,10 +4,10 @@ package repository
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -36,7 +36,7 @@ func (r *ProcessRepository) CreateProcess(
 	title string,
 	color *string,
 	ownerID *int64,
-	startDate, endDate time.Time,
+	startDate, endDate date.Date,
 ) (*sqlc.Process, error) {
 	row, err := r.db.CreateProcess(ctx, sqlc.CreateProcessParams{
 		ProjectID: projectID,
