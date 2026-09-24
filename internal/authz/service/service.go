@@ -83,9 +83,18 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, update
 	return s.apply(ctx)
 }
 
-// DeleteRule removes a matrix row (archived by the DB trigger).
+// DeleteRule removes a matrix row (archived by the DB trigger). Rows of the
+// admin preset are protected: admin rights are the code bypass, and its
+// matrix rows must not be removable through the admin API.
 func (s *Service) DeleteRule(ctx context.Context, id int64) error {
-	if err := s.repo.DeleteRule(ctx, id); err != nil {
+	rules, err := s.repo.ListActiveRules(ctx)
+	if err != nil {
+		return err
+	}
+	if preset, ok := findRulePreset(rules, id); ok && preset == userdomain.PresetAdmin {
+		return builtinPresetErr(preset)
+	}
+	if err = s.repo.DeleteRule(ctx, id); err != nil {
 		return err
 	}
 	return s.apply(ctx)
@@ -378,9 +387,14 @@ func presetNameRef(p *string) string {
 const maxPresetNameLen = 32
 
 // CreatePreset creates a preset (or updates an existing one) and applies it.
+// The seeded built-in presets (V10 catalog) are immutable: the upsert must
+// not clobber them (in particular, never overwrite the admin entry).
 func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (sqlc.UpsertPresetRow, error) {
 	if err := validatePresetName(in.Name); err != nil {
 		return sqlc.UpsertPresetRow{}, err
+	}
+	if isBuiltinPreset(in.Name) {
+		return sqlc.UpsertPresetRow{}, builtinPresetErr(in.Name)
 	}
 	preset, err := s.repo.UpsertPreset(ctx, in.Name, in.Description)
 	if err != nil {
@@ -390,12 +404,16 @@ func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (s
 	return preset, nil
 }
 
-// UpdatePreset updates the preset description.
+// UpdatePreset updates the preset description. The seeded built-in presets
+// (V10 catalog) are immutable via the admin API.
 func (s *Service) UpdatePreset(
 	ctx context.Context,
 	name string,
 	in dto.PresetUpdateInput,
 ) (sqlc.UpdatePresetDescriptionRow, error) {
+	if isBuiltinPreset(name) {
+		return sqlc.UpdatePresetDescriptionRow{}, builtinPresetErr(name)
+	}
 	preset, err := s.repo.UpdatePresetDescription(ctx, name, in.Description)
 	if err != nil {
 		return sqlc.UpdatePresetDescriptionRow{}, err
@@ -405,8 +423,13 @@ func (s *Service) UpdatePreset(
 
 // DeletePreset deletes a preset, its rules and clears the preset ref on
 // assigned users (they keep the account but lose the preset's base rights;
-// individual overrides survive).
+// individual overrides survive). The seeded built-in presets (V10: admin, dp,
+// rp, vp, worker) are protected: deleting admin would clear users.preset for
+// every administrator and permanently lock them out of /rbac/*.
 func (s *Service) DeletePreset(ctx context.Context, name string) error {
+	if isBuiltinPreset(name) {
+		return builtinPresetErr(name)
+	}
 	if err := s.repo.DeletePreset(ctx, name); err != nil {
 		return err
 	}
@@ -432,4 +455,34 @@ func validatePresetName(name string) error {
 		return errors.BadRequest("имя пресета: только латиница в нижнем регистре, цифры, «-» и «_»")
 	}
 	return nil
+}
+
+// builtinPresetErr describes an operation on a seeded built-in preset.
+func builtinPresetErr(name string) error {
+	return errors.BadRequest("встроенный пресет " + name + " нельзя изменять или удалять")
+}
+
+// isBuiltinPreset reports whether the preset is one of the seeded built-ins
+// (the V10 catalog: admin, dp, rp, vp, worker) — immutable via the RBAC
+// admin API, as removing them (in particular admin) would lock out admins.
+func isBuiltinPreset(name string) bool {
+	switch name {
+	case userdomain.PresetAdmin,
+		userdomain.PresetProjectDirector,
+		userdomain.PresetProjectManager,
+		userdomain.PresetProcessOwner,
+		userdomain.PresetWorker:
+		return true
+	}
+	return false
+}
+
+// findRulePreset returns the preset of the matrix row with the given id.
+func findRulePreset(rules []sqlc.ListActivePresetRulesRow, id int64) (string, bool) {
+	for _, r := range rules {
+		if r.ID == id {
+			return r.Preset, true
+		}
+	}
+	return "", false
 }
