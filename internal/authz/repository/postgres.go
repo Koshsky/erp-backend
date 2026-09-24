@@ -144,6 +144,52 @@ func (r *RuleRepository) DeleteAllRoutePolicies(ctx context.Context) error {
 	return r.q(ctx).DeleteAllRoutePolicies(ctx)
 }
 
+// ResetPolicies replaces the whole matrix and route-policy sets in one
+// transaction: every rule and route policy is deleted (archived) and the given
+// default sets are re-inserted atomically. A failure anywhere rolls the
+// transaction back, so the DB never lands half-reseeded; on success the whole
+// new state is durable at once. When an ambient request-scoped transaction is
+// present (idempotency middleware), the reset joins it and leaves the commit to
+// the transaction owner.
+func (r *RuleRepository) ResetPolicies(
+	ctx context.Context,
+	rules []sqlc.UpsertPresetRuleParams,
+	policies []sqlc.UpsertRoutePolicyParams,
+) error {
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
+	if err != nil {
+		return err
+	}
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
+
+	q := r.q(ctx)
+	if owned {
+		q = sqlc.New(tx)
+	}
+	if err = q.DeleteAllPresetRules(ctx); err != nil {
+		return err
+	}
+	if err = q.DeleteAllRoutePolicies(ctx); err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		if _, err = q.UpsertPresetRule(ctx, rule); err != nil {
+			return err
+		}
+	}
+	for _, policy := range policies {
+		if _, err = q.UpsertRoutePolicy(ctx, policy); err != nil {
+			return err
+		}
+	}
+	if !owned {
+		return nil
+	}
+	return tx.Commit(ctx)
+}
+
 // UpsertPreset creates a preset (or updates it by name).
 func (r *RuleRepository) UpsertPreset(ctx context.Context, name, description string) (sqlc.UpsertPresetRow, error) {
 	return r.q(ctx).UpsertPreset(ctx, sqlc.UpsertPresetParams{Name: name, Description: description})

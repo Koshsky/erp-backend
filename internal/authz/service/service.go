@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -132,35 +133,41 @@ func (s *Service) DeleteRoutePolicy(ctx context.Context, name string) error {
 	return s.apply(ctx)
 }
 
-// Reset restores rules and route policies to the built-in defaults
-// (an escape hatch after erroneous edits).
+// Reset restores rules and route policies to the built-in defaults (an
+// escape hatch after erroneous edits). The whole reset runs inside a single
+// transaction (the repository joins the ambient one when the idempotency
+// middleware opened it): on any error the DB is unchanged — rolled back, never
+// half-reseeded — and the engine keeps its current snapshot; only after a
+// successful commit is the new state applied to the in-memory engine.
 func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
-	if err := s.repo.DeleteAllRules(ctx); err != nil {
-		return err
+	defaults := engine.DefaultMatrixRules()
+	rules := make([]sqlc.UpsertPresetRuleParams, 0, len(defaults))
+	for _, r := range defaults {
+		rules = append(rules, sqlc.UpsertPresetRuleParams{
+			Preset:    r.Role,
+			Resource:  engine.ResourceName(r.Res),
+			Action:    engine.ActionName(r.Act),
+			Scope:     engine.ScopeName(r.Scope),
+			UpdatedBy: pgtype.Int8{Int64: updatedBy, Valid: true},
+		})
 	}
-	if err := s.repo.DeleteAllRoutePolicies(ctx); err != nil {
-		return err
-	}
-	for _, r := range engine.DefaultMatrixRules() {
-		scope := engine.ScopeName(r.Scope)
-		if _, err := s.repo.UpsertRule(
-			ctx,
-			r.Role,
-			engine.ResourceName(r.Res),
-			engine.ActionName(r.Act),
-			scope,
-			&updatedBy,
-		); err != nil {
+	specs := engine.DefaultRouteSpecs()
+	policies := make([]sqlc.UpsertRoutePolicyParams, 0, len(specs))
+	for _, spec := range specs {
+		params, err := json.Marshal(spec.Params)
+		if err != nil {
 			return err
 		}
+		policies = append(policies, sqlc.UpsertRoutePolicyParams{
+			Name:      spec.Name,
+			Kind:      spec.Kind,
+			Params:    params,
+			Active:    true,
+			UpdatedBy: pgtype.Int8{Int64: updatedBy, Valid: true},
+		})
 	}
-	for _, spec := range engine.DefaultRouteSpecs() {
-		if _, err := s.repo.UpsertRoutePolicy(ctx, domain.RoutePolicy{
-			Name: spec.Name, Kind: spec.Kind, Params: spec.Params, Active: true,
-			UpdatedBy: &updatedBy,
-		}); err != nil {
-			return err
-		}
+	if err := s.repo.ResetPolicies(ctx, rules, policies); err != nil {
+		return err
 	}
 	return s.apply(ctx)
 }
