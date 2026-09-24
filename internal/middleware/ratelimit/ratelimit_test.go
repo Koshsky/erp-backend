@@ -218,19 +218,25 @@ func TestDisabledConfigPassesEverything(t *testing.T) {
 	}
 }
 
-func TestZeroRateIsNoOp(t *testing.T) {
+// TestInvalidEnabledConfigFailsClosed guards against the silent-disable and
+// hard-block misconfigurations: an enabled rate limit with requests_per_second
+// <= 0 or burst <= 0 must fail loudly at construction (config.Load rejects the
+// values at startup; the constructor guard panics) instead of silently turning
+// the wall off or 429ing everyone.
+func TestInvalidEnabledConfigFailsClosed(t *testing.T) {
 	t.Parallel()
-	cfg := config.RateLimitConfig{
-		Enabled:           true,
-		RequestsPerSecond: 0,
+	cases := []config.RateLimitConfig{
+		{Enabled: true, RequestsPerSecond: 0},
+		{Enabled: true, RequestsPerSecond: 10, Burst: 0},
 	}
-
-	handler := ratelimit.FromConfig(cfg, nil)
-
-	for i := range 3 {
-		rec := doRequest(handler, "192.168.0.6:1234")
-		if rec.Code != http.StatusOK {
-			t.Fatalf("request %d status = %d, want %d", i+1, rec.Code, http.StatusOK)
-		}
+	for _, cfg := range cases {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("expected panic for enabled limit %+v", cfg)
+				}
+			}()
+			ratelimit.FromConfig(cfg, nil)
+		}()
 	}
 }

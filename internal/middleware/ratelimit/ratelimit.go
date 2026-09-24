@@ -38,11 +38,30 @@ func FromConfig(cfg config.RateLimitConfig, logger *slog.Logger) gin.HandlerFunc
 	return FromConfigKeyed(cfg, nil, logger)
 }
 
+// validateEnabledConfig panics when an enabled rate limit carries values that
+// would silently disable the limiter (requests_per_second <= 0) or hard-block
+// every request (burst <= 0). config.Load rejects such values at startup; this
+// guard is defense-in-depth for direct constructor use — a silent no-op or a
+// permanent 429 is never the right outcome for a misconfigured wall.
+func validateEnabledConfig(cfg config.RateLimitConfig) {
+	if !cfg.Enabled {
+		return
+	}
+	if cfg.RequestsPerSecond <= 0 {
+		panic("ratelimit: enabled rate limit requires requests_per_second > 0")
+	}
+	if cfg.Burst <= 0 {
+		panic("ratelimit: enabled rate limit requires burst > 0")
+	}
+}
+
 // FromConfigKeyed builds a rate limiting handler from the application
 // configuration, keyed by key (nil keys by the client IP).
 //
-// When rate limiting is disabled, a no-op handler is returned.
+// When rate limiting is disabled, a no-op handler is returned; an enabled
+// limit with invalid values fails loudly (see validateEnabledConfig).
 func FromConfigKeyed(cfg config.RateLimitConfig, key KeyFunc, logger *slog.Logger) gin.HandlerFunc {
+	validateEnabledConfig(cfg)
 	if !cfg.Enabled {
 		return func(c *gin.Context) {
 			c.Next()

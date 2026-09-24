@@ -218,7 +218,33 @@ func Load() (*Config, error) {
 		return nil, envErr
 	}
 
+	if validErr := validate(&cfg); validErr != nil {
+		return nil, validErr
+	}
+
 	return &cfg, nil
+}
+
+// validate enforces the invariants a disabled configuration cannot express by
+// itself: an enabled rate limit must carry positive requests_per_second and
+// burst, or the middleware would silently disable itself (requests_per_second
+// <= 0) or hard-block every request (burst <= 0) without any startup warning.
+func validate(cfg *Config) error {
+	for name, limit := range map[string]RateLimitConfig{
+		"rate_limiting":      cfg.RateLimit,
+		"user_rate_limiting": cfg.UserRateLimit,
+	} {
+		if !limit.Enabled {
+			continue
+		}
+		if limit.RequestsPerSecond <= 0 {
+			return fmt.Errorf("%s: requests_per_second must be > 0 when rate limiting is enabled", name)
+		}
+		if limit.Burst <= 0 {
+			return fmt.Errorf("%s: burst must be > 0 when rate limiting is enabled", name)
+		}
+	}
+	return nil
 }
 
 // minJWTSecretLen is the minimum accepted length of JWT_SECRET_KEY (256-bit

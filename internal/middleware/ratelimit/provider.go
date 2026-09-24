@@ -80,8 +80,10 @@ func (p *Provider) FromConfig(cfg config.RateLimitConfig) gin.HandlerFunc {
 
 // FromConfigKeyed builds a handler from the application settings with an
 // explicit bucket key (nil keys by the client IP). Disabled limits produce a
-// transparent handler.
+// transparent handler; an enabled limit with invalid values fails loudly (see
+// validateEnabledConfig).
 func (p *Provider) FromConfigKeyed(cfg config.RateLimitConfig, key KeyFunc) gin.HandlerFunc {
+	validateEnabledConfig(cfg)
 	if !cfg.Enabled {
 		return func(c *gin.Context) { c.Next() }
 	}
