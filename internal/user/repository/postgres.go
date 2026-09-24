@@ -157,6 +157,13 @@ func (r *UserRepository) FindUser(ctx context.Context, id int64) (*sqlc.User, er
 	return &row, nil
 }
 
+// ListUserManagers returns the (id, manager_id) owner pairs of the requested
+// users in a single query (the batch scope check — replaces one FindUser round
+// trip per requested id).
+func (r *UserRepository) ListUserManagers(ctx context.Context, userIDs []int64) ([]sqlc.ListUsersByIDsRow, error) {
+	return r.q(ctx).ListUsersByIDs(ctx, userIDs)
+}
+
 func (r *UserRepository) UpdateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error) {
 	row, err := r.q(ctx).UpdateUser(ctx, sqlc.UpdateUserParams{
 		UserID:          user.ID,

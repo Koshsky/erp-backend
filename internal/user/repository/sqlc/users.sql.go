@@ -618,6 +618,39 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
+const listUsersByIDs = `-- name: ListUsersByIDs :many
+SELECT id, manager_id
+FROM users
+WHERE id = ANY($1::bigint[])
+`
+
+type ListUsersByIDsRow struct {
+	ID        int64       `json:"id"`
+	ManagerID pgtype.Int8 `json:"manager_id"`
+}
+
+// Batch owner lookup for scope checks: the (id, manager_id) pairs of the
+// requested users in one round trip (replaces N FindUser calls per request).
+func (q *Queries) ListUsersByIDs(ctx context.Context, userIds []int64) ([]ListUsersByIDsRow, error) {
+	rows, err := q.db.Query(ctx, listUsersByIDs, userIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUsersByIDsRow{}
+	for rows.Next() {
+		var i ListUsersByIDsRow
+		if err := rows.Scan(&i.ID, &i.ManagerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const normalizeUserStates = `-- name: NormalizeUserStates :exec
 SELECT fn_normalize_user_states()
 `

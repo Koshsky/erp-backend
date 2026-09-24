@@ -65,6 +65,13 @@ SELECT EXISTS(
 	WHERE username = @username
 );
 
+-- name: ListUsersByIDs :many
+-- Batch owner lookup for scope checks: the (id, manager_id) pairs of the
+-- requested users in one round trip (replaces N FindUser calls per request).
+SELECT id, manager_id
+FROM users
+WHERE id = ANY(@user_ids::bigint[]);
+
 -- name: CreateUser :one
 INSERT INTO users (last_name, first_name, middle_name, username, preset, password_hash, manager_id, position, hire_date, termination_date)
 VALUES (@last_name, @first_name, @middle_name, @username, @preset, @password_hash, @manager_id, @position, @hire_date, @termination_date)

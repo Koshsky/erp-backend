@@ -70,6 +70,18 @@ func (r *stubRepo) FindUser(_ context.Context, id int64) (*sqlc.User, error) {
 	return &cp, nil
 }
 
+func (r *stubRepo) ListUserManagers(_ context.Context, userIDs []int64) ([]sqlc.ListUsersByIDsRow, error) {
+	rows := make([]sqlc.ListUsersByIDsRow, 0, len(userIDs))
+	for _, id := range userIDs {
+		u, ok := r.users[id]
+		if !ok {
+			continue
+		}
+		rows = append(rows, sqlc.ListUsersByIDsRow{ID: u.ID, ManagerID: u.ManagerID})
+	}
+	return rows, nil
+}
+
 func (r *stubRepo) FindUserByUsername(_ context.Context, username string) (*sqlc.User, error) {
 	for _, u := range r.users {
 		if u.Username == username {

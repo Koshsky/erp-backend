@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 
 	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -51,10 +50,9 @@ type UserService struct {
 // maxManagerDepth — guard against an infinite loop while walking the manager hierarchy.
 const maxManagerDepth = 1000
 
-// stateBatchParallelism — how many worker scopes are checked concurrently while
-// authorizing a batch states request (bounded so a 200-id request cannot open
-// hundreds of connections at once on the pool).
-const stateBatchParallelism = 8
+// maxUsernameSuffixAttempts — how many numeric suffixes generateUsername tries
+// before giving up with a clear error instead of probing the DB indefinitely.
+const maxUsernameSuffixAttempts = 1000
 
 // NewUserService builds the UserService service.
 func NewUserService(
@@ -279,7 +277,7 @@ func (s *UserService) generateUsername(ctx context.Context, name, preset string)
 	}
 
 	username := base
-	for i := 2; ; i++ {
+	for i := 2; i <= maxUsernameSuffixAttempts; i++ {
 		exists, err := s.repository.UsernameExists(ctx, username)
 		if err != nil {
 			return "", err
@@ -289,6 +287,7 @@ func (s *UserService) generateUsername(ctx context.Context, name, preset string)
 		}
 		username = fmt.Sprintf("%s%d", base, i)
 	}
+	return "", errors.NewValidationError("не удалось сгенерировать свободный логин: исчерпаны все варианты")
 }
 
 // ResetPassword generates a new random password for the user. Admin-only: the
@@ -561,6 +560,10 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 	// deleted user cannot refresh, and a restored account does not resurrect
 	// old tokens.
 	s.revokeSessions(ctx, id)
+	// The deleted user must leave the in-memory principals immediately, not
+	// after the next TTL reload (~30 s): their still-valid access token would
+	// otherwise keep granting rights while the account is gone.
+	s.refreshRBAC(ctx)
 	return nil
 }
 
@@ -689,61 +692,41 @@ func (s *UserService) ListStatesBatch(
 
 // checkBatchScopes verifies existence and the worker.view scope of every
 // requested id (deduplicated, order preserved) and returns the allowed set.
-// The checks run concurrently but with bounded parallelism, because each one
-// costs a query.
+// The owners are loaded in a single query; the (in-memory) authorize checks
+// then run over the fetched rows — no per-id round trips (the old check was
+// 1+N FindUser calls).
 func (s *UserService) checkBatchScopes(
 	ctx context.Context,
 	caller userctx.UserContext,
 	userIDs []int64,
 ) ([]int64, error) {
 	ids := dedupeIDs(userIDs)
-	errs := make([]error, len(ids))
-	guard := make(chan struct{}, stateBatchParallelism)
-	var wg sync.WaitGroup
-	for i, id := range ids {
-		wg.Go(func() {
-			guard <- struct{}{}
-			defer func() { <-guard }()
-			errs[i] = s.checkUserViewable(ctx, caller, id)
-		})
-	}
-	wg.Wait()
 
-	for _, err := range errs {
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ids, nil
-}
-
-// checkUserViewable reports 404 when the user is missing or the caller may not
-// view them (worker.view semantics — a denial never discloses existence).
-func (s *UserService) checkUserViewable(
-	ctx context.Context,
-	caller userctx.UserContext,
-	id int64,
-) error {
-	user, err := s.repository.FindUser(ctx, id)
+	rows, err := s.repository.ListUserManagers(ctx, ids)
 	if err != nil {
-		if errors.IsNotFoundError(err) {
-			return errors.ErrUserNotFound
-		}
-		return err
-	}
-	if user == nil {
-		return errors.ErrUserNotFound
+		return nil, err
 	}
 	// The owner of a worker row is the manager, or the worker themself when
 	// there is none — exactly the chain OwnerChain resolves for worker.view.
-	owner := user.ID
-	if user.ManagerID.Valid {
-		owner = user.ManagerID.Int64
+	owners := make(map[int64]int64, len(rows))
+	for _, row := range rows {
+		owner := row.ID
+		if row.ManagerID.Valid {
+			owner = row.ManagerID.Int64
+		}
+		owners[row.ID] = owner
 	}
-	if !engine.AuthorizeUser(caller, rbac.ResourceWorker, engine.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
-		return errors.ErrUserNotFound
+
+	for _, id := range ids {
+		owner, ok := owners[id]
+		if !ok {
+			return nil, errors.ErrUserNotFound
+		}
+		if !engine.AuthorizeUser(caller, rbac.ResourceWorker, engine.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
+			return nil, errors.ErrUserNotFound
+		}
 	}
-	return nil
+	return ids, nil
 }
 
 // dedupeIDs drops repeated ids, preserving the first-occurrence order.

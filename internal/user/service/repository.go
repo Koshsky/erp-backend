@@ -19,6 +19,9 @@ type UserRepository interface {
 		updatedBy int64,
 	) (*sqlc.User, error)
 	FindUser(ctx context.Context, id int64) (*sqlc.User, error)
+	// ListUserManagers returns the (id, manager_id) owner pairs of the
+	// requested users in one query (batch scope checks).
+	ListUserManagers(ctx context.Context, userIDs []int64) ([]sqlc.ListUsersByIDsRow, error)
 	FindUserByUsername(ctx context.Context, username string) (*sqlc.User, error)
 	UsernameExists(ctx context.Context, username string) (bool, error)
 	UpdateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error)
