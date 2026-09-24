@@ -68,6 +68,16 @@ func (m *Middleware) Handler() gin.HandlerFunc {
 
 		c.Next()
 
+		// Only mutations that actually committed (2xx) enter the audit trail: a
+		// 4xx/5xx response means the operation did not take effect (validation
+		// failure, conflict, or the idempotency middleware rolling the request
+		// transaction back), so recording it would log a phantom mutation. An
+		// idempotency replay answers with the saved response of a previously
+		// executed request and would duplicate the same event.
+		if !isSuccessStatus(bw.Status()) || isIdempotencyReplay(c) {
+			return
+		}
+
 		// Never log the audit query API itself (GET is already excluded by the
 		// method filter; this guards any future audit write routes).
 		ev := m.buildEvent(c, rc, start, reqBody, bw)
@@ -75,6 +85,24 @@ func (m *Middleware) Handler() gin.HandlerFunc {
 			m.sender.Enqueue(*ev)
 		}
 	}
+}
+
+// headerIdempotencyReplayed is the response marker the idempotency middleware
+// sets when it answers a request from the saved result of a finished key
+// instead of re-executing the operation.
+const headerIdempotencyReplayed = "Idempotency-Replayed"
+
+// isSuccessStatus reports whether the captured status is a 2xx — the only
+// responses that correspond to a committed mutation.
+func isSuccessStatus(status int) bool {
+	return status >= http.StatusOK && status < http.StatusMultipleChoices
+}
+
+// isIdempotencyReplay reports whether the response was served as an idempotency
+// replay: the middleware reads the Idempotency-Replayed marker off the response
+// headers (set by the idempotency middleware when it replays a finished key).
+func isIdempotencyReplay(c *gin.Context) bool {
+	return c.Writer.Header().Get(headerIdempotencyReplayed) == "true"
 }
 
 // buildEvent assembles the audit event from the captured request.
