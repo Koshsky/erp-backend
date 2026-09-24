@@ -34,7 +34,8 @@ func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, viewS
 
 // loadAllData load milestones, tasks, assignments, resources and comment counts
 // for the given processes. Resources are scoped by the caller's resource view
-// zone (userID/resourceViewScope).
+// zone (userID/resourceViewScope); an empty zone (no resource view rule)
+// includes all resources so the visible tasks still render their rows.
 func (s *PlanningService) loadAllData(
 	ctx context.Context,
 	processes []dto.Process,

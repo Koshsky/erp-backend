@@ -62,7 +62,9 @@ func (s *PlanningService) GetProcessPlanning(
 	// grouped under their parent projects, which are re-fetched by ids and
 	// scoped by the caller's project view zone (projectViewScope) — the
 	// aggregate must not disclose full project rows of projects outside that
-	// zone.
+	// zone. A caller with no project view rule (empty zone) gets all parent
+	// projects: reference rows with no resolved zone must not hide the
+	// visible processes (the SQL falls back to include-all).
 	processes, err := s.repository.ListProcesses(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err

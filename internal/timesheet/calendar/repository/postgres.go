@@ -34,7 +34,8 @@ func (r *CalendarRepository) q(ctx context.Context) *sqlc.Queries {
 	return r.db
 }
 
-// ListResources returns resources within the caller's resource view zone.
+// ListResources returns resources within the caller's resource view zone; an
+// empty zone (no resource view rule) includes all rows (reference fallback).
 func (r *CalendarRepository) ListResources(
 	ctx context.Context,
 	userID int64,

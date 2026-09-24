@@ -1,11 +1,15 @@
 -- name: ListResources :many
 -- Scoped by the caller's resource view zone (calendar.view): a process owner
--- must not read capacity curves of resources outside its own scope.
+-- must not read capacity curves of resources outside its own scope. The route
+-- policy already gates the endpoint on resource.view; a caller whose zone
+-- resolves empty (no rule / none) gets every row — reference data must not be
+-- dropped then.
 SELECT id, title, code, owner_id
 FROM resources
 WHERE (
     @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+    (@scope_view::text = 'own' AND owner_id = @user_id::bigint) OR
+    @scope_view::text = ''
 )
 ORDER BY id ASC;
 

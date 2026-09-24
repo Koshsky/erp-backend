@@ -42,7 +42,8 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, vie
 
 // ListProjectsByIDs returns full project rows by ids (for attaching parent
 // context to process-scoped aggregates: /planning/processes), scoped by the
-// caller's project view zone.
+// caller's project view zone. An empty zone (no project view rule) includes
+// every requested project: reference rows must not hide the visible processes.
 func (r *PlanningRepository) ListProjectsByIDs(
 	ctx context.Context,
 	ids []int64,
@@ -120,7 +121,8 @@ func (r *PlanningRepository) ListTaskCommentCountsByTaskIDs(
 	return counts, nil
 }
 
-// ListResources returns resources within the caller's resource view zone.
+// ListResources returns resources within the caller's resource view zone; an
+// empty zone (no resource view rule) includes all rows (reference fallback).
 func (r *PlanningRepository) ListResources(
 	ctx context.Context,
 	userID int64,

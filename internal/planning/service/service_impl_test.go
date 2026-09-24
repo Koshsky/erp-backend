@@ -17,8 +17,9 @@ import (
 // stubPlanningRepo is an in-memory PlanningRepository. The two scoped list
 // methods apply the scoping contract of the SQL queries (filterProjects /
 // filterResources): 'all' returns everything, 'own' keeps rows owned by the
-// caller, any other scope returns nothing. Every call records the scoping
-// parameters it received.
+// caller, and an empty zone (no rule / none — the engine code for a missing
+// matrix row) includes all rows so the visible primary entities still render.
+// Every call records the scoping parameters it received.
 type stubPlanningRepo struct {
 	projects      []sqlc.Project
 	processes     []sqlc.ListProcessesRow
@@ -41,11 +42,9 @@ type stubPlanningRepo struct {
 }
 
 // filterProjects mirrors ListProjectsByIDs: only rows whose id was requested
-// and that are inside the scope survive.
+// survive; a real view zone ('all'/'own') additionally scopes by ownership,
+// an empty zone (no rule / none) keeps every requested row.
 func filterProjects(all []sqlc.Project, ids []int64, userID int64, viewScope string) []sqlc.Project {
-	if viewScope != "all" && viewScope != "own" {
-		return nil
-	}
 	out := make([]sqlc.Project, 0, len(all))
 	for _, p := range all {
 		if !slices.Contains(ids, p.ID) {
@@ -59,11 +58,9 @@ func filterProjects(all []sqlc.Project, ids []int64, userID int64, viewScope str
 	return out
 }
 
-// filterResources mirrors ListResources: 'own' keeps only the caller's rows.
+// filterResources mirrors ListResources: 'own' keeps only the caller's rows,
+// 'all' and the empty zone (no rule / none) keep every row.
 func filterResources(all []sqlc.Resource, userID int64, viewScope string) []sqlc.Resource {
-	if viewScope != "all" && viewScope != "own" {
-		return nil
-	}
 	out := make([]sqlc.Resource, 0, len(all))
 	for _, r := range all {
 		if viewScope == "own" && r.OwnerID != userID {
@@ -248,6 +245,44 @@ func TestGetProcessPlanningScopeAll(t *testing.T) {
 	}
 }
 
+// TestGetProcessPlanningNoProjectRule checks the regression contract: a
+// caller with process.view=all but NO project view rule (empty zone — e.g.
+// vp) still gets every scoped process grouped under its parent project. The
+// reference query must fall back to include-all instead of dropping the
+// parents (which would hide all processes).
+func TestGetProcessPlanningNoProjectRule(t *testing.T) {
+	t.Parallel()
+	repo := &stubPlanningRepo{
+		projects: []sqlc.Project{
+			projectRow(1, 7, "P1"),
+			projectRow(2, 9, "P2"),
+		},
+		processes: []sqlc.ListProcessesRow{
+			processRow(11, 1, 7, "P1"),
+			processRow(21, 2, 9, "P2"),
+		},
+	}
+	svc := newPlanningTestService(repo)
+
+	got, err := svc.GetProcessPlanning(context.Background(), 7, "all", "")
+	if err != nil {
+		t.Fatalf("GetProcessPlanning() error = %v", err)
+	}
+	if len(got.Projects) != 2 {
+		t.Fatalf("aggregate = %+v, want both parent projects (empty project zone = include-all)", got.Projects)
+	}
+	if p1 := findDetailedProject(t, got.Projects, 1); p1 == nil || len(p1.Processes) != 1 || p1.Processes[0].ID != 11 {
+		t.Errorf("project 1 group = %+v, want process 11", findDetailedProject(t, got.Projects, 1))
+	}
+	if p2 := findDetailedProject(t, got.Projects, 2); p2 == nil || len(p2.Processes) != 1 || p2.Processes[0].ID != 21 {
+		t.Errorf("project 2 group = %+v, want process 21", findDetailedProject(t, got.Projects, 2))
+	}
+	// The empty reference zone reaches the repository unchanged.
+	if repo.lastProjectScope != "" {
+		t.Errorf("project scope call = %q, want \"\" (no project view rule)", repo.lastProjectScope)
+	}
+}
+
 // TestGetProcessPlanningScopeOwnDropsForeignProcesses checks that with an
 // 'own' project scope processes of projects outside the caller's ownership are
 // dropped from the aggregate (the parent project is not visible).
@@ -380,6 +415,50 @@ func TestGetTaskPlanningResourceScopeOwn(t *testing.T) {
 	if repo.lastResourceUser != 7 || repo.lastResourceScope != "own" {
 		t.Errorf("resource scope call = (%d, %q), want (7, \"own\")",
 			repo.lastResourceUser, repo.lastResourceScope)
+	}
+}
+
+// TestGetTaskPlanningNoResourceRule checks the reference fallback for
+// resources: a caller with a task view but NO resource view rule (empty zone,
+// e.g. dp) keeps every resource assigned to its visible tasks instead of
+// losing them all. The rows are built inline (not via the taskScopeProcessRow
+// / taskRow helpers) so the helper call sites keep their existing pattern.
+func TestGetTaskPlanningNoResourceRule(t *testing.T) {
+	t.Parallel()
+	repo := &stubPlanningRepo{
+		taskProcesses: []sqlc.ListProcessesByTaskScopeRow{
+			{Process: sqlc.Process{ID: 1, ProjectID: 1}},
+		},
+		tasks: []sqlc.Task{{ID: 10, ProcessID: 1}},
+		assignments: []sqlc.Assignment{
+			{ID: 100, TaskID: 10, ResourceID: 20, Quantity: 3},
+			{ID: 101, TaskID: 10, ResourceID: 30, Quantity: 5},
+		},
+		resources: []sqlc.Resource{
+			{ID: 20, OwnerID: 7, Title: "Mounter", Code: "M"},
+			{ID: 30, OwnerID: 9, Title: "Engineer", Code: "E"},
+		},
+	}
+	svc := newPlanningTestService(repo)
+
+	got, err := svc.GetTaskPlanning(context.Background(), 7, "all", "")
+	if err != nil {
+		t.Fatalf("GetTaskPlanning() error = %v", err)
+	}
+	if len(got.Processes) != 1 || len(got.Processes[0].Tasks) != 1 {
+		t.Fatalf("processes = %+v, want process 1 with task 10", got.Processes)
+	}
+	resources := got.Processes[0].Tasks[0].Resources
+	if len(resources) != 2 {
+		t.Fatalf("task resources = %+v, want both resources (empty resource zone = include-all)", resources)
+	}
+	ids := []int64{resources[0].ID, resources[1].ID}
+	if !sameIDs(ids, []int64{20, 30}) {
+		t.Errorf("task resource ids = %v, want {20, 30}", ids)
+	}
+	// The empty reference zone reaches the repository unchanged.
+	if repo.lastResourceScope != "" {
+		t.Errorf("resource scope call = %q, want \"\" (no resource view rule)", repo.lastResourceScope)
 	}
 }
 

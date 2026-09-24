@@ -65,7 +65,8 @@ SELECT id, title, code, owner_id
 FROM resources
 WHERE (
     $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+    ($1::text = 'own' AND owner_id = $2::bigint) OR
+    $1::text = ''
 )
 ORDER BY id ASC
 `
@@ -83,7 +84,10 @@ type ListResourcesRow struct {
 }
 
 // Scoped by the caller's resource view zone (calendar.view): a process owner
-// must not read capacity curves of resources outside its own scope.
+// must not read capacity curves of resources outside its own scope. The route
+// policy already gates the endpoint on resource.view; a caller whose zone
+// resolves empty (no rule / none) gets every row — reference data must not be
+// dropped then.
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
 	rows, err := q.db.Query(ctx, listResources, arg.ScopeView, arg.UserID)
 	if err != nil {

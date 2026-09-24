@@ -140,8 +140,9 @@ func TestGetCalendarTooWideRangeIsBadRequest(t *testing.T) {
 
 // stubCalendarRepo is an in-memory CalendarRepository. ListResources applies the
 // scoping contract of the SQL query: 'all' returns every resource row, 'own'
-// keeps only rows owned by the caller, any other scope returns nothing. The
-// received scoping parameters are recorded.
+// keeps only rows owned by the caller, and an empty zone (no rule / none — the
+// engine code for a missing matrix row) also returns every row (reference
+// fallback). The received scoping parameters are recorded.
 type stubCalendarRepo struct {
 	resources []sqlc.ListResourcesRow
 	members   []sqlc.ListEmployeesForCalendarRow
@@ -160,9 +161,6 @@ func (s *stubCalendarRepo) ListResources(
 	s.listResourcesCalls++
 	s.lastUserID = userID
 	s.lastViewScope = viewScope
-	if viewScope != "all" && viewScope != "own" {
-		return nil, nil
-	}
 	out := make([]sqlc.ListResourcesRow, 0, len(s.resources))
 	for _, r := range s.resources {
 		if viewScope == "own" && r.OwnerID != userID {
@@ -223,6 +221,32 @@ func TestGetCalendarResourceScopeOwn(t *testing.T) {
 	}
 	if repo.lastUserID != 7 || repo.lastViewScope != "own" {
 		t.Errorf("resource scope call = (%d, %q), want (7, \"own\")", repo.lastUserID, repo.lastViewScope)
+	}
+}
+
+// TestGetCalendarNoResourceScopeRule checks the reference fallback: a caller
+// with a view right but no resolved resource zone (empty code — no rule /
+// none) still gets every resource row, otherwise the calendar would render
+// nothing.
+func TestGetCalendarNoResourceScopeRule(t *testing.T) {
+	t.Parallel()
+	repo := &stubCalendarRepo{
+		resources: []sqlc.ListResourcesRow{
+			{ID: 1, Title: "Mounter", Code: "M", OwnerID: 7},
+			{ID: 2, Title: "Engineer", Code: "E", OwnerID: 9},
+		},
+	}
+	start, end := calendarWindow()
+
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "", start, end)
+	if err != nil {
+		t.Fatalf("GetCalendar() error = %v", err)
+	}
+	if len(got.Resources) != 2 {
+		t.Fatalf("resources = %+v, want both rows (empty zone = include-all)", got.Resources)
+	}
+	if repo.lastViewScope != "" {
+		t.Errorf("resource scope call = %q, want \"\" (no resource view rule)", repo.lastViewScope)
 	}
 }
 
