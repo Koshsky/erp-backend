@@ -94,8 +94,9 @@ func (m *Middleware) buildEvent(
 		Status:     bw.Status(),
 		DurationMS: durationMS(time.Since(start)),
 		ActorIP:    c.ClientIP(),
-		// Security-relevant events are delivered synchronously (M2): a full
-		// buffer must never lose the login/logout trail.
+		// Security-relevant events take the priority path (M2): even with the
+		// main buffer full, the login/logout trail is enqueued and drained
+		// ahead of regular events — never sent on the request goroutine.
 		Critical: isCriticalAction(rc.action),
 	}
 

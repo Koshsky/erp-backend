@@ -166,7 +166,9 @@ type AuditConfig struct {
 	URL     string   `yaml:"url"`
 	Timeout Duration `yaml:"timeout"`
 	// Sync sends events synchronously inside the request (strict durability,
-	// slower); the default async mode buffers events and retries.
+	// slower; a single attempt bounded by a short per-send budget so the
+	// request never stalls on a down Loki); the default async mode buffers
+	// events and retries off the request goroutine.
 	Sync bool `yaml:"sync"`
 }
 
