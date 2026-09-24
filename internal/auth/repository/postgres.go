@@ -35,17 +35,27 @@ func (r *AuthRepository) FindSessionByHash(ctx context.Context, tokenHash string
 	return r.q(ctx).FindSessionByHash(ctx, tokenHash)
 }
 
+// FindSessionByReplacedBy returns the session that replaced the given one —
+// the next link of the rotation chain used for benign-reuse detection.
+func (r *AuthRepository) FindSessionByReplacedBy(
+	ctx context.Context,
+	id int64,
+) (sqlc.FindSessionByReplacedByRow, error) {
+	return r.q(ctx).FindSessionByReplacedBy(ctx, id)
+}
+
 func (r *AuthRepository) CreateSession(
 	ctx context.Context,
 	userID int64,
 	tokenHash string,
 	expiresAt time.Time,
+	replacedBy pgtype.Int8,
 ) (sqlc.CreateSessionRow, error) {
 	return r.q(ctx).CreateSession(ctx, sqlc.CreateSessionParams{
 		UserID:     userID,
 		TokenHash:  tokenHash,
 		ExpiresAt:  expiresAt,
-		ReplacedBy: pgtype.Int8{}, // the replaced_by chain is not filled (reuse detection is based on revoked_at)
+		ReplacedBy: replacedBy, // nil for fresh logins; the rotated-away session id on rotation
 	})
 }
 
