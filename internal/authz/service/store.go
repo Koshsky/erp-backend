@@ -31,7 +31,7 @@ const reloadTimeout = 10 * time.Second
 // applied.
 type PolicyStore struct {
 	logger   *slog.Logger
-	repo     *repository.RuleRepository
+	repo     policyRepository
 	mw       *rbac.Middleware
 	interval time.Duration
 	stop     chan struct{}

@@ -20,11 +20,42 @@ import (
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
+// policyRepository is the repository seam of the RBAC administration service
+// and the policy store; implemented by *repository.RuleRepository and by the
+// test fakes. Keeping the seam here lets the service be unit-tested without a
+// database (the concrete repository is injected unchanged by the constructors).
+type policyRepository interface {
+	ListActivePresets(ctx context.Context) ([]sqlc.ListActivePresetsRow, error)
+	ListActiveRules(ctx context.Context) ([]sqlc.ListActivePresetRulesRow, error)
+	UpsertRule(
+		ctx context.Context,
+		preset, resource, action, scope string,
+		updatedBy *int64,
+	) (sqlc.UpsertPresetRuleRow, error)
+	DeleteRule(ctx context.Context, id int64) error
+	ListActiveRoutePolicies(ctx context.Context) ([]domain.RoutePolicy, error)
+	UpsertRoutePolicy(ctx context.Context, p domain.RoutePolicy) (domain.RoutePolicy, error)
+	DeleteRoutePolicy(ctx context.Context, name string) error
+	ResetPolicies(
+		ctx context.Context,
+		rules []sqlc.UpsertPresetRuleParams,
+		policies []sqlc.UpsertRoutePolicyParams,
+	) error
+	UpsertPreset(ctx context.Context, name, description string) (sqlc.UpsertPresetRow, error)
+	UpdatePresetDescription(ctx context.Context, name, description string) (sqlc.UpdatePresetDescriptionRow, error)
+	DeletePreset(ctx context.Context, name string) error
+	ListUserPermissions(ctx context.Context, userID int64) ([]sqlc.ListUserPermissionsRow, error)
+	ReplaceUserPermissions(ctx context.Context, userID int64, perms []sqlc.InsertUserPermissionParams) error
+	FindUserPreset(ctx context.Context, userID int64) (string, bool, error)
+	ListUserPrincipals(ctx context.Context) ([]repository.UserPreset, error)
+	ListAllUserPermissions(ctx context.Context) ([]repository.UserPermissionRef, error)
+}
+
 // Service — RBAC policy administration (validation + DB writes +
 // immediate application through the PolicyStore).
 type Service struct {
 	logger *slog.Logger
-	repo   *repository.RuleRepository
+	repo   policyRepository
 	store  *PolicyStore
 }
 
