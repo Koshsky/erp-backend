@@ -3,11 +3,13 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
@@ -133,5 +135,151 @@ func TestGetCalendarTooWideRangeIsBadRequest(t *testing.T) {
 	}
 	if got := errapi.StatusCode(err); got != http.StatusBadRequest {
 		t.Errorf("StatusCode = %d, want 400 (client error, not 500)", got)
+	}
+}
+
+// stubCalendarRepo is an in-memory CalendarRepository. ListResources applies the
+// scoping contract of the SQL query: 'all' returns every resource row, 'own'
+// keeps only rows owned by the caller, any other scope returns nothing. The
+// received scoping parameters are recorded.
+type stubCalendarRepo struct {
+	resources []sqlc.ListResourcesRow
+	members   []sqlc.ListEmployeesForCalendarRow
+	ranges    []sqlc.ListUnavailableRangesRow
+
+	listResourcesCalls int
+	lastUserID         int64
+	lastViewScope      string
+}
+
+func (s *stubCalendarRepo) ListResources(
+	_ context.Context,
+	userID int64,
+	viewScope string,
+) ([]sqlc.ListResourcesRow, error) {
+	s.listResourcesCalls++
+	s.lastUserID = userID
+	s.lastViewScope = viewScope
+	if viewScope != "all" && viewScope != "own" {
+		return nil, nil
+	}
+	out := make([]sqlc.ListResourcesRow, 0, len(s.resources))
+	for _, r := range s.resources {
+		if viewScope == "own" && r.OwnerID != userID {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out, nil
+}
+
+func (s *stubCalendarRepo) ListEmployeesForCalendar(
+	_ context.Context,
+	_, _ date.Date,
+) ([]sqlc.ListEmployeesForCalendarRow, error) {
+	return s.members, nil
+}
+
+func (s *stubCalendarRepo) ListUnavailableRanges(
+	_ context.Context,
+	_, _ date.Date,
+) ([]sqlc.ListUnavailableRangesRow, error) {
+	return s.ranges, nil
+}
+
+// newScopedCalendarService builds a CalendarService over the stub repository.
+func newScopedCalendarService(repo CalendarRepository) *CalendarService {
+	return &CalendarService{
+		logger:     slog.New(slog.DiscardHandler),
+		repository: repo,
+		tracer:     tracing.New(nil),
+	}
+}
+
+// calendarWindow is the date range shared by the view-scope tests.
+func calendarWindow() (date.Date, date.Date) {
+	return date.From(dt("2026-01-01")), date.From(dt("2026-01-31"))
+}
+
+// TestGetCalendarResourceScopeOwn checks that an 'own' resource view zone
+// limits the returned resources to the caller's own rows and passes the scope
+// through to the repository.
+func TestGetCalendarResourceScopeOwn(t *testing.T) {
+	t.Parallel()
+	repo := &stubCalendarRepo{
+		resources: []sqlc.ListResourcesRow{
+			{ID: 1, Title: "Mounter", Code: "M", OwnerID: 7},
+			{ID: 2, Title: "Engineer", Code: "E", OwnerID: 9},
+		},
+	}
+	start, end := calendarWindow()
+
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "own", start, end)
+	if err != nil {
+		t.Fatalf("GetCalendar() error = %v", err)
+	}
+	if len(got.Resources) != 1 || got.Resources[0].ResourceID != 1 {
+		t.Fatalf("resources = %+v, want only the owned resource 1", got.Resources)
+	}
+	if repo.lastUserID != 7 || repo.lastViewScope != "own" {
+		t.Errorf("resource scope call = (%d, %q), want (7, \"own\")", repo.lastUserID, repo.lastViewScope)
+	}
+}
+
+// TestGetCalendarResourceScopeAll checks that an 'all' resource view zone
+// returns every resource row.
+func TestGetCalendarResourceScopeAll(t *testing.T) {
+	t.Parallel()
+	repo := &stubCalendarRepo{
+		resources: []sqlc.ListResourcesRow{
+			{ID: 1, Title: "Mounter", Code: "M", OwnerID: 7},
+			{ID: 2, Title: "Engineer", Code: "E", OwnerID: 9},
+		},
+	}
+	start, end := calendarWindow()
+
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "all", start, end)
+	if err != nil {
+		t.Fatalf("GetCalendar() error = %v", err)
+	}
+	if len(got.Resources) != 2 {
+		t.Fatalf("resources = %+v, want both resources", got.Resources)
+	}
+	if got.Resources[0].ResourceID != 1 || got.Resources[1].ResourceID != 2 {
+		t.Errorf("resource order = %d, %d; want 1, 2", got.Resources[0].ResourceID, got.Resources[1].ResourceID)
+	}
+	if repo.lastViewScope != "all" {
+		t.Errorf("resource scope call = %q, want \"all\"", repo.lastViewScope)
+	}
+}
+
+// TestGetCalendarEmptyResources checks that an empty resource result stays
+// consistent: a non-nil empty array, one period for the whole window and no
+// interval data leaking into the answer.
+func TestGetCalendarEmptyResources(t *testing.T) {
+	t.Parallel()
+	repo := &stubCalendarRepo{
+		members: []sqlc.ListEmployeesForCalendarRow{{ID: 5, ResourceID: 1}},
+		ranges: []sqlc.ListUnavailableRangesRow{
+			{ResourceID: 1, StartDate: date.From(dt("2026-01-10")), EndDate: date.From(dt("2026-01-12"))},
+		},
+	}
+	start, end := calendarWindow()
+
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "own", start, end)
+	if err != nil {
+		t.Fatalf("GetCalendar() error = %v", err)
+	}
+	if got == nil || got.Resources == nil {
+		t.Fatalf("resources = %v, want a non-nil empty slice", got)
+	}
+	if len(got.Resources) != 0 {
+		t.Fatalf("resources = %+v, want an empty slice", got.Resources)
+	}
+	if repo.listResourcesCalls != 1 {
+		t.Errorf("ListResources calls = %d, want 1", repo.listResourcesCalls)
+	}
+	if repo.lastViewScope != "own" || repo.lastUserID != 7 {
+		t.Errorf("resource scope call = (%d, %q), want (7, \"own\")", repo.lastUserID, repo.lastViewScope)
 	}
 }
