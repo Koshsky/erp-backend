@@ -14,14 +14,16 @@ import (
 
 // DomainError is an error that knows its HTTP status, machine-readable code
 // and may wrap a cause. It is also the API error body: only Code, Message and
-// Timestamp are serialized.
+// Timestamp are serialized; Details (DB constraint names, raw server messages)
+// never reach the client and are only written to the server-side logs.
 type DomainError struct {
 	Code      Code   `json:"code"      example:"BAD_REQUEST"          swaggertype:"string"`
 	Message   string `json:"message"   example:"Some error message"`
 	Timestamp string `json:"timestamp" example:"2026-08-09T10:30:00Z"`
 
-	Status int   `json:"-"`
-	Cause  error `json:"-"`
+	Status  int    `json:"-"`
+	Cause   error  `json:"-"`
+	Details string `json:"-"`
 }
 
 func (e *DomainError) Error() string   { return e.Message }
@@ -101,3 +103,13 @@ var (
 	ErrStateNotFound      = NotFound("state not found")
 	ErrCommentNotFound    = NotFound("comment not found")
 )
+
+// withDetail attaches an internal diagnostic detail (e.g. a DB constraint
+// name or a trigger message) to a domain error. The detail is kept out of the
+// response body and is only surfaced to the server-side logs.
+func withDetail(err error, detail string) error {
+	if de, ok := stderrors.AsType[*DomainError](err); ok {
+		de.Details = detail
+	}
+	return err
+}
