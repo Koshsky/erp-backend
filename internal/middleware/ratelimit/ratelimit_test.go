@@ -48,9 +48,11 @@ func doRequestWithProxy(handler gin.HandlerFunc, proxyIP, remoteAddr, spoofedXFF
 // spoofed header must not grant a fresh token bucket per request.
 func TestRateLimitKeyIgnoresSpoofedForwardedFor(t *testing.T) {
 	t.Parallel()
+	// The throttling assertions need a window (1/rate) longer than any
+	// scheduler gap under parallel full-suite load; 0.1/s gives ~10s.
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             1,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),
@@ -81,7 +83,7 @@ func TestCustomKeyFuncBucketing(t *testing.T) {
 	t.Parallel()
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             1,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),
@@ -159,7 +161,7 @@ func TestRejectsRequestsOverBurst(t *testing.T) {
 	t.Parallel()
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             2,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),
@@ -185,7 +187,7 @@ func TestLimitIsPerClient(t *testing.T) {
 	t.Parallel()
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             1,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),

@@ -39,6 +39,16 @@ func TestLoadRejectsInvalidRateLimit(t *testing.T) {
 			want: "requests_per_second",
 		},
 		{
+			name: "public limit with zero burst",
+			yaml: "rate_limiting:\n  enabled: true\n  requests_per_second: 20\n  burst: 0\n",
+			want: "burst",
+		},
+		{
+			name: "user limit with zero requests_per_second",
+			yaml: "user_rate_limiting:\n  enabled: true\n  requests_per_second: 0\n  burst: 20\n",
+			want: "requests_per_second",
+		},
+		{
 			name: "user limit with zero burst",
 			yaml: "user_rate_limiting:\n  enabled: true\n  requests_per_second: 20\n  burst: 0\n",
 			want: "burst",
@@ -54,5 +64,17 @@ func TestLoadRejectsInvalidRateLimit(t *testing.T) {
 				t.Fatalf("error = %q, want it to mention %q", err, tc.want)
 			}
 		})
+	}
+}
+
+// TestLoadAllowsDisabledRateLimits checks the disabled path: rate limit blocks
+// that are off are not validated, so zero values pass without an error.
+func TestLoadAllowsDisabledRateLimits(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://test")
+	t.Setenv("JWT_SECRET_KEY", "12345678901234567890123456789012")
+	t.Setenv("CONFIG_PATH", writeConfig(t, "rate_limiting:\n  enabled: false\nuser_rate_limiting:\n  enabled: false\n"))
+
+	if _, err := config.Load(); err != nil {
+		t.Fatalf("Load() error = %v, want nil for disabled rate limits", err)
 	}
 }
