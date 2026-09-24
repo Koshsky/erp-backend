@@ -215,14 +215,23 @@ func (m *Middleware) finalize(
 		status = http.StatusOK
 	}
 	if status >= http.StatusOK && status < http.StatusMultipleChoices {
+		// Complete/Commit failure — commit ambiguity: the business writes are
+		// already rolled back (deferred in runClaimed), so atomicity holds, but
+		// the key row may or may not have been updated before the failure.
+		// Deliberately do NOT release the key here: it stays in-flight, so a
+		// retry gets a 409 Conflict until the claim lease (repository
+		// claimLease, 2 min) expires and the key is reclaimed — re-executing an
+		// operation whose outcome is unknown could duplicate it.
 		if cerr := m.repo.Complete(ctx, key, userID, method, path, status, json.RawMessage(cw.body)); cerr != nil {
 			m.logger.ErrorContext(ctx, "idempotency complete failed", "error", cerr, "key", key)
+			cw.reset()
 			response.InternalError(c, m.logger, "idempotency storage failure", cerr)
 			cw.flush()
 			return
 		}
 		if cerr := tx.Commit(ctx); cerr != nil {
 			m.logger.ErrorContext(ctx, "idempotency commit failed", "error", cerr, "key", key)
+			cw.reset()
 			response.InternalError(c, m.logger, "idempotency commit failed", cerr)
 			cw.flush()
 			return
@@ -306,6 +315,15 @@ func (w *captureWriter) WriteHeaderNow() {}
 // Status returns the recorded response status.
 func (w *captureWriter) Status() int {
 	return w.status
+}
+
+// reset clears the buffered status and body. Used to drop an already-buffered
+// 2xx body before writing a failure response, so the error envelope is the
+// only JSON document the client receives instead of being appended after the
+// success body (which would produce two concatenated JSON documents).
+func (w *captureWriter) reset() {
+	w.status = 0
+	w.body = nil
 }
 
 // Written reports whether a response (status or body) has been captured.

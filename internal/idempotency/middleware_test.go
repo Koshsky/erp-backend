@@ -40,6 +40,7 @@ type fakeRepo struct {
 	completes   int
 	releases    int
 	completeErr bool
+	commitErr   bool
 	lastTx      *fakeTx
 }
 
@@ -73,7 +74,7 @@ func (f *fakeRepo) Claim(
 	}
 	f.inflight[s] = true
 	f.claims++
-	tx := &fakeTx{}
+	tx := &fakeTx{commitErr: f.commitErr}
 	f.lastTx = tx
 	return nil, true, tx, nil
 }
@@ -371,11 +372,15 @@ type fakeTx struct {
 	mu         sync.Mutex
 	committed  bool
 	rolledBack bool
+	commitErr  bool
 }
 
 func (f *fakeTx) Commit(context.Context) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.commitErr {
+		return errors.New("commit failed")
+	}
 	f.committed = true
 	return nil
 }
@@ -540,8 +545,8 @@ func TestIdempotencyPanicRollsBackAndRestoresWriter(t *testing.T) {
 }
 
 // TestIdempotencyCompleteFailureRollsBack verifies a storage failure while
-// completing the key rolls back the transaction and answers 500 instead of
-// delivering the handler's 2xx.
+// completing the key rolls back the transaction and answers a single JSON 500
+// instead of delivering the handler's 2xx.
 func TestIdempotencyCompleteFailureRollsBack(t *testing.T) {
 	t.Parallel()
 	repo := newFakeRepo()
@@ -556,6 +561,9 @@ func TestIdempotencyCompleteFailureRollsBack(t *testing.T) {
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500 (complete failure must not deliver the 2xx)", rec.Code)
 	}
+	// The body must be a single well-formed {data,error} document, not the 2xx
+	// body concatenated with the error envelope (invalid double JSON).
+	assertSingleJSONError(t, rec.Body.Bytes())
 	if counter != 1 {
 		t.Fatalf("handler executed %d times, want 1", counter)
 	}
@@ -568,5 +576,62 @@ func TestIdempotencyCompleteFailureRollsBack(t *testing.T) {
 	}
 	if tx.isCommitted() {
 		t.Fatal("transaction must not be committed when completion fails")
+	}
+}
+
+// TestIdempotencyCommitFailureDeliversSingleJSONError covers the commit-ambiguity
+// path: the transaction commit fails after the key was completed; the client
+// must get a single well-formed 500 {data,error} document and the key must stay
+// in-flight (deliberately not released).
+func TestIdempotencyCommitFailureDeliversSingleJSONError(t *testing.T) {
+	t.Parallel()
+	repo := newFakeRepo()
+	repo.mu.Lock()
+	repo.commitErr = true
+	repo.mu.Unlock()
+	mw := idem.New(repo, nil, nil)
+	counter := 0
+	router := buildRouter(mw, &counter)
+
+	rec := doPost(router, "k-cf")
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500 (commit failure must not deliver the 2xx)", rec.Code)
+	}
+	assertSingleJSONError(t, rec.Body.Bytes())
+	if counter != 1 {
+		t.Fatalf("handler executed %d times, want 1", counter)
+	}
+	tx := repo.tx()
+	if tx == nil {
+		t.Fatal("claim must open a request transaction")
+	}
+	if tx.isCommitted() {
+		t.Fatal("transaction must not be committed when commit fails")
+	}
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if repo.releases != 0 {
+		t.Fatalf("releases = %d, want 0 (commit ambiguity must leave the key in-flight)", repo.releases)
+	}
+}
+
+// assertSingleJSONError asserts the body parses as exactly one JSON document
+// carrying the {data,error} envelope with a non-nil error. A concatenation of
+// two JSON documents (the buffered 2xx body + the error envelope) fails the
+// unmarshal, catching the double-JSON defect.
+func assertSingleJSONError(t *testing.T, body []byte) {
+	t.Helper()
+	var envelope struct {
+		Data  json.RawMessage `json:"data"`
+		Error *struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		t.Fatalf("body is not a single JSON document: %v\nbody: %s", err, body)
+	}
+	if envelope.Error == nil {
+		t.Fatalf("error envelope missing in body: %s", body)
 	}
 }
