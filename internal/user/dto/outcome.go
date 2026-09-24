@@ -51,11 +51,6 @@ type AdminUserResponse struct {
 	PasswordHash string    `json:"password_hash,omitempty" example:"$2a$10$..."`
 }
 
-// ResetPasswordResponse — newly generated password (shown once).
-type ResetPasswordResponse struct {
-	Password string `json:"password" example:"Xy9kLm2QrT8wAb3z"`
-}
-
 type UserStateResponse struct {
 	ID          int64     `json:"id"           example:"1"`
 	StateID     int64     `json:"state_id"     example:"4"`

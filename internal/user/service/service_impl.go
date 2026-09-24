@@ -291,32 +291,50 @@ func (s *UserService) generateUsername(ctx context.Context, name, preset string)
 	}
 }
 
-// ResetPassword generates a new random password for the user and returns it once.
-func (s *UserService) ResetPassword(ctx context.Context, id int64) (*dto.ResetPasswordResponse, error) {
+// ResetPassword generates a new random password for the user. Admin-only: the
+// route is reachable by user_admin.update holders, but resetting a password —
+// like preset assignment — stays an admin privilege (a non-admin with the grant
+// must not be able to reset any account, in particular an admin's, and take it
+// over). The new password is never returned to the caller; the reset is
+// recorded in the audit trail and the service log.
+func (s *UserService) ResetPassword(ctx context.Context, id int64, caller userctx.UserContext) error {
 	ctx, end := s.tracer.Start(ctx, "user.ResetPassword")
 	defer end(nil)
 
+	// Admin-only invariant (mirrors createUserInternal): the caller must carry
+	// the admin bypass resolved by the RBAC store (EffectiveUser.Admin), not
+	// merely an individual grant.
+	if !caller.Admin {
+		return errors.ErrForbidden
+	}
+
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
-		return nil, errors.NotFound("user not found")
+		return errors.NotFound("user not found")
 	}
 
 	raw, err := creds.RandomPassword()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	hash, err := hasher.Hash(raw)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to hash password")
 	}
 	if err = s.repository.UpdatePassword(ctx, id, hash); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Same as ChangePassword: a reset invalidates every existing session.
 	s.revokeSessions(ctx, id)
 
-	return &dto.ResetPasswordResponse{Password: raw}, nil
+	s.logger.InfoContext(
+		ctx,
+		"сброс пароля пользователя администратором",
+		"user_id", id,
+		"caller_id", caller.ID,
+	)
+	return nil
 }
 
 func (s *UserService) FindUserByUsername(ctx context.Context, username string) (*dto.UserResponse, error) {

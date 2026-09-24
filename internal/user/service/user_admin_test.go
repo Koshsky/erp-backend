@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"log/slog"
 	"net/http"
+	"slices"
 	"testing"
 
 	"github.com/Koshsky/erp-backend/internal/tracing"
@@ -19,12 +20,16 @@ import (
 
 // stubRepo is a minimal UserRepository for the user-admin rule tests.
 type stubRepo struct {
-	users      map[int64]*sqlc.User
-	adminCount int64
+	users           map[int64]*sqlc.User
+	adminCount      int64
+	passwordUpdated []int64
 }
 
 func newStubRepo(users ...*sqlc.User) *stubRepo {
-	r := &stubRepo{users: map[int64]*sqlc.User{}}
+	r := &stubRepo{
+		users:           map[int64]*sqlc.User{},
+		passwordUpdated: []int64{},
+	}
 	for _, u := range users {
 		if u != nil {
 			r.users[u.ID] = u
@@ -89,8 +94,11 @@ func (r *stubRepo) UpdateUser(_ context.Context, user sqlc.User) (*sqlc.User, er
 	return &cp, nil
 }
 
-func (r *stubRepo) UpdatePassword(_ context.Context, _ int64, _ string) error { return nil }
-func (r *stubRepo) DeleteUser(_ context.Context, _ int64) error               { return nil }
+func (r *stubRepo) UpdatePassword(_ context.Context, id int64, _ string) error {
+	r.passwordUpdated = append(r.passwordUpdated, id)
+	return nil
+}
+func (r *stubRepo) DeleteUser(_ context.Context, _ int64) error { return nil }
 
 func (r *stubRepo) ListUsers(
 	_ context.Context,
@@ -374,5 +382,50 @@ func TestUpdateUserLastAdminGuard(t *testing.T) {
 		context.Background(), 1, dto.UpdateUserRequest{Preset: &preset}, admin(7), 7,
 	); !errors.IsValidationError(err) {
 		t.Errorf("снятие последнего админа другим админом: err=%v; want validation", err)
+	}
+}
+
+// Password reset is admin-only even for holders of the grantable
+// user_admin.update right: a non-admin must not be able to reset any account —
+// in particular an admin's — and take it over (the audit finding I6). The
+// reset succeeds for an admin caller and revokes the target's sessions.
+func TestResetPasswordAdminOnly(t *testing.T) {
+	t.Parallel()
+	repo := newStubRepo(
+		userRow(2, "worker2", "Р", "а", userdomain.PresetWorker),
+		userRow(3, "admin3", "А", "д", userdomain.PresetAdmin),
+	)
+	revoker := &stubSessionRevoker{}
+	svc := newRevokeTestService(repo, revoker)
+
+	// Non-admin with user_admin.update (vp): forbidden, password untouched,
+	// no session revocation.
+	if err := svc.ResetPassword(context.Background(), 2, vp(10)); !errors.IsForbidden(err) {
+		t.Errorf("не-админ сбрасывает пароль: err=%v; want forbidden", err)
+	}
+	if len(repo.passwordUpdated) != 0 {
+		t.Errorf("пароль изменён не-админом: %v", repo.passwordUpdated)
+	}
+	if len(revoker.revokedIDs()) != 0 {
+		t.Errorf("сессии отозваны не-админом: %v", revoker.revokedIDs())
+	}
+
+	// Resetting an admin account by a non-admin — the same forbidden.
+	if err := svc.ResetPassword(context.Background(), 3, vp(10)); !errors.IsForbidden(err) {
+		t.Errorf("не-админ сбрасывает пароль администратора: err=%v; want forbidden", err)
+	}
+	if len(repo.passwordUpdated) != 0 {
+		t.Errorf("пароль администратора изменён не-админом: %v", repo.passwordUpdated)
+	}
+
+	// An admin may reset any account; the write happens and sessions die.
+	if err := svc.ResetPassword(context.Background(), 2, admin(1)); err != nil {
+		t.Fatalf("админ сбрасывает пароль: %v; want ok", err)
+	}
+	if !slices.Contains(repo.passwordUpdated, 2) {
+		t.Errorf("пароль не обновлён админом: %v", repo.passwordUpdated)
+	}
+	if !slices.Contains(revoker.revokedIDs(), 2) {
+		t.Errorf("сессии не отозваны при сбросе админом: %v", revoker.revokedIDs())
 	}
 }

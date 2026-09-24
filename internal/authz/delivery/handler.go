@@ -178,7 +178,7 @@ func (h *RBACHandler) DeleteRoutePolicy(c *gin.Context) {
 //	@Summary	List check kinds
 //	@Security	ApiKeyAuth
 //	@Produce	json
-//	@Success	200	{object}	response.SuccessResponse{data=[]policies.KindInfo,error=nil}
+//	@Success	200	{object}	response.SuccessResponse{data=[]engine.KindInfo,error=nil}
 //	@Router		/rbac/kinds [get]
 func (h *RBACHandler) Kinds(c *gin.Context) {
 	response.OK(c, h.service.Kinds())
