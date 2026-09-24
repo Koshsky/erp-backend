@@ -8,7 +8,7 @@ import (
 )
 
 type CalendarRepository interface {
-	ListResources(ctx context.Context) ([]sqlc.ListResourcesRow, error)
+	ListResources(ctx context.Context, userID int64, viewScope string) ([]sqlc.ListResourcesRow, error)
 	ListEmployeesForCalendar(ctx context.Context, start, end date.Date) ([]sqlc.ListEmployeesForCalendarRow, error)
 	ListUnavailableRanges(ctx context.Context, start, end date.Date) ([]sqlc.ListUnavailableRangesRow, error)
 }

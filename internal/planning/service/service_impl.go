@@ -52,13 +52,17 @@ func (s *PlanningService) GetProcessPlanning(
 	ctx context.Context,
 	userID int64,
 	viewScope string,
+	projectViewScope string,
 ) (*dto.ProcessPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetProcessPlanning")
 	defer end(nil)
 
 	// Scoped by process.view (ListProcesses): a caller with the right sees its
 	// processes even when it has no project.view (e.g. vp). The processes are
-	// grouped under their parent projects, which are re-fetched by ids.
+	// grouped under their parent projects, which are re-fetched by ids and
+	// scoped by the caller's project view zone (projectViewScope) — the
+	// aggregate must not disclose full project rows of projects outside that
+	// zone.
 	processes, err := s.repository.ListProcesses(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
@@ -72,7 +76,7 @@ func (s *PlanningService) GetProcessPlanning(
 	for projectID := range grouped {
 		projectIDs = append(projectIDs, projectID)
 	}
-	projects, err := s.repository.ListProjectsByIDs(ctx, projectIDs)
+	projects, err := s.repository.ListProjectsByIDs(ctx, projectIDs, userID, projectViewScope)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +113,7 @@ func (s *PlanningService) GetTaskPlanning(
 	ctx context.Context,
 	userID int64,
 	viewScope string,
+	resourceViewScope string,
 ) (*dto.TaskPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetTaskPlanning")
 	defer end(nil)
@@ -124,7 +129,12 @@ func (s *PlanningService) GetTaskPlanning(
 		}, nil
 	}
 
-	milestones, tasks, assignments, resourcesMap, commentCounts, err := s.loadAllData(ctx, processes)
+	milestones, tasks, assignments, resourcesMap, commentCounts, err := s.loadAllData(
+		ctx,
+		processes,
+		userID,
+		resourceViewScope,
+	)
 	if err != nil {
 		return nil, err
 	}

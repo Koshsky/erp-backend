@@ -33,10 +33,13 @@ func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, viewS
 }
 
 // loadAllData load milestones, tasks, assignments, resources and comment counts
-// for the given processes.
+// for the given processes. Resources are scoped by the caller's resource view
+// zone (userID/resourceViewScope).
 func (s *PlanningService) loadAllData(
 	ctx context.Context,
 	processes []dto.Process,
+	userID int64,
+	resourceViewScope string,
 ) (map[int64][]dto.Milestone, map[int64][]dto.Task, map[int64][]dto.Assignment, map[int64]dto.Resource, map[int64]int64, error) {
 	processIDs := make([]int64, len(processes))
 	for i, p := range processes {
@@ -92,7 +95,7 @@ func (s *PlanningService) loadAllData(
 		return nil, nil, nil, nil, nil, err
 	}
 
-	resourceRows, err := s.repository.ListResources(ctx)
+	resourceRows, err := s.repository.ListResources(ctx, userID, resourceViewScope)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}

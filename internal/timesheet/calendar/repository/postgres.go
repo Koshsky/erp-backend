@@ -34,8 +34,16 @@ func (r *CalendarRepository) q(ctx context.Context) *sqlc.Queries {
 	return r.db
 }
 
-func (r *CalendarRepository) ListResources(ctx context.Context) ([]sqlc.ListResourcesRow, error) {
-	return r.q(ctx).ListResources(ctx)
+// ListResources returns resources within the caller's resource view zone.
+func (r *CalendarRepository) ListResources(
+	ctx context.Context,
+	userID int64,
+	viewScope string,
+) ([]sqlc.ListResourcesRow, error) {
+	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
+		UserID:    userID,
+		ScopeView: viewScope,
+	})
 }
 
 // ListEmployeesForCalendar returns resource members active within the window for the calendar.

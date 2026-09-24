@@ -1,6 +1,12 @@
 -- name: ListResources :many
+-- Scoped by the caller's resource view zone (calendar.view): a process owner
+-- must not read capacity curves of resources outside its own scope.
 SELECT id, title, code, owner_id
 FROM resources
+WHERE (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+)
 ORDER BY id ASC;
 
 -- Members that could be active within the [start_date, end_date] window

@@ -63,8 +63,17 @@ func (q *Queries) ListEmployeesForCalendar(ctx context.Context, arg ListEmployee
 const listResources = `-- name: ListResources :many
 SELECT id, title, code, owner_id
 FROM resources
+WHERE (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint)
+)
 ORDER BY id ASC
 `
+
+type ListResourcesParams struct {
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+}
 
 type ListResourcesRow struct {
 	ID      int64  `json:"id"`
@@ -73,8 +82,10 @@ type ListResourcesRow struct {
 	OwnerID int64  `json:"owner_id"`
 }
 
-func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error) {
-	rows, err := q.db.Query(ctx, listResources)
+// Scoped by the caller's resource view zone (calendar.view): a process owner
+// must not read capacity curves of resources outside its own scope.
+func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
+	rows, err := q.db.Query(ctx, listResources, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}

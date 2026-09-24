@@ -38,12 +38,26 @@ WHERE (
 );
 
 -- name: ListResources :many
-SELECT * FROM resources;
+-- Resources embedded into task/reference data, scoped by the caller's
+-- resource view zone: a task-view holder must not receive resource rows
+-- outside its own scope (resource is own-scoped for vp).
+SELECT * FROM resources
+WHERE (
+    @scope_view::text = 'all' OR
+    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+);
 
 
 -- name: ListProjectsByIDs :many
+-- Projects attached as parent context of the caller's visible processes,
+-- scoped by the caller's project view zone: the process aggregate must not
+-- disclose full project rows of projects outside that zone.
 SELECT * FROM projects
-WHERE id = ANY(@ids::bigint[]);
+WHERE id = ANY(@ids::bigint[])
+  AND (
+      @scope_view::text = 'all' OR
+      (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+  );
 
 
 -- name: ListProcessesByProjectIDs :many

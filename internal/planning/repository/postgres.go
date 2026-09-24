@@ -41,9 +41,19 @@ func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, vie
 }
 
 // ListProjectsByIDs returns full project rows by ids (for attaching parent
-// context to process-scoped aggregates: /planning/processes).
-func (r *PlanningRepository) ListProjectsByIDs(ctx context.Context, ids []int64) ([]sqlc.Project, error) {
-	return r.q(ctx).ListProjectsByIDs(ctx, ids)
+// context to process-scoped aggregates: /planning/processes), scoped by the
+// caller's project view zone.
+func (r *PlanningRepository) ListProjectsByIDs(
+	ctx context.Context,
+	ids []int64,
+	userID int64,
+	viewScope string,
+) ([]sqlc.Project, error) {
+	return r.q(ctx).ListProjectsByIDs(ctx, sqlc.ListProjectsByIDsParams{
+		Ids:       ids,
+		UserID:    userID,
+		ScopeView: viewScope,
+	})
 }
 
 // ListProcesses — process-scoped list (process.view matrix).
@@ -110,6 +120,14 @@ func (r *PlanningRepository) ListTaskCommentCountsByTaskIDs(
 	return counts, nil
 }
 
-func (r *PlanningRepository) ListResources(ctx context.Context) ([]sqlc.Resource, error) {
-	return r.q(ctx).ListResources(ctx)
+// ListResources returns resources within the caller's resource view zone.
+func (r *PlanningRepository) ListResources(
+	ctx context.Context,
+	userID int64,
+	viewScope string,
+) ([]sqlc.Resource, error) {
+	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
+		UserID:    userID,
+		ScopeView: viewScope,
+	})
 }

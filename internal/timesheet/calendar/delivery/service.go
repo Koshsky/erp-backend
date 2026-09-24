@@ -8,5 +8,10 @@ import (
 )
 
 type CalendarService interface {
-	GetCalendar(ctx context.Context, start, end date.Date) (*dto.CalendarPlanning, error)
+	GetCalendar(
+		ctx context.Context,
+		userID int64,
+		viewScope string,
+		start, end date.Date,
+	) (*dto.CalendarPlanning, error)
 }

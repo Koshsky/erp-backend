@@ -104,6 +104,8 @@ func TestGetCalendarReversedRangeIsBadRequest(t *testing.T) {
 	t.Parallel()
 	_, err := newTestCalendarService().GetCalendar(
 		context.Background(),
+		0,
+		"own",
 		date.From(dt("2026-03-01")),
 		date.From(dt("2026-01-01")),
 	)
@@ -121,6 +123,8 @@ func TestGetCalendarTooWideRangeIsBadRequest(t *testing.T) {
 	t.Parallel()
 	_, err := newTestCalendarService().GetCalendar(
 		context.Background(),
+		0,
+		"own",
 		date.From(dt("2024-01-01")),
 		date.From(dt("2026-06-01")),
 	)

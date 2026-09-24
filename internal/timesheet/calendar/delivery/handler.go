@@ -3,12 +3,13 @@ package delivery
 import (
 	"log/slog"
 
-	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
-
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/response"
+	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/service"
+	"github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -42,6 +43,12 @@ func NewCalendarHandler(logger *slog.Logger, svc *service.CalendarService, mw *r
 //	@Failure		500			{object}	response.ErrorResponse{data=nil}
 //	@Router			/timesheet/calendar [get]
 func (h *CalendarHandler) GetCalendar(c *gin.Context) {
+	user, err := userctx.GetUser(c)
+	if err != nil {
+		response.Unauthorized(c, errors.CodeUnauthorized, "authentication required")
+		return
+	}
+
 	start, err := date.Parse(c.Query("start_date"))
 	if err != nil {
 		response.BadRequest(c, errors.CodeBadRequest, "invalid start_date")
@@ -53,7 +60,13 @@ func (h *CalendarHandler) GetCalendar(c *gin.Context) {
 		return
 	}
 
-	planning, err := h.service.GetCalendar(c.Request.Context(), start, end)
+	planning, err := h.service.GetCalendar(
+		c.Request.Context(),
+		user.ID,
+		engine.ViewScopeCodeUser(user, rbac.ResourceResource),
+		start,
+		end,
+	)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
