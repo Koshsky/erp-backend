@@ -16,12 +16,12 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/Koshsky/erp-backend/internal/audit"
+	authzService "github.com/Koshsky/erp-backend/internal/authz/service"
 	"github.com/Koshsky/erp-backend/internal/config"
 	idempotencypkg "github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
-	rbacpolicysvc "github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
@@ -45,7 +45,7 @@ type App struct {
 	tracer      *tracingpkg.Tracer
 	idemMw      *idempotencypkg.Middleware
 	auditMw     *audit.Middleware
-	policyStore *rbacpolicysvc.PolicyStore
+	policyStore *authzService.PolicyStore
 	modules     []Module
 }
 
@@ -59,7 +59,7 @@ func New(
 	tracer *tracingpkg.Tracer,
 	idemMw *idempotencypkg.Middleware,
 	auditMw *audit.Middleware,
-	policyStore *rbacpolicysvc.PolicyStore,
+	policyStore *authzService.PolicyStore,
 	redisClient *redis.Client,
 	rateLimiter *ratelimit.Provider,
 	modules []Module,

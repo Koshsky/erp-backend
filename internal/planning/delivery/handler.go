@@ -3,8 +3,8 @@ package delivery
 import (
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	planningservice "github.com/Koshsky/erp-backend/internal/planning/service"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +54,7 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 	planning, err := h.service.GetProjectPlanning(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceProject),
+		engine.ViewScopeCodeUser(user, rbac.ResourceProject),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
@@ -84,7 +84,7 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 	planning, err := h.service.GetProcessPlanning(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceProcess),
+		engine.ViewScopeCodeUser(user, rbac.ResourceProcess),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
@@ -114,7 +114,7 @@ func (h *PlanningHandler) GetTaskPlanning(c *gin.Context) {
 	planning, err := h.service.GetTaskPlanning(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceTask),
+		engine.ViewScopeCodeUser(user, rbac.ResourceTask),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)

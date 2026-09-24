@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/Koshsky/erp-backend/internal/authz/domain"
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
+	"github.com/Koshsky/erp-backend/internal/authz/repository"
+	"github.com/Koshsky/erp-backend/internal/authz/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/config"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/domain"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository/sqlc"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
@@ -21,12 +22,13 @@ import (
 const reloadTimeout = 10 * time.Second
 
 // PolicyStore keeps DB rules in memory and publishes them to the engine:
-// the matrix via policies.SetMatrix, route policies via
-// rbac.Middleware.Refresh, and the per-user principal snapshot (admin bypass,
-// assigned preset, individual overrides) served to the auth middleware via
-// EffectiveUser. When the DB is unavailable it runs on the built-in defaults
-// and "heals" itself by TTL. No load error brings the service
-// down: only a valid, consistent snapshot is applied.
+// the Casbin snapshot via engine.Publish (matrix + ACL rows + role
+// assignments), the route checks via rbac.Middleware.Refresh, and the
+// per-user principal snapshot (admin bypass, assigned preset, individual
+// overrides) served to the auth middleware via EffectiveUser. When the DB is
+// unavailable it runs on the built-in defaults and "heals" itself by TTL. No
+// load error brings the service down: only a valid, consistent snapshot is
+// applied.
 type PolicyStore struct {
 	logger   *slog.Logger
 	repo     *repository.RuleRepository
@@ -101,17 +103,15 @@ func (s *PolicyStore) Stop() {
 }
 
 // Reload re-reads rules and user principals from the DB and publishes them to
-// the engine. On any error (including an empty route policy set) the snapshot
-// stays unchanged.
+// the engine: the Casbin snapshot (matrix + user ACL/revoke rows + role
+// assignments) and the route checks. On any error (including an empty route
+// policy set) the published state stays unchanged.
 func (s *PolicyStore) Reload(ctx context.Context) error {
 	rules, err := s.repo.ListActiveRules(ctx)
 	if err != nil {
 		return fmt.Errorf("загрузка правил: %w", err)
 	}
-	matrix, err := rulesToMatrix(rules)
-	if err != nil {
-		return err
-	}
+	input := publishInput(rules)
 
 	routePolicies, err := s.repo.ListActiveRoutePolicies(ctx)
 	if err != nil {
@@ -122,7 +122,7 @@ func (s *PolicyStore) Reload(ctx context.Context) error {
 			"в БД нет ни одной активной маршрутной проверки — применение отменено (защита от полной блокировки)",
 		)
 	}
-	built, err := policies.BuildPolicies(routePoliciesToSpecs(routePolicies))
+	built, err := engine.BuildPolicies(routePoliciesToSpecs(routePolicies))
 	if err != nil {
 		return fmt.Errorf("сборка маршрутных проверок: %w", err)
 	}
@@ -131,8 +131,36 @@ func (s *PolicyStore) Reload(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("загрузка прав пользователей: %w", err)
 	}
+	assignments, err := s.repo.ListUserPrincipals(ctx)
+	if err != nil {
+		return fmt.Errorf("загрузка пресетов пользователей: %w", err)
+	}
+	permissions, err := s.repo.ListAllUserPermissions(ctx)
+	if err != nil {
+		return fmt.Errorf("загрузка override-правил: %w", err)
+	}
+	for _, a := range assignments {
+		if !a.Preset.Valid {
+			continue
+		}
+		input.Roles = append(input.Roles, engine.RoleAssign{
+			User:   strconv.FormatInt(a.UserID, 10),
+			Preset: a.Preset.String,
+		})
+	}
+	for _, p := range permissions {
+		sub := strconv.FormatInt(p.UserID, 10)
+		key := p.Resource + "/" + p.Action
+		if p.Granted {
+			input.Grants = append(input.Grants, engine.RuleGrant{Sub: sub, Key: key, Scope: p.Scope})
+		} else {
+			input.Denies = append(input.Denies, engine.RuleDeny{Sub: sub, Key: key})
+		}
+	}
+	if err := engine.Publish(input); err != nil {
+		return fmt.Errorf("сборка Casbin-политик: %w", err)
+	}
 
-	policies.SetMatrix(matrix)
 	s.mw.Refresh(built)
 	s.mu.Lock()
 	s.users = principals
@@ -199,57 +227,27 @@ func (s *PolicyStore) IsReady() bool {
 	return s.started
 }
 
-// rulesToMatrix converts DB rows into a matrix, validating the codecs.
-func rulesToMatrix(rules []sqlc.ListActivePresetRulesRow) (policies.Matrix, error) {
-	rows := make([]policies.MatrixRule, 0, len(rules))
+// publishInput converts the preset matrix rows into Casbin allow rules. The
+// codec validation (resource/action/scope) happens in engine.Publish — the
+// same checks the old matrix loader performed.
+func publishInput(rules []sqlc.ListActivePresetRulesRow) engine.PublishInput {
+	input := engine.PublishInput{}
 	for _, r := range rules {
-		res, ok := policies.ParseResource(r.Resource)
-		if !ok {
-			return policies.Matrix{}, fmt.Errorf(
-				"неизвестный ресурс %q в правиле (preset=%s, action=%s)",
-				r.Resource,
-				r.Preset,
-				r.Action,
-			)
-		}
-		act, ok := policies.ParseAction(r.Action)
-		if !ok {
-			return policies.Matrix{}, fmt.Errorf(
-				"неизвестное действие %q в правиле (preset=%s, resource=%s)",
-				r.Action,
-				r.Preset,
-				r.Resource,
-			)
-		}
-		scope, ok := policies.ParseScope(r.Scope)
-		if !ok || scope == policies.ScopeNone {
-			return policies.Matrix{}, fmt.Errorf(
-				"недопустимая зона %q в правиле (preset=%s, resource=%s, action=%s)",
-				r.Scope,
-				r.Preset,
-				r.Resource,
-				r.Action,
-			)
-		}
-		if !policies.ScopeApplicable(res, scope) {
-			return policies.Matrix{}, fmt.Errorf(
-				"зона %q неприменима к ресурсу %q (preset=%s)",
-				r.Scope,
-				r.Resource,
-				r.Preset,
-			)
-		}
-		rows = append(rows, policies.MatrixRule{Res: res, Act: act, Role: r.Preset, Scope: scope})
+		input.Grants = append(input.Grants, engine.RuleGrant{
+			Sub:   r.Preset,
+			Key:   r.Resource + "/" + r.Action,
+			Scope: r.Scope,
+		})
 	}
-	return policies.NewMatrix(rows), nil
+	return input
 }
 
 // routePoliciesToSpecs converts route policy definitions into engine
 // specifications (kind and parameter validation happens in BuildPolicies).
-func routePoliciesToSpecs(routes []domain.RoutePolicy) []policies.RouteSpec {
-	specs := make([]policies.RouteSpec, 0, len(routes))
+func routePoliciesToSpecs(routes []domain.RoutePolicy) []engine.RouteSpec {
+	specs := make([]engine.RouteSpec, 0, len(routes))
 	for _, p := range routes {
-		specs = append(specs, policies.RouteSpec{Name: p.Name, Kind: p.Kind, Params: p.Params})
+		specs = append(specs, engine.RouteSpec{Name: p.Name, Kind: p.Kind, Params: p.Params})
 	}
 	return specs
 }

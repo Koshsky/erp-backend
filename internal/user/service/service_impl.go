@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	repo "github.com/Koshsky/erp-backend/internal/user/repository"
 
 	"github.com/Koshsky/erp-backend/internal/security/creds"
@@ -227,11 +227,11 @@ func (s *UserService) validateCreatePermissions(
 	seen := map[string]bool{}
 	out := make([]userdomain.UserPermission, 0, len(req))
 	for _, p := range req {
-		res, ok := policies.ParseResource(p.Resource)
+		res, ok := engine.ParseResource(p.Resource)
 		if !ok {
 			return nil, errors.BadRequest("неизвестный ресурс " + p.Resource)
 		}
-		if _, okAction := policies.ParseAction(p.Action); !okAction {
+		if _, okAction := engine.ParseAction(p.Action); !okAction {
 			return nil, errors.BadRequest("неизвестное действие " + p.Action)
 		}
 		key := p.Resource + "/" + p.Action
@@ -241,11 +241,11 @@ func (s *UserService) validateCreatePermissions(
 		seen[key] = true
 		scope := scopeAllCode
 		if p.Granted {
-			parsed, okScope := policies.ParseScope(p.Scope)
-			if !okScope || parsed == policies.ScopeNone {
+			parsed, okScope := engine.ParseScope(p.Scope)
+			if !okScope || parsed == engine.ScopeNone {
 				return nil, errors.BadRequest("недопустимая зона " + p.Scope + " (all|own|parent|ancestor)")
 			}
-			if !policies.ScopeApplicable(res, parsed) {
+			if !engine.ScopeApplicable(res, parsed) {
 				return nil, errors.BadRequest("зона " + p.Scope + " неприменима к ресурсу " + p.Resource)
 			}
 			scope = p.Scope
@@ -722,7 +722,7 @@ func (s *UserService) checkUserViewable(
 	if user.ManagerID.Valid {
 		owner = user.ManagerID.Int64
 	}
-	if !policies.AuthorizeUser(caller, rbac.ResourceWorker, policies.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
+	if !engine.AuthorizeUser(caller, rbac.ResourceWorker, engine.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
 		return errors.ErrUserNotFound
 	}
 	return nil

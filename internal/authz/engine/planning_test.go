@@ -1,10 +1,10 @@
-package policies_test
+package engine_test
 
 import (
 	"testing"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 )
 
 // DefaultRouteSpecs carry the planning.* route policies (mirror seed V13):
@@ -12,8 +12,8 @@ import (
 // list kind (row scoping stays in the SQL).
 func TestPlanningRouteSpecs(t *testing.T) {
 	t.Parallel()
-	byName := make(map[string]policies.RouteSpec, len(policies.DefaultRouteSpecs()))
-	for _, spec := range policies.DefaultRouteSpecs() {
+	byName := make(map[string]engine.RouteSpec, len(engine.DefaultRouteSpecs()))
+	for _, spec := range engine.DefaultRouteSpecs() {
 		byName[spec.Name] = spec
 	}
 	for _, name := range []string{"planning.projects", "planning.processes", "planning.tasks"} {
@@ -21,7 +21,7 @@ func TestPlanningRouteSpecs(t *testing.T) {
 		if !ok {
 			t.Fatalf("DefaultRouteSpecs не содержит %s", name)
 		}
-		if err := policies.ValidateSpec(spec); err != nil {
+		if err := engine.ValidateSpec(spec); err != nil {
 			t.Errorf("ValidateSpec(%s) неожиданная ошибка: %v", name, err)
 		}
 	}
@@ -31,8 +31,8 @@ func TestPlanningRouteSpecs(t *testing.T) {
 // admin (bypass) and viewing roles pass.
 func TestPlanningListCheck(t *testing.T) {
 	t.Parallel()
-	policies.SetMatrix(policies.DefaultMatrix())
-	defer policies.SetMatrix(policies.DefaultMatrix())
+	engine.SetMatrix(engine.DefaultMatrix())
+	defer engine.SetMatrix(engine.DefaultMatrix())
 
 	for _, act := range []struct {
 		resource rbac.Resource
@@ -43,14 +43,14 @@ func TestPlanningListCheck(t *testing.T) {
 		{rbac.ResourceProcess, "vp", "worker"},
 		{rbac.ResourceTask, "vp", "worker"},
 	} {
-		if got := policies.ViewScopeCode(act.noRole, act.resource); got != "" {
+		if got := engine.ViewScopeCode(act.noRole, act.resource); got != "" {
 			t.Errorf("ViewScopeCode(%s, %v) = %q; want empty (no access)", act.noRole, act.resource, got)
 		}
-		if got := policies.ViewScopeCode(act.viewRole, act.resource); got == "" {
+		if got := engine.ViewScopeCode(act.viewRole, act.resource); got == "" {
 			t.Errorf("ViewScopeCode(%s, %v) пуст; want a scope", act.viewRole, act.resource)
 		}
 	}
-	if got := policies.ViewScopeCode("admin", rbac.ResourceProject); got != "all" {
+	if got := engine.ViewScopeCode("admin", rbac.ResourceProject); got != "all" {
 		t.Errorf("ViewScopeCode(admin, project) = %q; want all", got)
 	}
 }

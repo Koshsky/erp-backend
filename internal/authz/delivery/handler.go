@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/dto"
+	"github.com/Koshsky/erp-backend/internal/authz/service"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/dto"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"

@@ -1,4 +1,7 @@
-package policies
+// Kind builders: the request-side mechanisms that translate an HTTP request
+// (params, body, URL) into the ABAC target evaluated by the Casbin snapshot.
+// The zone decision itself stays in the model's matcher.
+package engine
 
 import (
 	"fmt"
@@ -264,7 +267,7 @@ func buildEntity(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 // noOwnerCheck — matrix check for a resource without owners (state, virtual ones).
 func noOwnerCheck(res rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
-		if !AuthorizeUser(rc.User, res, act, rbac.Owners{}, rc.User.ID) {
+		if !EnforceTarget(rc.User, Target{Res: res, Act: act}) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -331,7 +334,7 @@ func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		if ownerID == 0 && defaultSelf {
 			ownerID = rc.User.ID
 		}
-		if !AuthorizeUser(rc.User, res, ActionCreate, makeOwners(ownerID), rc.User.ID) {
+		if !EnforceTarget(rc.User, Target{Res: res, Act: ActionCreate, Owners: makeOwners(ownerID)}) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -428,7 +431,8 @@ func parseResourceCode(name, kind, key string) (rbac.Resource, error) {
 
 // buildOwnerMatch — a cross-entity rule: matrix check against the primary
 // entity owner + a shared-owner requirement with the compare entity
-// (admin and the exempt_roles are exempt from this business rule).
+// (admin and the exempt_roles are exempt from this business rule). Both legs
+// are evaluated by the ABAC matcher (the owner_match mode).
 func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	spec, err := parseOwnerMatch(params)
 	if err != nil {
@@ -443,24 +447,27 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if !AuthorizeUser(rc.User, spec.res, spec.act, primaryOwners, rc.User.ID) {
+		mode := ModeOwnerMatch
+		if slices.Contains(spec.exemptRoles, rc.User.Preset) {
+			mode = ""
+		}
+		compareOwners := rbac.Owners{}
+		if mode == ModeOwnerMatch {
+			compareID, bodyErr := rc.BodyID(spec.compareFrom)
+			if bodyErr != nil {
+				return bodyErr
+			}
+			compareOwners, ownerErr = rc.Owners(spec.compareRes, compareID)
+			if ownerErr != nil {
+				return ownerErr
+			}
+		}
+		if !EnforceTarget(rc.User, Target{
+			Res: spec.res, Act: spec.act, Owners: primaryOwners, Mode: mode, OwnerB: compareOwners,
+		}) {
 			return errors.Forbidden(
 				"недостаточно прав: действие доступно владельцу родительского элемента (или администратору)",
 			)
-		}
-		if slices.Contains(spec.exemptRoles, rc.User.Preset) {
-			return nil
-		}
-		compareID, bodyErr := rc.BodyID(spec.compareFrom)
-		if bodyErr != nil {
-			return bodyErr
-		}
-		compareOwners, ownerErr := rc.Owners(spec.compareRes, compareID)
-		if ownerErr != nil {
-			return ownerErr
-		}
-		if !primaryOwners.SharesOwner(compareOwners) {
-			return errors.Forbidden("ресурс не принадлежит владельцу")
 		}
 		return nil
 	}, nil
@@ -499,18 +506,20 @@ func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	}
 
 	return func(rc *rbac.CheckCtx) error {
-		authorID, parseErr := strconv.ParseInt(rc.C.Param(authorIDParam), 10, 64)
+		commentID, parseErr := strconv.ParseInt(rc.C.Param(authorIDParam), 10, 64)
 		if parseErr != nil {
 			return errors.BadRequest("invalid id")
 		}
-		owners, ownerErr := rc.Owners(authorRes, authorID)
+		owners, ownerErr := rc.Owners(authorRes, commentID)
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if owners.Owner != 0 && owners.Owner == rc.User.ID {
-			return nil // the author deletes their own
-		}
-		if !AuthorizeUser(rc.User, rightRes, rightAct, owners, rc.User.ID) {
+		// The author (the DB-verified row owner) always, others by the
+		// parent's right (the ABAC matcher evaluates both legs of the
+		// author_or mode).
+		if !EnforceTarget(rc.User, Target{
+			Res: rightRes, Act: rightAct, Owners: owners, Mode: ModeAuthorOr, AuthorID: owners.Owner,
+		}) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -561,7 +570,7 @@ func buildParentAction(params map[string]any) (func(*rbac.CheckCtx) error, error
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if !AuthorizeUser(rc.User, res, act, owners, rc.User.ID) {
+		if !EnforceTarget(rc.User, Target{Res: res, Act: act, Owners: owners}) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -632,7 +641,7 @@ func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 		if err != nil {
 			return err
 		}
-		if !AuthorizeUser(rc.User, rsrc, act, owners, rc.User.ID) {
+		if !EnforceTarget(rc.User, Target{Res: rsrc, Act: act, Owners: owners}) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -646,7 +655,7 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 		if err != nil {
 			return err
 		}
-		if !AuthorizeUser(rc.User, rsrc, ActionCreate, owners, rc.User.ID) {
+		if !EnforceTarget(rc.User, Target{Res: rsrc, Act: ActionCreate, Owners: owners}) {
 			return errors.ErrForbidden
 		}
 		return nil

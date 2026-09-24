@@ -1,13 +1,10 @@
-// Package policies — the single place holding access rules. The engine (rbac)
-// stays a pure mechanism; rules are split into a matrix (preset × resource ×
-// action → ownership scope) and route policies (kind + parameters). A caller's
-// effective scope is resolved by the matrix from the assigned preset plus
-// per-user overrides (see ScopeForUser).
-package policies
+// Access rules data: the permission matrix (preset × resource × action →
+// ownership scope) as plain data, its codecs (resources/actions/scopes) and
+// zone applicability. The matrix is the reset source and the compiled view of
+// the Casbin allow policies; runtime decisions live in decision.go.
+package engine
 
 import (
-	"sync/atomic"
-
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -84,9 +81,6 @@ type MatrixRule struct {
 	Scope Scope
 }
 
-// CurrentMatrix returns the active matrix (for the matrix/explain API).
-func CurrentMatrix() Matrix { return snapshot() }
-
 // DefaultMatrixRules returns the built-in matrix rules (for reset).
 func DefaultMatrixRules() []MatrixRule {
 	var out []MatrixRule
@@ -130,21 +124,17 @@ func NewMatrix(rules []MatrixRule) Matrix {
 	return m
 }
 
-//nolint:gochecknoglobals // live snapshot; updated by PolicyStore from the DB, fallback — DefaultMatrix
-var currentRules atomic.Pointer[Matrix]
-
-// SetMatrix atomically replaces the active permission matrix.
-func SetMatrix(m Matrix) {
-	currentRules.Store(&m)
-}
-
-// snapshot returns the active matrix or the built-in defaults (before the first
-// DB load and in tests).
-func snapshot() Matrix {
-	if m := currentRules.Load(); m != nil {
-		return *m
+// Rules returns the matrix rows (the inverse of NewMatrix).
+func (m Matrix) Rules() []MatrixRule {
+	var out []MatrixRule
+	for res, byAction := range m.rules {
+		for act, rules := range byAction {
+			for _, r := range rules {
+				out = append(out, MatrixRule{Res: res, Act: act, Role: r.Role, Scope: r.Scope})
+			}
+		}
 	}
-	return DefaultMatrix()
+	return out
 }
 
 // DefaultMatrix — the built-in default matrix: serialization of the seed
@@ -342,6 +332,8 @@ func overrideScope(u userctx.UserContext, res rbac.Resource, act Action) (Scope,
 // ScopeForUser returns the caller's effective zone for (resource, action):
 // admin — ScopeAll (a bypass; overrides do not apply); a per-user override —
 // its scope (a revoked rule — ScopeNone); otherwise the preset matrix rule.
+// This is the data-level view (used by the admin editor views); the runtime
+// decisions go through the Casbin snapshot (ScopeForUser in decision.go).
 func (m Matrix) ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
 	if u.Admin {
 		return ScopeAll
@@ -350,137 +342,6 @@ func (m Matrix) ScopeForUser(u userctx.UserContext, res rbac.Resource, act Actio
 		return scope
 	}
 	return m.ScopeFor(u.Preset, res, act)
-}
-
-// scopeForUser — internal wrapper for the check builders.
-func scopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
-	return snapshot().ScopeForUser(u, res, act)
-}
-
-// ScopeForUser returns the caller's effective zone for an action on a resource
-// (admin bypass + per-user overrides applied; package-level helper).
-func ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
-	return scopeForUser(u, res, act)
-}
-
-// authorizeScope — the single owner-chain mechanism for a resolved zone.
-func authorizeScope(scope Scope, res rbac.Resource, owners rbac.Owners, userID int64) bool {
-	switch scope {
-	case ScopeNone:
-		return false
-	case ScopeAll:
-		return true
-	case ScopeOwn:
-		owner := ownField(res, owners)
-		return userID != 0 && owner != 0 && owner == userID
-	case ScopeParent:
-		parent := parentField(res, owners)
-		return userID != 0 && parent != 0 && parent == userID
-	case ScopeAncestor:
-		return ancestorMatch(res, owners, userID)
-	default:
-		return false
-	}
-}
-
-// ownField returns the owner of the row itself (chain L0) for a resource
-// (0 — the entity has no own owner: own is not applicable).
-func ownField(res rbac.Resource, owners rbac.Owners) int64 {
-	switch res {
-	case rbac.ResourceProject:
-		return owners.ProjectOwner
-	case rbac.ResourceProcess:
-		return owners.ProcessOwner
-	case rbac.ResourceTask, rbac.ResourceResource, rbac.ResourceWorker:
-		return owners.Owner
-	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
-		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
-		return 0
-	}
-	return 0
-}
-
-// parentField returns the immediate parent owner for a resource
-// (0 — the resource has no parent in the project → process → task/… hierarchy).
-func parentField(res rbac.Resource, owners rbac.Owners) int64 {
-	switch res {
-	case rbac.ResourceProcess:
-		return owners.ProjectOwner
-	case rbac.ResourceTask, rbac.ResourceMilestone, rbac.ResourceAssignment:
-		return owners.ProcessOwner
-	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
-		rbac.ResourceWorker, rbac.ResourceComment,
-		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
-		return 0
-	}
-	return 0
-}
-
-// ancestorMatch reports whether the user matches any owner of the entity's
-// ownership chain (the L0 row owner or any higher one).
-// For process/milestone the self-owner is absent (Owners.Owner = 0) — then
-// the process and project owners are considered.
-func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
-	if userID == 0 {
-		return false
-	}
-	switch res {
-	case rbac.ResourceTask, rbac.ResourceMilestone, rbac.ResourceAssignment,
-		rbac.ResourceProcess:
-		return owners.Owner == userID || owners.ProcessOwner == userID || owners.ProjectOwner == userID
-	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
-		rbac.ResourceWorker, rbac.ResourceComment,
-		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
-		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
-		return false
-	}
-	return false
-}
-
-// Authorize reports whether a preset may perform an action on an entity
-// with its owners.
-func Authorize(role string, res rbac.Resource, act Action, owners rbac.Owners, userID int64) bool {
-	return authorizeScope(snapshot().ScopeFor(role, res, act), res, owners, userID)
-}
-
-// AuthorizeUser reports whether the caller may perform an action on an entity
-// with its owners (admin bypass + per-user overrides applied).
-func AuthorizeUser(u userctx.UserContext, res rbac.Resource, act Action, owners rbac.Owners, userID int64) bool {
-	return authorizeScope(scopeForUser(u, res, act), res, owners, userID)
-}
-
-// Can reports whether a preset can perform an action at all
-// (a coarse check before loading lists).
-func Can(role string, res rbac.Resource, act Action) bool {
-	return scopeFor(role, res, act) != ScopeNone
-}
-
-// CanUser reports whether the caller can perform an action at all
-// (admin bypass + per-user overrides applied).
-func CanUser(u userctx.UserContext, res rbac.Resource, act Action) bool {
-	return scopeForUser(u, res, act) != ScopeNone
-}
-
-// ViewScopeCode returns the string code of the view zone for listing requests
-// (all|own|parent|ancestor). SQL applies exactly this zone to the owner chain.
-func ViewScopeCode(role string, res rbac.Resource) string {
-	return ScopeName(scopeFor(role, res, ActionView))
-}
-
-// ViewScopeCodeUser returns the string code of the caller's view zone for
-// listing requests (admin bypass + per-user overrides applied).
-func ViewScopeCodeUser(u userctx.UserContext, res rbac.Resource) string {
-	return ScopeName(scopeForUser(u, res, ActionView))
-}
-
-// scopeFor — internal wrapper for the check builders.
-func scopeFor(role string, res rbac.Resource, act Action) Scope {
-	return snapshot().ScopeFor(role, res, act)
 }
 
 //nolint:gochecknoglobals // resource codex (stable dictionary, mirrors V15)

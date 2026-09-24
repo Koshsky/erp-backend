@@ -1,4 +1,4 @@
-package policies_test
+package engine_test
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -20,8 +20,8 @@ import (
 // policy (parent_action kind) with the given owner resolvers injected; the
 // authenticated user is role/userID.
 func parentActionRouter(policyName string, data rbac.Data, role string, userID int64) *gin.Engine {
-	spec := policies.DefaultRouteSpecs()
-	var route policies.RouteSpec
+	spec := engine.DefaultRouteSpecs()
+	var route engine.RouteSpec
 	for _, s := range spec {
 		if s.Name == policyName {
 			route = s
@@ -31,7 +31,7 @@ func parentActionRouter(policyName string, data rbac.Data, role string, userID i
 	if route.Name == "" {
 		panic("policies: default route spec not found: " + policyName)
 	}
-	built, err := policies.BuildPolicies([]policies.RouteSpec{route})
+	built, err := engine.BuildPolicies([]engine.RouteSpec{route})
 	if err != nil || len(built) != 1 {
 		panic("policies: build parent_action spec: " + err.Error())
 	}

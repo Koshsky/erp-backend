@@ -10,9 +10,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/authz/domain"
+	"github.com/Koshsky/erp-backend/internal/authz/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/database"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/domain"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository/sqlc"
 )
 
 // RuleRepository — access to configurable RBAC policies in Postgres.

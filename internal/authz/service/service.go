@@ -8,12 +8,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/Koshsky/erp-backend/internal/authz/domain"
+	"github.com/Koshsky/erp-backend/internal/authz/dto"
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
+	"github.com/Koshsky/erp-backend/internal/authz/repository"
+	"github.com/Koshsky/erp-backend/internal/authz/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/domain"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/dto"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository/sqlc"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -55,18 +55,18 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, update
 	if !presetExists(presets, in.Preset) {
 		return errors.BadRequest("неизвестный пресет " + in.Preset)
 	}
-	res, ok := policies.ParseResource(in.Resource)
+	res, ok := engine.ParseResource(in.Resource)
 	if !ok {
 		return errors.BadRequest("неизвестный ресурс " + in.Resource)
 	}
-	if _, okAction := policies.ParseAction(in.Action); !okAction {
+	if _, okAction := engine.ParseAction(in.Action); !okAction {
 		return errors.BadRequest("неизвестное действие " + in.Action)
 	}
-	scope, ok := policies.ParseScope(in.Scope)
-	if !ok || scope == policies.ScopeNone {
+	scope, ok := engine.ParseScope(in.Scope)
+	if !ok || scope == engine.ScopeNone {
 		return errors.BadRequest("недопустимая зона " + in.Scope + " (all|own|parent|ancestor)")
 	}
-	if !policies.ScopeApplicable(res, scope) {
+	if !engine.ScopeApplicable(res, scope) {
 		return errors.BadRequest("зона " + in.Scope + " неприменима к ресурсу " + in.Resource)
 	}
 
@@ -99,7 +99,7 @@ func (s *Service) ListRoutePolicies(ctx context.Context) ([]domain.RoutePolicy, 
 // UpsertRoutePolicy validates (kind + parameters against the schema) and writes
 // the route policy.
 func (s *Service) UpsertRoutePolicy(ctx context.Context, in dto.RoutePolicyInput, updatedBy int64) error {
-	if err := policies.ValidateSpec(policies.RouteSpec{Name: in.Name, Kind: in.Kind, Params: in.Params}); err != nil {
+	if err := engine.ValidateSpec(engine.RouteSpec{Name: in.Name, Kind: in.Kind, Params: in.Params}); err != nil {
 		return errors.BadRequest(err.Error())
 	}
 	active := true
@@ -132,20 +132,20 @@ func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 	if err := s.repo.DeleteAllRoutePolicies(ctx); err != nil {
 		return err
 	}
-	for _, r := range policies.DefaultMatrixRules() {
-		scope := policies.ScopeName(r.Scope)
+	for _, r := range engine.DefaultMatrixRules() {
+		scope := engine.ScopeName(r.Scope)
 		if _, err := s.repo.UpsertRule(
 			ctx,
 			r.Role,
-			policies.ResourceName(r.Res),
-			policies.ActionName(r.Act),
+			engine.ResourceName(r.Res),
+			engine.ActionName(r.Act),
 			scope,
 			&updatedBy,
 		); err != nil {
 			return err
 		}
 	}
-	for _, spec := range policies.DefaultRouteSpecs() {
+	for _, spec := range engine.DefaultRouteSpecs() {
 		if _, err := s.repo.UpsertRoutePolicy(ctx, domain.RoutePolicy{
 			Name: spec.Name, Kind: spec.Kind, Params: spec.Params, Active: true,
 			UpdatedBy: &updatedBy,
@@ -163,7 +163,7 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 	if err != nil {
 		return nil, err
 	}
-	matrix := policies.CurrentMatrix()
+	matrix := engine.CurrentMatrix()
 	names := make([]string, 0, len(presets)+1)
 	names = append(names, userdomain.PresetAdmin)
 	for _, p := range presets {
@@ -172,11 +172,11 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 	var cells []dto.MatrixCell
 	for _, preset := range names {
 		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
-			for act := policies.ActionView; act <= policies.ActionDelete; act++ {
-				if scope := matrix.ScopeFor(preset, res, act); scope != policies.ScopeNone {
+			for act := engine.ActionView; act <= engine.ActionDelete; act++ {
+				if scope := matrix.ScopeFor(preset, res, act); scope != engine.ScopeNone {
 					cells = append(cells, dto.MatrixCell{
-						Preset: preset, Resource: policies.ResourceName(res), Action: policies.ActionName(act),
-						Scope: policies.ScopeName(scope),
+						Preset: preset, Resource: engine.ResourceName(res), Action: engine.ActionName(act),
+						Scope: engine.ScopeName(scope),
 					})
 				}
 			}
@@ -186,27 +186,27 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 }
 
 // Kinds returns the catalog of route policy kinds.
-func (s *Service) Kinds() []policies.KindInfo {
-	return policies.Kinds()
+func (s *Service) Kinds() []engine.KindInfo {
+	return engine.Kinds()
 }
 
 // Explain answers "why allow/deny" for debugging DB-backed rules.
 func (s *Service) Explain(_ context.Context, in dto.ExplainInput) (dto.ExplainResult, error) {
-	res, ok := policies.ParseResource(in.Resource)
+	res, ok := engine.ParseResource(in.Resource)
 	if !ok {
 		return dto.ExplainResult{}, errors.BadRequest("неизвестный ресурс " + in.Resource)
 	}
-	act, ok := policies.ParseAction(in.Action)
+	act, ok := engine.ParseAction(in.Action)
 	if !ok {
 		return dto.ExplainResult{}, errors.BadRequest("неизвестное действие " + in.Action)
 	}
-	scope := policies.CurrentMatrix().ScopeFor(in.Preset, res, act)
-	allowed := policies.Authorize(in.Preset, res, act, rbac.Owners{
+	scope := engine.CurrentMatrix().ScopeFor(in.Preset, res, act)
+	allowed := engine.Authorize(in.Preset, res, act, rbac.Owners{
 		ProjectOwner: in.ProjectOwner,
 		ProcessOwner: in.ProcessOwner,
 		Owner:        in.Owner,
 	}, in.UserID)
-	return dto.ExplainResult{Scope: policies.ScopeName(scope), Allowed: allowed}, nil
+	return dto.ExplainResult{Scope: engine.ScopeName(scope), Allowed: allowed}, nil
 }
 
 // apply applies the current DB state to the engine.
@@ -233,19 +233,22 @@ func presetExists(presets []sqlc.ListActivePresetsRow, name string) bool {
 
 // MyPermissions returns the caller's principal permissions (all allowed
 // actions with an effective scope != none; admin — everything). Used by the
-// frontend to display capabilities by permissions rather than by presets.
+// frontend to display capabilities by permissions rather than by presets. The
+// source is the published Casbin snapshot (RBAC roles + ACL grants/revokes +
+// admin bypass) — exactly the rights the engine applies to requests; the
+// data-level matrix (CurrentMatrix) is only for the admin editor views.
 func (s *Service) MyPermissions(_ context.Context, user userctx.UserContext) []dto.Permission {
 	out := []dto.Permission{}
 	for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
-		for act := policies.ActionView; act <= policies.ActionDelete; act++ {
-			scope := policies.CurrentMatrix().ScopeForUser(user, res, act)
-			if scope == policies.ScopeNone {
+		for act := engine.ActionView; act <= engine.ActionDelete; act++ {
+			scope := engine.ScopeForUser(user, res, act)
+			if scope == engine.ScopeNone {
 				continue
 			}
 			out = append(out, dto.Permission{
-				Resource: policies.ResourceName(res),
-				Action:   policies.ActionName(act),
-				Scope:    policies.ScopeName(scope),
+				Resource: engine.ResourceName(res),
+				Action:   engine.ActionName(act),
+				Scope:    engine.ScopeName(scope),
 			})
 		}
 	}
@@ -311,11 +314,11 @@ func (s *Service) ReplaceUserPermissions(
 	rows := make([]sqlc.InsertUserPermissionParams, 0, len(in.Overrides))
 	seen := map[string]bool{}
 	for _, o := range in.Overrides {
-		res, ok := policies.ParseResource(o.Resource)
+		res, ok := engine.ParseResource(o.Resource)
 		if !ok {
 			return errors.BadRequest("неизвестный ресурс " + o.Resource)
 		}
-		if _, okAction := policies.ParseAction(o.Action); !okAction {
+		if _, okAction := engine.ParseAction(o.Action); !okAction {
 			return errors.BadRequest("неизвестное действие " + o.Action)
 		}
 		key := o.Resource + "/" + o.Action
@@ -325,11 +328,11 @@ func (s *Service) ReplaceUserPermissions(
 		seen[key] = true
 		scope := "all"
 		if o.Granted {
-			parsed, okScope := policies.ParseScope(o.Scope)
-			if !okScope || parsed == policies.ScopeNone {
+			parsed, okScope := engine.ParseScope(o.Scope)
+			if !okScope || parsed == engine.ScopeNone {
 				return errors.BadRequest("недопустимая зона " + o.Scope + " (all|own|parent|ancestor)")
 			}
-			if !policies.ScopeApplicable(res, parsed) {
+			if !engine.ScopeApplicable(res, parsed) {
 				return errors.BadRequest("зона " + o.Scope + " неприменима к ресурсу " + o.Resource)
 			}
 			scope = o.Scope

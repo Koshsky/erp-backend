@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -58,7 +58,7 @@ func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 	items, total, err := h.service.ListAssignments(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceAssignment),
+		engine.ViewScopeCodeUser(user, rbac.ResourceAssignment),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

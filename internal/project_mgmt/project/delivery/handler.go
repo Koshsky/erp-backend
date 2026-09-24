@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -58,7 +58,7 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	items, total, err := h.service.ListProjects(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceProject),
+		engine.ViewScopeCodeUser(user, rbac.ResourceProject),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,
@@ -127,7 +127,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		c.Request.Context(),
 		project,
 		user.ID,
-		policies.ScopeForUser(user, rbac.ResourceProject, policies.ActionCreate) == policies.ScopeOwn,
+		engine.ScopeForUser(user, rbac.ResourceProject, engine.ActionCreate) == engine.ScopeOwn,
 	)
 	if err != nil {
 		response.Error(c, h.logger, err)

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Koshsky/erp-backend/internal/policies"
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
@@ -98,7 +98,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	items, total, err := h.service.ListUsers(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceWorker),
+		engine.ViewScopeCodeUser(user, rbac.ResourceWorker),
 		c.Query("preset"),
 		response.QueryID(c, "manager_id"),
 		search,

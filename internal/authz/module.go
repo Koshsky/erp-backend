@@ -1,6 +1,8 @@
-// Package rbacpolicy wires the module that stores and serves runtime
-// RBAC policies (matrix + route checks) from Postgres.
-package rbacpolicy
+// Package authz wires the access-control domain: the Casbin engine
+// (internal/authz/engine), the Postgres-backed policy store and the RBAC
+// administration API. It merges the former internal/policies (rules in code)
+// and internal/rbacpolicy (runtime policies from Postgres) packages.
+package authz
 
 import (
 	"log/slog"
@@ -8,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/delivery"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/repository"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
+	"github.com/Koshsky/erp-backend/internal/authz/delivery"
+	"github.com/Koshsky/erp-backend/internal/authz/repository"
+	"github.com/Koshsky/erp-backend/internal/authz/service"
 )
 
-// ProviderSet aggregates the rbacpolicy module's dependencies.
+// ProviderSet aggregates the authz module's dependencies.
 //
 //nolint:gochecknoglobals // wire provider set (established module pattern)
 var ProviderSet = wire.NewSet(
@@ -30,9 +32,9 @@ type Module struct {
 	logger  *slog.Logger
 }
 
-// ProvideModule builds the rbacpolicy module.
+// ProvideModule builds the authz module.
 func ProvideModule(handler *delivery.RBACHandler, logger *slog.Logger) Module {
-	return Module{handler: handler, logger: logger.With("component", "rbacpolicy_module")}
+	return Module{handler: handler, logger: logger.With("component", "authz_module")}
 }
 
 // RegisterPublicRoutes is a no-op: the module has no public routes.
