@@ -24,6 +24,7 @@ type stubRepo struct {
 	users           map[int64]*sqlc.User
 	adminCount      int64
 	passwordUpdated []int64
+	refs            sqlc.ListUserReferencesRow
 }
 
 func newStubRepo(users ...*sqlc.User) *stubRepo {
@@ -112,6 +113,10 @@ func (r *stubRepo) UpdatePassword(_ context.Context, id int64, _ string) error {
 	return nil
 }
 func (r *stubRepo) DeleteUser(_ context.Context, _ int64) error { return nil }
+
+func (r *stubRepo) UserReferences(context.Context, int64) (sqlc.ListUserReferencesRow, error) {
+	return r.refs, nil
+}
 
 func (r *stubRepo) ListUsers(
 	_ context.Context,

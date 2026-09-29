@@ -111,6 +111,21 @@ VALUES (@user_id::bigint, @resource::text, @action::text, @scope::text, @granted
 DELETE FROM users
 WHERE id = @user_id;
 
+-- name: ListUserReferences :one
+-- Counts of records that reference the user and block deletion (FK RESTRICT):
+-- managees, owned resources/projects/processes/tasks, comment authorship and
+-- auto-create template owners stored in the jsonb config (no FK, but a deleted
+-- owner would break template-driven project creation).
+SELECT
+    (SELECT count(*)::bigint FROM users u WHERE u.manager_id = @user_id::bigint) AS managees,
+    (SELECT count(*)::bigint FROM resources r WHERE r.owner_id = @user_id::bigint) AS resources,
+    (SELECT count(*)::bigint FROM projects p WHERE p.owner_id = @user_id::bigint) AS projects,
+    (SELECT count(*)::bigint FROM processes pr WHERE pr.owner_id = @user_id::bigint) AS processes,
+    (SELECT count(*)::bigint FROM tasks t WHERE t.owner_id = @user_id::bigint) AS tasks,
+    (SELECT count(*)::bigint FROM task_comments c WHERE c.author_id = @user_id::bigint) AS comments,
+    (SELECT count(*)::bigint FROM project_auto_create pac, jsonb_array_elements(pac.config) e
+      WHERE (e->>'owner_id')::bigint = @user_id::bigint) AS auto_create_templates;
+
 -- name: OwnerChain :one
 -- Record owner: the manager, or the user himself when there is none
 -- (so a user can see/edit their own timesheet).

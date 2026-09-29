@@ -71,6 +71,13 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id int64) error {
 	return mapUserDeleteErr(r.q(ctx).DeleteUser(ctx, id))
 }
 
+// UserReferences returns the counts of records that reference the user and
+// block deletion (managees, owned resources/projects/processes/tasks, comment
+// authorship, auto-create template owners).
+func (r *UserRepository) UserReferences(ctx context.Context, id int64) (sqlc.ListUserReferencesRow, error) {
+	return r.q(ctx).ListUserReferences(ctx, id)
+}
+
 func (r *UserRepository) CreateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error) {
 	row, err := r.q(ctx).CreateUser(ctx, sqlc.CreateUserParams{
 		LastName:        user.LastName,

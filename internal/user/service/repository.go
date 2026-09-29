@@ -28,6 +28,9 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user sqlc.User) (*sqlc.User, error)
 	UpdatePassword(ctx context.Context, userID int64, userHash string) error
 	DeleteUser(ctx context.Context, id int64) error
+	// UserReferences returns the counts of records that reference the user and
+	// block deletion (see the repository implementation).
+	UserReferences(ctx context.Context, id int64) (sqlc.ListUserReferencesRow, error)
 	ListUsers(
 		ctx context.Context,
 		userID int64,
