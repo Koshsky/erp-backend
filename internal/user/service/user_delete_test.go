@@ -1,3 +1,4 @@
+//nolint:testpackage // service-level tests construct UserService directly with a stub repository (unexported fields)
 package service
 
 import (
@@ -13,6 +14,7 @@ import (
 // TestDeleteUserBlockedByReferences checks that DeleteUser fails with a 409
 // listing the blocking records instead of deleting the user.
 func TestDeleteUserBlockedByReferences(t *testing.T) {
+	t.Parallel()
 	repo := newStubRepo()
 	repo.refs = sqlc.ListUserReferencesRow{
 		Managees:  2,
@@ -28,7 +30,7 @@ func TestDeleteUserBlockedByReferences(t *testing.T) {
 	if !stderrors.Is(err, apperrors.ErrConflict) {
 		t.Fatalf("DeleteUser() error = %v, want a Conflict error", err)
 	}
-	conf, ok := err.(*apperrors.DomainError)
+	conf, ok := stderrors.AsType[*apperrors.DomainError](err)
 	if !ok || conf.Message == "" {
 		t.Fatalf("DeleteUser() error = %v, want a DomainError with a message", err)
 	}
@@ -42,6 +44,7 @@ func TestDeleteUserBlockedByReferences(t *testing.T) {
 // TestDeleteUserWithoutReferences checks that a user with no referencing
 // records is deleted and sessions are revoked.
 func TestDeleteUserWithoutReferences(t *testing.T) {
+	t.Parallel()
 	repo := newStubRepo()
 	revoker := &stubSessionRevoker{}
 	svc := newRevokeTestService(repo, revoker)
@@ -57,6 +60,7 @@ func TestDeleteUserWithoutReferences(t *testing.T) {
 // TestUserReferencesConflictMessage covers the message grouping: zero groups
 // are omitted, only non-zero ones are listed.
 func TestUserReferencesConflictMessage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		refs sqlc.ListUserReferencesRow
@@ -83,6 +87,7 @@ func TestUserReferencesConflictMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := userReferencesConflict(tt.refs)
 			if tt.want == "" {
 				if got != "" {

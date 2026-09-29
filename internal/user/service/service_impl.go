@@ -564,7 +564,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 		return errors.Conflict(msg)
 	}
 
-	if err := s.repository.DeleteUser(ctx, id); err != nil {
+	if err = s.repository.DeleteUser(ctx, id); err != nil {
 		return err
 	}
 

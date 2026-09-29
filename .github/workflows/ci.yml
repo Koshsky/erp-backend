@@ -1,7 +1,7 @@
 # CI for erp-backend.
 # Checks: branch policy, build + vet + unit tests, golangci-lint.
 # The "CI / Branch policy" check is the required status check for
-# main/staging/dev (see scripts/branch-protection/ in erp-infra); the rest
+# main/staging/dev (see scripts/branch-protection/ in the workspace); the rest
 # are gating checks that should be added to the required set in the
 # repository settings.
 name: CI

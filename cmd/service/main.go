@@ -18,8 +18,7 @@ const defaultShutdownTimeout = 5 * time.Second
 // version is the semantic version of the service (SemVer tag on main, e.g.
 // v1.0.0); injected at build time via -ldflags "-X main.version=…" (see the
 // Dockerfile). Local builds (make dev / air) fall back to "dev".
-//
-//nolint:gochecknoglobals // build-time injection target, never mutated
+
 var version = "dev"
 
 //	@title			Enterprise Resource Planning
