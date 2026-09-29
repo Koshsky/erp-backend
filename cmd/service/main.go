@@ -15,6 +15,13 @@ import (
 
 const defaultShutdownTimeout = 5 * time.Second
 
+// version is the semantic version of the service (SemVer tag on main, e.g.
+// v1.0.0); injected at build time via -ldflags "-X main.version=…" (see the
+// Dockerfile). Local builds (make dev / air) fall back to "dev".
+//
+//nolint:gochecknoglobals // build-time injection target, never mutated
+var version = "dev"
+
 //	@title			Enterprise Resource Planning
 //	@version		1.0
 //	@description	For managing the enterprise's universal resources
@@ -48,7 +55,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	application.Logger().Info("service configuration loaded")
+	application.Logger().Info("service configuration loaded", "version", version)
 
 	// create a context that is canceled on SIGINT or SIGTERM
 	runCtx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
