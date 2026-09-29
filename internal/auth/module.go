@@ -66,7 +66,7 @@ func ProvideModule(
 	logger *slog.Logger,
 	rateLimiter *ratelimit.Provider,
 ) Module {
-	return Module{handler: handler, logger: logger, rateLimiter: rateLimiter}
+	return Module{handler: handler, logger: logger.With("component", "auth_module"), rateLimiter: rateLimiter}
 }
 
 // loginGuard returns a per-IP rate limiter applied to the login endpoint.

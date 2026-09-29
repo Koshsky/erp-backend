@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/dto"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -22,7 +24,7 @@ type ProjectService struct {
 // NewProjectService builds the ProjectService service.
 func NewProjectService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ProjectRepository) *ProjectService {
 	return &ProjectService{
-		logger:     logger,
+		logger:     logger.With("component", "project_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewProjectMapper(),
@@ -48,12 +50,25 @@ func (s *ProjectService) CreateProject(
 		req.OwnerID = &userID
 	}
 
-	project := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateProject(&project); err != nil {
+	if err := s.validator.ValidateProject(
+		req.Code,
+		req.Color,
+		req.Priority,
+		req.StartDate,
+		req.EndDate,
+	); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateProject(ctx, project)
+	created, err := s.repository.CreateProject(
+		ctx,
+		req.OwnerID,
+		req.Code,
+		req.Color,
+		req.StartDate,
+		req.EndDate,
+		req.Priority,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -96,12 +111,40 @@ func (s *ProjectService) UpdateProject(
 		return nil, errors.ErrProjectNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(project, req)
-	if err = s.validator.ValidateProject(project); err != nil {
+	if req.OwnerID != nil {
+		project.OwnerID = nullable.ToInt8(req.OwnerID)
+	}
+	if req.Code != nil {
+		project.Code = *req.Code
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			project.Color = sql.NullString{}
+		} else {
+			project.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.StartDate != nil {
+		project.StartDate = *req.StartDate
+	}
+	if req.EndDate != nil {
+		project.EndDate = *req.EndDate
+	}
+	priority := int(project.Priority)
+	if req.Priority != nil {
+		priority = *req.Priority
+	}
+	if err = s.validator.ValidateProject(
+		project.Code,
+		nullable.StringPtr(project.Color),
+		priority,
+		project.StartDate,
+		project.EndDate,
+	); err != nil {
 		return nil, err
 	}
 
-	updated, err := s.repository.UpdateProject(ctx, *project)
+	updated, err := s.repository.UpdateProject(ctx, *project, priority)
 	if err != nil {
 		return nil, err
 	}

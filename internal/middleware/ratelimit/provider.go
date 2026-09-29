@@ -11,9 +11,12 @@ import (
 )
 
 // Provider builds rate limiting handlers backed by a shared Redis client when
-// available (M1) and by the in-memory token buckets otherwise. All instances
-// share one Provider through wire, so every limiter (public per-IP, per-user,
-// auth login/refresh) reads the same Redis keys.
+// available (M1) and by the in-memory token buckets otherwise. The backend is
+// chosen explicitly by config: a live client means redis.enabled=true, a nil
+// client means redis.enabled=false — an enabled but unreachable Redis fails
+// startup in cache.ProvideRedisClient and never reaches the provider. All
+// instances share one Provider through wire, so every limiter (public
+// per-IP, per-user, auth login/refresh) reads the same Redis keys.
 type Provider struct {
 	client *redis.Client
 	prefix string
@@ -21,7 +24,9 @@ type Provider struct {
 }
 
 // ProvideProvider wires the shared rate limiting provider. A nil Redis client
-// (Redis disabled or unreachable) selects the in-memory fallback.
+// (Redis disabled in config) selects the in-memory implementation; an
+// enabled-but-unreachable Redis fails startup in cache.ProvideRedisClient and
+// never reaches the provider.
 func ProvideProvider(client *redis.Client, cfg config.RedisConfig, logger *slog.Logger) *Provider {
 	if logger == nil {
 		logger = slog.Default()
@@ -30,7 +35,7 @@ func ProvideProvider(client *redis.Client, cfg config.RedisConfig, logger *slog.
 	if prefix == "" {
 		prefix = "erp:ratelimit"
 	}
-	return &Provider{client: client, prefix: prefix, logger: logger}
+	return &Provider{client: client, prefix: prefix, logger: logger.With("component", "ratelimit")}
 }
 
 // New builds a rate limiting handler from a raw limiter configuration, using
@@ -75,8 +80,10 @@ func (p *Provider) FromConfig(cfg config.RateLimitConfig) gin.HandlerFunc {
 
 // FromConfigKeyed builds a handler from the application settings with an
 // explicit bucket key (nil keys by the client IP). Disabled limits produce a
-// transparent handler.
+// transparent handler; an enabled limit with invalid values fails loudly (see
+// validateEnabledConfig).
 func (p *Provider) FromConfigKeyed(cfg config.RateLimitConfig, key KeyFunc) gin.HandlerFunc {
+	validateEnabledConfig(cfg)
 	if !cfg.Enabled {
 		return func(c *gin.Context) { c.Next() }
 	}

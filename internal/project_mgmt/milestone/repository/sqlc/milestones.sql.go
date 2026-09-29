@@ -8,7 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
+
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 const countMilestones = `-- name: CountMilestones :one
@@ -48,7 +49,7 @@ type CreateMilestoneParams struct {
 	Title     string         `json:"title"`
 	Content   string         `json:"content"`
 	Color     sql.NullString `json:"color"`
-	Date      time.Time      `json:"date"`
+	Date      date.Date      `json:"date"`
 }
 
 func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams) (Milestone, error) {
@@ -202,7 +203,7 @@ type UpdateMilestoneParams struct {
 	Title       string         `json:"title"`
 	Content     string         `json:"content"`
 	Color       sql.NullString `json:"color"`
-	Date        time.Time      `json:"date"`
+	Date        date.Date      `json:"date"`
 	MilestoneID int64          `json:"milestone_id"`
 }
 

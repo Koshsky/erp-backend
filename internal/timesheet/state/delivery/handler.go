@@ -23,7 +23,7 @@ type StateHandler struct {
 // NewStateHandler builds the StateHandler handler.
 func NewStateHandler(logger *slog.Logger, svc *service.StateService, mw *rbac.Middleware) *StateHandler {
 	return &StateHandler{
-		logger:  logger,
+		logger:  logger.With("component", "state_handler"),
 		service: svc,
 		mw:      mw,
 	}

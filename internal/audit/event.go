@@ -24,8 +24,9 @@ type Event struct {
 	ResponseBody json.RawMessage `json:"response_body,omitempty"`
 
 	// Critical marks security-relevant events (login/logout) that must not be
-	// dropped: they bypass the async buffer and are delivered synchronously
-	// with retries (M2). Not serialized — delivery metadata, not event data.
+	// dropped: they are enqueued into the priority buffer, drained ahead of
+	// regular events and never sent on the request goroutine (M2). Not
+	// serialized — delivery metadata, not event data.
 	Critical bool `json:"-"`
 }
 

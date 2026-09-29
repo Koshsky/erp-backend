@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -25,7 +25,7 @@ type MilestoneHandler struct {
 // NewMilestoneHandler builds the MilestoneHandler handler.
 func NewMilestoneHandler(logger *slog.Logger, svc *service.MilestoneService, mw *rbac.Middleware) *MilestoneHandler {
 	return &MilestoneHandler{
-		logger:  logger,
+		logger:  logger.With("component", "milestone_handler"),
 		service: svc,
 		mw:      mw,
 	}
@@ -58,7 +58,7 @@ func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 	items, total, err := h.service.ListMilestones(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceMilestone),
+		engine.ViewScopeCodeUser(user, rbac.ResourceMilestone),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

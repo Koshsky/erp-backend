@@ -27,7 +27,7 @@ func NewAutoCreateService(
 	r *repo.AutoCreateRepository,
 ) *AutoCreateService {
 	return &AutoCreateService{
-		logger:     logger,
+		logger:     logger.With("component", "auto_create_service"),
 		tracer:     tracer,
 		repository: r,
 	}

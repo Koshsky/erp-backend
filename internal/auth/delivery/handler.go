@@ -31,7 +31,7 @@ type AuthHandler struct {
 // NewAuthHandler builds the auth handler.
 func NewAuthHandler(logger *slog.Logger, svc *authservice.AuthService, cfg config.JWTConfig) *AuthHandler {
 	return &AuthHandler{
-		logger:  logger,
+		logger:  logger.With("component", "auth_handler"),
 		service: svc,
 		cfg:     cfg,
 	}

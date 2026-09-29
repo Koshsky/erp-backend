@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	repo "github.com/Koshsky/erp-backend/internal/user/repository"
 
 	"github.com/Koshsky/erp-backend/internal/security/creds"
@@ -16,7 +15,9 @@ import (
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
+	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -49,10 +50,9 @@ type UserService struct {
 // maxManagerDepth — guard against an infinite loop while walking the manager hierarchy.
 const maxManagerDepth = 1000
 
-// stateBatchParallelism — how many worker scopes are checked concurrently while
-// authorizing a batch states request (bounded so a 200-id request cannot open
-// hundreds of connections at once on the pool).
-const stateBatchParallelism = 8
+// maxUsernameSuffixAttempts — how many numeric suffixes generateUsername tries
+// before giving up with a clear error instead of probing the DB indefinitely.
+const maxUsernameSuffixAttempts = 1000
 
 // NewUserService builds the UserService service.
 func NewUserService(
@@ -64,7 +64,7 @@ func NewUserService(
 	hibpChecker *hibp.Checker,
 ) *UserService {
 	return &UserService{
-		logger:     logger,
+		logger:     logger.With("component", "user_service"),
 		repository: r,
 		mapper:     &UserMapper{},
 		validator:  &UserValidator{},
@@ -190,7 +190,7 @@ func (s *UserService) createUserInternal(
 		return nil, permsErr
 	}
 
-	user := s.mapper.ToDomainFromCreate(req)
+	user := s.mapper.ToCreateUser(req)
 	if err := s.validator.ValidateUser(&user); err != nil {
 		return nil, err
 	}
@@ -225,11 +225,11 @@ func (s *UserService) validateCreatePermissions(
 	seen := map[string]bool{}
 	out := make([]userdomain.UserPermission, 0, len(req))
 	for _, p := range req {
-		res, ok := policies.ParseResource(p.Resource)
+		res, ok := engine.ParseResource(p.Resource)
 		if !ok {
 			return nil, errors.BadRequest("неизвестный ресурс " + p.Resource)
 		}
-		if _, okAction := policies.ParseAction(p.Action); !okAction {
+		if _, okAction := engine.ParseAction(p.Action); !okAction {
 			return nil, errors.BadRequest("неизвестное действие " + p.Action)
 		}
 		key := p.Resource + "/" + p.Action
@@ -239,11 +239,11 @@ func (s *UserService) validateCreatePermissions(
 		seen[key] = true
 		scope := scopeAllCode
 		if p.Granted {
-			parsed, okScope := policies.ParseScope(p.Scope)
-			if !okScope || parsed == policies.ScopeNone {
+			parsed, okScope := engine.ParseScope(p.Scope)
+			if !okScope || parsed == engine.ScopeNone {
 				return nil, errors.BadRequest("недопустимая зона " + p.Scope + " (all|own|parent|ancestor)")
 			}
-			if !policies.ScopeApplicable(res, parsed) {
+			if !engine.ScopeApplicable(res, parsed) {
 				return nil, errors.BadRequest("зона " + p.Scope + " неприменима к ресурсу " + p.Resource)
 			}
 			scope = p.Scope
@@ -277,7 +277,7 @@ func (s *UserService) generateUsername(ctx context.Context, name, preset string)
 	}
 
 	username := base
-	for i := 2; ; i++ {
+	for i := 2; i <= maxUsernameSuffixAttempts; i++ {
 		exists, err := s.repository.UsernameExists(ctx, username)
 		if err != nil {
 			return "", err
@@ -287,34 +287,53 @@ func (s *UserService) generateUsername(ctx context.Context, name, preset string)
 		}
 		username = fmt.Sprintf("%s%d", base, i)
 	}
+	return "", errors.NewValidationError("не удалось сгенерировать свободный логин: исчерпаны все варианты")
 }
 
-// ResetPassword generates a new random password for the user and returns it once.
-func (s *UserService) ResetPassword(ctx context.Context, id int64) (*dto.ResetPasswordResponse, error) {
+// ResetPassword generates a new random password for the user. Admin-only: the
+// route is reachable by user_admin.update holders, but resetting a password —
+// like preset assignment — stays an admin privilege (a non-admin with the grant
+// must not be able to reset any account, in particular an admin's, and take it
+// over). The new password is never returned to the caller; the reset is
+// recorded in the audit trail and the service log.
+func (s *UserService) ResetPassword(ctx context.Context, id int64, caller userctx.UserContext) error {
 	ctx, end := s.tracer.Start(ctx, "user.ResetPassword")
 	defer end(nil)
 
+	// Admin-only invariant (mirrors createUserInternal): the caller must carry
+	// the admin bypass resolved by the RBAC store (EffectiveUser.Admin), not
+	// merely an individual grant.
+	if !caller.Admin {
+		return errors.ErrForbidden
+	}
+
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
-		return nil, errors.NotFound("user not found")
+		return errors.NotFound("user not found")
 	}
 
 	raw, err := creds.RandomPassword()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	hash, err := hasher.Hash(raw)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to hash password")
 	}
 	if err = s.repository.UpdatePassword(ctx, id, hash); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Same as ChangePassword: a reset invalidates every existing session.
 	s.revokeSessions(ctx, id)
 
-	return &dto.ResetPasswordResponse{Password: raw}, nil
+	s.logger.InfoContext(
+		ctx,
+		"сброс пароля пользователя администратором",
+		"user_id", id,
+		"caller_id", caller.ID,
+	)
+	return nil
 }
 
 func (s *UserService) FindUserByUsername(ctx context.Context, username string) (*dto.UserResponse, error) {
@@ -381,7 +400,7 @@ func (s *UserService) UpdateUser(
 		}
 	}
 
-	s.mapper.ApplyUpdateToDomain(user, req)
+	s.mapper.ApplyUpdateToUser(user, req)
 	if err = s.validator.ValidateUser(user); err != nil {
 		return nil, err
 	}
@@ -399,7 +418,7 @@ func (s *UserService) UpdateUser(
 // never removing the last active admin.
 func (s *UserService) checkPresetChange(
 	ctx context.Context,
-	user *userdomain.User,
+	user *sqlc.User,
 	newPreset *string,
 	caller userctx.UserContext,
 	callerID int64,
@@ -413,7 +432,7 @@ func (s *UserService) checkPresetChange(
 	if user.ID == callerID {
 		return errors.NewValidationError("нельзя менять пресет прав самому себе")
 	}
-	if *newPreset == userdomain.PresetAdmin || presetName(user.Preset) != userdomain.PresetAdmin {
+	if *newPreset == userdomain.PresetAdmin || !user.Preset.Valid || user.Preset.String != userdomain.PresetAdmin {
 		return nil
 	}
 	admins, err := s.repository.CountUsers(ctx, 0, scopeAllCode, userdomain.PresetAdmin, 0, "")
@@ -482,7 +501,7 @@ func (s *UserService) UpdateManager(
 		return nil, err
 	}
 
-	user.ManagerID = managerID
+	user.ManagerID = nullable.ToInt8(managerID)
 	if err = s.validator.ValidateUser(user); err != nil {
 		return nil, err
 	}
@@ -512,15 +531,15 @@ func (s *UserService) validateManager(ctx context.Context, userID int64, manager
 
 	cur := manager.ManagerID
 	depth := 0
-	for cur != nil {
+	for cur.Valid {
 		depth++
 		if depth > maxManagerDepth {
 			return errors.NewValidationError("иерархия руководителей слишком глубокая")
 		}
-		if *cur == userID {
+		if cur.Int64 == userID {
 			return errors.NewValidationError("кольцевая зависимость в руководстве не допускается")
 		}
-		u, ferr := s.repository.FindUser(ctx, *cur)
+		u, ferr := s.repository.FindUser(ctx, cur.Int64)
 		if ferr != nil || u == nil {
 			return errors.NotFound("руководитель не найден")
 		}
@@ -541,6 +560,10 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 	// deleted user cannot refresh, and a restored account does not resurrect
 	// old tokens.
 	s.revokeSessions(ctx, id)
+	// The deleted user must leave the in-memory principals immediately, not
+	// after the next TTL reload (~30 s): their still-valid access token would
+	// otherwise keep granting rights while the account is gone.
+	s.refreshRBAC(ctx)
 	return nil
 }
 
@@ -609,7 +632,7 @@ func (s *UserService) ListStates(
 		return nil, err
 	}
 
-	states, err := s.repository.ListStates(ctx, userID, start.Time(), end.Time())
+	states, err := s.repository.ListStates(ctx, userID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +668,7 @@ func (s *UserService) ListStatesBatch(
 		return nil, err
 	}
 
-	states, err := s.repository.ListStatesByUsers(ctx, ids, start.Time(), end.Time())
+	states, err := s.repository.ListStatesByUsers(ctx, ids, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -669,61 +692,41 @@ func (s *UserService) ListStatesBatch(
 
 // checkBatchScopes verifies existence and the worker.view scope of every
 // requested id (deduplicated, order preserved) and returns the allowed set.
-// The checks run concurrently but with bounded parallelism, because each one
-// costs a query.
+// The owners are loaded in a single query; the (in-memory) authorize checks
+// then run over the fetched rows — no per-id round trips (the old check was
+// 1+N FindUser calls).
 func (s *UserService) checkBatchScopes(
 	ctx context.Context,
 	caller userctx.UserContext,
 	userIDs []int64,
 ) ([]int64, error) {
 	ids := dedupeIDs(userIDs)
-	errs := make([]error, len(ids))
-	guard := make(chan struct{}, stateBatchParallelism)
-	var wg sync.WaitGroup
-	for i, id := range ids {
-		wg.Go(func() {
-			guard <- struct{}{}
-			defer func() { <-guard }()
-			errs[i] = s.checkUserViewable(ctx, caller, id)
-		})
-	}
-	wg.Wait()
 
-	for _, err := range errs {
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ids, nil
-}
-
-// checkUserViewable reports 404 when the user is missing or the caller may not
-// view them (worker.view semantics — a denial never discloses existence).
-func (s *UserService) checkUserViewable(
-	ctx context.Context,
-	caller userctx.UserContext,
-	id int64,
-) error {
-	user, err := s.repository.FindUser(ctx, id)
+	rows, err := s.repository.ListUserManagers(ctx, ids)
 	if err != nil {
-		if errors.IsNotFoundError(err) {
-			return errors.ErrUserNotFound
-		}
-		return err
-	}
-	if user == nil {
-		return errors.ErrUserNotFound
+		return nil, err
 	}
 	// The owner of a worker row is the manager, or the worker themself when
 	// there is none — exactly the chain OwnerChain resolves for worker.view.
-	owner := user.ID
-	if user.ManagerID != nil {
-		owner = *user.ManagerID
+	owners := make(map[int64]int64, len(rows))
+	for _, row := range rows {
+		owner := row.ID
+		if row.ManagerID.Valid {
+			owner = row.ManagerID.Int64
+		}
+		owners[row.ID] = owner
 	}
-	if !policies.AuthorizeUser(caller, rbac.ResourceWorker, policies.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
-		return errors.ErrUserNotFound
+
+	for _, id := range ids {
+		owner, ok := owners[id]
+		if !ok {
+			return nil, errors.ErrUserNotFound
+		}
+		if !engine.AuthorizeUser(caller, rbac.ResourceWorker, engine.ActionView, rbac.Owners{Owner: owner}, caller.ID) {
+			return nil, errors.ErrUserNotFound
+		}
 	}
-	return nil
+	return ids, nil
 }
 
 // dedupeIDs drops repeated ids, preserving the first-occurrence order.
@@ -762,7 +765,7 @@ func (s *UserService) SetDays(
 		return err
 	}
 
-	return s.repository.SetStateRange(ctx, userID, req.StateID, req.StartDate.Time(), req.EndDate.Time())
+	return s.repository.SetStateRange(ctx, userID, req.StateID, req.StartDate, req.EndDate)
 }
 
 func (s *UserService) DeleteDays(
@@ -790,7 +793,7 @@ func (s *UserService) DeleteDays(
 		return err
 	}
 
-	return s.repository.DeleteStateRange(ctx, userID, start.Time(), end.Time(), stateID)
+	return s.repository.DeleteStateRange(ctx, userID, start, end, stateID)
 }
 
 // ensureUserExists verifies the user exists (404 otherwise).

@@ -278,10 +278,27 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 const listProjectsByIDs = `-- name: ListProjectsByIDs :many
 SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at FROM projects
 WHERE id = ANY($1::bigint[])
+  AND (
+      $2::text = 'all' OR
+      ($2::text = 'own' AND owner_id = $3::bigint) OR
+      $2::text = ''
+  )
 `
 
-func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project, error) {
-	rows, err := q.db.Query(ctx, listProjectsByIDs, ids)
+type ListProjectsByIDsParams struct {
+	Ids       []int64 `json:"ids"`
+	ScopeView string  `json:"scope_view"`
+	UserID    int64   `json:"user_id"`
+}
+
+// Projects attached as parent context of the caller's visible processes,
+// scoped by the caller's project view zone: the process aggregate must not
+// disclose full project rows of projects outside that zone. A caller with no
+// project view rule (empty zone — e.g. vp, which sees processes through
+// process.view=all) gets every requested parent project: reference rows with
+// no resolved zone must not hide the visible processes.
+func (q *Queries) ListProjectsByIDs(ctx context.Context, arg ListProjectsByIDsParams) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listProjectsByIDs, arg.Ids, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -312,10 +329,25 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project
 
 const listResources = `-- name: ListResources :many
 SELECT id, title, code, color, owner_id, created_at, updated_at FROM resources
+WHERE (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint) OR
+    $1::text = ''
+)
 `
 
-func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
-	rows, err := q.db.Query(ctx, listResources)
+type ListResourcesParams struct {
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+}
+
+// Resources embedded into task/reference data, scoped by the caller's
+// resource view zone: a task-view holder with a resource zone must not
+// receive resource rows outside it (resource is own-scoped for vp). A caller
+// with no resource view rule (empty zone — "no rule / none") gets every row:
+// reference data must not hide the visible tasks.
+func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]Resource, error) {
+	rows, err := q.db.Query(ctx, listResources, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}

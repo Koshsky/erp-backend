@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -25,7 +25,7 @@ type ProcessHandler struct {
 // NewProcessHandler builds the ProcessHandler handler.
 func NewProcessHandler(logger *slog.Logger, svc *service.ProcessService, mw *rbac.Middleware) *ProcessHandler {
 	return &ProcessHandler{
-		logger:  logger,
+		logger:  logger.With("component", "process_handler"),
 		service: svc,
 		mw:      mw,
 	}
@@ -58,7 +58,7 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	items, total, err := h.service.ListProcesses(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceProcess),
+		engine.ViewScopeCodeUser(user, rbac.ResourceProcess),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

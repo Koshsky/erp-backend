@@ -7,9 +7,12 @@ import (
 	"slices"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -30,7 +33,7 @@ type CalendarService struct {
 // NewCalendarService builds the CalendarService service.
 func NewCalendarService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.CalendarRepository) *CalendarService {
 	return &CalendarService{
-		logger:     logger,
+		logger:     logger.With("component", "calendar_service"),
 		repository: r,
 		tracer:     tracer,
 	}
@@ -39,8 +42,12 @@ func NewCalendarService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 // GetCalendar returns resource availability as ranges (constant-availability
 // segments): capacity, unavailable and available. Complexity O((M+S) log(M+S))
 // depends on resource members and state intervals, not the number of days.
+// Resources are scoped by the caller's resource view zone (userID/viewScope),
+// so a process owner only sees capacity curves of its own resources.
 func (s *CalendarService) GetCalendar(
 	ctx context.Context,
+	userID int64,
+	viewScope string,
 	start, end date.Date,
 ) (*dto.CalendarPlanning, error) {
 	ctx, finish := s.tracer.Start(ctx, "calendar.GetCalendar")
@@ -54,17 +61,30 @@ func (s *CalendarService) GetCalendar(
 		return nil, errors.BadRequest(fmt.Sprintf("date range must not exceed %d days", maxCalendarRange))
 	}
 
-	resources, err := s.repository.ListResources(ctx)
+	resourceRows, err := s.repository.ListResources(ctx, userID, viewScope)
 	if err != nil {
 		return nil, err
 	}
-	members, err := s.repository.ListEmployeesForCalendar(ctx, startT, endT)
+	memberRows, err := s.repository.ListEmployeesForCalendar(ctx, start, end)
 	if err != nil {
 		return nil, err
 	}
-	ranges, err := s.repository.ListUnavailableRanges(ctx, startT, endT)
+	rangeRows, err := s.repository.ListUnavailableRanges(ctx, start, end)
 	if err != nil {
 		return nil, err
+	}
+
+	resources := make([]dto.ResourceInfo, len(resourceRows))
+	for i, row := range resourceRows {
+		resources[i] = toResourceInfo(row)
+	}
+	members := make([]dto.CalendarMember, len(memberRows))
+	for i, row := range memberRows {
+		members[i] = toCalendarMember(row)
+	}
+	ranges := make([]dto.UnavailableRange, len(rangeRows))
+	for i, row := range rangeRows {
+		ranges[i] = toUnavailableRange(row)
 	}
 
 	membersByResource := groupMembers(members)
@@ -89,6 +109,44 @@ func (s *CalendarService) GetCalendar(
 	}
 
 	return planning, nil
+}
+
+// toResourceInfo converts a resource row for the calendar view.
+func toResourceInfo(row sqlc.ListResourcesRow) dto.ResourceInfo {
+	return dto.ResourceInfo{
+		ID:      row.ID,
+		Title:   row.Title,
+		Code:    row.Code,
+		OwnerID: &row.OwnerID,
+	}
+}
+
+// toCalendarMember converts a resource member row (work interval for the calendar).
+func toCalendarMember(row sqlc.ListEmployeesForCalendarRow) dto.CalendarMember {
+	return dto.CalendarMember{
+		UserID:          row.ID,
+		ResourceID:      row.ResourceID,
+		HireDate:        fromDate(row.HireDate),
+		TerminationDate: fromDate(row.TerminationDate),
+	}
+}
+
+// toUnavailableRange converts an absence interval row.
+func toUnavailableRange(row sqlc.ListUnavailableRangesRow) dto.UnavailableRange {
+	return dto.UnavailableRange{
+		ResourceID: row.ResourceID,
+		StartDate:  row.StartDate.Time(),
+		EndDate:    row.EndDate.Time(),
+	}
+}
+
+// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
+func fromDate(v pgtype.Date) *time.Time {
+	if !v.Valid {
+		return nil
+	}
+	t := v.Time
+	return &t
 }
 
 func groupMembers(members []dto.CalendarMember) map[int64][]dto.CalendarMember {

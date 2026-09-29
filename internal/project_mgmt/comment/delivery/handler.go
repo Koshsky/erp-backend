@@ -23,7 +23,7 @@ type CommentHandler struct {
 // NewCommentHandler builds the CommentHandler handler.
 func NewCommentHandler(logger *slog.Logger, svc *service.CommentService, mw *rbac.Middleware) *CommentHandler {
 	return &CommentHandler{
-		logger:  logger,
+		logger:  logger.With("component", "comment_handler"),
 		service: svc,
 		mw:      mw,
 	}

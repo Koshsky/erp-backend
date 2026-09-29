@@ -81,16 +81,23 @@ func (l *redisLimiter) handler() gin.HandlerFunc {
 
 		allowed, retryMs, err := l.allow(c.Request.Context(), key)
 		if err != nil {
-			// Fail-open: an unavailable Redis must never take the API down;
-			// the request proceeds unthrottled (same behavior as a disabled
-			// limiter) and the outage is visible in the logs.
-			l.logger.Error("redis rate limit check failed (fail-open)", "key", key, "error", err)
+			// Runtime fail-open: a transient Redis outage after the successful
+			// startup check must never take the API down; the request proceeds
+			// unthrottled and the outage is visible in the logs.
+			l.logger.ErrorContext(
+				c.Request.Context(),
+				"redis rate limit check failed (fail-open)",
+				"key",
+				key,
+				"error",
+				err,
+			)
 			c.Next()
 			return
 		}
 		if !allowed {
 			c.Header("Retry-After", strconv.Itoa(retryAfterHeaderValue(retryMs)))
-			l.logger.Warn("rate limit exceeded", "client_ip", key)
+			l.logger.WarnContext(c.Request.Context(), "rate limit exceeded", "client_ip", key)
 			response.TooManyRequests(c, "too many requests")
 			c.Abort()
 			return

@@ -1,10 +1,11 @@
 package service_test
 
 import (
+	"database/sql"
 	"strings"
 	"testing"
 
-	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
+	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/user/service"
 )
 
@@ -14,7 +15,7 @@ import (
 func TestValidateUserPreset(t *testing.T) {
 	t.Parallel()
 	v := &service.UserValidator{}
-	base := userdomain.User{LastName: "И", FirstName: "И", Username: "user1"}
+	base := sqlc.User{LastName: "И", FirstName: "И", Username: "user1"}
 
 	// No preset is valid: a user may have only individual permissions.
 	if err := v.ValidateUser(&base); err != nil {
@@ -22,13 +23,13 @@ func TestValidateUserPreset(t *testing.T) {
 	}
 	long := base
 	longPreset := strings.Repeat("a", 33)
-	long.Preset = &longPreset
+	long.Preset = sql.NullString{String: longPreset, Valid: true}
 	if err := v.ValidateUser(&long); err == nil {
 		t.Fatal("пресет длиннее 32 должен давать ошибку")
 	}
 	for _, preset := range []string{"auditor", "vp", "worker"} {
 		r := base
-		r.Preset = &preset
+		r.Preset = sql.NullString{String: preset, Valid: true}
 		if err := v.ValidateUser(&r); err != nil {
 			t.Errorf("пресет %q должен проходить валидацию: %v", preset, err)
 		}

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Koshsky/erp-backend/internal/user/domain"
+	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
@@ -52,7 +52,7 @@ type UserValidator struct {
 	validator.Validator
 }
 
-func (v *UserValidator) ValidateUser(user *domain.User) error {
+func (v *UserValidator) ValidateUser(user *sqlc.User) error {
 	if err := v.ValidateRequiredText(user.LastName, "last_name"); err != nil {
 		return err
 	}
@@ -72,18 +72,16 @@ func (v *UserValidator) ValidateUser(user *domain.User) error {
 	// only check the form (NULL — no base preset is allowed); preset existence
 	// is guaranteed by the FK users_preset_fk — violations surface as 400 via
 	// mapUserErr.
-	if user.Preset != nil {
-		if len(*user.Preset) > maxPresetLen {
-			return errors.NewFieldError("preset", "too_long", "preset is too long")
-		}
+	if user.Preset.Valid && len(user.Preset.String) > maxPresetLen {
+		return errors.NewFieldError("preset", "too_long", "preset is too long")
 	}
-	if user.ManagerID != nil {
-		if err := v.ValidatePositiveID(*user.ManagerID, "manager_id"); err != nil {
+	if user.ManagerID.Valid {
+		if err := v.ValidatePositiveID(user.ManagerID.Int64, "manager_id"); err != nil {
 			return err
 		}
 	}
-	if user.HireDate != nil && user.TerminationDate != nil &&
-		user.TerminationDate.Before(*user.HireDate) {
+	if user.HireDate.Valid && user.TerminationDate.Valid &&
+		user.TerminationDate.Time.Before(user.HireDate.Time) {
 		return errors.NewFieldError(
 			"termination_date",
 			"date_range",

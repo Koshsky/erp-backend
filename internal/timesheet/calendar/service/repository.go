@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"time"
 
-	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type CalendarRepository interface {
-	ListResources(ctx context.Context) ([]dto.ResourceInfo, error)
-	ListEmployeesForCalendar(ctx context.Context, start, end time.Time) ([]dto.CalendarMember, error)
-	ListUnavailableRanges(ctx context.Context, start, end time.Time) ([]dto.UnavailableRange, error)
+	ListResources(ctx context.Context, userID int64, viewScope string) ([]sqlc.ListResourcesRow, error)
+	ListEmployeesForCalendar(ctx context.Context, start, end date.Date) ([]sqlc.ListEmployeesForCalendarRow, error)
+	ListUnavailableRanges(ctx context.Context, start, end date.Date) ([]sqlc.ListUnavailableRangesRow, error)
 }

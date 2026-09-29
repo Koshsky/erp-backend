@@ -166,7 +166,9 @@ type AuditConfig struct {
 	URL     string   `yaml:"url"`
 	Timeout Duration `yaml:"timeout"`
 	// Sync sends events synchronously inside the request (strict durability,
-	// slower); the default async mode buffers events and retries.
+	// slower; a single attempt bounded by a short per-send budget so the
+	// request never stalls on a down Loki); the default async mode buffers
+	// events and retries off the request goroutine.
 	Sync bool `yaml:"sync"`
 }
 
@@ -180,10 +182,11 @@ type RateLimitConfig struct {
 }
 
 // RedisConfig is the shared Redis connection settings. Redis backs the rate
-// limiter (M1): when enabled, token buckets are shared across instances; when
-// disabled or unreachable the limiter falls back to the in-memory
-// implementation. Credentials are non-secret infra settings (prod may add an
-// optional REDIS_PASSWORD-style env override later).
+// limiter (M1): the backend is chosen explicitly by config — when enabled,
+// token buckets are shared across instances and an unreachable Redis fails
+// application startup (fail-fast); when disabled, the limiter uses the
+// in-memory implementation. Credentials are non-secret infra settings (prod
+// may add an optional REDIS_PASSWORD-style env override later).
 type RedisConfig struct {
 	Enabled      bool     `yaml:"enabled"`
 	Address      string   `yaml:"address"`
@@ -215,7 +218,33 @@ func Load() (*Config, error) {
 		return nil, envErr
 	}
 
+	if validErr := validate(&cfg); validErr != nil {
+		return nil, validErr
+	}
+
 	return &cfg, nil
+}
+
+// validate enforces the invariants a disabled configuration cannot express by
+// itself: an enabled rate limit must carry positive requests_per_second and
+// burst, or the middleware would silently disable itself (requests_per_second
+// <= 0) or hard-block every request (burst <= 0) without any startup warning.
+func validate(cfg *Config) error {
+	for name, limit := range map[string]RateLimitConfig{
+		"rate_limiting":      cfg.RateLimit,
+		"user_rate_limiting": cfg.UserRateLimit,
+	} {
+		if !limit.Enabled {
+			continue
+		}
+		if limit.RequestsPerSecond <= 0 {
+			return fmt.Errorf("%s: requests_per_second must be > 0 when rate limiting is enabled", name)
+		}
+		if limit.Burst <= 0 {
+			return fmt.Errorf("%s: burst must be > 0 when rate limiting is enabled", name)
+		}
+	}
+	return nil
 }
 
 // minJWTSecretLen is the minimum accepted length of JWT_SECRET_KEY (256-bit
@@ -247,6 +276,20 @@ func applyEnv(cfg *Config) error {
 	// in the full-stack docker run, which uses the in-network "jaeger:4317").
 	if endpoint := getEnv("TRACING_ENDPOINT", ""); endpoint != "" {
 		cfg.Tracing.ExporterEndpoint = endpoint
+	}
+
+	// REDIS_ADDRESS overrides the Redis endpoint (dev: host-run air reaches
+	// the in-docker Redis service via its published port; kept empty in the
+	// full-stack docker run, which uses the in-network "redis:6379").
+	if address := getEnv("REDIS_ADDRESS", ""); address != "" {
+		cfg.Redis.Address = address
+	}
+
+	// AUDIT_URL overrides the Loki base URL (dev: host-run air reaches the
+	// in-docker Loki service via its published port; kept empty in the
+	// full-stack docker run, which uses the in-network "http://loki:3100").
+	if url := getEnv("AUDIT_URL", ""); url != "" {
+		cfg.Audit.URL = url
 	}
 
 	return nil

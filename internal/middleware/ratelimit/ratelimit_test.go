@@ -48,9 +48,11 @@ func doRequestWithProxy(handler gin.HandlerFunc, proxyIP, remoteAddr, spoofedXFF
 // spoofed header must not grant a fresh token bucket per request.
 func TestRateLimitKeyIgnoresSpoofedForwardedFor(t *testing.T) {
 	t.Parallel()
+	// The throttling assertions need a window (1/rate) longer than any
+	// scheduler gap under parallel full-suite load; 0.1/s gives ~10s.
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             1,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),
@@ -81,7 +83,7 @@ func TestCustomKeyFuncBucketing(t *testing.T) {
 	t.Parallel()
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             1,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),
@@ -159,7 +161,7 @@ func TestRejectsRequestsOverBurst(t *testing.T) {
 	t.Parallel()
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             2,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),
@@ -185,7 +187,7 @@ func TestLimitIsPerClient(t *testing.T) {
 	t.Parallel()
 	cfg := config.RateLimitConfig{
 		Enabled:           true,
-		RequestsPerSecond: 10,
+		RequestsPerSecond: 0.1,
 		Burst:             1,
 		CleanupInterval:   config.Duration(time.Minute),
 		Expiration:        config.Duration(time.Minute),
@@ -218,19 +220,25 @@ func TestDisabledConfigPassesEverything(t *testing.T) {
 	}
 }
 
-func TestZeroRateIsNoOp(t *testing.T) {
+// TestInvalidEnabledConfigFailsClosed guards against the silent-disable and
+// hard-block misconfigurations: an enabled rate limit with requests_per_second
+// <= 0 or burst <= 0 must fail loudly at construction (config.Load rejects the
+// values at startup; the constructor guard panics) instead of silently turning
+// the wall off or 429ing everyone.
+func TestInvalidEnabledConfigFailsClosed(t *testing.T) {
 	t.Parallel()
-	cfg := config.RateLimitConfig{
-		Enabled:           true,
-		RequestsPerSecond: 0,
+	cases := []config.RateLimitConfig{
+		{Enabled: true, RequestsPerSecond: 0},
+		{Enabled: true, RequestsPerSecond: 10, Burst: 0},
 	}
-
-	handler := ratelimit.FromConfig(cfg, nil)
-
-	for i := range 3 {
-		rec := doRequest(handler, "192.168.0.6:1234")
-		if rec.Code != http.StatusOK {
-			t.Fatalf("request %d status = %d, want %d", i+1, rec.Code, http.StatusOK)
-		}
+	for _, cfg := range cases {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("expected panic for enabled limit %+v", cfg)
+				}
+			}()
+			ratelimit.FromConfig(cfg, nil)
+		}()
 	}
 }

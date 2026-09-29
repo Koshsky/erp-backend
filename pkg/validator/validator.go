@@ -3,8 +3,8 @@ package validator
 import (
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -14,8 +14,8 @@ func New() *Validator {
 	return &Validator{}
 }
 
-func (v *Validator) ValidateDateRange(start, end time.Time, entity string) error {
-	if end.Before(start) {
+func (v *Validator) ValidateDateRange(start, end date.Date, entity string) error {
+	if end.Time().Before(start.Time()) {
 		return errors.NewFieldError("end_date", codeDateRange, msgDateRange(entity))
 	}
 	return nil
@@ -44,8 +44,8 @@ func (v *Validator) ValidateOptionalPositiveID(id *int64, field string) error {
 	return v.ValidatePositiveID(*id, field)
 }
 
-func (v *Validator) ValidateRequiredDate(value time.Time, field string) error {
-	if value.IsZero() {
+func (v *Validator) ValidateRequiredDate(value date.Date, field string) error {
+	if value == "" {
 		return errors.NewFieldError(field, codeRequired, msgRequired(field))
 	}
 	return nil

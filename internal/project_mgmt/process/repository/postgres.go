@@ -7,10 +7,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
@@ -24,46 +25,60 @@ type ProcessRepository struct {
 // NewProcessRepository builds the ProcessRepository repository.
 func NewProcessRepository(logger *slog.Logger, pool *pgxpool.Pool) *ProcessRepository {
 	return &ProcessRepository{
-		logger: logger,
+		logger: logger.With("component", "process_repository"),
 		pool:   pool,
 		db:     sqlc.New(pool),
 	}
 }
 
-func (r *ProcessRepository) CreateProcess(ctx context.Context, process domain.Process) (*domain.Process, error) {
-	row, err := r.db.CreateProcess(ctx, sqlc.CreateProcessParams{
-		ProjectID: process.ProjectID,
-		Title:     process.Title,
-		Color:     nullable.ToString(process.Color),
-		StartDate: process.StartDate,
-		EndDate:   process.EndDate,
-		OwnerID:   nullable.ToInt8(process.OwnerID),
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *ProcessRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
+func (r *ProcessRepository) CreateProcess(
+	ctx context.Context,
+	projectID int64,
+	title string,
+	color *string,
+	ownerID *int64,
+	startDate, endDate date.Date,
+) (*sqlc.Process, error) {
+	row, err := r.q(ctx).CreateProcess(ctx, sqlc.CreateProcessParams{
+		ProjectID: projectID,
+		Title:     title,
+		Color:     nullable.ToString(color),
+		StartDate: startDate,
+		EndDate:   endDate,
+		OwnerID:   nullable.ToInt8(ownerID),
 	})
 	if err != nil {
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapProcess(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *ProcessRepository) FindProcess(ctx context.Context, id int64) (*domain.Process, error) {
-	row, err := r.db.FindProcess(ctx, id)
+func (r *ProcessRepository) FindProcess(ctx context.Context, id int64) (*sqlc.Process, error) {
+	row, err := r.q(ctx).FindProcess(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapProcess(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Process) (*domain.Process, error) {
-	row, err := r.db.UpdateProcess(ctx, sqlc.UpdateProcessParams{
+func (r *ProcessRepository) UpdateProcess(ctx context.Context, process sqlc.Process) (*sqlc.Process, error) {
+	row, err := r.q(ctx).UpdateProcess(ctx, sqlc.UpdateProcessParams{
 		ProcessID: process.ID,
-		OwnerID:   nullable.ToInt8(process.OwnerID),
+		OwnerID:   process.OwnerID,
 		ProjectID: process.ProjectID,
 		Title:     process.Title,
-		Color:     nullable.ToString(process.Color),
+		Color:     process.Color,
 		StartDate: process.StartDate,
 		EndDate:   process.EndDate,
 	})
@@ -71,12 +86,11 @@ func (r *ProcessRepository) UpdateProcess(ctx context.Context, process domain.Pr
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapProcess(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *ProcessRepository) DeleteProcess(ctx context.Context, id int64) error {
-	return r.db.DeleteProcess(ctx, id)
+	return r.q(ctx).DeleteProcess(ctx, id)
 }
 
 func (r *ProcessRepository) ListProcesss(
@@ -85,22 +99,14 @@ func (r *ProcessRepository) ListProcesss(
 	viewScope string,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Process, error) {
-	rows, err := r.db.ListProcesss(ctx, sqlc.ListProcesssParams{
+) ([]sqlc.Process, error) {
+	return r.q(ctx).ListProcesss(ctx, sqlc.ListProcesssParams{
 		ScopeView:  viewScope,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-	processes := make([]domain.Process, 0, len(rows))
-	for _, row := range rows {
-		processes = append(processes, mapProcess(row))
-	}
-	return processes, nil
 }
 
 func (r *ProcessRepository) CountProcesses(
@@ -109,7 +115,7 @@ func (r *ProcessRepository) CountProcesses(
 	viewScope string,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountProcesses(
+	return r.q(ctx).CountProcesses(
 		ctx,
 		sqlc.CountProcessesParams{
 			ScopeView: viewScope,
@@ -119,23 +125,10 @@ func (r *ProcessRepository) CountProcesses(
 	)
 }
 
-func mapProcess(row sqlc.Process) domain.Process {
-	return domain.Process{
-		ID:        row.ID,
-		OwnerID:   nullable.Int64Ptr(row.OwnerID),
-		ProjectID: row.ProjectID,
-		Title:     row.Title,
-		Color:     nullable.StringPtr(row.Color),
-		StartDate: row.StartDate,
-		EndDate:   row.EndDate,
-		SortOrder: int(row.SortOrder),
-	}
-}
-
 // ListProcessIDsByProject returns the active process ids of a project in their
 // display order — to validate a reorder request covers the whole group.
 func (r *ProcessRepository) ListProcessIDsByProject(ctx context.Context, projectID int64) ([]int64, error) {
-	return r.db.ListProcessIdsByProject(ctx, projectID)
+	return r.q(ctx).ListProcessIdsByProject(ctx, projectID)
 }
 
 // ReorderProcesses rewrites the sort_order of the given process ids by list
@@ -144,25 +137,33 @@ func (r *ProcessRepository) ListProcessIDsByProject(ctx context.Context, project
 // first, because a single-statement value swap would transiently violate the
 // partial unique index (project_id, sort_order).
 func (r *ProcessRepository) ReorderProcesses(ctx context.Context, ids []int64) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
 
-	q := r.db.WithTx(tx)
+	q := r.q(ctx)
+	if owned {
+		q = r.db.WithTx(tx)
+	}
 	if err = q.ReorderProcessesMark(ctx, ids); err != nil {
 		return err
 	}
 	if err = q.ReorderProcessesApply(ctx, ids); err != nil {
 		return err
 	}
+	if !owned {
+		return nil
+	}
 	return tx.Commit(ctx)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).
 func (r *ProcessRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	row, err := r.db.OwnerChain(ctx, id)
+	row, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}

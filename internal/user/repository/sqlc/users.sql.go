@@ -8,8 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -112,8 +112,8 @@ WHERE user_id = $1::bigint
 
 type DeleteOverlappingParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) DeleteOverlapping(ctx context.Context, arg DeleteOverlappingParams) error {
@@ -132,8 +132,8 @@ WHERE user_id = $1::bigint
 type DeleteOverlappingByStateParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) DeleteOverlappingByState(ctx context.Context, arg DeleteOverlappingByStateParams) error {
@@ -221,8 +221,8 @@ RETURNING id, user_id, state_id, start_date, end_date, created_at, updated_at
 type InsertStateRangeParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) InsertStateRange(ctx context.Context, arg InsertStateRangeParams) (UserState, error) {
@@ -325,15 +325,15 @@ FOR UPDATE
 
 type ListOverlappingStatesParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListOverlappingStatesRow struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 	StateID   int64     `json:"state_id"`
 }
 
@@ -377,15 +377,15 @@ FOR UPDATE
 type ListOverlappingStatesByStateParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListOverlappingStatesByStateRow struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 	StateID   int64     `json:"state_id"`
 }
 
@@ -434,15 +434,15 @@ ORDER BY es.start_date ASC
 
 type ListStatesByUserRangeParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListStatesByUserRangeRow struct {
 	ID          int64     `json:"id"`
 	UserID      int64     `json:"user_id"`
-	StartDate   time.Time `json:"start_date"`
-	EndDate     time.Time `json:"end_date"`
+	StartDate   date.Date `json:"start_date"`
+	EndDate     date.Date `json:"end_date"`
 	StateID     int64     `json:"state_id"`
 	StateCode   string    `json:"state_code"`
 	StateName   string    `json:"state_name"`
@@ -492,15 +492,15 @@ ORDER BY es.user_id ASC, es.start_date ASC
 
 type ListStatesByUsersRangeParams struct {
 	UserIds   []int64   `json:"user_ids"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListStatesByUsersRangeRow struct {
 	ID          int64     `json:"id"`
 	UserID      int64     `json:"user_id"`
-	StartDate   time.Time `json:"start_date"`
-	EndDate     time.Time `json:"end_date"`
+	StartDate   date.Date `json:"start_date"`
+	EndDate     date.Date `json:"end_date"`
 	StateID     int64     `json:"state_id"`
 	StateCode   string    `json:"state_code"`
 	StateName   string    `json:"state_name"`
@@ -608,6 +608,39 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUsersByIDs = `-- name: ListUsersByIDs :many
+SELECT id, manager_id
+FROM users
+WHERE id = ANY($1::bigint[])
+`
+
+type ListUsersByIDsRow struct {
+	ID        int64       `json:"id"`
+	ManagerID pgtype.Int8 `json:"manager_id"`
+}
+
+// Batch owner lookup for scope checks: the (id, manager_id) pairs of the
+// requested users in one round trip (replaces N FindUser calls per request).
+func (q *Queries) ListUsersByIDs(ctx context.Context, userIds []int64) ([]ListUsersByIDsRow, error) {
+	rows, err := q.db.Query(ctx, listUsersByIDs, userIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUsersByIDsRow{}
+	for rows.Next() {
+		var i ListUsersByIDsRow
+		if err := rows.Scan(&i.ID, &i.ManagerID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

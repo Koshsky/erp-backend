@@ -76,8 +76,9 @@ postgres:
 
 redis:
   # Shared Redis (M1): the rate limiter token buckets live here so N instances
-  # enforce one global limit per client. When disabled/unreachable the limiter
-  # falls back to the in-memory implementation (same behavior as before).
+  # enforce one global limit per client. The backend is chosen explicitly:
+  # enabled=false selects the in-memory limiter; enabled=true requires a
+  # reachable Redis — otherwise the app fails to start (fail-fast).
   enabled: true
   address: "redis:6379"
   password: ""

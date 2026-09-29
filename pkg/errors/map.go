@@ -12,6 +12,10 @@ import (
 // unique (23505) → 409, foreign key (23503) → 400, CHECK (23514) → 400,
 // exclusion (23P01, overlapping ranges such as user_states) → 409.
 // All other errors are returned unchanged.
+//
+// The response message is always a fixed human-readable text — the constraint
+// name is internal detail and is attached as Details for the server-side log
+// only, never echoed to the client.
 func MapPgConstraint(err error) error {
 	var pgErr *pgconn.PgError
 	if !stderrors.As(err, &pgErr) {
@@ -19,16 +23,16 @@ func MapPgConstraint(err error) error {
 	}
 	switch pgErr.Code {
 	case "23505":
-		return Conflict(uniqueMessage(pgErr.ConstraintName))
+		return withDetail(Conflict(uniqueMessage(pgErr.ConstraintName)), pgErr.ConstraintName)
 	case "23P01":
-		return Conflict("значение пересекается с существующим диапазоном")
+		return withDetail(Conflict("значение пересекается с существующим диапазоном"), pgErr.ConstraintName)
 	case "23503":
 		if pgErr.ConstraintName == "users_role_fk" {
-			return BadRequest("неизвестная роль: её нет в каталоге ролей")
+			return withDetail(BadRequest("неизвестная роль: её нет в каталоге ролей"), pgErr.ConstraintName)
 		}
-		return BadRequest("запись ссылается на несуществующий объект: " + pgErr.ConstraintName)
+		return withDetail(BadRequest("запись ссылается на несуществующий объект"), pgErr.ConstraintName)
 	case "23514":
-		return BadRequest("значение не прошло проверку базы данных: " + pgErr.ConstraintName)
+		return withDetail(BadRequest("значение не прошло проверку базы данных"), pgErr.ConstraintName)
 	default:
 		return err
 	}

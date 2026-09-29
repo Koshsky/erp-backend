@@ -1,14 +1,5 @@
 basePath: /api/v1
 definitions:
-  domain.Preset:
-    properties:
-      description:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
   dto.AddMemberRequest:
     properties:
       user_id:
@@ -724,6 +715,15 @@ definitions:
     required:
     - name
     type: object
+  dto.PresetView:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   dto.Process:
     properties:
       color:
@@ -885,12 +885,6 @@ definitions:
       process_id:
         example: 1
         type: integer
-    type: object
-  dto.ResetPasswordResponse:
-    properties:
-      password:
-        example: Xy9kLm2QrT8wAb3z
-        type: string
     type: object
   dto.Resource:
     properties:
@@ -1447,6 +1441,24 @@ definitions:
         example: 7
         type: integer
     type: object
+  engine.KindInfo:
+    properties:
+      name:
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/engine.ParamInfo'
+        type: array
+    type: object
+  engine.ParamInfo:
+    properties:
+      key:
+        type: string
+      required:
+        type: boolean
+      type:
+        type: string
+    type: object
   errors.DomainError:
     properties:
       code:
@@ -1457,24 +1469,6 @@ definitions:
         type: string
       timestamp:
         example: "2026-08-09T10:30:00Z"
-        type: string
-    type: object
-  policies.KindInfo:
-    properties:
-      name:
-        type: string
-      params:
-        items:
-          $ref: '#/definitions/policies.ParamInfo'
-        type: array
-    type: object
-  policies.ParamInfo:
-    properties:
-      key:
-        type: string
-      required:
-        type: boolean
-      type:
         type: string
     type: object
   response.ErrorResponse:
@@ -3018,7 +3012,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/policies.KindInfo'
+                    $ref: '#/definitions/engine.KindInfo'
                   type: array
                 error:
                   type: object
@@ -3218,7 +3212,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/domain.Preset'
+                    $ref: '#/definitions/dto.PresetView'
                   type: array
                 error:
                   type: object
@@ -3248,7 +3242,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/domain.Preset'
+                  $ref: '#/definitions/dto.PresetView'
                 error:
                   type: object
               type: object
@@ -3307,7 +3301,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/domain.Preset'
+                  $ref: '#/definitions/dto.PresetView'
                 error:
                   type: object
               type: object
@@ -5037,7 +5031,8 @@ paths:
       - Users
   /user/{id}/reset-password:
     post:
-      description: Generate a new random password for a user and return it once
+      description: Generate a new random password for a user (admin only; the new
+        password is never returned)
       parameters:
       - description: User ID
         in: path
@@ -5047,19 +5042,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ResetPasswordResponse'
-                error:
-                  type: object
-              type: object
+        "204":
+          description: No Content
         "400":
           description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
           schema:
             allOf:
             - $ref: '#/definitions/response.ErrorResponse'

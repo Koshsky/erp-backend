@@ -16,12 +16,12 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/Koshsky/erp-backend/internal/audit"
+	authzService "github.com/Koshsky/erp-backend/internal/authz/service"
 	"github.com/Koshsky/erp-backend/internal/config"
 	idempotencypkg "github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
-	rbacpolicysvc "github.com/Koshsky/erp-backend/internal/rbacpolicy/service"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
@@ -45,7 +45,7 @@ type App struct {
 	tracer      *tracingpkg.Tracer
 	idemMw      *idempotencypkg.Middleware
 	auditMw     *audit.Middleware
-	policyStore *rbacpolicysvc.PolicyStore
+	policyStore *authzService.PolicyStore
 	modules     []Module
 }
 
@@ -59,14 +59,14 @@ func New(
 	tracer *tracingpkg.Tracer,
 	idemMw *idempotencypkg.Middleware,
 	auditMw *audit.Middleware,
-	policyStore *rbacpolicysvc.PolicyStore,
+	policyStore *authzService.PolicyStore,
 	redisClient *redis.Client,
 	rateLimiter *ratelimit.Provider,
 	modules []Module,
 ) (*App, error) {
 	return &App{
 		cfg:         cfg,
-		logger:      logger,
+		logger:      logger.With("component", "server"),
 		pool:        pool,
 		authMw:      authMw,
 		profiler:    profiler,
@@ -232,6 +232,9 @@ func (a *App) requestID() gin.HandlerFunc {
 		}
 		c.Set(tracingpkg.RequestIDKey, reqID)
 		c.Header("X-Request-ID", reqID)
+		// Carry the request id in the request context too, so context-aware
+		// slog logging attaches request_id to every record of this request.
+		c.Request = c.Request.WithContext(tracingpkg.WithRequestID(c.Request.Context(), reqID))
 		c.Next()
 	}
 }
@@ -254,11 +257,12 @@ func newRequestID() string {
 // requestLog writes a summary of every HTTP request (method, path, status,
 // duration) to the log — a tracing-independent fallback for text logs. The
 // path is logged without the query string (L4: RequestURI could leak PII).
+// Context-aware logging attaches the request id and the trace ids.
 func (a *App) requestLog() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		c.Next()
-		a.logger.Info("request",
+		a.logger.InfoContext(c.Request.Context(), "request",
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"status", c.Writer.Status(),

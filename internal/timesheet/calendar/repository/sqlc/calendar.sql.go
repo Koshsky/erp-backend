@@ -7,8 +7,8 @@ package sqlc
 
 import (
 	"context"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -22,8 +22,8 @@ ORDER BY rm.resource_id ASC, u.id ASC
 `
 
 type ListEmployeesForCalendarParams struct {
-	EndDate   time.Time `json:"end_date"`
-	StartDate time.Time `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
 }
 
 type ListEmployeesForCalendarRow struct {
@@ -63,8 +63,18 @@ func (q *Queries) ListEmployeesForCalendar(ctx context.Context, arg ListEmployee
 const listResources = `-- name: ListResources :many
 SELECT id, title, code, owner_id
 FROM resources
+WHERE (
+    $1::text = 'all' OR
+    ($1::text = 'own' AND owner_id = $2::bigint) OR
+    $1::text = ''
+)
 ORDER BY id ASC
 `
+
+type ListResourcesParams struct {
+	ScopeView string `json:"scope_view"`
+	UserID    int64  `json:"user_id"`
+}
 
 type ListResourcesRow struct {
 	ID      int64  `json:"id"`
@@ -73,8 +83,13 @@ type ListResourcesRow struct {
 	OwnerID int64  `json:"owner_id"`
 }
 
-func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error) {
-	rows, err := q.db.Query(ctx, listResources)
+// Scoped by the caller's resource view zone (calendar.view): a process owner
+// must not read capacity curves of resources outside its own scope. The route
+// policy already gates the endpoint on resource.view; a caller whose zone
+// resolves empty (no rule / none) gets every row — reference data must not be
+// dropped then.
+func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
+	rows, err := q.db.Query(ctx, listResources, arg.ScopeView, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +125,14 @@ ORDER BY rm.resource_id ASC, es.start_date ASC
 `
 
 type ListUnavailableRangesParams struct {
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListUnavailableRangesRow struct {
 	ResourceID int64     `json:"resource_id"`
-	StartDate  time.Time `json:"start_date"`
-	EndDate    time.Time `json:"end_date"`
+	StartDate  date.Date `json:"start_date"`
+	EndDate    date.Date `json:"end_date"`
 }
 
 // Absence intervals (is_available = false) overlapping the window, without expansion.

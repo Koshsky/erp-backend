@@ -28,7 +28,7 @@ type UserService interface {
 		req dto.CreateUserRequest,
 		caller userctx.UserContext,
 	) (*dto.CreateUserResult, error)
-	ResetPassword(ctx context.Context, id int64) (*dto.ResetPasswordResponse, error)
+	ResetPassword(ctx context.Context, id int64, caller userctx.UserContext) error
 	DeleteUser(ctx context.Context, id int64) error
 	ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error
 	UpdateUser(

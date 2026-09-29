@@ -24,7 +24,7 @@ type Profiler struct {
 
 // New builds the profiler.
 func New(cfg config.ProfilingConfig, logger *slog.Logger) *Profiler {
-	return &Profiler{cfg: cfg, logger: logger}
+	return &Profiler{cfg: cfg, logger: logger.With("component", "profiler")}
 }
 
 // Start launches the pprof server if profiling is enabled.

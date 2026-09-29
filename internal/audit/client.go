@@ -97,7 +97,7 @@ func NewClient(logger *slog.Logger, cfg config.AuditConfig, lookup UserLookup) *
 		timeout = defaultClientTimeout
 	}
 	return &Client{
-		logger:  logger,
+		logger:  logger.With("component", "audit_client"),
 		baseURL: cfg.URL,
 		lookup:  lookup,
 		hc:      &http.Client{Timeout: timeout},

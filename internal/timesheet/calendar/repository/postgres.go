@@ -4,14 +4,12 @@ package repository
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/jackc/pgx/v5/pgtype"
-
-	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type CalendarRepository struct {
@@ -22,80 +20,51 @@ type CalendarRepository struct {
 // NewCalendarRepository builds the CalendarRepository repository.
 func NewCalendarRepository(logger *slog.Logger, pool *pgxpool.Pool) *CalendarRepository {
 	return &CalendarRepository{
-		logger: logger,
+		logger: logger.With("component", "calendar_repository"),
 		db:     sqlc.New(pool),
 	}
 }
 
-func (r *CalendarRepository) ListResources(ctx context.Context) ([]dto.ResourceInfo, error) {
-	rows, err := r.db.ListResources(ctx)
-	if err != nil {
-		return nil, err
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *CalendarRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
 	}
-	resources := make([]dto.ResourceInfo, 0, len(rows))
-	for _, row := range rows {
-		resources = append(resources, dto.ResourceInfo{
-			ID:      row.ID,
-			Title:   row.Title,
-			Code:    row.Code,
-			OwnerID: &row.OwnerID,
-		})
-	}
-	return resources, nil
+	return r.db
+}
+
+// ListResources returns resources within the caller's resource view zone; an
+// empty zone (no resource view rule) includes all rows (reference fallback).
+func (r *CalendarRepository) ListResources(
+	ctx context.Context,
+	userID int64,
+	viewScope string,
+) ([]sqlc.ListResourcesRow, error) {
+	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
+		UserID:    userID,
+		ScopeView: viewScope,
+	})
 }
 
 // ListEmployeesForCalendar returns resource members active within the window for the calendar.
 func (r *CalendarRepository) ListEmployeesForCalendar(
 	ctx context.Context,
-	start, end time.Time,
-) ([]dto.CalendarMember, error) {
-	rows, err := r.db.ListEmployeesForCalendar(ctx, sqlc.ListEmployeesForCalendarParams{
+	start, end date.Date,
+) ([]sqlc.ListEmployeesForCalendarRow, error) {
+	return r.q(ctx).ListEmployeesForCalendar(ctx, sqlc.ListEmployeesForCalendarParams{
 		StartDate: start,
 		EndDate:   end,
 	})
-	if err != nil {
-		return nil, err
-	}
-	members := make([]dto.CalendarMember, 0, len(rows))
-	for _, row := range rows {
-		members = append(members, dto.CalendarMember{
-			UserID:          row.ID,
-			ResourceID:      row.ResourceID,
-			HireDate:        fromDate(row.HireDate),
-			TerminationDate: fromDate(row.TerminationDate),
-		})
-	}
-	return members, nil
 }
 
 // ListUnavailableRanges returns absence intervals overlapping the window.
 func (r *CalendarRepository) ListUnavailableRanges(
 	ctx context.Context,
-	start, end time.Time,
-) ([]dto.UnavailableRange, error) {
-	rows, err := r.db.ListUnavailableRanges(ctx, sqlc.ListUnavailableRangesParams{
+	start, end date.Date,
+) ([]sqlc.ListUnavailableRangesRow, error) {
+	return r.q(ctx).ListUnavailableRanges(ctx, sqlc.ListUnavailableRangesParams{
 		StartDate: start,
 		EndDate:   end,
 	})
-	if err != nil {
-		return nil, err
-	}
-	ranges := make([]dto.UnavailableRange, 0, len(rows))
-	for _, row := range rows {
-		ranges = append(ranges, dto.UnavailableRange{
-			ResourceID: row.ResourceID,
-			StartDate:  row.StartDate,
-			EndDate:    row.EndDate,
-		})
-	}
-	return ranges, nil
-}
-
-// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
-func fromDate(v pgtype.Date) *time.Time {
-	if !v.Valid {
-		return nil
-	}
-	t := v.Time
-	return &t
 }

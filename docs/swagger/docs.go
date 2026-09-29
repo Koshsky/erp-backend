@@ -2748,7 +2748,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/policies.KindInfo"
+                                                "$ref": "#/definitions/engine.KindInfo"
                                             }
                                         },
                                         "error": {
@@ -3108,7 +3108,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/domain.Preset"
+                                                "$ref": "#/definitions/dto.PresetView"
                                             }
                                         },
                                         "error": {
@@ -3160,7 +3160,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/domain.Preset"
+                                            "$ref": "#/definitions/dto.PresetView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -3238,7 +3238,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/domain.Preset"
+                                            "$ref": "#/definitions/dto.PresetView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -6635,7 +6635,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Generate a new random password for a user and return it once",
+                "description": "Generate a new random password for a user (admin only; the new password is never returned)",
                 "produces": [
                     "application/json"
                 ],
@@ -6653,20 +6653,20 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.SuccessResponse"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ResetPasswordResponse"
-                                        },
-                                        "error": {
                                             "type": "object"
                                         }
                                     }
@@ -6674,8 +6674,8 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "allOf": [
                                 {
@@ -6715,20 +6715,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Preset": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.AddMemberRequest": {
             "type": "object",
             "properties": {
@@ -7710,6 +7696,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PresetView": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.Process": {
             "type": "object",
             "properties": {
@@ -7936,15 +7936,6 @@ const docTemplate = `{
                 "process_id": {
                     "type": "integer",
                     "example": 1
-                }
-            }
-        },
-        "dto.ResetPasswordResponse": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "example": "Xy9kLm2QrT8wAb3z"
                 }
             }
         },
@@ -8709,6 +8700,34 @@ const docTemplate = `{
                 }
             }
         },
+        "engine.KindInfo": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/engine.ParamInfo"
+                    }
+                }
+            }
+        },
+        "engine.ParamInfo": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "errors.DomainError": {
             "type": "object",
             "properties": {
@@ -8723,34 +8742,6 @@ const docTemplate = `{
                 "timestamp": {
                     "type": "string",
                     "example": "2026-08-09T10:30:00Z"
-                }
-            }
-        },
-        "policies.KindInfo": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/policies.ParamInfo"
-                    }
-                }
-            }
-        },
-        "policies.ParamInfo": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "required": {
-                    "type": "boolean"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },

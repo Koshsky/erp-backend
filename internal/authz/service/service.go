@@ -1,0 +1,526 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+	"regexp"
+	"strings"
+
+	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/Koshsky/erp-backend/internal/authz/domain"
+	"github.com/Koshsky/erp-backend/internal/authz/dto"
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
+	"github.com/Koshsky/erp-backend/internal/authz/repository"
+	"github.com/Koshsky/erp-backend/internal/authz/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
+	userctx "github.com/Koshsky/erp-backend/internal/userctx"
+	"github.com/Koshsky/erp-backend/pkg/errors"
+)
+
+// policyRepository is the repository seam of the RBAC administration service
+// and the policy store; implemented by *repository.RuleRepository and by the
+// test fakes. Keeping the seam here lets the service be unit-tested without a
+// database (the concrete repository is injected unchanged by the constructors).
+type policyRepository interface {
+	ListActivePresets(ctx context.Context) ([]sqlc.ListActivePresetsRow, error)
+	ListActiveRules(ctx context.Context) ([]sqlc.ListActivePresetRulesRow, error)
+	UpsertRule(
+		ctx context.Context,
+		preset, resource, action, scope string,
+		updatedBy *int64,
+	) (sqlc.UpsertPresetRuleRow, error)
+	DeleteRule(ctx context.Context, id int64) error
+	ListActiveRoutePolicies(ctx context.Context) ([]domain.RoutePolicy, error)
+	UpsertRoutePolicy(ctx context.Context, p domain.RoutePolicy) (domain.RoutePolicy, error)
+	DeleteRoutePolicy(ctx context.Context, name string) error
+	ResetPolicies(
+		ctx context.Context,
+		rules []sqlc.UpsertPresetRuleParams,
+		policies []sqlc.UpsertRoutePolicyParams,
+	) error
+	UpsertPreset(ctx context.Context, name, description string) (sqlc.UpsertPresetRow, error)
+	UpdatePresetDescription(ctx context.Context, name, description string) (sqlc.UpdatePresetDescriptionRow, error)
+	DeletePreset(ctx context.Context, name string) error
+	ListUserPermissions(ctx context.Context, userID int64) ([]sqlc.ListUserPermissionsRow, error)
+	ReplaceUserPermissions(ctx context.Context, userID int64, perms []sqlc.InsertUserPermissionParams) error
+	FindUserPreset(ctx context.Context, userID int64) (string, bool, error)
+	ListUserPrincipals(ctx context.Context) ([]repository.UserPreset, error)
+	ListAllUserPermissions(ctx context.Context) ([]repository.UserPermissionRef, error)
+}
+
+// Service — RBAC policy administration (validation + DB writes +
+// immediate application through the PolicyStore).
+type Service struct {
+	logger *slog.Logger
+	repo   policyRepository
+	store  *PolicyStore
+}
+
+// NewRBACService builds the RBAC administration service.
+func NewRBACService(logger *slog.Logger, repo *repository.RuleRepository, store *PolicyStore) *Service {
+	return &Service{logger: logger.With("component", "rbacpolicy_service"), repo: repo, store: store}
+}
+
+// ListPresets returns the preset catalog.
+func (s *Service) ListPresets(ctx context.Context) ([]sqlc.ListActivePresetsRow, error) {
+	return s.repo.ListActivePresets(ctx)
+}
+
+// ListRules returns the active matrix rows.
+func (s *Service) ListRules(ctx context.Context) ([]sqlc.ListActivePresetRulesRow, error) {
+	return s.repo.ListActiveRules(ctx)
+}
+
+// UpsertRule validates and writes a matrix row, then applies the
+// changes immediately.
+func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, updatedBy int64) error {
+	if in.Preset == "" {
+		return errors.BadRequest("пресет обязателен")
+	}
+	presets, err := s.repo.ListActivePresets(ctx)
+	if err != nil {
+		return err
+	}
+	if !presetExists(presets, in.Preset) {
+		return errors.BadRequest("неизвестный пресет " + in.Preset)
+	}
+	res, ok := engine.ParseResource(in.Resource)
+	if !ok {
+		return errors.BadRequest("неизвестный ресурс " + in.Resource)
+	}
+	if _, okAction := engine.ParseAction(in.Action); !okAction {
+		return errors.BadRequest("неизвестное действие " + in.Action)
+	}
+	scope, ok := engine.ParseScope(in.Scope)
+	if !ok || scope == engine.ScopeNone {
+		return errors.BadRequest("недопустимая зона " + in.Scope + " (all|own|parent|ancestor)")
+	}
+	if !engine.ScopeApplicable(res, scope) {
+		return errors.BadRequest("зона " + in.Scope + " неприменима к ресурсу " + in.Resource)
+	}
+
+	if _, upsertErr := s.repo.UpsertRule(
+		ctx,
+		in.Preset,
+		in.Resource,
+		in.Action,
+		in.Scope,
+		&updatedBy,
+	); upsertErr != nil {
+		return upsertErr
+	}
+	return s.apply(ctx)
+}
+
+// DeleteRule removes a matrix row (archived by the DB trigger). Rows of the
+// admin preset are protected: admin rights are the code bypass, and its
+// matrix rows must not be removable through the admin API.
+func (s *Service) DeleteRule(ctx context.Context, id int64) error {
+	rules, err := s.repo.ListActiveRules(ctx)
+	if err != nil {
+		return err
+	}
+	if preset, ok := findRulePreset(rules, id); ok && preset == userdomain.PresetAdmin {
+		return builtinPresetErr(preset)
+	}
+	if err = s.repo.DeleteRule(ctx, id); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// ListRoutePolicies returns the active route policy definitions.
+func (s *Service) ListRoutePolicies(ctx context.Context) ([]domain.RoutePolicy, error) {
+	return s.repo.ListActiveRoutePolicies(ctx)
+}
+
+// UpsertRoutePolicy validates (kind + parameters against the schema) and writes
+// the route policy.
+func (s *Service) UpsertRoutePolicy(ctx context.Context, in dto.RoutePolicyInput, updatedBy int64) error {
+	if err := engine.ValidateSpec(engine.RouteSpec{Name: in.Name, Kind: in.Kind, Params: in.Params}); err != nil {
+		return errors.BadRequest(err.Error())
+	}
+	active := true
+	if in.Active != nil {
+		active = *in.Active
+	}
+	if _, err := s.repo.UpsertRoutePolicy(ctx, domain.RoutePolicy{
+		Name: in.Name, Kind: in.Kind, Params: in.Params, Active: active,
+		UpdatedBy: &updatedBy,
+	}); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// DeleteRoutePolicy removes a route policy by name (archived).
+func (s *Service) DeleteRoutePolicy(ctx context.Context, name string) error {
+	if err := s.repo.DeleteRoutePolicy(ctx, name); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// Reset restores rules and route policies to the built-in defaults (an
+// escape hatch after erroneous edits). The whole reset runs inside a single
+// transaction (the repository joins the ambient one when the idempotency
+// middleware opened it): on any error the DB is unchanged — rolled back, never
+// half-reseeded — and the engine keeps its current snapshot; only after a
+// successful commit is the new state applied to the in-memory engine.
+func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
+	defaults := engine.DefaultMatrixRules()
+	rules := make([]sqlc.UpsertPresetRuleParams, 0, len(defaults))
+	for _, r := range defaults {
+		rules = append(rules, sqlc.UpsertPresetRuleParams{
+			Preset:    r.Role,
+			Resource:  engine.ResourceName(r.Res),
+			Action:    engine.ActionName(r.Act),
+			Scope:     engine.ScopeName(r.Scope),
+			UpdatedBy: pgtype.Int8{Int64: updatedBy, Valid: true},
+		})
+	}
+	specs := engine.DefaultRouteSpecs()
+	policies := make([]sqlc.UpsertRoutePolicyParams, 0, len(specs))
+	for _, spec := range specs {
+		params, err := json.Marshal(spec.Params)
+		if err != nil {
+			return err
+		}
+		policies = append(policies, sqlc.UpsertRoutePolicyParams{
+			Name:      spec.Name,
+			Kind:      spec.Kind,
+			Params:    params,
+			Active:    true,
+			UpdatedBy: pgtype.Int8{Int64: updatedBy, Valid: true},
+		})
+	}
+	if err := s.repo.ResetPolicies(ctx, rules, policies); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// EffectiveMatrix returns the effective matrix (with the admin bypass) for the API.
+func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error) {
+	_ = ctx // matrix and presets are read from memory/DB without extra queries
+	presets, err := s.repo.ListActivePresets(ctx)
+	if err != nil {
+		return nil, err
+	}
+	matrix := engine.CurrentMatrix()
+	names := make([]string, 0, len(presets)+1)
+	names = append(names, userdomain.PresetAdmin)
+	for _, p := range presets {
+		names = append(names, p.Name)
+	}
+	var cells []dto.MatrixCell
+	for _, preset := range names {
+		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
+			for act := engine.ActionView; act <= engine.ActionDelete; act++ {
+				if scope := matrix.ScopeFor(preset, res, act); scope != engine.ScopeNone {
+					cells = append(cells, dto.MatrixCell{
+						Preset: preset, Resource: engine.ResourceName(res), Action: engine.ActionName(act),
+						Scope: engine.ScopeName(scope),
+					})
+				}
+			}
+		}
+	}
+	return cells, nil
+}
+
+// Kinds returns the catalog of route policy kinds.
+func (s *Service) Kinds() []engine.KindInfo {
+	return engine.Kinds()
+}
+
+// Explain answers "why allow/deny" for debugging DB-backed rules.
+func (s *Service) Explain(_ context.Context, in dto.ExplainInput) (dto.ExplainResult, error) {
+	res, ok := engine.ParseResource(in.Resource)
+	if !ok {
+		return dto.ExplainResult{}, errors.BadRequest("неизвестный ресурс " + in.Resource)
+	}
+	act, ok := engine.ParseAction(in.Action)
+	if !ok {
+		return dto.ExplainResult{}, errors.BadRequest("неизвестное действие " + in.Action)
+	}
+	scope := engine.CurrentMatrix().ScopeFor(in.Preset, res, act)
+	allowed := engine.Authorize(in.Preset, res, act, rbac.Owners{
+		ProjectOwner: in.ProjectOwner,
+		ProcessOwner: in.ProcessOwner,
+		Owner:        in.Owner,
+	}, in.UserID)
+	return dto.ExplainResult{Scope: engine.ScopeName(scope), Allowed: allowed}, nil
+}
+
+// apply applies the current DB state to the engine.
+func (s *Service) apply(ctx context.Context) error {
+	if err := s.store.Reload(ctx); err != nil {
+		s.logger.ErrorContext(
+			ctx,
+			"rbac: применение изменений не удалось (продолжаю на последнем снапшоте)",
+			"error",
+			err,
+		)
+	}
+	return nil
+}
+
+func presetExists(presets []sqlc.ListActivePresetsRow, name string) bool {
+	for _, p := range presets {
+		if p.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+// MyPermissions returns the caller's principal permissions (all allowed
+// actions with an effective scope != none; admin — everything). Used by the
+// frontend to display capabilities by permissions rather than by presets. The
+// source is the published Casbin snapshot (RBAC roles + ACL grants/revokes +
+// admin bypass) — exactly the rights the engine applies to requests; the
+// data-level matrix (CurrentMatrix) is only for the admin editor views.
+func (s *Service) MyPermissions(_ context.Context, user userctx.UserContext) []dto.Permission {
+	out := []dto.Permission{}
+	for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
+		for act := engine.ActionView; act <= engine.ActionDelete; act++ {
+			scope := engine.ScopeForUser(user, res, act)
+			if scope == engine.ScopeNone {
+				continue
+			}
+			out = append(out, dto.Permission{
+				Resource: engine.ResourceName(res),
+				Action:   engine.ActionName(act),
+				Scope:    engine.ScopeName(scope),
+			})
+		}
+	}
+	return out
+}
+
+// ListUserPermissions returns the editor view of a user's permissions: the
+// assigned preset, the current overrides, the preset baseline (without
+// overrides) and the resulting effective matrix.
+func (s *Service) ListUserPermissions(
+	ctx context.Context,
+	userID int64,
+) (dto.UserPermissionsView, error) {
+	presetCode, presetSet, err := s.repo.FindUserPreset(ctx, userID)
+	if err != nil {
+		return dto.UserPermissionsView{}, err
+	}
+	rows, err := s.repo.ListUserPermissions(ctx, userID)
+	if err != nil {
+		return dto.UserPermissionsView{}, err
+	}
+	var preset *string
+	if presetSet {
+		preset = &presetCode
+	}
+	overrides := make([]dto.PermissionOverride, 0, len(rows))
+	for _, p := range rows {
+		overrides = append(overrides, dto.PermissionOverride{
+			Resource: p.Resource,
+			Action:   p.Action,
+			Scope:    p.Scope,
+			Granted:  p.Granted,
+		})
+	}
+	admin := presetSet && presetCode == userdomain.PresetAdmin
+	// Preset baseline: the assigned preset without individual overrides.
+	base := userctx.UserContext{
+		ID:     userID,
+		Admin:  admin,
+		Preset: presetNameRef(preset),
+	}
+	// Effective matrix: the caller's principal applied to every resource/action.
+	principal := base
+	principal.Rules = toRules(overrides)
+	return dto.UserPermissionsView{
+		UserID:      userID,
+		Preset:      preset,
+		Admin:       admin,
+		Overrides:   overrides,
+		PresetScope: s.MyPermissions(ctx, base),
+		Effective:   s.MyPermissions(ctx, principal),
+	}, nil
+}
+
+// ReplaceUserPermissions validates and replaces the user's override set
+// (full replacement), then applies the change immediately.
+func (s *Service) ReplaceUserPermissions(
+	ctx context.Context,
+	userID int64,
+	in dto.UserPermissionsInput,
+	updatedBy int64,
+) error {
+	rows := make([]sqlc.InsertUserPermissionParams, 0, len(in.Overrides))
+	seen := map[string]bool{}
+	for _, o := range in.Overrides {
+		res, ok := engine.ParseResource(o.Resource)
+		if !ok {
+			return errors.BadRequest("неизвестный ресурс " + o.Resource)
+		}
+		if _, okAction := engine.ParseAction(o.Action); !okAction {
+			return errors.BadRequest("неизвестное действие " + o.Action)
+		}
+		key := o.Resource + "/" + o.Action
+		if seen[key] {
+			return errors.BadRequest("дублируется право " + key)
+		}
+		seen[key] = true
+		scope := "all"
+		if o.Granted {
+			parsed, okScope := engine.ParseScope(o.Scope)
+			if !okScope || parsed == engine.ScopeNone {
+				return errors.BadRequest("недопустимая зона " + o.Scope + " (all|own|parent|ancestor)")
+			}
+			if !engine.ScopeApplicable(res, parsed) {
+				return errors.BadRequest("зона " + o.Scope + " неприменима к ресурсу " + o.Resource)
+			}
+			scope = o.Scope
+		}
+		rows = append(rows, sqlc.InsertUserPermissionParams{
+			UserID:    userID,
+			Resource:  o.Resource,
+			Action:    o.Action,
+			Scope:     scope,
+			Granted:   o.Granted,
+			UpdatedBy: pgtype.Int8{Int64: updatedBy, Valid: true},
+		})
+	}
+	if err := s.repo.ReplaceUserPermissions(ctx, userID, rows); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// toRules converts overrides into the engine's user-rule model.
+func toRules(overrides []dto.PermissionOverride) []userctx.PermissionRule {
+	out := make([]userctx.PermissionRule, 0, len(overrides))
+	for _, o := range overrides {
+		out = append(out, userctx.PermissionRule{
+			Resource: o.Resource,
+			Action:   o.Action,
+			Scope:    o.Scope,
+			Granted:  o.Granted,
+		})
+	}
+	return out
+}
+
+// presetNameRef unwraps a preset pointer ("" — none).
+func presetNameRef(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+// maxPresetNameLen — maximum preset name length.
+const maxPresetNameLen = 32
+
+// CreatePreset creates a preset (or updates an existing one) and applies it.
+// The seeded built-in presets (V10 catalog) are immutable: the upsert must
+// not clobber them (in particular, never overwrite the admin entry).
+func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (sqlc.UpsertPresetRow, error) {
+	if err := validatePresetName(in.Name); err != nil {
+		return sqlc.UpsertPresetRow{}, err
+	}
+	if isBuiltinPreset(in.Name) {
+		return sqlc.UpsertPresetRow{}, builtinPresetErr(in.Name)
+	}
+	preset, err := s.repo.UpsertPreset(ctx, in.Name, in.Description)
+	if err != nil {
+		return sqlc.UpsertPresetRow{}, err
+	}
+	_ = s.apply(ctx)
+	return preset, nil
+}
+
+// UpdatePreset updates the preset description. The seeded built-in presets
+// (V10 catalog) are immutable via the admin API.
+func (s *Service) UpdatePreset(
+	ctx context.Context,
+	name string,
+	in dto.PresetUpdateInput,
+) (sqlc.UpdatePresetDescriptionRow, error) {
+	if isBuiltinPreset(name) {
+		return sqlc.UpdatePresetDescriptionRow{}, builtinPresetErr(name)
+	}
+	preset, err := s.repo.UpdatePresetDescription(ctx, name, in.Description)
+	if err != nil {
+		return sqlc.UpdatePresetDescriptionRow{}, err
+	}
+	return preset, nil
+}
+
+// DeletePreset deletes a preset, its rules and clears the preset ref on
+// assigned users (they keep the account but lose the preset's base rights;
+// individual overrides survive). The seeded built-in presets (V10: admin, dp,
+// rp, vp, worker) are protected: deleting admin would clear users.preset for
+// every administrator and permanently lock them out of /rbac/*.
+func (s *Service) DeletePreset(ctx context.Context, name string) error {
+	if isBuiltinPreset(name) {
+		return builtinPresetErr(name)
+	}
+	if err := s.repo.DeletePreset(ctx, name); err != nil {
+		return err
+	}
+	return s.apply(ctx)
+}
+
+// validPresetName — allowed characters of a preset name (system access code):
+// lowercase latin letters, digits, "-" and "_".
+func validPresetName(name string) bool {
+	return regexp.MustCompile(`^[a-z0-9_-]+$`).MatchString(name)
+}
+
+// validatePresetName validates a preset name: non-empty, no longer than 32, a code.
+func validatePresetName(name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return errors.BadRequest("имя пресета не может быть пустым")
+	}
+	if len(name) > maxPresetNameLen {
+		return errors.BadRequest("имя пресета не длиннее 32 символов")
+	}
+	if !validPresetName(name) {
+		return errors.BadRequest("имя пресета: только латиница в нижнем регистре, цифры, «-» и «_»")
+	}
+	return nil
+}
+
+// builtinPresetErr describes an operation on a seeded built-in preset.
+func builtinPresetErr(name string) error {
+	return errors.BadRequest("встроенный пресет " + name + " нельзя изменять или удалять")
+}
+
+// isBuiltinPreset reports whether the preset is one of the seeded built-ins
+// (the V10 catalog: admin, dp, rp, vp, worker) — immutable via the RBAC
+// admin API, as removing them (in particular admin) would lock out admins.
+func isBuiltinPreset(name string) bool {
+	switch name {
+	case userdomain.PresetAdmin,
+		userdomain.PresetProjectDirector,
+		userdomain.PresetProjectManager,
+		userdomain.PresetProcessOwner,
+		userdomain.PresetWorker:
+		return true
+	}
+	return false
+}
+
+// findRulePreset returns the preset of the matrix row with the given id.
+func findRulePreset(rules []sqlc.ListActivePresetRulesRow, id int64) (string, bool) {
+	for _, r := range rules {
+		if r.ID == id {
+			return r.Preset, true
+		}
+	}
+	return "", false
+}

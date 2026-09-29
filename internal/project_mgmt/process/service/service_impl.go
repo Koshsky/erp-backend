@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
@@ -9,6 +10,7 @@ import (
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -23,7 +25,7 @@ type ProcessService struct {
 // NewProcessService builds the ProcessService service.
 func NewProcessService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ProcessRepository) *ProcessService {
 	return &ProcessService{
-		logger:     logger,
+		logger:     logger.With("component", "process_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewProcessMapper(),
@@ -38,12 +40,25 @@ func (s *ProcessService) CreateProcess(
 	ctx, end := s.tracer.Start(ctx, "process.CreateProcess")
 	defer end(nil)
 
-	process := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateProcess(&process); err != nil {
+	if err := s.validator.ValidateProcess(
+		req.ProjectID,
+		req.Title,
+		req.Color,
+		req.StartDate,
+		req.EndDate,
+	); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateProcess(ctx, process)
+	created, err := s.repository.CreateProcess(
+		ctx,
+		req.ProjectID,
+		req.Title,
+		req.Color,
+		req.OwnerID,
+		req.StartDate,
+		req.EndDate,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +96,35 @@ func (s *ProcessService) UpdateProcess(
 		return nil, errors.ErrProcessNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(process, req)
-	if err = s.validator.ValidateProcess(process); err != nil {
+	if req.Title != nil {
+		process.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			process.Color = sql.NullString{}
+		} else {
+			process.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.StartDate != nil {
+		process.StartDate = *req.StartDate
+	}
+	if req.EndDate != nil {
+		process.EndDate = *req.EndDate
+	}
+	if req.OwnerID != nil {
+		process.OwnerID = nullable.ToInt8(req.OwnerID)
+	}
+	if req.ProjectID != nil {
+		process.ProjectID = *req.ProjectID
+	}
+	if err = s.validator.ValidateProcess(
+		process.ProjectID,
+		process.Title,
+		nullable.StringPtr(process.Color),
+		process.StartDate,
+		process.EndDate,
+	); err != nil {
 		return nil, err
 	}
 

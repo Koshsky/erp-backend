@@ -2,6 +2,7 @@ package response
 
 import (
 	"encoding/json"
+	stderrors "errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -97,7 +98,7 @@ func Unauthorized(c *gin.Context, code errors.Code, msg string) {
 // client always receives the generic internalErrorMessage; msg and err (which
 // may contain internal details) are only written to the logs.
 func InternalError(c *gin.Context, logger *slog.Logger, msg string, err error) {
-	logger.Error(msg, "error", err)
+	logger.ErrorContext(c.Request.Context(), msg, "error", err)
 	c.JSON(http.StatusInternalServerError, Response{Error: errorBody(errors.CodeInternal, internalErrorMessage)})
 }
 
@@ -120,13 +121,20 @@ func TooManyRequests(c *gin.Context, msg string) {
 // errors that carry StatusCode/ErrorCode (forbidden → 403/FORBIDDEN,
 // not found → 404/NOT_FOUND, validation → 400/VALIDATION_ERROR) are honored,
 // otherwise the error is classified by cause. Internal errors (500) are logged.
+// For 4xx, DB-origin details (constraint names, trigger messages) carried by
+// the error never reach the client — they are written to the server-side logs
+// here, at the single choke point every error response passes through.
 func Error(c *gin.Context, logger *slog.Logger, err error) {
 	status := errors.StatusCode(err)
 	code := errors.CodeOf(err, status)
 	if status == http.StatusInternalServerError {
-		logger.Error("internal error", "error", err)
+		logger.ErrorContext(c.Request.Context(), "internal error", "error", err)
 		c.JSON(status, Response{Error: errorBody(code, internalErrorMessage)})
 		return
+	}
+	var de *errors.DomainError
+	if stderrors.As(err, &de) && de.Details != "" {
+		logger.WarnContext(c.Request.Context(), "client error details", "detail", de.Details)
 	}
 	c.JSON(status, Response{Error: errorBody(code, err.Error())})
 }

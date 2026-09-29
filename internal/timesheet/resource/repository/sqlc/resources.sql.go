@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -228,8 +229,8 @@ ORDER BY es.start_date ASC, u.last_name ASC
 
 type ListResourceAbsenceParams struct {
 	ResourceID int64     `json:"resource_id"`
-	StartDate  time.Time `json:"start_date"`
-	EndDate    time.Time `json:"end_date"`
+	StartDate  date.Date `json:"start_date"`
+	EndDate    date.Date `json:"end_date"`
 }
 
 type ListResourceAbsenceRow struct {
@@ -238,8 +239,8 @@ type ListResourceAbsenceRow struct {
 	StateID   int64     `json:"state_id"`
 	StateCode string    `json:"state_code"`
 	StateName string    `json:"state_name"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 // Resource member absences (states with is_available = false) for the window.

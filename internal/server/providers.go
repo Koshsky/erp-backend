@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/Koshsky/erp-backend/internal/audit"
 	"github.com/Koshsky/erp-backend/internal/auth"
+	"github.com/Koshsky/erp-backend/internal/authz"
 	autocreate "github.com/Koshsky/erp-backend/internal/auto_create"
 	rbacMW "github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning"
@@ -13,7 +14,6 @@ import (
 	processRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	projectRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
-	"github.com/Koshsky/erp-backend/internal/rbacpolicy"
 	"github.com/Koshsky/erp-backend/internal/timesheet"
 	resourceRepo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 	"github.com/Koshsky/erp-backend/internal/user"
@@ -52,8 +52,8 @@ func ProvideModules(
 	project projectmgmt.Module,
 	timesheet timesheet.Module,
 	autoCreate autocreate.Module,
-	rbac rbacpolicy.Module,
+	authz authz.Module,
 	audit audit.Module,
 ) []Module {
-	return []Module{auth, user, planning, project, timesheet, autoCreate, rbac, audit}
+	return []Module{auth, user, planning, project, timesheet, autoCreate, authz, audit}
 }
