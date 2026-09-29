@@ -98,7 +98,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	items, total, err := h.service.ListUsers(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceWorker),
+		engine.CompileViewScopeUser(user, rbac.ResourceWorker),
 		c.Query("preset"),
 		response.QueryID(c, "manager_id"),
 		search,

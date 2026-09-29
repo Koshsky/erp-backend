@@ -81,3 +81,12 @@ type Task struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 }
+
+type TaskDependency struct {
+	ID              int64     `json:"id"`
+	TaskID          int64     `json:"task_id"`
+	DependsOnTaskID int64     `json:"depends_on_task_id"`
+	Type            string    `json:"type"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}

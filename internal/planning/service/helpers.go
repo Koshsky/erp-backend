@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 )
@@ -20,8 +21,12 @@ func getSlice[T any](m map[int64][]T, key int64) []T {
 // the task-planning aggregate, and the same process list is what a process
 // owner (vp) must see on the task diagram. The process aggregate uses the
 // process scope directly (parent = "in my projects").
-func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error) {
-	rows, err := s.repository.ListProcessesByTaskScope(ctx, userID, viewScope)
+func (s *PlanningService) loadProcesses(
+	ctx context.Context,
+	userID int64,
+	scope rbac.ListScope,
+) ([]dto.Process, error) {
+	rows, err := s.repository.ListProcessesByTaskScope(ctx, userID, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -32,16 +37,17 @@ func (s *PlanningService) loadProcesses(ctx context.Context, userID int64, viewS
 	return processes, nil
 }
 
-// loadAllData load milestones, tasks, assignments, resources and comment counts
-// for the given processes. Resources are scoped by the caller's resource view
-// zone (userID/resourceViewScope); an empty zone (no resource view rule)
-// includes all resources so the visible tasks still render their rows.
+// loadAllData load milestones, tasks, assignments, resources, comment counts
+// and scheduling links for the given processes. Resources are scoped by the
+// caller's resource view zone (userID/resourceScope); an empty zone (no
+// resource view rule) includes all resources so the visible tasks still render
+// their rows.
 func (s *PlanningService) loadAllData(
 	ctx context.Context,
 	processes []dto.Process,
 	userID int64,
-	resourceViewScope string,
-) (map[int64][]dto.Milestone, map[int64][]dto.Task, map[int64][]dto.Assignment, map[int64]dto.Resource, map[int64]int64, error) {
+	resourceScope rbac.ListScope,
+) (map[int64][]dto.Milestone, map[int64][]dto.Task, map[int64][]dto.Assignment, map[int64]dto.Resource, map[int64]int64, map[int64][]dto.TaskDependency, error) {
 	processIDs := make([]int64, len(processes))
 	for i, p := range processes {
 		processIDs[i] = p.ID
@@ -49,7 +55,7 @@ func (s *PlanningService) loadAllData(
 
 	milestoneRows, err := s.repository.ListMilestonesByProcessIDs(ctx, processIDs)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, err
 	}
 	milestones := groupByKey(milestoneRows, func(m sqlc.Milestone) int64 { return m.ProcessID })
 	milestoneDTOs := make(map[int64][]dto.Milestone, len(milestones))
@@ -63,23 +69,15 @@ func (s *PlanningService) loadAllData(
 
 	taskRows, err := s.repository.ListTasksByProcessIDs(ctx, processIDs)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, err
 	}
-	tasks := groupByKey(taskRows, func(t sqlc.Task) int64 { return t.ProcessID })
-	taskDTOs := make(map[int64][]dto.Task, len(tasks))
-	for processID, rows := range tasks {
-		items := make([]dto.Task, len(rows))
-		for i, row := range rows {
-			items[i] = toTask(row)
-		}
-		taskDTOs[processID] = items
-	}
+	taskDTOs, taskProcess := taskDTOsByProcess(taskRows)
 
 	taskIDs := s.collectTaskIDs(taskDTOs)
 
 	assignmentRows, err := s.repository.ListAssignmentsByTaskIDs(ctx, taskIDs)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, err
 	}
 	assignments := groupByKey(assignmentRows, func(a sqlc.Assignment) int64 { return a.TaskID })
 	assignmentDTOs := make(map[int64][]dto.Assignment, len(assignments))
@@ -93,12 +91,20 @@ func (s *PlanningService) loadAllData(
 
 	commentCounts, err := s.repository.ListTaskCommentCountsByTaskIDs(ctx, taskIDs)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, err
 	}
 
-	resourceRows, err := s.repository.ListResources(ctx, userID, resourceViewScope)
+	// Scheduling links grouped by the process of their successor task (both
+	// ends are same-process by construction).
+	depRows, err := s.repository.ListTaskDependenciesByProcessIDs(ctx, processIDs)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, err
+	}
+	dependencyDTOs := groupTaskDependencies(depRows, taskProcess)
+
+	resourceRows, err := s.repository.ListResources(ctx, userID, resourceScope)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, err
 	}
 	resources := make([]dto.Resource, len(resourceRows))
 	for i, row := range resourceRows {
@@ -106,7 +112,7 @@ func (s *PlanningService) loadAllData(
 	}
 	resourcesMap := s.buildResourceMap(resources)
 
-	return milestoneDTOs, taskDTOs, assignmentDTOs, resourcesMap, commentCounts, nil
+	return milestoneDTOs, taskDTOs, assignmentDTOs, resourcesMap, commentCounts, dependencyDTOs, nil
 }
 
 // collectTaskIDs collects all task IDs from the tasks map.
@@ -129,6 +135,41 @@ func (s *PlanningService) buildResourceMap(resources []dto.Resource) map[int64]d
 	return resourceMap
 }
 
+// taskDTOsByProcess builds the task DTOs grouped by process and the
+// task→process lookup (both feeds of the planning aggregate).
+func taskDTOsByProcess(rows []sqlc.Task) (map[int64][]dto.Task, map[int64]int64) {
+	grouped := groupByKey(rows, func(t sqlc.Task) int64 { return t.ProcessID })
+	taskDTOs := make(map[int64][]dto.Task, len(grouped))
+	taskProcess := make(map[int64]int64)
+	for processID, items := range grouped {
+		dtos := make([]dto.Task, len(items))
+		for i, row := range items {
+			dtos[i] = toTask(row)
+			taskProcess[row.ID] = processID
+		}
+		taskDTOs[processID] = dtos
+	}
+	return taskDTOs, taskProcess
+}
+
+// groupTaskDependencies groups scheduling links by the process of their
+// successor task (both ends are same-process by construction); rows whose
+// successor is not among the loaded tasks are skipped.
+func groupTaskDependencies(
+	rows []sqlc.ListTaskDependenciesByProcessIDsRow,
+	taskProcess map[int64]int64,
+) map[int64][]dto.TaskDependency {
+	grouped := make(map[int64][]dto.TaskDependency)
+	for _, row := range rows {
+		processID, ok := taskProcess[row.TaskDependency.TaskID]
+		if !ok {
+			continue
+		}
+		grouped[processID] = append(grouped[processID], toTaskDependency(row.TaskDependency))
+	}
+	return grouped
+}
+
 // buildPlanning constructs the final task planning structure.
 func (s *PlanningService) buildPlanning(
 	processes []dto.Process,
@@ -137,6 +178,7 @@ func (s *PlanningService) buildPlanning(
 	assignments map[int64][]dto.Assignment,
 	resourcesMap map[int64]dto.Resource,
 	commentCounts map[int64]int64,
+	dependencies map[int64][]dto.TaskDependency,
 ) *dto.TaskPlanning {
 	planning := &dto.TaskPlanning{
 		Processes: make([]dto.DetailedProcess, 0, len(processes)),
@@ -150,6 +192,7 @@ func (s *PlanningService) buildPlanning(
 			assignments,
 			resourcesMap,
 			commentCounts,
+			dependencies,
 		)
 		planning.Processes = append(planning.Processes, detailedProcess)
 	}
@@ -165,6 +208,7 @@ func (s *PlanningService) buildDetailedProcess(
 	assignments map[int64][]dto.Assignment,
 	resourcesMap map[int64]dto.Resource,
 	commentCounts map[int64]int64,
+	dependencies map[int64][]dto.TaskDependency,
 ) dto.DetailedProcess {
 	// Use the generic getSlice function
 	processTasks := getSlice(tasks, process.ID)
@@ -172,9 +216,10 @@ func (s *PlanningService) buildDetailedProcess(
 	detailedTasks := s.buildDetailedTasks(processTasks, assignments, resourcesMap, commentCounts)
 
 	return dto.DetailedProcess{
-		Process:    process,
-		Milestones: processMilestones,
-		Tasks:      detailedTasks,
+		Process:      process,
+		Milestones:   processMilestones,
+		Dependencies: getSlice(dependencies, process.ID),
+		Tasks:        detailedTasks,
 	}
 }
 

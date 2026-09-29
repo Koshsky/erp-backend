@@ -9,10 +9,16 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning/dto"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/tracing"
 )
+
+// lsAll/lsOwn/lsNone/lsParent/lsAncestor — compiled scope bundles for tests.
+func lsAll() rbac.ListScope  { return rbac.ListScope{All: true} }
+func lsOwn() rbac.ListScope  { return rbac.ListScope{Self: true} }
+func lsNone() rbac.ListScope { return rbac.ListScope{None: true} }
 
 // stubPlanningRepo is an in-memory PlanningRepository. The two scoped list
 // methods apply the scoping contract of the SQL queries (filterProjects /
@@ -29,28 +35,29 @@ type stubPlanningRepo struct {
 	tasks         []sqlc.Task
 	assignments   []sqlc.Assignment
 	commentCounts map[int64]int64
+	dependencies  []sqlc.TaskDependency
 
 	byIDsCalls         int
 	lastProjectIDs     []int64
 	lastProjectUser    int64
-	lastProjectScope   string
+	lastProjectScope   rbac.ListScope
 	lastProcessUser    int64
-	lastProcessScope   string
+	lastProcessScope   rbac.ListScope
 	lastResourceUser   int64
-	lastResourceScope  string
+	lastResourceScope  rbac.ListScope
 	listResourcesCalls int
 }
 
 // filterProjects mirrors ListProjectsByIDs: only rows whose id was requested
 // survive; a real view zone ('all'/'own') additionally scopes by ownership,
 // an empty zone (no rule / none) keeps every requested row.
-func filterProjects(all []sqlc.Project, ids []int64, userID int64, viewScope string) []sqlc.Project {
+func filterProjects(all []sqlc.Project, ids []int64, userID int64, scope rbac.ListScope) []sqlc.Project {
 	out := make([]sqlc.Project, 0, len(all))
 	for _, p := range all {
 		if !slices.Contains(ids, p.ID) {
 			continue
 		}
-		if viewScope == "own" && (!p.OwnerID.Valid || p.OwnerID.Int64 != userID) {
+		if scope.Self && (!p.OwnerID.Valid || p.OwnerID.Int64 != userID) {
 			continue
 		}
 		out = append(out, p)
@@ -60,10 +67,10 @@ func filterProjects(all []sqlc.Project, ids []int64, userID int64, viewScope str
 
 // filterResources mirrors ListResources: 'own' keeps only the caller's rows,
 // 'all' and the empty zone (no rule / none) keep every row.
-func filterResources(all []sqlc.Resource, userID int64, viewScope string) []sqlc.Resource {
+func filterResources(all []sqlc.Resource, userID int64, scope rbac.ListScope) []sqlc.Resource {
 	out := make([]sqlc.Resource, 0, len(all))
 	for _, r := range all {
-		if viewScope == "own" && r.OwnerID != userID {
+		if scope.Self && r.OwnerID != userID {
 			continue
 		}
 		out = append(out, r)
@@ -71,7 +78,7 @@ func filterResources(all []sqlc.Resource, userID int64, viewScope string) []sqlc
 	return out
 }
 
-func (s *stubPlanningRepo) ListProjects(_ context.Context, _ int64, _ string) ([]sqlc.Project, error) {
+func (s *stubPlanningRepo) ListProjects(_ context.Context, _ int64, _ rbac.ListScope) ([]sqlc.Project, error) {
 	return s.projects, nil
 }
 
@@ -79,47 +86,47 @@ func (s *stubPlanningRepo) ListProjectsByIDs(
 	_ context.Context,
 	ids []int64,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.Project, error) {
 	s.byIDsCalls++
 	s.lastProjectIDs = ids
 	s.lastProjectUser = userID
-	s.lastProjectScope = viewScope
+	s.lastProjectScope = scope
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	return filterProjects(s.projects, ids, userID, viewScope), nil
+	return filterProjects(s.projects, ids, userID, scope), nil
 }
 
 func (s *stubPlanningRepo) ListProcesses(
 	_ context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.ListProcessesRow, error) {
 	s.lastProcessUser = userID
-	s.lastProcessScope = viewScope
+	s.lastProcessScope = scope
 	return s.processes, nil
 }
 
 func (s *stubPlanningRepo) ListProcessesByTaskScope(
 	_ context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.ListProcessesByTaskScopeRow, error) {
 	s.lastProcessUser = userID
-	s.lastProcessScope = viewScope
+	s.lastProcessScope = scope
 	return s.taskProcesses, nil
 }
 
 func (s *stubPlanningRepo) ListResources(
 	_ context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.Resource, error) {
 	s.listResourcesCalls++
 	s.lastResourceUser = userID
-	s.lastResourceScope = viewScope
-	return filterResources(s.resources, userID, viewScope), nil
+	s.lastResourceScope = scope
+	return filterResources(s.resources, userID, scope), nil
 }
 
 func (s *stubPlanningRepo) ListMilestonesByProcessIDs(_ context.Context, _ []int64) ([]sqlc.Milestone, error) {
@@ -136,6 +143,17 @@ func (s *stubPlanningRepo) ListAssignmentsByTaskIDs(_ context.Context, _ []int64
 
 func (s *stubPlanningRepo) ListTaskCommentCountsByTaskIDs(_ context.Context, _ []int64) (map[int64]int64, error) {
 	return s.commentCounts, nil
+}
+
+func (s *stubPlanningRepo) ListTaskDependenciesByProcessIDs(
+	_ context.Context,
+	_ []int64,
+) ([]sqlc.ListTaskDependenciesByProcessIDsRow, error) {
+	out := make([]sqlc.ListTaskDependenciesByProcessIDsRow, 0, len(s.dependencies))
+	for i := range s.dependencies {
+		out = append(out, sqlc.ListTaskDependenciesByProcessIDsRow{TaskDependency: s.dependencies[i]})
+	}
+	return out, nil
 }
 
 // newPlanningTestService builds a PlanningService over the stub repository.
@@ -214,7 +232,7 @@ func TestGetProcessPlanningScopeAll(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetProcessPlanning(context.Background(), 7, "all", "all")
+	got, err := svc.GetProcessPlanning(context.Background(), 7, lsAll(), lsAll())
 	if err != nil {
 		t.Fatalf("GetProcessPlanning() error = %v", err)
 	}
@@ -232,12 +250,12 @@ func TestGetProcessPlanningScopeAll(t *testing.T) {
 		t.Errorf("project 2 group = %+v, want process 21", findDetailedProject(t, got.Projects, 2))
 	}
 	// The caller's scopes reached the repository unchanged.
-	if repo.lastProcessScope != "all" || repo.lastProcessUser != 7 {
-		t.Errorf("process scope call = (%q, %d), want (\"all\", 7)",
+	if !repo.lastProcessScope.All || repo.lastProcessUser != 7 {
+		t.Errorf("process scope call = (%v, %d), want (\"all\", 7)",
 			repo.lastProcessScope, repo.lastProcessUser)
 	}
-	if repo.lastProjectScope != "all" || repo.lastProjectUser != 7 {
-		t.Errorf("project scope call = (%q, %d), want (\"all\", 7)",
+	if !repo.lastProjectScope.All || repo.lastProjectUser != 7 {
+		t.Errorf("project scope call = (%v, %d), want (\"all\", 7)",
 			repo.lastProjectScope, repo.lastProjectUser)
 	}
 	if !sameIDs(repo.lastProjectIDs, []int64{1, 2}) {
@@ -264,7 +282,7 @@ func TestGetProcessPlanningNoProjectRule(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetProcessPlanning(context.Background(), 7, "all", "")
+	got, err := svc.GetProcessPlanning(context.Background(), 7, lsAll(), lsNone())
 	if err != nil {
 		t.Fatalf("GetProcessPlanning() error = %v", err)
 	}
@@ -278,8 +296,8 @@ func TestGetProcessPlanningNoProjectRule(t *testing.T) {
 		t.Errorf("project 2 group = %+v, want process 21", findDetailedProject(t, got.Projects, 2))
 	}
 	// The empty reference zone reaches the repository unchanged.
-	if repo.lastProjectScope != "" {
-		t.Errorf("project scope call = %q, want \"\" (no project view rule)", repo.lastProjectScope)
+	if !repo.lastProjectScope.None {
+		t.Errorf("project scope call = %v, want none (no project view rule)", repo.lastProjectScope)
 	}
 }
 
@@ -300,7 +318,7 @@ func TestGetProcessPlanningScopeOwnDropsForeignProcesses(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetProcessPlanning(context.Background(), 7, "all", "own")
+	got, err := svc.GetProcessPlanning(context.Background(), 7, lsAll(), lsOwn())
 	if err != nil {
 		t.Fatalf("GetProcessPlanning() error = %v", err)
 	}
@@ -311,8 +329,8 @@ func TestGetProcessPlanningScopeOwnDropsForeignProcesses(t *testing.T) {
 	if len(got.Projects[0].Processes) != 1 || got.Projects[0].Processes[0].ID != 11 {
 		t.Errorf("owned group processes = %+v, want process 11", got.Projects[0].Processes)
 	}
-	if repo.lastProjectScope != "own" {
-		t.Errorf("project scope call = %q, want \"own\"", repo.lastProjectScope)
+	if !repo.lastProjectScope.Self {
+		t.Errorf("project scope call = %v, want self", repo.lastProjectScope)
 	}
 }
 
@@ -323,7 +341,7 @@ func TestGetProcessPlanningEmptyIDs(t *testing.T) {
 	repo := &stubPlanningRepo{projects: []sqlc.Project{projectRow(1, 7, "P1")}}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetProcessPlanning(context.Background(), 7, "all", "own")
+	got, err := svc.GetProcessPlanning(context.Background(), 7, lsAll(), lsOwn())
 	if err != nil {
 		t.Fatalf("GetProcessPlanning() error = %v", err)
 	}
@@ -336,8 +354,8 @@ func TestGetProcessPlanningEmptyIDs(t *testing.T) {
 	if len(repo.lastProjectIDs) != 0 {
 		t.Errorf("ListProjectsByIDs ids = %v, want empty", repo.lastProjectIDs)
 	}
-	if repo.lastProjectScope != "own" {
-		t.Errorf("project scope call = %q, want \"own\"", repo.lastProjectScope)
+	if !repo.lastProjectScope.Self {
+		t.Errorf("project scope call = %v, want self", repo.lastProjectScope)
 	}
 }
 
@@ -354,7 +372,7 @@ func TestGetProcessPlanningMissingProjectIDNoPanic(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetProcessPlanning(context.Background(), 7, "all", "all")
+	got, err := svc.GetProcessPlanning(context.Background(), 7, lsAll(), lsAll())
 	if err != nil {
 		t.Fatalf("GetProcessPlanning() error = %v", err)
 	}
@@ -397,7 +415,7 @@ func TestGetTaskPlanningResourceScopeOwn(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetTaskPlanning(context.Background(), 7, "all", "own")
+	got, err := svc.GetTaskPlanning(context.Background(), 7, lsAll(), lsOwn())
 	if err != nil {
 		t.Fatalf("GetTaskPlanning() error = %v", err)
 	}
@@ -412,8 +430,8 @@ func TestGetTaskPlanningResourceScopeOwn(t *testing.T) {
 	if res.ID != 20 || res.Quantity != 3 || res.AssignmentID != 100 {
 		t.Errorf("task resource = %+v, want resource 20 with quantity 3 and assignment 100", res)
 	}
-	if repo.lastResourceUser != 7 || repo.lastResourceScope != "own" {
-		t.Errorf("resource scope call = (%d, %q), want (7, \"own\")",
+	if repo.lastResourceUser != 7 || !repo.lastResourceScope.Self {
+		t.Errorf("resource scope call = (%d, %v), want (7, self)",
 			repo.lastResourceUser, repo.lastResourceScope)
 	}
 }
@@ -441,7 +459,7 @@ func TestGetTaskPlanningNoResourceRule(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetTaskPlanning(context.Background(), 7, "all", "")
+	got, err := svc.GetTaskPlanning(context.Background(), 7, lsAll(), lsNone())
 	if err != nil {
 		t.Fatalf("GetTaskPlanning() error = %v", err)
 	}
@@ -457,8 +475,8 @@ func TestGetTaskPlanningNoResourceRule(t *testing.T) {
 		t.Errorf("task resource ids = %v, want {20, 30}", ids)
 	}
 	// The empty reference zone reaches the repository unchanged.
-	if repo.lastResourceScope != "" {
-		t.Errorf("resource scope call = %q, want \"\" (no resource view rule)", repo.lastResourceScope)
+	if !repo.lastResourceScope.None {
+		t.Errorf("resource scope call = %v, want none (no resource view rule)", repo.lastResourceScope)
 	}
 }
 
@@ -480,7 +498,7 @@ func TestGetTaskPlanningResourceScopeAll(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetTaskPlanning(context.Background(), 7, "all", "all")
+	got, err := svc.GetTaskPlanning(context.Background(), 7, lsAll(), lsAll())
 	if err != nil {
 		t.Fatalf("GetTaskPlanning() error = %v", err)
 	}
@@ -495,8 +513,8 @@ func TestGetTaskPlanningResourceScopeAll(t *testing.T) {
 	if !sameIDs(ids, []int64{20, 30}) {
 		t.Errorf("task resource ids = %v, want {20, 30}", ids)
 	}
-	if repo.lastResourceScope != "all" {
-		t.Errorf("resource scope call = %q, want \"all\"", repo.lastResourceScope)
+	if !repo.lastResourceScope.All {
+		t.Errorf("resource scope call = %v, want all", repo.lastResourceScope)
 	}
 }
 
@@ -513,7 +531,7 @@ func TestGetTaskPlanningEmptyResources(t *testing.T) {
 	}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetTaskPlanning(context.Background(), 7, "all", "own")
+	got, err := svc.GetTaskPlanning(context.Background(), 7, lsAll(), lsOwn())
 	if err != nil {
 		t.Fatalf("GetTaskPlanning() error = %v", err)
 	}
@@ -527,8 +545,8 @@ func TestGetTaskPlanningEmptyResources(t *testing.T) {
 	if got.Processes[0].Milestones == nil || len(got.Processes[0].Milestones) != 0 {
 		t.Errorf("milestones = %v, want a non-nil empty slice", got.Processes[0].Milestones)
 	}
-	if repo.lastResourceScope != "own" {
-		t.Errorf("resource scope call = %q, want \"own\"", repo.lastResourceScope)
+	if !repo.lastResourceScope.Self {
+		t.Errorf("resource scope call = %v, want own", repo.lastResourceScope)
 	}
 }
 
@@ -539,7 +557,7 @@ func TestGetTaskPlanningNoProcesses(t *testing.T) {
 	repo := &stubPlanningRepo{resources: []sqlc.Resource{{ID: 20, OwnerID: 7}}}
 	svc := newPlanningTestService(repo)
 
-	got, err := svc.GetTaskPlanning(context.Background(), 7, "all", "own")
+	got, err := svc.GetTaskPlanning(context.Background(), 7, lsAll(), lsOwn())
 	if err != nil {
 		t.Fatalf("GetTaskPlanning() error = %v", err)
 	}
@@ -549,5 +567,41 @@ func TestGetTaskPlanningNoProcesses(t *testing.T) {
 	if repo.listResourcesCalls != 0 {
 		t.Errorf("ListResources calls = %d, want 0 (no processes to load data for)",
 			repo.listResourcesCalls)
+	}
+}
+
+// TestGetTaskPlanningDependencies checks that the scheduling links of a
+// process are embedded into the DetailedProcess aggregate (for the diagram
+// arrows and the editor).
+func TestGetTaskPlanningDependencies(t *testing.T) {
+	t.Parallel()
+	repo := &stubPlanningRepo{
+		taskProcesses: []sqlc.ListProcessesByTaskScopeRow{
+			{Process: sqlc.Process{ID: 1, ProjectID: 1}},
+		},
+		tasks: []sqlc.Task{
+			{ID: 10, ProcessID: 1},
+			{ID: 11, ProcessID: 1},
+		},
+		dependencies: []sqlc.TaskDependency{
+			{ID: 1, TaskID: 11, DependsOnTaskID: 10, Type: "fs"},
+		},
+	}
+	svc := newPlanningTestService(repo)
+
+	got, err := svc.GetTaskPlanning(context.Background(), 7, lsAll(), lsOwn())
+	if err != nil {
+		t.Fatalf("GetTaskPlanning() error = %v", err)
+	}
+	if len(got.Processes) != 1 {
+		t.Fatalf("processes = %+v, want process 1", got.Processes)
+	}
+	deps := got.Processes[0].Dependencies
+	if len(deps) != 1 {
+		t.Fatalf("dependencies = %+v, want one link", deps)
+	}
+	dep := deps[0]
+	if dep.TaskID != 11 || dep.DependsOnTaskID != 10 || dep.Type != "fs" {
+		t.Errorf("dependency = %+v, want 11->10 type fs", dep)
 	}
 }

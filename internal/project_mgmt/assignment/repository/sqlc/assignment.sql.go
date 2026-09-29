@@ -16,21 +16,32 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND (t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR t.owner_id = $6::bigint OR p.owner_id = $6::bigint OR pr.owner_id = $6::bigint)
 `
 
 type CountAssignmentsParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll      bool  `json:"sc_all"`
+	ScParent   bool  `json:"sc_parent"`
+	UserID     int64 `json:"user_id"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountAssignments(ctx context.Context, arg CountAssignmentsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countAssignments, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countAssignments,
+		arg.ScAll,
+		arg.ScParent,
+		arg.UserID,
+		arg.ScAncestor,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -131,27 +142,34 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND (t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR t.owner_id = $6::bigint OR p.owner_id = $6::bigint OR pr.owner_id = $6::bigint)
 ORDER BY a.id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $8::bigint OFFSET $7::bigint
 `
 
 type ListAssigmentsParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScParent   bool  `json:"sc_parent"`
+	UserID     int64 `json:"user_id"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListAssigments(ctx context.Context, arg ListAssigmentsParams) ([]Assignment, error) {
 	rows, err := q.db.Query(ctx, listAssigments,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScParent,
 		arg.UserID,
+		arg.ScAncestor,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,

@@ -6,11 +6,15 @@
 // attributes (Object). The rules come from the Postgres policy tables via the
 // internal/authz/service PolicyStore; the defaults here are the
 // fallback/reset source.
+//
+// The ownership ZONE is NOT evaluated by the matcher anymore: the caller's
+// effective scope expression (decision.go scopeForUser) is evaluated in Go
+// (EvalScope — owner chain + optional data probes) before the presence check.
+// The matcher only verifies that an allow row exists without a matching deny,
+// plus the special business legs (author_or, owner_match).
 package engine
 
 import (
-	"fmt"
-
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/govaluate"
 
@@ -21,19 +25,14 @@ import (
 //
 //   - r.sub / r.obj are ABAC attribute structs (Subject/Object); p.sub is
 //     either a preset (inherited through g) or a concrete user id (ACL).
-//   - p carries the ownership zone of a (resource, action) grant (scope);
-//     p2 carries per-user revokes. The effect allows only when an allow rule
-//     matched and no deny rule matched for the same (sub, obj).
-//   - The matcher compares the owner attributes of the object with the caller
-//     (own/parent/ancestor zones); the special route modes (author_or,
-//     owner_match) are evaluated as additional ABAC legs.
-//
-// modelTmpl is the Casbin model skeleton; %s is substituted with the shared
-// ownership-zone sub-expression (scopeLegExpr) for the standard and the
-// owner_match legs. Allow rows carry the zone in p.scope, user-level revokes
-// are the same policy type with eft "deny" (effect: allow only when an allow
-// rule matched and no deny rule matched for the same (sub, obj)).
-const modelTmpl = `
+//   - p carries the ownership scope expression of a (resource, action) grant
+//     (informational/validation only — the zone is evaluated Go-side before
+//     Enforce); p2 carries per-user revokes. The effect allows only when an
+//     allow rule matched and no deny rule matched for the same (sub, obj).
+//   - The first disjunct implements the author_or mode (the author always);
+//     the owner_match mode is an additional ABAC leg (cross-entity owner
+//     comparison).
+const modelText = `
 [request_definition]
 r = sub, obj
 
@@ -47,18 +46,8 @@ g = _, _
 e = some(where (p_eft == allow)) && !some(where (p_eft == deny))
 
 [matchers]
-m = (p.eft == "allow" && r.obj.Mode == "author_or" && r.obj.AuthorID != "" && r.obj.AuthorID == r.sub.ID) || (r.obj.Key == p.obj && (p.sub == r.sub.ID || p.sub == r.sub.Role || g(r.sub.ID, p.sub) || g(r.sub.Role, p.sub)) && (p.eft == "deny" || (p.eft == "allow" && ((r.obj.Mode != "owner_match" && %s) || (r.obj.Mode == "owner_match" && eval(sharesOwner(r.obj.OwnerA, r.obj.OwnerB)) && %s)))))
+m = (p.eft == "allow" && r.obj.Mode == "author_or" && r.obj.AuthorID != "" && r.obj.AuthorID == r.sub.ID) || (r.obj.Key == p.obj && (p.sub == r.sub.ID || p.sub == r.sub.Role || g(r.sub.ID, p.sub) || g(r.sub.Role, p.sub)) && (p.eft == "deny" || (p.eft == "allow" && ((r.obj.Mode != "owner_match") || (r.obj.Mode == "owner_match" && eval(sharesOwner(r.obj.OwnerA, r.obj.OwnerB)))))))
 `
-
-// modelText composes the final Casbin model.
-func modelText() string {
-	return fmt.Sprintf(modelTmpl, scopeLegExpr, scopeLegExpr)
-}
-
-// scopeLegExpr is the shared ownership-zone sub-expression of the matcher:
-// p.scope published as an attribute of the allow rule, compared against the
-// object's owner attributes (own/parent/ancestor).
-const scopeLegExpr = `(p.scope == "all" || (p.scope == "own" && r.obj.OwnerID != "" && r.obj.OwnerID == r.sub.ID) || (p.scope == "parent" && r.obj.ParentOwnerID != "" && r.obj.ParentOwnerID == r.sub.ID) || (p.scope == "ancestor" && (r.obj.OwnerID == r.sub.ID || r.obj.ProcessOwnerID == r.sub.ID || r.obj.ProjectOwnerID == r.sub.ID)))`
 
 // Route check modes of the object (special ABAC legs).
 const (
@@ -88,11 +77,12 @@ type Object struct {
 	Key string
 	// Mode — "" for standard checks, otherwise a special route mode.
 	Mode string
-	// OwnerID — the row owner (own zone).
+	// OwnerID — the row owner (self).
 	OwnerID string
-	// ParentOwnerID — the immediate parent owner (parent zone).
+	// ParentOwnerID — the immediate parent owner.
 	ParentOwnerID string
-	// ProcessOwnerID / ProjectOwnerID — the ancestor chain (ancestor zone).
+	// ProcessOwnerID / ProjectOwnerID — the ancestor chain (mirrors the
+	// Owners struct; informational for the model — the zone is Go-evaluated).
 	ProcessOwnerID string
 	ProjectOwnerID string
 	// AuthorID — the author leg of the author_or mode.
@@ -102,11 +92,14 @@ type Object struct {
 	OwnerB rbac.Owners
 }
 
+// Minimum number of arguments the owner-chain ABAC function accepts.
+const minOwnersArgs = 2
+
 // sharesOwnerFunc is the ABAC function backing eval(sharesOwner(...)): the
 // cross-entity business rule ("a resource can only be assigned to a task of
 // its own owner").
-func sharesOwnerFunc(args ...interface{}) (interface{}, error) {
-	if len(args) < 2 {
+func sharesOwnerFunc(args ...any) (any, error) {
+	if len(args) < minOwnersArgs {
 		return false, nil
 	}
 	a, okA := args[0].(rbac.Owners)

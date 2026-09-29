@@ -8,12 +8,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
+
+// lsAll/lsOwn/lsNone — compiled scope bundles for tests.
+func lsAll() rbac.ListScope  { return rbac.ListScope{All: true} }
+func lsOwn() rbac.ListScope  { return rbac.ListScope{Self: true} }
+func lsNone() rbac.ListScope { return rbac.ListScope{None: true} }
 
 func dt(s string) time.Time {
 	d, err := date.Parse(s)
@@ -107,7 +113,7 @@ func TestGetCalendarReversedRangeIsBadRequest(t *testing.T) {
 	_, err := newTestCalendarService().GetCalendar(
 		context.Background(),
 		0,
-		"own",
+		lsOwn(),
 		date.From(dt("2026-03-01")),
 		date.From(dt("2026-01-01")),
 	)
@@ -126,7 +132,7 @@ func TestGetCalendarTooWideRangeIsBadRequest(t *testing.T) {
 	_, err := newTestCalendarService().GetCalendar(
 		context.Background(),
 		0,
-		"own",
+		lsOwn(),
 		date.From(dt("2024-01-01")),
 		date.From(dt("2026-06-01")),
 	)
@@ -150,20 +156,20 @@ type stubCalendarRepo struct {
 
 	listResourcesCalls int
 	lastUserID         int64
-	lastViewScope      string
+	lastViewScope      rbac.ListScope
 }
 
 func (s *stubCalendarRepo) ListResources(
 	_ context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.ListResourcesRow, error) {
 	s.listResourcesCalls++
 	s.lastUserID = userID
-	s.lastViewScope = viewScope
+	s.lastViewScope = scope
 	out := make([]sqlc.ListResourcesRow, 0, len(s.resources))
 	for _, r := range s.resources {
-		if viewScope == "own" && r.OwnerID != userID {
+		if scope.Self && r.OwnerID != userID {
 			continue
 		}
 		out = append(out, r)
@@ -212,15 +218,15 @@ func TestGetCalendarResourceScopeOwn(t *testing.T) {
 	}
 	start, end := calendarWindow()
 
-	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "own", start, end)
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, lsOwn(), start, end)
 	if err != nil {
 		t.Fatalf("GetCalendar() error = %v", err)
 	}
 	if len(got.Resources) != 1 || got.Resources[0].ResourceID != 1 {
 		t.Fatalf("resources = %+v, want only the owned resource 1", got.Resources)
 	}
-	if repo.lastUserID != 7 || repo.lastViewScope != "own" {
-		t.Errorf("resource scope call = (%d, %q), want (7, \"own\")", repo.lastUserID, repo.lastViewScope)
+	if repo.lastUserID != 7 || !repo.lastViewScope.Self {
+		t.Errorf("resource scope call = (%d, %v), want (7, self)", repo.lastUserID, repo.lastViewScope)
 	}
 }
 
@@ -238,15 +244,15 @@ func TestGetCalendarNoResourceScopeRule(t *testing.T) {
 	}
 	start, end := calendarWindow()
 
-	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "", start, end)
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, lsNone(), start, end)
 	if err != nil {
 		t.Fatalf("GetCalendar() error = %v", err)
 	}
 	if len(got.Resources) != 2 {
 		t.Fatalf("resources = %+v, want both rows (empty zone = include-all)", got.Resources)
 	}
-	if repo.lastViewScope != "" {
-		t.Errorf("resource scope call = %q, want \"\" (no resource view rule)", repo.lastViewScope)
+	if !repo.lastViewScope.None {
+		t.Errorf("resource scope call = %v, want none (no resource view rule)", repo.lastViewScope)
 	}
 }
 
@@ -262,7 +268,7 @@ func TestGetCalendarResourceScopeAll(t *testing.T) {
 	}
 	start, end := calendarWindow()
 
-	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "all", start, end)
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, lsAll(), start, end)
 	if err != nil {
 		t.Fatalf("GetCalendar() error = %v", err)
 	}
@@ -272,8 +278,8 @@ func TestGetCalendarResourceScopeAll(t *testing.T) {
 	if got.Resources[0].ResourceID != 1 || got.Resources[1].ResourceID != 2 {
 		t.Errorf("resource order = %d, %d; want 1, 2", got.Resources[0].ResourceID, got.Resources[1].ResourceID)
 	}
-	if repo.lastViewScope != "all" {
-		t.Errorf("resource scope call = %q, want \"all\"", repo.lastViewScope)
+	if !repo.lastViewScope.All {
+		t.Errorf("resource scope call = %v, want all", repo.lastViewScope)
 	}
 }
 
@@ -290,7 +296,7 @@ func TestGetCalendarEmptyResources(t *testing.T) {
 	}
 	start, end := calendarWindow()
 
-	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, "own", start, end)
+	got, err := newScopedCalendarService(repo).GetCalendar(context.Background(), 7, lsOwn(), start, end)
 	if err != nil {
 		t.Fatalf("GetCalendar() error = %v", err)
 	}
@@ -303,7 +309,7 @@ func TestGetCalendarEmptyResources(t *testing.T) {
 	if repo.listResourcesCalls != 1 {
 		t.Errorf("ListResources calls = %d, want 1", repo.listResourcesCalls)
 	}
-	if repo.lastViewScope != "own" || repo.lastUserID != 7 {
-		t.Errorf("resource scope call = (%d, %q), want (7, \"own\")", repo.lastUserID, repo.lastViewScope)
+	if !repo.lastViewScope.Self || repo.lastUserID != 7 {
+		t.Errorf("resource scope call = (%d, %v), want (7, self)", repo.lastUserID, repo.lastViewScope)
 	}
 }

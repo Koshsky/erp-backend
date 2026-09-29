@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
@@ -42,12 +43,12 @@ func NewCalendarService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 // GetCalendar returns resource availability as ranges (constant-availability
 // segments): capacity, unavailable and available. Complexity O((M+S) log(M+S))
 // depends on resource members and state intervals, not the number of days.
-// Resources are scoped by the caller's resource view zone (userID/viewScope),
+// Resources are scoped by the caller's resource view zone (userID/scope),
 // so a process owner only sees capacity curves of its own resources.
 func (s *CalendarService) GetCalendar(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	start, end date.Date,
 ) (*dto.CalendarPlanning, error) {
 	ctx, finish := s.tracer.Start(ctx, "calendar.GetCalendar")
@@ -61,7 +62,7 @@ func (s *CalendarService) GetCalendar(
 		return nil, errors.BadRequest(fmt.Sprintf("date range must not exceed %d days", maxCalendarRange))
 	}
 
-	resourceRows, err := s.repository.ListResources(ctx, userID, viewScope)
+	resourceRows, err := s.repository.ListResources(ctx, userID, scope)
 	if err != nil {
 		return nil, err
 	}

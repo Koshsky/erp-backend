@@ -101,12 +101,14 @@ func (r *ResourceRepository) DeleteResource(ctx context.Context, id int64) error
 func (r *ResourceRepository) ListResources(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.ListResourcesRow, error) {
 	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
-		ScopeView:  viewScope,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
+		ScNone:     scope.None,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
@@ -117,15 +119,17 @@ func (r *ResourceRepository) ListResources(
 func (r *ResourceRepository) CountResources(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountResources(
 		ctx,
 		sqlc.CountResourcesParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:   scope.All,
+			ScSelf:  scope.Self,
+			ScNone:  scope.None,
+			UserID:  userID,
+			OwnerID: ownerID,
 		},
 	)
 }

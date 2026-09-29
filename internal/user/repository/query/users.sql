@@ -2,8 +2,9 @@
 SELECT *
 FROM users
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND manager_id = @user_id::bigint) OR
+    @sc_none::boolean
   )
   -- For non-admin: only direct subordinates (manager_id = current user);
   -- admin sees everyone. The user himself is not included here (the timesheet
@@ -28,8 +29,9 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 SELECT COUNT(*)
 FROM users
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND manager_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND manager_id = @user_id::bigint) OR
+    @sc_none::boolean
   )
   AND (@preset_filter::text = '' OR preset = @preset_filter::text)
   AND (@manager_id::bigint = 0 OR manager_id = @manager_id::bigint)

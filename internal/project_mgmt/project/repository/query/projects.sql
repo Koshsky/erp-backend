@@ -18,8 +18,14 @@ RETURNING *;
 SELECT *
 FROM projects
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint)
 ORDER BY id ASC
@@ -29,8 +35,14 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 SELECT COUNT(*)
 FROM projects
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint);
 

@@ -19,7 +19,7 @@ func TestScopeForUserOverride(t *testing.T) {
 	// Preset-only user: rp views own projects.
 	rp := userctx.UserContext{Preset: userdomain.PresetProjectManager}
 	if got := m.ScopeForUser(rp, rbac.ResourceProject, engine.ActionView); got != engine.ScopeOwn {
-		t.Errorf("rp without overrides: got %v; want own", got)
+		t.Errorf("rp without overrides: got %v; want self", got)
 	}
 
 	// Admin bypass wins regardless of rules/overrides.
@@ -62,7 +62,7 @@ func TestScopeForUserOverride(t *testing.T) {
 		},
 	}
 	if got := m.ScopeForUser(rpOther, rbac.ResourceProject, engine.ActionView); got != engine.ScopeOwn {
-		t.Errorf("unrelated override: got %v; want own (preset)", got)
+		t.Errorf("unrelated override: got %v; want self (preset)", got)
 	}
 }
 
@@ -89,7 +89,7 @@ func publishWithRules(t *testing.T, grants []engine.RuleGrant, denies []engine.R
 // TestAuthorizeUserWithOverrides verifies the owner-chain check on top of the
 // per-user resolution: an own-scope grant matches the row owner, a revoke
 // denies even when the preset would allow it.
-func TestAuthorizeUserWithOverrides(t *testing.T) {
+func TestAuthorizeUserWithOverrides(t *testing.T) { //nolint:paralleltest // общий snapshot движка — не параллельно
 	// Sequential: publishes user rules into the shared Casbin snapshot.
 	publishWithRules(t,
 		[]engine.RuleGrant{{
@@ -142,7 +142,7 @@ func TestAuthorizeUserWithOverrides(t *testing.T) {
 }
 
 // TestViewScopeCodeUser mirrors the preset-based listing scope with overrides.
-func TestViewScopeCodeUser(t *testing.T) {
+func TestViewScopeCodeUser(t *testing.T) { //nolint:paralleltest // общий snapshot движка — не параллельно
 	// Sequential: publishes a user-level revoke and the role assignments.
 	publishWithRules(t, nil, []engine.RuleDeny{{
 		Sub: "6", Key: "project/view",
@@ -152,8 +152,8 @@ func TestViewScopeCodeUser(t *testing.T) {
 	})
 
 	rp := userctx.UserContext{ID: 5, Preset: userdomain.PresetProjectManager}
-	if got := engine.ViewScopeCodeUser(rp, rbac.ResourceProject); got != "own" {
-		t.Errorf("rp project view scope: got %q; want own", got)
+	if got := engine.ViewScopeCodeUser(rp, rbac.ResourceProject); got != "self" {
+		t.Errorf("rp project view scope: got %q; want self", got)
 	}
 
 	rpRevoked := userctx.UserContext{ID: 6, Preset: userdomain.PresetProjectManager}

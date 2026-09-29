@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
@@ -23,16 +24,23 @@ type TaskService struct {
 	repository TaskRepository
 	mapper     *TaskMapper
 	validator  *TaskValidator
+	deps       ConstraintSource
 }
 
 // NewTaskService builds the TaskService service.
-func NewTaskService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.TaskRepository) *TaskService {
+func NewTaskService(
+	logger *slog.Logger,
+	tracer *tracingpkg.Tracer,
+	r *repo.TaskRepository,
+	deps ConstraintSource,
+) *TaskService {
 	return &TaskService{
 		logger:     logger.With("component", "task_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     &TaskMapper{},
 		validator:  &TaskValidator{},
+		deps:       deps,
 	}
 }
 
@@ -167,6 +175,18 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 		task.EndDate = *req.EndDate
 	}
 
+	// Schedule guard: when the dates change, the new interval must satisfy all
+	// incoming dependency links (the task's own bound from each predecessor).
+	// The frontend cascade keeps the successors in sync; this guard makes the
+	// invariant authoritative for every write path.
+	if req.StartDate != nil || req.EndDate != nil {
+		if s.deps != nil {
+			if err = s.deps.CheckTaskDates(ctx, id, task.Title, task.StartDate, task.EndDate); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	if err = s.validator.ValidateTask(
 		task.ProcessID,
 		task.Title,
@@ -208,18 +228,18 @@ func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 func (s *TaskService) ListTasks(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.TaskResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "task.ListTasks")
 	defer end(nil)
 
-	rows, err := s.repository.ListTasks(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListTasks(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountTasks(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountTasks(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

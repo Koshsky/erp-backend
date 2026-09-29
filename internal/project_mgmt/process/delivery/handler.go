@@ -58,7 +58,7 @@ func (h *ProcessHandler) ListProcesses(c *gin.Context) {
 	items, total, err := h.service.ListProcesses(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceProcess),
+		engine.CompileViewScopeUser(user, rbac.ResourceProcess),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

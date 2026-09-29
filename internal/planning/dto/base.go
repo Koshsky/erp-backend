@@ -66,3 +66,13 @@ type Assignment struct {
 	ResourceID int64 `json:"resource_id" example:"1"`
 	Quantity   int   `json:"quantity"    example:"1"`
 }
+
+// TaskDependency — a scheduling link between two top-level tasks of the same
+// process: the successor (task_id) must not start/finish before the
+// predecessor (depends_on_task_id), per the type (fs/ss/ff/sf).
+type TaskDependency struct {
+	ID              int64  `json:"id"                 example:"1"`
+	TaskID          int64  `json:"task_id"            example:"42"`
+	DependsOnTaskID int64  `json:"depends_on_task_id" example:"10"`
+	Type            string `json:"type"               example:"fs"`
+}

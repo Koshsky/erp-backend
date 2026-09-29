@@ -88,6 +88,16 @@ func toAssignment(a sqlc.Assignment) dto.Assignment {
 	}
 }
 
+// toTaskDependency converts a scheduling link (planning read model).
+func toTaskDependency(d sqlc.TaskDependency) dto.TaskDependency {
+	return dto.TaskDependency{
+		ID:              d.ID,
+		TaskID:          d.TaskID,
+		DependsOnTaskID: d.DependsOnTaskID,
+		Type:            d.Type,
+	}
+}
+
 // toResource converts a resource row (planning read model).
 func toResource(r sqlc.Resource) dto.Resource {
 	return dto.Resource{

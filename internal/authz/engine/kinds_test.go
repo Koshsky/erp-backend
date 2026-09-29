@@ -43,15 +43,14 @@ func TestActionCodecs(t *testing.T) {
 
 func TestScopeCodecs(t *testing.T) {
 	t.Parallel()
-	for _, scope := range []engine.Scope{engine.ScopeAll, engine.ScopeOwn, engine.ScopeParent, engine.ScopeAncestor} {
-		name := engine.ScopeName(scope)
-		back, ok := engine.ParseScope(name)
+	for _, scope := range []string{engine.ScopeAll, engine.ScopeOwn, engine.ScopeParent, engine.ScopeAncestor} {
+		back, ok := engine.ParseScope(scope)
 		if !ok || back != scope {
-			t.Errorf("ParseScope(%q) = %v, %v; want %v", name, back, ok, scope)
+			t.Errorf("ParseScope(%q) = %q, %v; want %q", scope, back, ok, scope)
 		}
 	}
-	if scope, ok := engine.ParseScope(""); ok && scope != engine.ScopeNone {
-		t.Errorf("ParseScope(\"\") = %v, %v; want none", scope, ok)
+	if scope, ok := engine.ParseScope(""); !ok || scope != engine.ScopeNone {
+		t.Errorf("ParseScope(\"\") = %q, %v; want none", scope, ok)
 	}
 	if _, ok := engine.ParseScope("bogus"); ok {
 		t.Errorf(`ParseScope("bogus") должен быть false`)

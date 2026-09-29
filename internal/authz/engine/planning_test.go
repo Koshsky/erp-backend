@@ -51,8 +51,8 @@ func TestViewScopeCodeUserNoReferenceRule(t *testing.T) {
 	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceProcess); got != "all" {
 		t.Errorf("ViewScopeCodeUser(vp, process) = %q; want all", got)
 	}
-	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceResource); got != "own" {
-		t.Errorf("ViewScopeCodeUser(vp, resource) = %q; want own", got)
+	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceResource); got != "self" {
+		t.Errorf("ViewScopeCodeUser(vp, resource) = %q; want self", got)
 	}
 }
 

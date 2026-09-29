@@ -92,13 +92,16 @@ func (r *MilestoneRepository) DeleteMilestone(ctx context.Context, id int64) err
 func (r *MilestoneRepository) ListMilestones(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Milestone, error) {
 	return r.q(ctx).ListMilestones(ctx, sqlc.ListMilestonesParams{
-		ScopeView:  viewScope,
+		ScAll:      scope.All,
 		UserID:     userID,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScNone:     scope.None,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
@@ -107,16 +110,18 @@ func (r *MilestoneRepository) ListMilestones(
 
 func (r *MilestoneRepository) CountMilestones(
 	ctx context.Context,
-	userID int64,
-	viewScope string,
+	_ int64,
+	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountMilestones(
 		ctx,
 		sqlc.CountMilestonesParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:      scope.All,
+			ScParent:   scope.Parent,
+			ScAncestor: scope.Ancestor,
+			ScNone:     scope.None,
+			OwnerID:    ownerID,
 		},
 	)
 }

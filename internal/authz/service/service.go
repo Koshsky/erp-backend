@@ -42,7 +42,7 @@ type policyRepository interface {
 		policies []sqlc.UpsertRoutePolicyParams,
 	) error
 	UpsertPreset(ctx context.Context, name, description string) (sqlc.UpsertPresetRow, error)
-	UpdatePresetDescription(ctx context.Context, name, description string) (sqlc.UpdatePresetDescriptionRow, error)
+	UpdatePreset(ctx context.Context, name, newName, description string) (sqlc.RenamePresetRow, error)
 	DeletePreset(ctx context.Context, name string) error
 	ListUserPermissions(ctx context.Context, userID int64) ([]sqlc.ListUserPermissionsRow, error)
 	ReplaceUserPermissions(ctx context.Context, userID int64, perms []sqlc.InsertUserPermissionParams) error
@@ -442,19 +442,27 @@ func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (s
 	return preset, nil
 }
 
-// UpdatePreset updates the preset description. The seeded built-in presets
-// (V10 catalog) are immutable via the admin API.
+// UpdatePreset updates a preset: the description always, plus an optional
+// rename (Name in the input). The seeded built-in presets (V10 catalog) are
+// immutable via the admin API.
 func (s *Service) UpdatePreset(
 	ctx context.Context,
 	name string,
 	in dto.PresetUpdateInput,
-) (sqlc.UpdatePresetDescriptionRow, error) {
+) (sqlc.RenamePresetRow, error) {
 	if isBuiltinPreset(name) {
-		return sqlc.UpdatePresetDescriptionRow{}, builtinPresetErr(name)
+		return sqlc.RenamePresetRow{}, builtinPresetErr(name)
 	}
-	preset, err := s.repo.UpdatePresetDescription(ctx, name, in.Description)
+	newName, err := resolvePresetRename(ctx, s.repo, name, in.Name)
 	if err != nil {
-		return sqlc.UpdatePresetDescriptionRow{}, err
+		return sqlc.RenamePresetRow{}, err
+	}
+	preset, err := s.repo.UpdatePreset(ctx, name, newName, in.Description)
+	if err != nil {
+		return sqlc.RenamePresetRow{}, err
+	}
+	if err = s.apply(ctx); err != nil {
+		return sqlc.RenamePresetRow{}, err
 	}
 	return preset, nil
 }
@@ -504,15 +512,11 @@ func builtinPresetErr(name string) error {
 // (the V10 catalog: admin, dp, rp, vp, worker) — immutable via the RBAC
 // admin API, as removing them (in particular admin) would lock out admins.
 func isBuiltinPreset(name string) bool {
-	switch name {
-	case userdomain.PresetAdmin,
-		userdomain.PresetProjectDirector,
-		userdomain.PresetProjectManager,
-		userdomain.PresetProcessOwner,
-		userdomain.PresetWorker:
-		return true
-	}
-	return false
+	// The admin entry is a code invariant (deleting it would clear
+	// users.preset for every administrator and lock them out of /rbac/*);
+	// every other preset — including the seeded dp/rp/vp/worker — is a
+	// regular catalog entry and can be deleted or renamed by an admin.
+	return name == userdomain.PresetAdmin
 }
 
 // findRulePreset returns the preset of the matrix row with the given id.
@@ -523,4 +527,32 @@ func findRulePreset(rules []sqlc.ListActivePresetRulesRow, id int64) (string, bo
 		}
 	}
 	return "", false
+}
+
+// resolvePresetRename validates an optional rename target of a preset
+// (pattern, built-in and catalog collisions); returns the effective name.
+func resolvePresetRename(ctx context.Context, repo policyRepository, name string, rename *string) (string, error) {
+	if rename == nil {
+		return name, nil
+	}
+	newName := strings.TrimSpace(*rename)
+	if err := validatePresetName(newName); err != nil {
+		return "", err
+	}
+	if isBuiltinPreset(newName) {
+		return "", errors.BadRequest("встроенный пресет " + newName + " нельзя занять этим именем")
+	}
+	if newName == name {
+		return newName, nil
+	}
+	presets, err := repo.ListActivePresets(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, p := range presets {
+		if p.Name == newName {
+			return "", errors.BadRequest("пресет с именем " + newName + " уже существует")
+		}
+	}
+	return newName, nil
 }

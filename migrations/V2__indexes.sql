@@ -47,3 +47,10 @@ CREATE INDEX idx_idempotency_keys_expires ON idempotency_keys (expires_at);
 CREATE INDEX idx_task_comments_task_id ON task_comments(task_id);
 CREATE INDEX idx_task_comments_task_created ON task_comments(task_id, created_at);
 CREATE INDEX idx_task_comments_parent_id ON task_comments(parent_id) WHERE parent_id IS NOT NULL;
+
+-- =============================================
+-- 5. INDICES FOR task dependencies
+-- =============================================
+-- Successor lookup (incoming constraints of a task) and cascade scans.
+CREATE INDEX idx_task_dependencies_task ON task_dependencies(task_id);
+CREATE INDEX idx_task_dependencies_depends_on ON task_dependencies(depends_on_task_id);

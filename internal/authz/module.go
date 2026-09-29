@@ -22,6 +22,7 @@ var ProviderSet = wire.NewSet(
 	repository.NewRuleRepository,
 	service.NewPolicyStore,
 	service.NewRBACService,
+	service.NewOwnerProbe,
 	delivery.NewRBACHandler,
 	ProvideModule,
 )
@@ -32,8 +33,9 @@ type Module struct {
 	logger  *slog.Logger
 }
 
-// ProvideModule builds the authz module.
-func ProvideModule(handler *delivery.RBACHandler, logger *slog.Logger) Module {
+// ProvideModule builds the authz module. OwnerProbe is consumed solely to
+// trigger the engine probe registration at startup (sib/down scope moves).
+func ProvideModule(handler *delivery.RBACHandler, logger *slog.Logger, _ *service.OwnerProbe) Module {
 	return Module{handler: handler, logger: logger.With("component", "authz_module")}
 }
 

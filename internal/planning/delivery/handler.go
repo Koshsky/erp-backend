@@ -54,7 +54,7 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 	planning, err := h.service.GetProjectPlanning(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceProject),
+		engine.CompileViewScopeUser(user, rbac.ResourceProject),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
@@ -84,8 +84,8 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 	planning, err := h.service.GetProcessPlanning(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceProcess),
-		engine.ViewScopeCodeUser(user, rbac.ResourceProject),
+		engine.CompileViewScopeUser(user, rbac.ResourceProcess),
+		engine.CompileViewScopeUser(user, rbac.ResourceProject),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
@@ -115,8 +115,8 @@ func (h *PlanningHandler) GetTaskPlanning(c *gin.Context) {
 	planning, err := h.service.GetTaskPlanning(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceTask),
-		engine.ViewScopeCodeUser(user, rbac.ResourceResource),
+		engine.CompileViewScopeUser(user, rbac.ResourceTask),
+		engine.CompileViewScopeUser(user, rbac.ResourceResource),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)

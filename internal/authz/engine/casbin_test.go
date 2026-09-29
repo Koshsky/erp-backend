@@ -12,11 +12,13 @@ import (
 )
 
 // userByPreset — test users for the golden equivalence check (uid, preset).
-var userByPreset = map[string][2]string{
-	userdomain.PresetProjectDirector: {"1", userdomain.PresetProjectDirector},
-	userdomain.PresetProjectManager:  {"2", userdomain.PresetProjectManager},
-	userdomain.PresetProcessOwner:    {"3", userdomain.PresetProcessOwner},
-	userdomain.PresetWorker:          {"4", userdomain.PresetWorker},
+func userByPreset() map[string][2]string {
+	return map[string][2]string{
+		userdomain.PresetProjectDirector: {"1", userdomain.PresetProjectDirector},
+		userdomain.PresetProjectManager:  {"2", userdomain.PresetProjectManager},
+		userdomain.PresetProcessOwner:    {"3", userdomain.PresetProcessOwner},
+		userdomain.PresetWorker:          {"4", userdomain.PresetWorker},
+	}
 }
 
 // ownerSample — an (resource, action, owner chain) probe for the golden check.
@@ -31,7 +33,7 @@ type ownerSample struct {
 // TestCasbinGoldenScope checks that the Casbin-backed decisions (ScopeForUser /
 // AuthorizeUser / ViewScopeCodeUser) agree with the data-level matrix for
 // every (preset, resource, action) and a sample of owner chains.
-func TestCasbinGoldenScope(t *testing.T) {
+func TestCasbinGoldenScope(t *testing.T) { //nolint:paralleltest // общий snapshot движка — не параллельно
 	// Sequential: publishes role assignments into the shared snapshot.
 	publishWithRules(t, nil, nil, []engine.RoleAssign{
 		{User: "1", Preset: userdomain.PresetProjectDirector},
@@ -51,7 +53,7 @@ func TestCasbinGoldenScope(t *testing.T) {
 		{rbac.ResourceWorker, engine.ActionView, rbac.Owners{Owner: 3}},
 		{rbac.ResourceState, engine.ActionView, rbac.Owners{}},
 	}
-	for _, ids := range userByPreset {
+	for _, ids := range userByPreset() {
 		uid := parseUID(t, ids[0])
 		u := userctx.UserContext{ID: uid, Preset: ids[1]}
 		for _, s := range samples {
@@ -67,7 +69,7 @@ func TestCasbinGoldenScope(t *testing.T) {
 			}
 		}
 	}
-	for _, ids := range userByPreset {
+	for _, ids := range userByPreset() {
 		u := userctx.UserContext{ID: parseUID(t, ids[0]), Preset: ids[1]}
 		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
 			want := engine.ScopeName(m.ScopeForUser(u, res, engine.ActionView))
@@ -106,6 +108,11 @@ func ownerOf(res rbac.Resource, o rbac.Owners) int64 {
 		return o.ProcessOwner
 	case rbac.ResourceTask, rbac.ResourceResource, rbac.ResourceWorker:
 		return o.Owner
+	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
+		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
+		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
+		return 0
 	}
 	return 0
 }
@@ -116,6 +123,11 @@ func parentOf(res rbac.Resource, o rbac.Owners) int64 {
 		return o.ProjectOwner
 	case rbac.ResourceTask, rbac.ResourceMilestone, rbac.ResourceAssignment:
 		return o.ProcessOwner
+	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
+		rbac.ResourceWorker, rbac.ResourceComment, rbac.ResourceUserCatalog,
+		rbac.ResourceRBACConfig, rbac.ResourceUserAdmin, rbac.ResourceStateAdmin,
+		rbac.ResourceOrgStructure, rbac.ResourceAudit:
+		return 0
 	}
 	return 0
 }
@@ -124,7 +136,7 @@ func parentOf(res rbac.Resource, o rbac.Owners) int64 {
 // a user-level grant wins over the preset; a user-level revoke beats both the
 // grant and the preset; the admin bypass ignores deny rows; CurrentMatrix
 // exposes only the preset rows.
-func TestCasbinOverridePrecedence(t *testing.T) {
+func TestCasbinOverridePrecedence(t *testing.T) { //nolint:paralleltest // общий snapshot движка — не параллельно
 	// Sequential: publishes user rows into the shared snapshot.
 	publishWithRules(t,
 		[]engine.RuleGrant{{Sub: "7", Key: "task/view", Scope: "all"}},
@@ -162,11 +174,11 @@ func TestCasbinOverridePrecedence(t *testing.T) {
 // TestCasbinConcurrentReads runs the matcher from many goroutines against one
 // published snapshot (the race detector verifies that the published enforcer
 // is read-only and immutable).
-func TestCasbinConcurrentReads(t *testing.T) {
+func TestCasbinConcurrentReads(t *testing.T) { //nolint:paralleltest // общий snapshot движка — не параллельно
 	publishWithRules(t, nil, nil, []engine.RoleAssign{{User: "5", Preset: userdomain.PresetProjectManager}})
 	u := userctx.UserContext{ID: 5, Preset: userdomain.PresetProjectManager}
 	var wg sync.WaitGroup
-	for i := 0; i < 64; i++ {
+	for i := range 64 {
 		wg.Add(1)
 		go func(id int64) {
 			defer wg.Done()

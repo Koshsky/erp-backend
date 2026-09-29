@@ -188,7 +188,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user sqlc.User) (*sqlc.
 func (r *UserRepository) ListUsers(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	presetFilter string,
 	managerID int64,
 	search string,
@@ -196,7 +196,9 @@ func (r *UserRepository) ListUsers(
 ) ([]sqlc.User, error) {
 	return r.q(ctx).ListUsers(ctx, sqlc.ListUsersParams{
 		PresetFilter: presetFilter,
-		ScopeView:    viewScope,
+		ScAll:        scope.All,
+		ScSelf:       scope.Self,
+		ScNone:       scope.None,
 		UserID:       userID,
 		ManagerID:    managerID,
 		Search:       search,
@@ -208,14 +210,16 @@ func (r *UserRepository) ListUsers(
 func (r *UserRepository) CountUsers(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	presetFilter string,
 	managerID int64,
 	search string,
 ) (int64, error) {
 	return r.q(ctx).CountUsers(ctx, sqlc.CountUsersParams{
 		PresetFilter: presetFilter,
-		ScopeView:    viewScope,
+		ScAll:        scope.All,
+		ScSelf:       scope.Self,
+		ScNone:       scope.None,
 		UserID:       userID,
 		ManagerID:    managerID,
 		Search:       search,

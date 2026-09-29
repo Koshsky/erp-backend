@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository/sqlc"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
@@ -22,11 +23,11 @@ type ProcessRepository interface {
 	ListProcesss(
 		ctx context.Context,
 		userID int64,
-		viewScope string,
+		scope rbac.ListScope,
 		ownerID int64,
 		limit, offset int,
 	) ([]sqlc.Process, error)
-	CountProcesses(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error)
+	CountProcesses(ctx context.Context, userID int64, scope rbac.ListScope, ownerID int64) (int64, error)
 	ListProcessIDsByProject(ctx context.Context, projectID int64) ([]int64, error)
 	ReorderProcesses(ctx context.Context, ids []int64) error
 }

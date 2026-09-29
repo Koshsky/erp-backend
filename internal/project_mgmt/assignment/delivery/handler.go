@@ -58,7 +58,7 @@ func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 	items, total, err := h.service.ListAssignments(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceAssignment),
+		engine.CompileViewScopeUser(user, rbac.ResourceAssignment),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository/sqlc"
 )
 
@@ -14,9 +16,9 @@ type AssignmentRepository interface {
 	ListAssignments(
 		ctx context.Context,
 		userID int64,
-		viewScope string,
+		scope rbac.ListScope,
 		ownerID int64,
 		limit, offset int,
 	) ([]sqlc.Assignment, error)
-	CountAssignments(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error)
+	CountAssignments(ctx context.Context, userID int64, scope rbac.ListScope, ownerID int64) (int64, error)
 }

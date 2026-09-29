@@ -18,22 +18,46 @@ SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
-    ($1::text = 'own' AND p.owner_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND pr.owner_id = $3::bigint) OR
+    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
   )
-  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($9::bigint = 0 OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
 `
 
 type CountProcessesParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountProcesses(ctx context.Context, arg CountProcessesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countProcesses, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countProcesses,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -156,28 +180,48 @@ SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_dat
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
-    ($1::text = 'own' AND p.owner_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND pr.owner_id = $3::bigint) OR
+    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
   )
-  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($9::bigint = 0 OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
 ORDER BY p.sort_order ASC, p.id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $11::bigint OFFSET $10::bigint
 `
 
 type ListProcesssParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]Process, error) {
 	rows, err := q.db.Query(ctx, listProcesss,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,

@@ -26,9 +26,10 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+    @sc_all::boolean OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY a.id ASC
@@ -41,9 +42,10 @@ JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+    @sc_all::boolean OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 

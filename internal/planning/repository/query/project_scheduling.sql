@@ -1,8 +1,14 @@
 -- name: ListProjects :many
 SELECT * FROM projects
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
 )
 ORDER BY priority ASC;
 
@@ -11,10 +17,18 @@ SELECT sqlc.embed(p), pr.code AS project_code
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_parent::boolean AND pr.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
 );
 
 -- name: ListProcessesByTaskScope :many
@@ -27,14 +41,21 @@ SELECT sqlc.embed(p), pr.code AS project_code
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND EXISTS (
-        SELECT 1 FROM tasks t
-        WHERE t.process_id = p.id
-          AND t.owner_id = @user_id::bigint
-    ))
+    @sc_all::boolean OR
+    (@sc_self::boolean AND EXISTS (
+        SELECT 1 FROM tasks t WHERE t.process_id = p.id AND t.owner_id = @user_id::bigint
+    )) OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        WHERE d.process_id = p.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
 );
 
 -- name: ListResources :many
@@ -45,9 +66,9 @@ WHERE (
 -- reference data must not hide the visible tasks.
 SELECT * FROM resources
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND owner_id = @user_id::bigint) OR
-    @scope_view::text = ''
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    @sc_none::boolean
 );
 
 
@@ -61,9 +82,14 @@ WHERE (
 SELECT * FROM projects
 WHERE id = ANY(@ids::bigint[])
   AND (
-      @scope_view::text = 'all' OR
-      (@scope_view::text = 'own' AND owner_id = @user_id::bigint) OR
-      @scope_view::text = ''
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   );
 
 
@@ -94,3 +120,12 @@ SELECT task_id, COUNT(*)::bigint AS comments_count
 FROM task_comments
 WHERE task_id = ANY(@task_ids::bigint[])
 GROUP BY task_id;
+
+-- name: ListTaskDependenciesByProcessIDs :many
+-- Scheduling links between tasks of the given processes (both ends are
+-- top-level tasks of the same process — enforced at creation).
+SELECT sqlc.embed(td)
+FROM task_dependencies td
+JOIN tasks t ON t.id = td.task_id
+WHERE t.process_id = ANY(@process_ids::bigint[])
+ORDER BY td.task_id ASC, td.id ASC;

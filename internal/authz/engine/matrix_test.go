@@ -387,14 +387,14 @@ func TestViewScopeCode(t *testing.T) {
 		res  rbac.Resource
 		want string
 	}{
-		{"rp project view = own", rp, rbac.ResourceProject, "own"},
+		{"rp project view = own (self)", rp, rbac.ResourceProject, "self"},
 		{"dp project view = all", dp, rbac.ResourceProject, "all"},
-		{"rp process view = parent", rp, rbac.ResourceProcess, "parent"},
+		{"rp process view = parent (up1)", rp, rbac.ResourceProcess, "up1"},
 		{"vp process view = all", vp, rbac.ResourceProcess, "all"},
-		{"vp task view = parent", vp, rbac.ResourceTask, "parent"},
-		{"rp task view = ancestor", rp, rbac.ResourceTask, "ancestor"},
+		{"vp task view = parent (up1)", vp, rbac.ResourceTask, "up1"},
+		{"rp task view = ancestor (up)", rp, rbac.ResourceTask, "up"},
 		{"dp task view = all", dp, rbac.ResourceTask, "all"},
-		{"vp resource view = own", vp, rbac.ResourceResource, "own"},
+		{"vp resource view = own (self)", vp, rbac.ResourceResource, "self"},
 		{"worker task view = none", worker, rbac.ResourceTask, ""},
 		{"admin anything = all", admin, rbac.ResourceTask, "all"},
 	}

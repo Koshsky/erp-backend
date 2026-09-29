@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository/sqlc"
 	"github.com/Koshsky/erp-backend/pkg/date"
 )
@@ -22,10 +23,10 @@ type ProjectRepository interface {
 	ListProjects(
 		ctx context.Context,
 		userID int64,
-		viewScope string,
+		scope rbac.ListScope,
 		ownerID int64,
 		limit, offset int,
 	) ([]sqlc.Project, error)
-	CountProjects(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error)
+	CountProjects(ctx context.Context, userID int64, scope rbac.ListScope, ownerID int64) (int64, error)
 	AutoCreatedCounts(ctx context.Context, projectID int64) (sqlc.CountAutoCreatedEntitiesRow, error)
 }

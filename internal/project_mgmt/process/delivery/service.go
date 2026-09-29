@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/process/dto"
 )
 
@@ -10,7 +11,7 @@ type ProcessService interface {
 	ListProcesses(
 		ctx context.Context,
 		userID int64,
-		viewScope string,
+		scope rbac.ListScope,
 		ownerID int64,
 		limit, offset int,
 	) ([]dto.ProcessResponse, int64, error)

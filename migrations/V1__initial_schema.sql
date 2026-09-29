@@ -102,6 +102,29 @@ CREATE TABLE tasks (
 	CHECK (status IN ('not_started', 'in_progress', 'done'))
 );
 
+-- Scheduling dependency between two top-level tasks of the same process
+-- (enforced in the service): the successor (task_id) cannot start/finish
+-- before the predecessor (depends_on_task_id) — the exact rule depends on the
+-- link type (fs/ss/ff/sf). Row deletion is move-to-archive (V5 trigger).
+CREATE TABLE task_dependencies (
+	id BIGSERIAL PRIMARY KEY,
+	-- Dependent task (successor) of the link.
+	task_id BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+	-- Predecessor task of the link.
+	depends_on_task_id BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+	-- Dependency type catalog:
+	--   fs — finish-to-start:  task must start after the predecessor ends,
+	--   ss — start-to-start:   task must start after the predecessor starts,
+	--   ff — finish-to-finish: task must end after the predecessor ends,
+	--   sf — start-to-finish:  task must end after the predecessor starts.
+	type TEXT NOT NULL DEFAULT 'fs',
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	CONSTRAINT task_dependencies_no_self CHECK (task_id <> depends_on_task_id),
+	CONSTRAINT task_dependencies_unique UNIQUE (task_id, depends_on_task_id),
+	CHECK (type IN ('fs', 'ss', 'ff', 'sf'))
+);
+
 -- Resource category dictionary (specializations).
 CREATE TABLE resources (
 	id BIGSERIAL PRIMARY KEY,
@@ -249,12 +272,15 @@ CREATE TABLE user_permissions (
     user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     resource    TEXT NOT NULL, -- same resource codes as rbac_preset_rules
     action      TEXT NOT NULL, -- same action codes as rbac_preset_rules
-    scope       TEXT NOT NULL DEFAULT 'all', -- all|own|parent|ancestor (when granted)
+    -- Scope EXPRESSION over the ownership tree (all|self|up1|up|sib|down|…
+    -- and combos like "self sib"); legacy codes (own|parent|ancestor) are
+    -- canonicalized on save. Syntax is validated by the RBAC service.
+    scope       TEXT NOT NULL DEFAULT 'all',
     granted     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by  BIGINT,        -- user who made the last change (from JWT)
-    CHECK (NOT granted OR scope IN ('all', 'own', 'parent', 'ancestor'))
+    CHECK (NOT granted OR length(trim(scope)) > 0)
 );
 
 CREATE TABLE rbac_route_policies (
@@ -344,6 +370,16 @@ CREATE TABLE tasks_deleted (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE task_dependencies_deleted (
+    id                  BIGINT NOT NULL,
+    task_id             BIGINT NOT NULL,
+    depends_on_task_id  BIGINT NOT NULL,
+    type                TEXT NOT NULL DEFAULT 'fs',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE resources_deleted (

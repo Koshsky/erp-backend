@@ -42,6 +42,7 @@ type stubPolicyRepo struct {
 	deletedRuleIDs  []int64
 	upsertedPresets []string
 	deletedPresets  []string
+	presetCatalog   []sqlc.ListActivePresetsRow
 }
 
 func (s *stubPolicyRepo) logCall(call string) {
@@ -50,7 +51,7 @@ func (s *stubPolicyRepo) logCall(call string) {
 
 func (s *stubPolicyRepo) ListActivePresets(_ context.Context) ([]sqlc.ListActivePresetsRow, error) {
 	s.logCall("ListActivePresets")
-	return nil, nil
+	return s.presetCatalog, nil
 }
 
 func (s *stubPolicyRepo) ListActiveRules(_ context.Context) ([]sqlc.ListActivePresetRulesRow, error) {
@@ -139,12 +140,12 @@ func (s *stubPolicyRepo) UpsertPreset(_ context.Context, name, _ string) (sqlc.U
 	return sqlc.UpsertPresetRow{Name: name}, nil
 }
 
-func (s *stubPolicyRepo) UpdatePresetDescription(
+func (s *stubPolicyRepo) UpdatePreset(
 	_ context.Context,
-	name, _ string,
-) (sqlc.UpdatePresetDescriptionRow, error) {
-	s.logCall("UpdatePresetDescription")
-	return sqlc.UpdatePresetDescriptionRow{Name: name}, nil
+	_, newName, _ string,
+) (sqlc.RenamePresetRow, error) {
+	s.logCall("UpdatePreset")
+	return sqlc.RenamePresetRow{Name: newName}, nil
 }
 
 func (s *stubPolicyRepo) DeletePreset(_ context.Context, name string) error {
@@ -319,7 +320,7 @@ func TestDeletePresetRefusesBuiltins(t *testing.T) {
 	repo := &stubPolicyRepo{}
 	svc := newAuthzTestService(repo)
 
-	for _, name := range builtinPresets {
+	for _, name := range []string{userdomain.PresetAdmin} {
 		err := svc.DeletePreset(context.Background(), name)
 		if err == nil {
 			t.Errorf("DeletePreset(%q) succeeded on a built-in preset", name)
@@ -347,7 +348,7 @@ func TestUpdatePresetRefusesBuiltins(t *testing.T) {
 	repo := &stubPolicyRepo{}
 	svc := newAuthzTestService(repo)
 
-	for _, name := range builtinPresets {
+	for _, name := range []string{userdomain.PresetAdmin} {
 		_, err := svc.UpdatePreset(context.Background(), name, dto.PresetUpdateInput{Description: "x"})
 		if err == nil {
 			t.Errorf("UpdatePreset(%q) succeeded on a built-in preset", name)
@@ -365,6 +366,54 @@ func TestUpdatePresetRefusesBuiltins(t *testing.T) {
 	}
 }
 
+// TestUpdatePresetRename checks the rename path: a fresh valid name goes to
+// the repository, a name of a built-in preset is refused, and a name occupied
+// by another catalog entry is refused before any repository call.
+func TestUpdatePresetRename(t *testing.T) {
+	t.Parallel()
+	t.Run("rename to a valid name", func(t *testing.T) {
+		t.Parallel()
+		repo := &stubPolicyRepo{}
+		svc := newAuthzTestService(repo)
+		newName := "auditor"
+		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Name: &newName, Description: "x"})
+		if err != nil {
+			t.Fatalf("UpdatePreset(rename) error = %v", err)
+		}
+		if !slices.Contains(repo.callLog, "UpdatePreset") {
+			t.Errorf("rename did not reach the repository: %v", repo.callLog)
+		}
+	})
+	t.Run("rename onto a built-in name is refused", func(t *testing.T) {
+		t.Parallel()
+		repo := &stubPolicyRepo{}
+		svc := newAuthzTestService(repo)
+		newName := "admin"
+		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Name: &newName})
+		if err == nil {
+			t.Fatal("UpdatePreset(rename to admin) succeeded")
+		}
+		if len(repo.callLog) != 0 {
+			t.Errorf("refused rename touched the repository: %v", repo.callLog)
+		}
+	})
+	t.Run("rename onto an occupied name is refused", func(t *testing.T) {
+		t.Parallel()
+		repo := &stubPolicyRepo{}
+		repo.presetCatalog = []sqlc.ListActivePresetsRow{{Name: "taken"}}
+		svc := newAuthzTestService(repo)
+		newName := "taken"
+		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Name: &newName})
+		if err == nil {
+			t.Fatal("UpdatePreset(rename to taken) succeeded")
+		}
+		// Only the catalog lookup happened; no write reached the repository.
+		if slices.Contains(repo.callLog, "UpdatePreset") {
+			t.Errorf("refused rename persisted: %v", repo.callLog)
+		}
+	})
+}
+
 // TestCreatePresetRefusesBuiltins checks that CreatePreset refuses to create
 // or overwrite a seeded built-in preset (in particular admin).
 func TestCreatePresetRefusesBuiltins(t *testing.T) {
@@ -372,7 +421,7 @@ func TestCreatePresetRefusesBuiltins(t *testing.T) {
 	repo := &stubPolicyRepo{}
 	svc := newAuthzTestService(repo)
 
-	for _, name := range builtinPresets {
+	for _, name := range []string{userdomain.PresetAdmin} {
 		_, err := svc.CreatePreset(context.Background(), dto.PresetUpsertInput{Name: name})
 		if err == nil {
 			t.Errorf("CreatePreset(%q) succeeded on a built-in preset", name)
