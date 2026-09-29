@@ -8,23 +8,16 @@ import (
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 )
 
-// builtinPresets — the seeded catalog of V10__rbac_policies.sql.
-//
-//nolint:gochecknoglobals // rule registry
-var builtinPresets = []string{"admin", "dp", "rp", "vp", "worker"}
-
-// The seeded presets are immutable through the RBAC admin API: deleting admin
-// (or any other built-in) would clear users.preset and lock administrators out
-// of /rbac/*, while an upsert would let the built-in admin entry be clobbered.
+// Only the admin entry is a code invariant (deleting it would clear
+// users.preset for every administrator and lock them out of /rbac/*); every
+// other preset — including the seeded dp/rp/vp/worker — stays editable and
+// deletable through the API (renamed by an admin or deleted with its rules).
 func TestIsBuiltinPreset(t *testing.T) {
 	t.Parallel()
-	for _, name := range builtinPresets {
-		if !isBuiltinPreset(name) {
-			t.Errorf("пресет %q должен считаться встроенным", name)
-		}
+	if !isBuiltinPreset(userdomain.PresetAdmin) {
+		t.Error("пресет «admin» должен считаться встроенным")
 	}
-	// Runtime presets created through the API stay editable and deletable.
-	for _, name := range []string{"auditor", "", "Admin", "admin1", "Админ"} {
+	for _, name := range []string{"dp", "rp", "vp", "worker", "auditor", "", "Admin", "admin1", "Админ"} {
 		if isBuiltinPreset(name) {
 			t.Errorf("пресет %q не является встроенным", name)
 		}

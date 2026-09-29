@@ -8086,6 +8086,10 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "example": "Внешний аудит"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "auditor"
                 }
             }
         },

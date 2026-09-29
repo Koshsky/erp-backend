@@ -742,6 +742,9 @@ definitions:
       description:
         example: Внешний аудит
         type: string
+      name:
+        example: auditor
+        type: string
     type: object
   dto.PresetUpsertInput:
     properties:

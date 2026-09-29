@@ -60,6 +60,24 @@ SET description = @description::text, updated_at = NOW()
 WHERE name = @name::text
 RETURNING id, name, description;
 
+-- name: RenamePreset :one
+-- Renames a preset (and refreshes its description); used both for pure
+-- description updates (new_name = name) and for renames.
+UPDATE rbac_presets
+SET name = @new_name::text, description = @description::text, updated_at = NOW()
+WHERE name = @name::text
+RETURNING id, name, description;
+
+-- name: RenamePresetRules :exec
+UPDATE rbac_preset_rules
+SET preset = @new_name::text, updated_at = NOW()
+WHERE preset = @name::text;
+
+-- name: RenamePresetUsers :exec
+UPDATE users
+SET preset = @new_name::text, updated_at = NOW()
+WHERE preset = @name::text;
+
 -- name: DeletePreset :exec
 DELETE FROM rbac_presets
 WHERE name = @name::text;

@@ -395,6 +395,66 @@ func (q *Queries) ListUserPrincipals(ctx context.Context) ([]ListUserPrincipalsR
 	return items, nil
 }
 
+const renamePreset = `-- name: RenamePreset :one
+UPDATE rbac_presets
+SET name = $1::text, description = $2::text, updated_at = NOW()
+WHERE name = $3::text
+RETURNING id, name, description
+`
+
+type RenamePresetParams struct {
+	NewName     string `json:"new_name"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+}
+
+type RenamePresetRow struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// Renames a preset (and refreshes its description); used both for pure
+// description updates (new_name = name) and for renames.
+func (q *Queries) RenamePreset(ctx context.Context, arg RenamePresetParams) (RenamePresetRow, error) {
+	row := q.db.QueryRow(ctx, renamePreset, arg.NewName, arg.Description, arg.Name)
+	var i RenamePresetRow
+	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	return i, err
+}
+
+const renamePresetRules = `-- name: RenamePresetRules :exec
+UPDATE rbac_preset_rules
+SET preset = $1::text, updated_at = NOW()
+WHERE preset = $2::text
+`
+
+type RenamePresetRulesParams struct {
+	NewName string `json:"new_name"`
+	Name    string `json:"name"`
+}
+
+func (q *Queries) RenamePresetRules(ctx context.Context, arg RenamePresetRulesParams) error {
+	_, err := q.db.Exec(ctx, renamePresetRules, arg.NewName, arg.Name)
+	return err
+}
+
+const renamePresetUsers = `-- name: RenamePresetUsers :exec
+UPDATE users
+SET preset = $1::text, updated_at = NOW()
+WHERE preset = $2::text
+`
+
+type RenamePresetUsersParams struct {
+	NewName string `json:"new_name"`
+	Name    string `json:"name"`
+}
+
+func (q *Queries) RenamePresetUsers(ctx context.Context, arg RenamePresetUsersParams) error {
+	_, err := q.db.Exec(ctx, renamePresetUsers, arg.NewName, arg.Name)
+	return err
+}
+
 const updatePresetDescription = `-- name: UpdatePresetDescription :one
 UPDATE rbac_presets
 SET description = $1::text, updated_at = NOW()

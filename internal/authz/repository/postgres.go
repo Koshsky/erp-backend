@@ -195,14 +195,50 @@ func (r *RuleRepository) UpsertPreset(ctx context.Context, name, description str
 	return r.q(ctx).UpsertPreset(ctx, sqlc.UpsertPresetParams{Name: name, Description: description})
 }
 
-// UpdatePresetDescription updates the preset description.
-func (r *RuleRepository) UpdatePresetDescription(
+// UpdatePreset updates a preset: description always; rename (newName != name)
+// also moves its rules and the preset refs of assigned users — one
+// transaction, so a rename never leaves the catalog inconsistent.
+func (r *RuleRepository) UpdatePreset(
 	ctx context.Context,
-	name, description string,
-) (sqlc.UpdatePresetDescriptionRow, error) {
-	return r.q(ctx).UpdatePresetDescription(ctx, sqlc.UpdatePresetDescriptionParams{
-		Name: name, Description: description,
+	name, newName, description string,
+) (sqlc.RenamePresetRow, error) {
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
+	if err != nil {
+		return sqlc.RenamePresetRow{}, err
+	}
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
+
+	q := r.q(ctx)
+	if owned {
+		q = sqlc.New(tx)
+	}
+	if newName != name {
+		if err = q.RenamePresetRules(ctx, sqlc.RenamePresetRulesParams{
+			Name: name, NewName: newName,
+		}); err != nil {
+			return sqlc.RenamePresetRow{}, err
+		}
+		if err = q.RenamePresetUsers(ctx, sqlc.RenamePresetUsersParams{
+			Name: name, NewName: newName,
+		}); err != nil {
+			return sqlc.RenamePresetRow{}, err
+		}
+	}
+	row, err := q.RenamePreset(ctx, sqlc.RenamePresetParams{
+		Name: name, NewName: newName, Description: description,
 	})
+	if err != nil {
+		return sqlc.RenamePresetRow{}, err
+	}
+	if !owned {
+		return row, nil
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return sqlc.RenamePresetRow{}, err
+	}
+	return row, nil
 }
 
 // DeletePreset deletes a preset together with its rules and clears the preset

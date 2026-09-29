@@ -112,7 +112,9 @@ type PresetUpsertInput struct {
 	Description string `json:"description" example:"Внешний аудит"`
 }
 
-// PresetUpdateInput — preset description update.
+// PresetUpdateInput — preset update: optional rename (Name) plus a new
+// description (always sent by the client).
 type PresetUpdateInput struct {
-	Description string `json:"description" example:"Внешний аудит"`
+	Name        *string `json:"name,omitempty" example:"auditor"`
+	Description string  `json:"description"    example:"Внешний аудит"`
 }
