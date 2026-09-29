@@ -16,11 +16,9 @@ RETURNING *;
 -- name: ListExistingResources :many
 SELECT id
 FROM resources
-WHERE id = ANY(@ids::bigint[])
-  AND deleted_at IS NULL;
+WHERE id = ANY(@ids::bigint[]);
 
 -- name: ListExistingUsers :many
 SELECT id
 FROM users
-WHERE id = ANY(@ids::bigint[])
-  AND deleted_at IS NULL;
+WHERE id = ANY(@ids::bigint[]);

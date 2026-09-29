@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -66,8 +66,8 @@ func testData() rbac.Data {
 func TestCheckEntity(t *testing.T) {
 	t.Parallel()
 	mw := rbac.ProvideMiddleware(nil, tracingpkg.New(nil), testData(), []rbac.Policy{
-		{Name: "task.view", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionView)},
-		{Name: "task.update", Check: policies.EntityCheck(rbac.ResourceTask, policies.ActionUpdate)},
+		{Name: "task.view", Check: engine.EntityCheck(rbac.ResourceTask, engine.ActionView)},
+		{Name: "task.update", Check: engine.EntityCheck(rbac.ResourceTask, engine.ActionUpdate)},
 	})
 
 	cases := []struct {
@@ -169,7 +169,7 @@ func TestCheckAssignmentCreate(t *testing.T) {
 	}
 }
 
-// createAssignmentForTest mirrors the internal/policies rule: the matrix check
+// createAssignmentForTest mirrors the engine owner_match rule: the matrix check
 // by the task plus the shared-owner business rule (admin exempt).
 func createAssignmentForTest(rc *rbac.CheckCtx) error {
 	taskID, err := rc.BodyID("task_id")
@@ -185,7 +185,7 @@ func createAssignmentForTest(rc *rbac.CheckCtx) error {
 	if err != nil {
 		return err
 	}
-	if !policies.AuthorizeUser(rc.User, rbac.ResourceAssignment, policies.ActionCreate, taskOwners, rc.User.ID) {
+	if !engine.AuthorizeUser(rc.User, rbac.ResourceAssignment, engine.ActionCreate, taskOwners, rc.User.ID) {
 		return errors.ErrForbidden
 	}
 

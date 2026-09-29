@@ -44,7 +44,7 @@ type Module struct {
 
 // ProvideModule builds the user module.
 func ProvideModule(handler *delivery.UserHandler, logger *slog.Logger) Module {
-	return Module{handler: handler, logger: logger}
+	return Module{handler: handler, logger: logger.With("component", "user_module")}
 }
 
 // changePasswordGuard returns a per-user (by JWT id) limiter for

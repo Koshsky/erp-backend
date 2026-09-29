@@ -2,13 +2,19 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -18,16 +24,23 @@ type TaskService struct {
 	repository TaskRepository
 	mapper     *TaskMapper
 	validator  *TaskValidator
+	deps       ConstraintSource
 }
 
 // NewTaskService builds the TaskService service.
-func NewTaskService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.TaskRepository) *TaskService {
+func NewTaskService(
+	logger *slog.Logger,
+	tracer *tracingpkg.Tracer,
+	r *repo.TaskRepository,
+	deps ConstraintSource,
+) *TaskService {
 	return &TaskService{
-		logger:     logger,
+		logger:     logger.With("component", "task_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     &TaskMapper{},
 		validator:  &TaskValidator{},
+		deps:       deps,
 	}
 }
 
@@ -35,8 +48,39 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 	ctx, end := s.tracer.Start(ctx, "task.CreateTask")
 	defer end(nil)
 
-	task := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateTask(&task); err != nil {
+	status := domain.StatusNotStarted
+	if req.Status != nil && *req.Status != "" {
+		status = *req.Status
+	}
+
+	task := sqlc.Task{
+		ProcessID: req.ProcessID,
+		ParentID:  nullable.ToInt8(req.ParentID),
+		OwnerID:   nullable.ToInt8(req.OwnerID),
+		Title:     req.Title,
+		Color:     nullable.ToString(req.Color),
+		Status:    status,
+		StartDate: dateFromPtr(req.StartDate),
+		EndDate:   dateFromPtr(req.EndDate),
+	}
+	if err := s.validator.ValidateTask(
+		task.ProcessID,
+		task.Title,
+		nullable.StringPtr(task.Color),
+		task.Status,
+		req.ParentID,
+		task.StartDate,
+		task.EndDate,
+	); err != nil {
+		return nil, err
+	}
+
+	// Subtask (operation) semantics:
+	//  - the parent must be a top-level task (a subtask cannot be a parent);
+	//  - process_id always equals the parent's process (RBAC unchanged);
+	//  - dates inherit the parent's bounds (subtask spans the parent's
+	//    interval; the frontend never renders subtask dates).
+	if err := s.applyParent(ctx, &task, req.ParentID); err != nil {
 		return nil, err
 	}
 
@@ -46,6 +90,40 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 	}
 
 	return s.mapper.ToDTO(created), nil
+}
+
+// dateFromPtr converts a nullable request date; a nil pointer yields the empty
+// calendar date (subtask dates are inherited from the parent by the service).
+func dateFromPtr(d *date.Date) date.Date {
+	if d == nil {
+		return ""
+	}
+	return *d
+}
+
+// applyParent resolves the parent for a subtask request: inherits the
+// parent's process and dates and rejects a parent that is itself a subtask.
+func (s *TaskService) applyParent(ctx context.Context, task *sqlc.Task, parentID *int64) error {
+	if parentID == nil {
+		return nil
+	}
+	parent, err := s.repository.FindTask(ctx, *parentID)
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return errors.NewValidationError("родительская задача не найдена")
+		}
+		return err
+	}
+	if parent == nil {
+		return errors.NewValidationError("родительская задача не найдена")
+	}
+	if parent.ParentID.Valid {
+		return errors.NewValidationError("подзадача не может иметь собственные подзадачи")
+	}
+	task.ProcessID = parent.ProcessID
+	task.StartDate = parent.StartDate
+	task.EndDate = parent.EndDate
+	return nil
 }
 
 func (s *TaskService) FindTask(ctx context.Context, id int64) (*dto.TaskResponse, error) {
@@ -74,8 +152,50 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 		return nil, errors.ErrTaskNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(task, req)
-	if err = s.validator.ValidateTask(task); err != nil {
+	if req.OwnerID != nil {
+		task.OwnerID = nullable.ToInt8(req.OwnerID)
+	}
+	if req.Title != nil {
+		task.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			task.Color = sql.NullString{}
+		} else {
+			task.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.Status != nil {
+		task.Status = *req.Status
+	}
+	if req.StartDate != nil {
+		task.StartDate = *req.StartDate
+	}
+	if req.EndDate != nil {
+		task.EndDate = *req.EndDate
+	}
+
+	// Schedule guard: when the dates change, the new interval must satisfy all
+	// incoming dependency links (the task's own bound from each predecessor).
+	// The frontend cascade keeps the successors in sync; this guard makes the
+	// invariant authoritative for every write path.
+	if req.StartDate != nil || req.EndDate != nil {
+		if s.deps != nil {
+			if err = s.deps.CheckTaskDates(ctx, id, task.Title, task.StartDate, task.EndDate); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if err = s.validator.ValidateTask(
+		task.ProcessID,
+		task.Title,
+		nullable.StringPtr(task.Color),
+		task.Status,
+		nullable.Int64Ptr(task.ParentID),
+		task.StartDate,
+		task.EndDate,
+	); err != nil {
 		return nil, err
 	}
 
@@ -108,18 +228,18 @@ func (s *TaskService) DeleteTask(ctx context.Context, id int64) error {
 func (s *TaskService) ListTasks(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.TaskResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "task.ListTasks")
 	defer end(nil)
 
-	rows, err := s.repository.ListTasks(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListTasks(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountTasks(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountTasks(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

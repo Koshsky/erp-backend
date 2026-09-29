@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
-	"github.com/Koshsky/erp-backend/pkg/date"
+	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type TaskMapper struct{}
@@ -12,23 +12,25 @@ func NewTaskMapper() *TaskMapper {
 	return &TaskMapper{}
 }
 
-func (m *TaskMapper) ToDTO(task *domain.Task) *dto.TaskResponse {
+func (m *TaskMapper) ToDTO(task *sqlc.Task) *dto.TaskResponse {
 	if task == nil {
 		return nil
 	}
 	return &dto.TaskResponse{
 		ID:        task.ID,
-		OwnerID:   task.OwnerID,
-		Title:     task.Title,
-		Color:     task.Color,
-		StartDate: date.From(task.StartDate),
-		EndDate:   date.From(task.EndDate),
 		ProcessID: task.ProcessID,
-		Order:     task.SortOrder,
+		ParentID:  nullable.Int64Ptr(task.ParentID),
+		OwnerID:   nullable.Int64Ptr(task.OwnerID),
+		Title:     task.Title,
+		Color:     nullable.StringPtr(task.Color),
+		Status:    task.Status,
+		StartDate: task.StartDate,
+		EndDate:   task.EndDate,
+		Order:     int(task.SortOrder),
 	}
 }
 
-func (m *TaskMapper) ToDTOs(tasks []domain.Task) []dto.TaskResponse {
+func (m *TaskMapper) ToDTOs(tasks []sqlc.Task) []dto.TaskResponse {
 	if tasks == nil {
 		return []dto.TaskResponse{}
 	}
@@ -38,44 +40,4 @@ func (m *TaskMapper) ToDTOs(tasks []domain.Task) []dto.TaskResponse {
 		responses[i] = *m.ToDTO(&task)
 	}
 	return responses
-}
-
-func (m *TaskMapper) ToDomainFromCreate(req dto.CreateTaskRequest) domain.Task {
-	return domain.Task{
-		OwnerID:   req.OwnerID,
-		Title:     req.Title,
-		Color:     req.Color,
-		ProcessID: req.ProcessID,
-		StartDate: req.StartDate.Time(),
-		EndDate:   req.EndDate.Time(),
-	}
-}
-
-func (m *TaskMapper) ApplyUpdateToDomain(task *domain.Task, req dto.UpdateTaskRequest) {
-	if task == nil {
-		return
-	}
-
-	if req.Title != nil {
-		task.Title = *req.Title
-	}
-	if req.Color != nil {
-		if *req.Color == "" {
-			task.Color = nil
-		} else {
-			task.Color = req.Color
-		}
-	}
-	if req.OwnerID != nil {
-		task.OwnerID = req.OwnerID
-	}
-	if req.ProcessID != nil {
-		task.ProcessID = *req.ProcessID
-	}
-	if req.StartDate != nil {
-		task.StartDate = req.StartDate.Time()
-	}
-	if req.EndDate != nil {
-		task.EndDate = req.EndDate.Time()
-	}
 }

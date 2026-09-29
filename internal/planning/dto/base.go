@@ -26,14 +26,19 @@ type Process struct {
 }
 
 type Task struct {
-	ID        int64     `json:"id"         example:"1"`
-	Title     string    `json:"title"      example:"Пуско-наладочные работы"`
-	Color     *string   `json:"color"      example:"#0f83c4"`
-	StartDate date.Date `json:"start_date" example:"2026-01-01"              format:"date"`
-	EndDate   date.Date `json:"end_date"   example:"2026-02-01"              format:"date"`
+	ID    int64   `json:"id"    example:"1"`
+	Title string  `json:"title" example:"Пуско-наладочные работы"`
+	Color *string `json:"color" example:"#0f83c4"`
+	// ParentID — subtask (operation) link; NULL for top-level tasks.
+	ParentID *int64 `json:"parent_id"`
+	// Execution status: not_started | in_progress | done.
+	Status    string    `json:"status"     example:"not_started"`
+	StartDate date.Date `json:"start_date" example:"2026-01-01"  format:"date"`
+	EndDate   date.Date `json:"end_date"   example:"2026-02-01"  format:"date"`
 	ProcessID int64     `json:"process_id" example:"1"`
 	OwnerID   *int64    `json:"owner_id"   example:"1"`
-	// Order of the task within its process (ascending display order).
+	// Order of the task within its parent group (ascending display order):
+	// top-level tasks sort within the process, subtasks within the parent.
 	Order int `json:"order" example:"1"`
 }
 
@@ -60,4 +65,14 @@ type Assignment struct {
 	TaskID     int64 `json:"task_id"     example:"1"`
 	ResourceID int64 `json:"resource_id" example:"1"`
 	Quantity   int   `json:"quantity"    example:"1"`
+}
+
+// TaskDependency — a scheduling link between two top-level tasks of the same
+// process: the successor (task_id) must not start/finish before the
+// predecessor (depends_on_task_id), per the type (fs/ss/ff/sf).
+type TaskDependency struct {
+	ID              int64  `json:"id"                 example:"1"`
+	TaskID          int64  `json:"task_id"            example:"42"`
+	DependsOnTaskID int64  `json:"depends_on_task_id" example:"10"`
+	Type            string `json:"type"               example:"fs"`
 }

@@ -26,13 +26,13 @@ type CreateSessionParams struct {
 }
 
 type CreateSessionRow struct {
-	ID         int64       `json:"id"`
-	UserID     int64       `json:"user_id"`
-	TokenHash  string      `json:"token_hash"`
-	CreatedAt  time.Time   `json:"created_at"`
-	ExpiresAt  time.Time   `json:"expires_at"`
-	RevokedAt  **time.Time `json:"revoked_at"`
-	ReplacedBy int64       `json:"replaced_by"`
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy int64              `json:"replaced_by"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error) {
@@ -75,13 +75,13 @@ LIMIT 1
 `
 
 type FindActiveSessionRow struct {
-	ID         int64       `json:"id"`
-	UserID     int64       `json:"user_id"`
-	TokenHash  string      `json:"token_hash"`
-	CreatedAt  time.Time   `json:"created_at"`
-	ExpiresAt  time.Time   `json:"expires_at"`
-	RevokedAt  **time.Time `json:"revoked_at"`
-	ReplacedBy int64       `json:"replaced_by"`
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy int64              `json:"replaced_by"`
 }
 
 // Check: whether the token is considered active (revoked_at IS NULL AND expires_at > NOW()).
@@ -108,19 +108,56 @@ LIMIT 1
 `
 
 type FindSessionByHashRow struct {
-	ID         int64       `json:"id"`
-	UserID     int64       `json:"user_id"`
-	TokenHash  string      `json:"token_hash"`
-	CreatedAt  time.Time   `json:"created_at"`
-	ExpiresAt  time.Time   `json:"expires_at"`
-	RevokedAt  **time.Time `json:"revoked_at"`
-	ReplacedBy int64       `json:"replaced_by"`
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy int64              `json:"replaced_by"`
 }
 
 // Find a session by hash (including revoked/expired ones — to detect token reuse).
 func (q *Queries) FindSessionByHash(ctx context.Context, tokenHash string) (FindSessionByHashRow, error) {
 	row := q.db.QueryRow(ctx, findSessionByHash, tokenHash)
 	var i FindSessionByHashRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+		&i.ReplacedBy,
+	)
+	return i, err
+}
+
+const findSessionByReplacedBy = `-- name: FindSessionByReplacedBy :one
+SELECT id, user_id, token_hash, created_at, expires_at, revoked_at, COALESCE(replaced_by, 0)::bigint AS replaced_by
+FROM refresh_sessions
+WHERE replaced_by = $1::bigint
+ORDER BY id
+LIMIT 1
+`
+
+type FindSessionByReplacedByRow struct {
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	TokenHash  string             `json:"token_hash"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	ReplacedBy int64              `json:"replaced_by"`
+}
+
+// Find the session that replaced the given one (the next link of the rotation
+// chain). Used to distinguish a benign concurrent refresh — the presented
+// token was rotated away and its chain still resolves to a live session —
+// from genuine token theft.
+func (q *Queries) FindSessionByReplacedBy(ctx context.Context, id int64) (FindSessionByReplacedByRow, error) {
+	row := q.db.QueryRow(ctx, findSessionByReplacedBy, id)
+	var i FindSessionByReplacedByRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

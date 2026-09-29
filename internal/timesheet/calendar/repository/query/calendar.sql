@@ -1,7 +1,16 @@
 -- name: ListResources :many
+-- Scoped by the caller's resource view zone (calendar.view): a process owner
+-- must not read capacity curves of resources outside its own scope. The route
+-- policy already gates the endpoint on resource.view; a caller whose zone
+-- resolves empty (no rule / none) gets every row — reference data must not be
+-- dropped then.
 SELECT id, title, code, owner_id
 FROM resources
-WHERE deleted_at IS NULL
+WHERE (
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    @sc_none::boolean
+)
 ORDER BY id ASC;
 
 -- Members that could be active within the [start_date, end_date] window
@@ -10,8 +19,7 @@ ORDER BY id ASC;
 SELECT u.id, rm.resource_id, u.hire_date, u.termination_date
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
-WHERE u.deleted_at IS NULL
-    AND (u.hire_date IS NULL OR u.hire_date <= @end_date::date)
+WHERE (u.hire_date IS NULL OR u.hire_date <= @end_date::date)
     AND (u.termination_date IS NULL OR u.termination_date >= @start_date::date)
 ORDER BY rm.resource_id ASC, u.id ASC;
 

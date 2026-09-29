@@ -97,7 +97,7 @@ func NewClient(logger *slog.Logger, cfg config.AuditConfig, lookup UserLookup) *
 		timeout = defaultClientTimeout
 	}
 	return &Client{
-		logger:  logger,
+		logger:  logger.With("component", "audit_client"),
 		baseURL: cfg.URL,
 		lookup:  lookup,
 		hc:      &http.Client{Timeout: timeout},
@@ -215,8 +215,8 @@ func (c *Client) List(ctx context.Context, params url.Values) (json.RawMessage, 
 }
 
 // resolveUserIDs matches the filter text (case-insensitive substring) against
-// user logins and full names from the users table. Soft-deleted users are not
-// included (ListAllUsers filters deleted_at IS NULL).
+// user logins and full names from the live users table. Deleted users are
+// physically removed (archived), so they are not included here.
 func (c *Client) resolveUserIDs(ctx context.Context, text string) []int64 {
 	if c.lookup == nil {
 		return nil

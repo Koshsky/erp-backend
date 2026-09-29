@@ -7,8 +7,8 @@ package sqlc
 
 import (
 	"context"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -16,15 +16,14 @@ const listEmployeesForCalendar = `-- name: ListEmployeesForCalendar :many
 SELECT u.id, rm.resource_id, u.hire_date, u.termination_date
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
-WHERE u.deleted_at IS NULL
-    AND (u.hire_date IS NULL OR u.hire_date <= $1::date)
+WHERE (u.hire_date IS NULL OR u.hire_date <= $1::date)
     AND (u.termination_date IS NULL OR u.termination_date >= $2::date)
 ORDER BY rm.resource_id ASC, u.id ASC
 `
 
 type ListEmployeesForCalendarParams struct {
-	EndDate   time.Time `json:"end_date"`
-	StartDate time.Time `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
 }
 
 type ListEmployeesForCalendarRow struct {
@@ -64,9 +63,20 @@ func (q *Queries) ListEmployeesForCalendar(ctx context.Context, arg ListEmployee
 const listResources = `-- name: ListResources :many
 SELECT id, title, code, owner_id
 FROM resources
-WHERE deleted_at IS NULL
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    $4::boolean
+)
 ORDER BY id ASC
 `
+
+type ListResourcesParams struct {
+	ScAll  bool  `json:"sc_all"`
+	ScSelf bool  `json:"sc_self"`
+	UserID int64 `json:"user_id"`
+	ScNone bool  `json:"sc_none"`
+}
 
 type ListResourcesRow struct {
 	ID      int64  `json:"id"`
@@ -75,8 +85,18 @@ type ListResourcesRow struct {
 	OwnerID int64  `json:"owner_id"`
 }
 
-func (q *Queries) ListResources(ctx context.Context) ([]ListResourcesRow, error) {
-	rows, err := q.db.Query(ctx, listResources)
+// Scoped by the caller's resource view zone (calendar.view): a process owner
+// must not read capacity curves of resources outside its own scope. The route
+// policy already gates the endpoint on resource.view; a caller whose zone
+// resolves empty (no rule / none) gets every row — reference data must not be
+// dropped then.
+func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
+	rows, err := q.db.Query(ctx, listResources,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScNone,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -112,14 +132,14 @@ ORDER BY rm.resource_id ASC, es.start_date ASC
 `
 
 type ListUnavailableRangesParams struct {
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListUnavailableRangesRow struct {
 	ResourceID int64     `json:"resource_id"`
-	StartDate  time.Time `json:"start_date"`
-	EndDate    time.Time `json:"end_date"`
+	StartDate  date.Date `json:"start_date"`
+	EndDate    date.Date `json:"end_date"`
 }
 
 // Absence intervals (is_available = false) overlapping the window, without expansion.

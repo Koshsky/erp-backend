@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -143,5 +144,89 @@ func TestBuildEventAuthRefreshGetsActorFromResponse(t *testing.T) {
 	// Empty body → no username yet (the read-side enrichment fills the login).
 	if ev.ActorEmail != "" {
 		t.Fatalf("refresh has no username in the request, got %q", ev.ActorEmail)
+	}
+}
+
+// newCaptureMW builds a capture middleware wired to a synchronous sender
+// backed by the recording stubService (I2 gate tests).
+func newCaptureMW(t *testing.T) (*Middleware, *stubService) {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	client := &stubService{}
+	sender := newTestSender(client, true)
+	cfg := config.AuditConfig{Enabled: true, URL: "http://loki:3100"}
+	mw := NewMiddleware(slog.New(slog.DiscardHandler), cfg, sender)
+	return mw, client
+}
+
+// TestHandlerEnqueuesCommittedMutation checks that a successful (2xx) mutation
+// is captured and enqueued to the audit store (I2).
+func TestHandlerEnqueuesCommittedMutation(t *testing.T) {
+	t.Parallel()
+	mw, client := newCaptureMW(t)
+
+	router := gin.New()
+	router.POST("/api/v1/project", mw.Handler(), func(c *gin.Context) {
+		c.JSON(http.StatusCreated, gin.H{"data": gin.H{"id": 1}, "error": gin.H{}})
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/project", strings.NewReader(`{"code":"P-1"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	sent := client.sent()
+	if len(sent) != 1 {
+		t.Fatalf("sent = %d events, want 1 for a committed 2xx mutation", len(sent))
+	}
+	if sent[0].Status != http.StatusCreated || sent[0].Entity != entProject || sent[0].Action != actCreate {
+		t.Fatalf("unexpected event: %+v", sent[0])
+	}
+}
+
+// TestHandlerSkipsFailedMutation checks that a non-2xx mutation (validation or
+// conflict failure — including one later rolled back by idempotency) is never
+// enqueued: the operation did not commit, so logging it would be a phantom
+// record (I2).
+func TestHandlerSkipsFailedMutation(t *testing.T) {
+	t.Parallel()
+	mw, client := newCaptureMW(t)
+
+	router := gin.New()
+	router.POST("/api/v1/project", mw.Handler(), func(c *gin.Context) {
+		c.JSON(http.StatusBadRequest, gin.H{"data": nil, "error": gin.H{"message": "bad"}})
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/project", strings.NewReader(`{"code":"P-1"}`))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if sent := client.sent(); len(sent) != 0 {
+		t.Fatalf("a 4xx mutation must not be logged, got %+v", sent)
+	}
+}
+
+// TestHandlerSkipsIdempotencyReplay checks that a response served as an
+// idempotency replay (the Idempotency-Replayed marker set by the idempotency
+// middleware) is not logged again: the mutation was already recorded when the
+// key was first executed (I2).
+func TestHandlerSkipsIdempotencyReplay(t *testing.T) {
+	t.Parallel()
+	mw, client := newCaptureMW(t)
+
+	router := gin.New()
+	router.POST("/api/v1/project", mw.Handler(), func(c *gin.Context) {
+		// Mimic idempotency.replay: mark the response and answer with the
+		// saved 2xx payload without executing the operation.
+		c.Header("Idempotency-Replayed", "true")
+		c.Data(http.StatusOK, "application/json", []byte(`{"data":{"id":1},"error":{}}`))
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/project", strings.NewReader(`{"code":"P-1"}`))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if sent := client.sent(); len(sent) != 0 {
+		t.Fatalf("an idempotency replay must not be logged, got %+v", sent)
 	}
 }

@@ -18,7 +18,7 @@ type AuditHandler struct {
 
 // NewAuditHandler builds the audit handler.
 func NewAuditHandler(logger *slog.Logger, svc AuditQueryService, mw *rbac.Middleware) *AuditHandler {
-	return &AuditHandler{logger: logger, service: svc, mw: mw}
+	return &AuditHandler{logger: logger.With("component", "audit_handler"), service: svc, mw: mw}
 }
 
 // ListEvents handles the request to list audit events with filters.
@@ -49,7 +49,7 @@ func (h *AuditHandler) ListEvents(c *gin.Context) {
 	params := c.Request.URL.Query()
 	items, total, limit, offset, err := h.service.List(c.Request.Context(), params)
 	if err != nil {
-		h.logger.Error("audit query failed", "error", err)
+		h.logger.ErrorContext(c.Request.Context(), "audit query failed", "error", err)
 		response.InternalError(c, h.logger, "audit query failed", err)
 		return
 	}

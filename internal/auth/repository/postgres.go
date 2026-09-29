@@ -9,18 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/auth/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/database"
 )
-
-// Session is an active refresh session row.
-type Session struct {
-	ID         int64
-	UserID     int64
-	TokenHash  string
-	CreatedAt  time.Time
-	ExpiresAt  time.Time
-	RevokedAt  *time.Time
-	ReplacedBy int64
-}
 
 // AuthRepository persists refresh sessions (rotation/revocation, AD-06).
 type AuthRepository struct {
@@ -32,20 +22,26 @@ func NewAuthRepository(pool *pgxpool.Pool) *AuthRepository {
 	return &AuthRepository{db: sqlc.New(pool)}
 }
 
-func (r *AuthRepository) FindSessionByHash(ctx context.Context, tokenHash string) (Session, error) {
-	row, err := r.db.FindSessionByHash(ctx, tokenHash)
-	if err != nil {
-		return Session{}, err
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *AuthRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
 	}
-	return toSession(
-		row.ID,
-		row.UserID,
-		row.TokenHash,
-		row.CreatedAt,
-		row.ExpiresAt,
-		row.RevokedAt,
-		row.ReplacedBy,
-	), nil
+	return r.db
+}
+
+func (r *AuthRepository) FindSessionByHash(ctx context.Context, tokenHash string) (sqlc.FindSessionByHashRow, error) {
+	return r.q(ctx).FindSessionByHash(ctx, tokenHash)
+}
+
+// FindSessionByReplacedBy returns the session that replaced the given one —
+// the next link of the rotation chain used for benign-reuse detection.
+func (r *AuthRepository) FindSessionByReplacedBy(
+	ctx context.Context,
+	id int64,
+) (sqlc.FindSessionByReplacedByRow, error) {
+	return r.q(ctx).FindSessionByReplacedBy(ctx, id)
 }
 
 func (r *AuthRepository) CreateSession(
@@ -53,59 +49,24 @@ func (r *AuthRepository) CreateSession(
 	userID int64,
 	tokenHash string,
 	expiresAt time.Time,
-) (Session, error) {
-	row, err := r.db.CreateSession(ctx, sqlc.CreateSessionParams{
+	replacedBy pgtype.Int8,
+) (sqlc.CreateSessionRow, error) {
+	return r.q(ctx).CreateSession(ctx, sqlc.CreateSessionParams{
 		UserID:     userID,
 		TokenHash:  tokenHash,
 		ExpiresAt:  expiresAt,
-		ReplacedBy: pgtype.Int8{}, // the replaced_by chain is not filled (reuse detection is based on revoked_at)
+		ReplacedBy: replacedBy, // nil for fresh logins; the rotated-away session id on rotation
 	})
-	if err != nil {
-		return Session{}, err
-	}
-	return toSession(
-		row.ID,
-		row.UserID,
-		row.TokenHash,
-		row.CreatedAt,
-		row.ExpiresAt,
-		row.RevokedAt,
-		row.ReplacedBy,
-	), nil
 }
 
 func (r *AuthRepository) RevokeSession(ctx context.Context, id int64) error {
-	return r.db.RevokeSession(ctx, id)
+	return r.q(ctx).RevokeSession(ctx, id)
 }
 
 func (r *AuthRepository) RevokeAllUserSessions(ctx context.Context, userID int64) error {
-	return r.db.RevokeAllUserSessions(ctx, userID)
+	return r.q(ctx).RevokeAllUserSessions(ctx, userID)
 }
 
 func (r *AuthRepository) DeleteExpiredSessions(ctx context.Context, olderThan time.Time) error {
-	return r.db.DeleteExpiredSessions(ctx, olderThan)
-}
-
-func toSession(
-	id int64,
-	userID int64,
-	tokenHash string,
-	createdAt time.Time,
-	expiresAt time.Time,
-	revokedAt **time.Time,
-	replacedBy int64,
-) Session {
-	var revoked *time.Time
-	if revokedAt != nil && *revokedAt != nil {
-		revoked = *revokedAt
-	}
-	return Session{
-		ID:         id,
-		UserID:     userID,
-		TokenHash:  tokenHash,
-		CreatedAt:  createdAt,
-		ExpiresAt:  expiresAt,
-		RevokedAt:  revoked,
-		ReplacedBy: replacedBy,
-	}
+	return r.q(ctx).DeleteExpiredSessions(ctx, olderThan)
 }

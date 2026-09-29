@@ -23,6 +23,9 @@ import (
 	taskDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task/delivery"
 	taskRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository"
 	taskService "github.com/Koshsky/erp-backend/internal/project_mgmt/task/service"
+	depDelivery "github.com/Koshsky/erp-backend/internal/project_mgmt/task_dependency/delivery"
+	depRepo "github.com/Koshsky/erp-backend/internal/project_mgmt/task_dependency/repository"
+	depService "github.com/Koshsky/erp-backend/internal/project_mgmt/task_dependency/service"
 )
 
 // ProviderSet aggregates the project management module's dependencies.
@@ -40,6 +43,13 @@ var ProviderSet = wire.NewSet(
 	taskRepo.NewTaskRepository,
 	taskService.NewTaskService,
 	taskDelivery.NewTaskHandler,
+
+	depRepo.NewTaskDependencyRepository,
+	depService.NewTaskDependencyService,
+	depDelivery.NewTaskDependencyHandler,
+	// The task service validates date changes against the dependency links
+	// (implemented by the task_dependency service).
+	wire.Bind(new(taskService.ConstraintSource), new(*depService.TaskDependencyService)),
 
 	commentRepo.NewCommentRepository,
 	commentService.NewCommentService,
@@ -64,6 +74,7 @@ type Module struct {
 	milestone  *milestoneDelivery.MilestoneHandler
 	assignment *delivery.AssignmentHandler
 	comment    *commentDelivery.CommentHandler
+	dependency *depDelivery.TaskDependencyHandler
 }
 
 // ProvideModule builds the project management module.
@@ -74,6 +85,7 @@ func ProvideModule(
 	milestone *milestoneDelivery.MilestoneHandler,
 	assignment *delivery.AssignmentHandler,
 	comment *commentDelivery.CommentHandler,
+	dependency *depDelivery.TaskDependencyHandler,
 ) Module {
 	return Module{
 		task:       task,
@@ -82,6 +94,7 @@ func ProvideModule(
 		milestone:  milestone,
 		assignment: assignment,
 		comment:    comment,
+		dependency: dependency,
 	}
 }
 
@@ -97,4 +110,5 @@ func (m Module) RegisterProtectedRoutes(r *gin.RouterGroup) {
 	m.milestone.RegisterRoutes(r)
 	m.assignment.RegisterRoutes(r)
 	m.comment.RegisterRoutes(r)
+	m.dependency.RegisterRoutes(r)
 }

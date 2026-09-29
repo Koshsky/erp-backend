@@ -4,7 +4,7 @@
 -- code (repository) via FindAssignmentByKey.
 INSERT INTO assignments (task_id, resource_id, quantity)
 VALUES (@task_id, @resource_id, @quantity::bigint)
-ON CONFLICT (task_id, resource_id) WHERE deleted_at IS NULL
+ON CONFLICT (task_id, resource_id)
 DO NOTHING
 RETURNING *;
 
@@ -13,25 +13,23 @@ SELECT *
 FROM assignments
 WHERE task_id = @task_id::bigint
 	AND resource_id = @resource_id::bigint
-	AND deleted_at IS NULL
 LIMIT 1;
 
 -- name: FindAssignment :one
 SELECT *
 FROM assignments
-WHERE id = @assignment_id
-	AND deleted_at IS NULL;
+WHERE id = @assignment_id;
 -- name: ListAssigments :many
 SELECT a.*
 FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE a.deleted_at IS NULL
-  AND (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+WHERE (
+    @sc_all::boolean OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY a.id ASC
@@ -43,11 +41,11 @@ FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE a.deleted_at IS NULL
-  AND (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+WHERE (
+    @sc_all::boolean OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
@@ -59,14 +57,11 @@ SET
 	quantity = @quantity::bigint,
 	updated_at = NOW()
 WHERE id = @assignment_id
-	AND deleted_at IS NULL
 RETURNING *;
 
 -- name: DeleteAssignment :exec
-UPDATE assignments
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = @assignment_id
-	AND deleted_at IS NULL;
+DELETE FROM assignments
+WHERE id = @assignment_id;
 
 -- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
@@ -76,8 +71,4 @@ FROM assignments a
 JOIN tasks t ON t.id = a.task_id
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE a.id = @id::bigint
-	AND a.deleted_at IS NULL
-	AND t.deleted_at IS NULL
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL;
+WHERE a.id = @id::bigint;

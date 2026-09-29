@@ -8,6 +8,10 @@ tmp_dir = "tmp"
   exclude_dir = ["migrations", "vendor", "build", "tmp"]
   send_interrupt = true
   kill_delay = 3
+  # Poll instead of fsnotify: file events do not fire on some filesystems
+  # (WSL/overlayfs/network mounts), leaving air blind to edits.
+  poll = true
+  poll_interval = 500
 
 [log]
   time = true

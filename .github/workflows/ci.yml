@@ -1,7 +1,9 @@
 # CI for erp-backend.
-# The "CI / Branch policy" check is the required status check for main/staging/dev
-# (see scripts/branch-protection/ in erp-infra). Lint and tests are optional
-# checks; they can be added to the required set later if desired.
+# Checks: branch policy, build + vet + unit tests, golangci-lint.
+# The "CI / Branch policy" check is the required status check for
+# main/staging/dev (see scripts/branch-protection/ in erp-infra); the rest
+# are gating checks that should be added to the required set in the
+# repository settings.
 name: CI
 
 on:
@@ -57,6 +59,7 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: go build ./...
+      - run: go vet ./...
       - run: go test ./...
 
   lint:
@@ -70,4 +73,4 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.12.2
+          version: v2.13.2

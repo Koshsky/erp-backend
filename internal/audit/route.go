@@ -7,6 +7,7 @@ const (
 	entProcess        = "process"
 	entTask           = "task"
 	entComment        = "comment"
+	entTaskDependency = "task_dependency"
 	entMilestone      = "milestone"
 	entAssignment     = "assignment"
 	entResource       = "resource"
@@ -77,6 +78,11 @@ var routeClasses = map[string]routeClass{
 	// ---- comments (nested under /task/:id/comments) ----
 	"POST /api/v1/task/:id/comments":               {entity: entComment, action: actCreate, idParam: "id"},
 	"DELETE /api/v1/task/:id/comments/:comment_id": {entity: entComment, action: actDelete, idParam: "comment_id"},
+
+	// ---- task dependencies (nested under /task/:id/dependencies) ----
+	"POST /api/v1/task/:id/dependencies":           {entity: entTaskDependency, action: actCreate, idParam: "id"},
+	"PUT /api/v1/task/:id/dependencies/:dep_id":    {entity: entTaskDependency, action: actUpdate, idParam: "dep_id"},
+	"DELETE /api/v1/task/:id/dependencies/:dep_id": {entity: entTaskDependency, action: actDelete, idParam: "dep_id"},
 
 	// ---- milestones ----
 	"POST /api/v1/milestone":       {entity: entMilestone, action: actCreate},

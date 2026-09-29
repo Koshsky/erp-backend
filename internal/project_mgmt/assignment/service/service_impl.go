@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -26,7 +28,7 @@ func NewAssignmentService(
 	r *repo.AssignmentRepository,
 ) *AssignmentService {
 	return &AssignmentService{
-		logger:     logger,
+		logger:     logger.With("component", "assignment_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewAssignmentMapper(),
@@ -41,12 +43,11 @@ func (s *AssignmentService) CreateAssignment(
 	ctx, end := s.tracer.Start(ctx, "assignment.CreateAssignment")
 	defer end(nil)
 
-	assignment := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateAssignment(&assignment); err != nil {
+	if err := s.validator.ValidateAssignment(req.TaskID, req.ResourceID, req.Quantity); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateAssignment(ctx, assignment)
+	created, err := s.repository.CreateAssignment(ctx, req.TaskID, req.ResourceID, req.Quantity)
 	if err != nil {
 		return nil, err
 	}
@@ -84,12 +85,21 @@ func (s *AssignmentService) UpdateAssignment(
 		return nil, errors.ErrAssignmentNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(assignment, req)
-	if err = s.validator.ValidateAssignment(assignment); err != nil {
+	if req.TaskID != nil {
+		assignment.TaskID = *req.TaskID
+	}
+	if req.ResourceID != nil {
+		assignment.ResourceID = *req.ResourceID
+	}
+	quantity := int(assignment.Quantity)
+	if req.Quantity != nil {
+		quantity = *req.Quantity
+	}
+	if err = s.validator.ValidateAssignment(assignment.TaskID, assignment.ResourceID, quantity); err != nil {
 		return nil, err
 	}
 
-	updated, err := s.repository.UpdateAssignment(ctx, *assignment)
+	updated, err := s.repository.UpdateAssignment(ctx, *assignment, quantity)
 	if err != nil {
 		return nil, err
 	}
@@ -118,18 +128,18 @@ func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) erro
 func (s *AssignmentService) ListAssignments(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.AssignmentResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "assignment.ListAssignments")
 	defer end(nil)
 
-	rows, err := s.repository.ListAssignments(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListAssignments(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountAssignments(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountAssignments(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -7,10 +7,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Koshsky/erp-backend/internal/planning/dto"
+	"github.com/Koshsky/erp-backend/internal/database"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
-	nullable "github.com/Koshsky/erp-backend/pkg/database"
-	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 type PlanningRepository struct {
@@ -21,171 +20,112 @@ type PlanningRepository struct {
 // NewPlanningRepository builds the PlanningRepository repository.
 func NewPlanningRepository(logger *slog.Logger, pool *pgxpool.Pool) *PlanningRepository {
 	return &PlanningRepository{
-		logger: logger,
+		logger: logger.With("component", "planning_repository"),
 		db:     sqlc.New(pool),
 	}
 }
 
-func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, viewScope string) ([]dto.Project, error) {
-	rows, err := r.db.ListProjects(ctx, sqlc.ListProjectsParams{
-		UserID:    userID,
-		ScopeView: viewScope,
-	})
-	if err != nil {
-		return nil, err
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *PlanningRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
 	}
-	projetcs := make([]dto.Project, len(rows))
-	for i, row := range rows {
-		projetcs[i] = dto.Project{
-			ID:        row.ID,
-			OwnerID:   nullable.Int64Ptr(row.OwnerID),
-			Code:      row.Code,
-			Color:     nullable.StringPtr(row.Color),
-			StartDate: date.From(row.StartDate),
-			EndDate:   date.From(row.EndDate),
-			Priority:  int(row.Priority),
-		}
-	}
+	return r.db
+}
 
-	return projetcs, nil
+func (r *PlanningRepository) ListProjects(
+	ctx context.Context,
+	userID int64,
+	scope rbac.ListScope,
+) ([]sqlc.Project, error) {
+	return r.q(ctx).ListProjects(ctx, sqlc.ListProjectsParams{
+		UserID: userID,
+		ScAll:  scope.All,
+		ScSelf: scope.Self,
+		ScDown: scope.Down,
+		ScNone: scope.None,
+	})
 }
 
 // ListProjectsByIDs returns full project rows by ids (for attaching parent
-// context to process-scoped aggregates: /planning/processes).
-func (r *PlanningRepository) ListProjectsByIDs(ctx context.Context, ids []int64) ([]dto.Project, error) {
-	rows, err := r.db.ListProjectsByIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-	projects := make([]dto.Project, len(rows))
-	for i, row := range rows {
-		projects[i] = dto.Project{
-			ID:        row.ID,
-			OwnerID:   nullable.Int64Ptr(row.OwnerID),
-			Code:      row.Code,
-			Color:     nullable.StringPtr(row.Color),
-			StartDate: date.From(row.StartDate),
-			EndDate:   date.From(row.EndDate),
-			Priority:  int(row.Priority),
-		}
-	}
-	return projects, nil
+// context to process-scoped aggregates: /planning/processes), scoped by the
+// caller's project view zone. An empty zone (no project view rule) includes
+// every requested project: reference rows must not hide the visible processes.
+func (r *PlanningRepository) ListProjectsByIDs(
+	ctx context.Context,
+	ids []int64,
+	userID int64,
+	scope rbac.ListScope,
+) ([]sqlc.Project, error) {
+	return r.q(ctx).ListProjectsByIDs(ctx, sqlc.ListProjectsByIDsParams{
+		Ids:    ids,
+		UserID: userID,
+		ScAll:  scope.All,
+		ScSelf: scope.Self,
+		ScDown: scope.Down,
+		ScNone: scope.None,
+	})
 }
 
 // ListProcesses — process-scoped list (process.view matrix).
-func (r *PlanningRepository) ListProcesses(ctx context.Context, userID int64, viewScope string) ([]dto.Process, error) {
-	rows, err := r.db.ListProcesses(ctx, sqlc.ListProcessesParams{
-		UserID:    userID,
-		ScopeView: viewScope,
+func (r *PlanningRepository) ListProcesses(
+	ctx context.Context,
+	userID int64,
+	scope rbac.ListScope,
+) ([]sqlc.ListProcessesRow, error) {
+	return r.q(ctx).ListProcesses(ctx, sqlc.ListProcessesParams{
+		UserID:     userID,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScSib:      scope.Sib,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
 	})
-	if err != nil {
-		return nil, err
-	}
-	processes := make([]dto.Process, len(rows))
-	for i, row := range rows {
-		processes[i] = dto.Process{
-			ID:          row.Process.ID,
-			Title:       row.Process.Title,
-			Color:       nullable.StringPtr(row.Process.Color),
-			OwnerID:     nullable.Int64Ptr(row.Process.OwnerID),
-			ProjectID:   row.Process.ProjectID,
-			ProjectCode: row.ProjectCode,
-			StartDate:   date.From(row.Process.StartDate),
-			EndDate:     date.From(row.Process.EndDate),
-			Order:       int(row.Process.SortOrder),
-		}
-	}
-	return processes, nil
 }
 
-func (r *PlanningRepository) ListProcessesByProjectIDs(
+// ListProcessesByTaskScope — process-scoped list for the TASK planning
+// aggregate. The scope comes from the task matrix: 'parent' means "in my
+// processes" (p.owner_id) rather than "in my projects" (pr.owner_id), so a
+// process owner (vp) sees their processes in the task diagram.
+func (r *PlanningRepository) ListProcessesByTaskScope(
 	ctx context.Context,
-	projectIDs []int64,
-) (map[int64][]dto.Process, error) {
-	rows, err := r.db.ListProcessesByProjectIDs(ctx, projectIDs)
-	if err != nil {
-		return nil, err
-	}
-	processes := make([]dto.Process, len(rows))
-	for i, row := range rows {
-		processes[i] = dto.Process{
-			ID:        row.ID,
-			Title:     row.Title,
-			Color:     nullable.StringPtr(row.Color),
-			OwnerID:   nullable.Int64Ptr(row.OwnerID),
-			ProjectID: row.ProjectID,
-			StartDate: date.From(row.StartDate),
-			EndDate:   date.From(row.EndDate),
-			Order:     int(row.SortOrder),
-		}
-	}
-	return groupByKey(processes, func(p dto.Process) int64 { return p.ProjectID }), nil
+	userID int64,
+	scope rbac.ListScope,
+) ([]sqlc.ListProcessesByTaskScopeRow, error) {
+	return r.q(ctx).ListProcessesByTaskScope(ctx, sqlc.ListProcessesByTaskScopeParams{
+		UserID:     userID,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScSib:      scope.Sib,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
+	})
 }
 
 func (r *PlanningRepository) ListTasksByProcessIDs(
 	ctx context.Context,
 	processIDs []int64,
-) (map[int64][]dto.Task, error) {
-	rows, err := r.db.ListTasksByProcessIDs(ctx, processIDs)
-	if err != nil {
-		return nil, err
-	}
-	tasks := make([]dto.Task, len(rows))
-	for i, row := range rows {
-		tasks[i] = dto.Task{
-			ID:        row.ID,
-			ProcessID: row.ProcessID,
-			OwnerID:   nullable.Int64Ptr(row.OwnerID),
-			Title:     row.Title,
-			Color:     nullable.StringPtr(row.Color),
-			StartDate: date.From(row.StartDate),
-			EndDate:   date.From(row.EndDate),
-			Order:     int(row.SortOrder),
-		}
-	}
-	return groupByKey(tasks, func(t dto.Task) int64 { return t.ProcessID }), nil
+) ([]sqlc.Task, error) {
+	return r.q(ctx).ListTasksByProcessIDs(ctx, processIDs)
 }
 
 func (r *PlanningRepository) ListMilestonesByProcessIDs(
 	ctx context.Context,
 	processIDs []int64,
-) (map[int64][]dto.Milestone, error) {
-	rows, err := r.db.ListMilestonesByProcessIDs(ctx, processIDs)
-	if err != nil {
-		return nil, err
-	}
-	milestones := make([]dto.Milestone, len(rows))
-	for i, row := range rows {
-		milestones[i] = dto.Milestone{
-			ID:        row.ID,
-			ProcessID: row.ProcessID,
-			Title:     row.Title,
-			Content:   row.Content,
-			Color:     nullable.StringPtr(row.Color),
-			Date:      date.From(row.Date),
-		}
-	}
-	return groupByKey(milestones, func(m dto.Milestone) int64 { return m.ProcessID }), nil
+) ([]sqlc.Milestone, error) {
+	return r.q(ctx).ListMilestonesByProcessIDs(ctx, processIDs)
 }
 
 func (r *PlanningRepository) ListAssignmentsByTaskIDs(
 	ctx context.Context,
 	taskIDs []int64,
-) (map[int64][]dto.Assignment, error) {
-	rows, err := r.db.ListAssignmentsByTaskIDs(ctx, taskIDs)
-	if err != nil {
-		return nil, err
-	}
-	assignments := make([]dto.Assignment, len(rows))
-	for i, row := range rows {
-		assignments[i] = dto.Assignment{
-			ID:         row.ID,
-			TaskID:     row.TaskID,
-			ResourceID: row.ResourceID,
-			Quantity:   int(row.Quantity),
-		}
-	}
-	return groupByKey(assignments, func(a dto.Assignment) int64 { return a.TaskID }), nil
+) ([]sqlc.Assignment, error) {
+	return r.q(ctx).ListAssignmentsByTaskIDs(ctx, taskIDs)
 }
 
 // ListTaskCommentCountsByTaskIDs returns the number of active comments per task.
@@ -193,7 +133,7 @@ func (r *PlanningRepository) ListTaskCommentCountsByTaskIDs(
 	ctx context.Context,
 	taskIDs []int64,
 ) (map[int64]int64, error) {
-	rows, err := r.db.ListTaskCommentCountsByTaskIDs(ctx, taskIDs)
+	rows, err := r.q(ctx).ListTaskCommentCountsByTaskIDs(ctx, taskIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -204,33 +144,26 @@ func (r *PlanningRepository) ListTaskCommentCountsByTaskIDs(
 	return counts, nil
 }
 
-// groupByKey groups items by the key returned by the key function.
-func groupByKey[T any](items []T, key func(T) int64) map[int64][]T {
-	result := make(map[int64][]T)
-	for _, item := range items {
-		k := key(item)
-		if _, ok := result[k]; !ok {
-			result[k] = make([]T, 0)
-		}
-		result[k] = append(result[k], item)
-	}
-	return result
+// ListTaskDependenciesByProcessIDs returns the scheduling links between tasks
+// of the given processes (the planning read model for the task diagram).
+func (r *PlanningRepository) ListTaskDependenciesByProcessIDs(
+	ctx context.Context,
+	processIDs []int64,
+) ([]sqlc.ListTaskDependenciesByProcessIDsRow, error) {
+	return r.q(ctx).ListTaskDependenciesByProcessIDs(ctx, processIDs)
 }
 
-func (r *PlanningRepository) ListResources(ctx context.Context) ([]dto.Resource, error) {
-	rows, err := r.db.ListResources(ctx)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]dto.Resource, 0, len(rows))
-	for _, row := range rows {
-		r := dto.Resource{
-			ID:    row.ID,
-			Title: row.Title,
-			Code:  row.Code,
-			Color: nullable.StringPtr(row.Color),
-		}
-		result = append(result, r)
-	}
-	return result, nil
+// ListResources returns resources within the caller's resource view zone; an
+// empty zone (no resource view rule) includes all rows (reference fallback).
+func (r *PlanningRepository) ListResources(
+	ctx context.Context,
+	userID int64,
+	scope rbac.ListScope,
+) ([]sqlc.Resource, error) {
+	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
+		UserID: userID,
+		ScAll:  scope.All,
+		ScSelf: scope.Self,
+		ScNone: scope.None,
+	})
 }

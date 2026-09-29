@@ -5,16 +5,15 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/timesheet/resource/domain"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
+	"github.com/Koshsky/erp-backend/pkg/date"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -26,17 +25,31 @@ type ResourceRepository struct {
 // NewResourceRepository builds the ResourceRepository repository.
 func NewResourceRepository(logger *slog.Logger, pool *pgxpool.Pool) *ResourceRepository {
 	return &ResourceRepository{
-		logger: logger,
+		logger: logger.With("component", "resource_repository"),
 		db:     sqlc.New(pool),
 	}
 }
 
-func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
-	row, err := r.db.CreateResource(ctx, sqlc.CreateResourceParams{
-		Title:   resource.Title,
-		Code:    resource.Code,
-		Color:   nullable.ToString(resource.Color),
-		OwnerID: ownerIDValue(resource.OwnerID),
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *ResourceRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
+func (r *ResourceRepository) CreateResource(
+	ctx context.Context,
+	code, title string,
+	color *string,
+	ownerID *int64,
+) (*sqlc.ListResourcesRow, error) {
+	row, err := r.q(ctx).CreateResource(ctx, sqlc.CreateResourceParams{
+		Title:   title,
+		Code:    code,
+		Color:   nullable.ToString(color),
+		OwnerID: ownerIDValue(ownerID),
 	})
 	if err != nil {
 		// Idempotent create: the active code already exists (ON CONFLICT
@@ -50,29 +63,29 @@ func (r *ResourceRepository) CreateResource(ctx context.Context, resource domain
 	return r.withEmployeesCount(ctx, row)
 }
 
-func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*domain.Resource, error) {
-	row, err := r.db.FindResource(ctx, id)
+func (r *ResourceRepository) FindResource(ctx context.Context, id int64) (*sqlc.ListResourcesRow, error) {
+	row, err := r.q(ctx).FindResource(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &domain.Resource{
-		ID:             row.ID,
-		Title:          row.Title,
-		Code:           row.Code,
-		Color:          nullable.StringPtr(row.Color),
-		OwnerID:        &row.OwnerID,
-		EmployeesCount: int(row.EmployeesCount),
-	}, nil
+	converted := sqlc.ListResourcesRow(row)
+	return &converted, nil
 }
 
-func (r *ResourceRepository) UpdateResource(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
-	row, err := r.db.UpdateResource(ctx, sqlc.UpdateResourceParams{
-		ResourceID: resource.ID,
-		Title:      resource.Title,
-		Code:       resource.Code,
-		Color:      nullable.ToString(resource.Color),
-		OwnerID:    ownerIDValue(resource.OwnerID),
+func (r *ResourceRepository) UpdateResource(
+	ctx context.Context,
+	id int64,
+	code, title string,
+	color *string,
+	ownerID *int64,
+) (*sqlc.ListResourcesRow, error) {
+	row, err := r.q(ctx).UpdateResource(ctx, sqlc.UpdateResourceParams{
+		ResourceID: id,
+		Title:      title,
+		Code:       code,
+		Color:      nullable.ToString(color),
+		OwnerID:    ownerIDValue(ownerID),
 	})
 	if err != nil {
 		return nil, err
@@ -82,91 +95,80 @@ func (r *ResourceRepository) UpdateResource(ctx context.Context, resource domain
 }
 
 func (r *ResourceRepository) DeleteResource(ctx context.Context, id int64) error {
-	return r.db.DeleteResource(ctx, id)
+	return r.q(ctx).DeleteResource(ctx, id)
 }
 
 func (r *ResourceRepository) ListResources(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Resource, error) {
-	rows, err := r.db.ListResources(ctx, sqlc.ListResourcesParams{
-		ScopeView:  viewScope,
+) ([]sqlc.ListResourcesRow, error) {
+	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
+		ScNone:     scope.None,
 		UserID:     userID,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	resources := make([]domain.Resource, 0, len(rows))
-	for _, row := range rows {
-		resources = append(resources, domain.Resource{
-			ID:             row.ID,
-			Title:          row.Title,
-			Code:           row.Code,
-			Color:          nullable.StringPtr(row.Color),
-			OwnerID:        &row.OwnerID,
-			EmployeesCount: int(row.EmployeesCount),
-		})
-	}
-	return resources, nil
 }
 
 func (r *ResourceRepository) CountResources(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
-	return r.db.CountResources(
+	return r.q(ctx).CountResources(
 		ctx,
 		sqlc.CountResourcesParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:   scope.All,
+			ScSelf:  scope.Self,
+			ScNone:  scope.None,
+			UserID:  userID,
+			OwnerID: ownerID,
 		},
 	)
 }
 
-func (r *ResourceRepository) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]domain.Resource, error) {
-	rows, err := r.db.ListResourcesByOwnerID(ctx, ownerID)
+func (r *ResourceRepository) ListResourcesByOwnerID(
+	ctx context.Context,
+	ownerID int64,
+) ([]sqlc.ListResourcesRow, error) {
+	rows, err := r.q(ctx).ListResourcesByOwnerID(ctx, ownerID)
 	if err != nil {
 		return nil, err
 	}
 
-	resources := make([]domain.Resource, 0, len(rows))
-	for _, row := range rows {
-		resources = append(resources, domain.Resource{
-			ID:             row.ID,
-			Title:          row.Title,
-			Code:           row.Code,
-			Color:          nullable.StringPtr(row.Color),
-			OwnerID:        &row.OwnerID,
-			EmployeesCount: int(row.EmployeesCount),
-		})
+	resources := make([]sqlc.ListResourcesRow, len(rows))
+	for i, row := range rows {
+		resources[i] = sqlc.ListResourcesRow(row)
 	}
 	return resources, nil
 }
 
-// withEmployeesCount enriches the resource model with the members count.
-func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Resource) (*domain.Resource, error) {
-	count, err := r.db.CountMembersByResourceID(ctx, row.ID)
+// withEmployeesCount enriches the resource row with the members count.
+func (r *ResourceRepository) withEmployeesCount(
+	ctx context.Context,
+	row sqlc.Resource,
+) (*sqlc.ListResourcesRow, error) {
+	count, err := r.q(ctx).CountMembersByResourceID(ctx, row.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &domain.Resource{
+	return &sqlc.ListResourcesRow{
 		ID:             row.ID,
-		Title:          row.Title,
 		Code:           row.Code,
-		Color:          nullable.StringPtr(row.Color),
-		OwnerID:        &row.OwnerID,
-		EmployeesCount: int(count),
+		Title:          row.Title,
+		Color:          row.Color,
+		OwnerID:        row.OwnerID,
+		EmployeesCount: count,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
 	}, nil
 }
 
@@ -174,45 +176,25 @@ func (r *ResourceRepository) withEmployeesCount(ctx context.Context, row sqlc.Re
 func (r *ResourceRepository) ListMembersByResourceID(
 	ctx context.Context,
 	resourceID int64,
-) ([]domain.ResourceMember, error) {
-	rows, err := r.db.ListMembersByResourceID(ctx, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	members := make([]domain.ResourceMember, 0, len(rows))
-	for _, row := range rows {
-		members = append(members, mapMember(row))
-	}
-	return members, nil
+) ([]sqlc.ListMembersByResourceIDRow, error) {
+	return r.q(ctx).ListMembersByResourceID(ctx, resourceID)
 }
 
 func (r *ResourceRepository) AddMember(ctx context.Context, resourceID, userID int64) error {
-	return r.db.AddMember(ctx, sqlc.AddMemberParams{ResourceID: resourceID, UserID: userID})
+	return r.q(ctx).AddMember(ctx, sqlc.AddMemberParams{ResourceID: resourceID, UserID: userID})
 }
 
 func (r *ResourceRepository) RemoveMember(ctx context.Context, resourceID, userID int64) error {
-	return r.db.RemoveMember(ctx, sqlc.RemoveMemberParams{ResourceID: resourceID, UserID: userID})
+	return r.q(ctx).RemoveMember(ctx, sqlc.RemoveMemberParams{ResourceID: resourceID, UserID: userID})
 }
 
 // FindUserManager returns the manager id of a user (nil — no manager).
 func (r *ResourceRepository) FindUserManager(ctx context.Context, userID int64) (*int64, error) {
-	managerID, err := r.db.FindUserManager(ctx, userID)
+	managerID, err := r.q(ctx).FindUserManager(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	return nullable.Int64Ptr(managerID), nil
-}
-
-func mapMember(row sqlc.ListMembersByResourceIDRow) domain.ResourceMember {
-	return domain.ResourceMember{
-		ID:              row.ID,
-		Name:            row.Name,
-		Preset:          nullable.StringPtr(row.Preset),
-		Position:        row.Position,
-		ManagerID:       nullable.Int64Ptr(row.ManagerID),
-		HireDate:        fromDate(row.HireDate),
-		TerminationDate: fromDate(row.TerminationDate),
-	}
 }
 
 // ListAbsence returns the absence ranges (is_available=false states) of the
@@ -220,38 +202,13 @@ func mapMember(row sqlc.ListMembersByResourceIDRow) domain.ResourceMember {
 func (r *ResourceRepository) ListAbsence(
 	ctx context.Context,
 	resourceID int64,
-	start, end time.Time,
-) ([]domain.ResourceAbsence, error) {
-	rows, err := r.db.ListResourceAbsence(ctx, sqlc.ListResourceAbsenceParams{
+	start, end date.Date,
+) ([]sqlc.ListResourceAbsenceRow, error) {
+	return r.q(ctx).ListResourceAbsence(ctx, sqlc.ListResourceAbsenceParams{
 		ResourceID: resourceID,
 		StartDate:  start,
 		EndDate:    end,
 	})
-	if err != nil {
-		return nil, err
-	}
-	absences := make([]domain.ResourceAbsence, 0, len(rows))
-	for _, row := range rows {
-		absences = append(absences, domain.ResourceAbsence{
-			UserID:    row.UserID,
-			UserName:  row.UserName,
-			StateID:   row.StateID,
-			StateCode: row.StateCode,
-			StateName: row.StateName,
-			StartDate: row.StartDate,
-			EndDate:   row.EndDate,
-		})
-	}
-	return absences, nil
-}
-
-// fromDate unwraps a nullable date (pgtype.Date) into [time.Time].
-func fromDate(v pgtype.Date) *time.Time {
-	if !v.Valid {
-		return nil
-	}
-	t := v.Time
-	return &t
 }
 
 // ownerIDValue unwraps a nullable owner into a required value.
@@ -264,7 +221,7 @@ func ownerIDValue(v *int64) int64 {
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).
 func (r *ResourceRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	owner, err := r.db.OwnerChain(ctx, id)
+	owner, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}

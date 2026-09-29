@@ -39,3 +39,4 @@ migrations/seed/*.sql
 
 # Local code review (not stored in the repo)
 CODE_REVIEW.md
+BACKEND_ISSUES.md

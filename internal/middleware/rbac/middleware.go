@@ -152,7 +152,7 @@ func (m *Middleware) Check(name string) gin.HandlerFunc {
 		policy, ok := (*byName)[name]
 		if !ok {
 			if m.logger != nil {
-				m.logger.Error("rbac: policy not found", "policy", name)
+				m.logger.ErrorContext(ctx, "rbac: policy not found", "policy", name)
 			}
 			response.Error(c, m.logger, errors.ErrForbidden)
 			c.Abort()

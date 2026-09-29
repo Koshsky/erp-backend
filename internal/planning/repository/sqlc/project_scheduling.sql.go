@@ -10,9 +10,8 @@ import (
 )
 
 const listAssignmentsByTaskIDs = `-- name: ListAssignmentsByTaskIDs :many
-SELECT id, task_id, resource_id, quantity, created_at, updated_at, deleted_at FROM assignments
+SELECT id, task_id, resource_id, quantity, created_at, updated_at FROM assignments
 WHERE task_id = ANY($1::bigint[])
-AND deleted_at IS NULL
 ORDER BY id ASC
 `
 
@@ -32,7 +31,6 @@ func (q *Queries) ListAssignmentsByTaskIDs(ctx context.Context, taskIds []int64)
 			&i.Quantity,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -45,9 +43,8 @@ func (q *Queries) ListAssignmentsByTaskIDs(ctx context.Context, taskIds []int64)
 }
 
 const listMilestonesByProcessIDs = `-- name: ListMilestonesByProcessIDs :many
-SELECT id, process_id, title, content, color, date, created_at, updated_at, deleted_at FROM milestones
+SELECT id, process_id, title, content, color, date, created_at, updated_at FROM milestones
 WHERE process_id = ANY($1::bigint[])
-AND deleted_at IS NULL
 ORDER BY id ASC
 `
 
@@ -69,7 +66,6 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 			&i.Date,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -82,21 +78,34 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 }
 
 const listProcesses = `-- name: ListProcesses :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.deleted_at, pr.code AS project_code
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, pr.code AS project_code
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE p.deleted_at IS NULL
-AND (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
-    ($1::text = 'own' AND p.owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND pr.owner_id = $3::bigint) OR
+    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
 )
 `
 
 type ListProcessesParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
 }
 
 type ListProcessesRow struct {
@@ -105,7 +114,16 @@ type ListProcessesRow struct {
 }
 
 func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([]ListProcessesRow, error) {
-	rows, err := q.db.Query(ctx, listProcesses, arg.ScopeView, arg.UserID)
+	rows, err := q.db.Query(ctx, listProcesses,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +142,6 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 			&i.Process.SortOrder,
 			&i.Process.CreatedAt,
 			&i.Process.UpdatedAt,
-			&i.Process.DeletedAt,
 			&i.ProjectCode,
 		); err != nil {
 			return nil, err
@@ -138,9 +155,8 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 }
 
 const listProcessesByProjectIDs = `-- name: ListProcessesByProjectIDs :many
-SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM processes
+SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at FROM processes
 WHERE project_id = ANY($1::bigint[])
-AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC
 `
 
@@ -164,7 +180,91 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProcessesByTaskScope = `-- name: ListProcessesByTaskScope :many
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, pr.code AS project_code
+FROM processes p
+JOIN projects pr ON pr.id = p.project_id
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND EXISTS (
+        SELECT 1 FROM tasks t WHERE t.process_id = p.id AND t.owner_id = $3::bigint
+    )) OR
+    ($4::boolean AND p.owner_id = $3::bigint) OR
+    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
+)
+`
+
+type ListProcessesByTaskScopeParams struct {
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+}
+
+type ListProcessesByTaskScopeRow struct {
+	Process     Process `json:"process"`
+	ProjectCode string  `json:"project_code"`
+}
+
+// Processes for the TASK planning aggregate: the scope comes from the task
+// matrix, where 'parent' means "in my processes" (p.owner_id), not "in my
+// projects" (pr.owner_id) — the process list must follow the task semantics,
+// otherwise a process owner (vp) sees an empty task diagram although the
+// process view lists their processes.
+func (q *Queries) ListProcessesByTaskScope(ctx context.Context, arg ListProcessesByTaskScopeParams) ([]ListProcessesByTaskScopeRow, error) {
+	rows, err := q.db.Query(ctx, listProcessesByTaskScope,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListProcessesByTaskScopeRow{}
+	for rows.Next() {
+		var i ListProcessesByTaskScopeRow
+		if err := rows.Scan(
+			&i.Process.ID,
+			&i.Process.ProjectID,
+			&i.Process.OwnerID,
+			&i.Process.Title,
+			&i.Process.Color,
+			&i.Process.StartDate,
+			&i.Process.EndDate,
+			&i.Process.SortOrder,
+			&i.Process.CreatedAt,
+			&i.Process.UpdatedAt,
+			&i.ProjectCode,
 		); err != nil {
 			return nil, err
 		}
@@ -177,22 +277,36 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
-WHERE deleted_at IS NULL
-AND (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at FROM projects
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    ($4::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
+    )) OR
+    $5::boolean
 )
 ORDER BY priority ASC
 `
 
 type ListProjectsParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
+	ScAll  bool  `json:"sc_all"`
+	ScSelf bool  `json:"sc_self"`
+	UserID int64 `json:"user_id"`
+	ScDown bool  `json:"sc_down"`
+	ScNone bool  `json:"sc_none"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
-	rows, err := q.db.Query(ctx, listProjects, arg.ScopeView, arg.UserID)
+	rows, err := q.db.Query(ctx, listProjects,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScDown,
+		arg.ScNone,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +324,6 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -223,13 +336,44 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 }
 
 const listProjectsByIDs = `-- name: ListProjectsByIDs :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at FROM projects
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at FROM projects
 WHERE id = ANY($1::bigint[])
-AND deleted_at IS NULL
+  AND (
+    $2::boolean OR
+    ($3::boolean AND owner_id = $4::bigint) OR
+    ($5::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = $4::bigint
+    )) OR
+    $6::boolean
+  )
 `
 
-func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project, error) {
-	rows, err := q.db.Query(ctx, listProjectsByIDs, ids)
+type ListProjectsByIDsParams struct {
+	Ids    []int64 `json:"ids"`
+	ScAll  bool    `json:"sc_all"`
+	ScSelf bool    `json:"sc_self"`
+	UserID int64   `json:"user_id"`
+	ScDown bool    `json:"sc_down"`
+	ScNone bool    `json:"sc_none"`
+}
+
+// Projects attached as parent context of the caller's visible processes,
+// scoped by the caller's project view zone: the process aggregate must not
+// disclose full project rows of projects outside that zone. A caller with no
+// project view rule (empty zone — e.g. vp, which sees processes through
+// process.view=all) gets every requested parent project: reference rows with
+// no resolved zone must not hide the visible processes.
+func (q *Queries) ListProjectsByIDs(ctx context.Context, arg ListProjectsByIDsParams) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listProjectsByIDs,
+		arg.Ids,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScDown,
+		arg.ScNone,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +391,6 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -260,12 +403,33 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, ids []int64) ([]Project
 }
 
 const listResources = `-- name: ListResources :many
-SELECT id, title, code, color, owner_id, created_at, updated_at, deleted_at FROM resources
-WHERE deleted_at IS NULL
+SELECT id, title, code, color, owner_id, created_at, updated_at FROM resources
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    $4::boolean
+)
 `
 
-func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
-	rows, err := q.db.Query(ctx, listResources)
+type ListResourcesParams struct {
+	ScAll  bool  `json:"sc_all"`
+	ScSelf bool  `json:"sc_self"`
+	UserID int64 `json:"user_id"`
+	ScNone bool  `json:"sc_none"`
+}
+
+// Resources embedded into task/reference data, scoped by the caller's
+// resource view zone: a task-view holder with a resource zone must not
+// receive resource rows outside it (resource is own-scoped for vp). A caller
+// with no resource view rule (empty zone — "no rule / none") gets every row:
+// reference data must not hide the visible tasks.
+func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]Resource, error) {
+	rows, err := q.db.Query(ctx, listResources,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScNone,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +445,6 @@ func (q *Queries) ListResources(ctx context.Context) ([]Resource, error) {
 			&i.OwnerID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -297,7 +460,6 @@ const listTaskCommentCountsByTaskIDs = `-- name: ListTaskCommentCountsByTaskIDs 
 SELECT task_id, COUNT(*)::bigint AS comments_count
 FROM task_comments
 WHERE task_id = ANY($1::bigint[])
-AND deleted_at IS NULL
 GROUP BY task_id
 `
 
@@ -326,13 +488,55 @@ func (q *Queries) ListTaskCommentCountsByTaskIDs(ctx context.Context, taskIds []
 	return items, nil
 }
 
-const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
-SELECT id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at FROM tasks
-WHERE process_id = ANY($1::bigint[])
-AND deleted_at IS NULL
-ORDER BY sort_order ASC, id ASC
+const listTaskDependenciesByProcessIDs = `-- name: ListTaskDependenciesByProcessIDs :many
+SELECT td.id, td.task_id, td.depends_on_task_id, td.type, td.created_at, td.updated_at
+FROM task_dependencies td
+JOIN tasks t ON t.id = td.task_id
+WHERE t.process_id = ANY($1::bigint[])
+ORDER BY td.task_id ASC, td.id ASC
 `
 
+type ListTaskDependenciesByProcessIDsRow struct {
+	TaskDependency TaskDependency `json:"task_dependency"`
+}
+
+// Scheduling links between tasks of the given processes (both ends are
+// top-level tasks of the same process — enforced at creation).
+func (q *Queries) ListTaskDependenciesByProcessIDs(ctx context.Context, processIds []int64) ([]ListTaskDependenciesByProcessIDsRow, error) {
+	rows, err := q.db.Query(ctx, listTaskDependenciesByProcessIDs, processIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTaskDependenciesByProcessIDsRow{}
+	for rows.Next() {
+		var i ListTaskDependenciesByProcessIDsRow
+		if err := rows.Scan(
+			&i.TaskDependency.ID,
+			&i.TaskDependency.TaskID,
+			&i.TaskDependency.DependsOnTaskID,
+			&i.TaskDependency.Type,
+			&i.TaskDependency.CreatedAt,
+			&i.TaskDependency.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
+SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at FROM tasks
+WHERE process_id = ANY($1::bigint[])
+ORDER BY COALESCE(parent_id, 0), sort_order ASC, id ASC
+`
+
+// Top-level tasks (parent group 0) first in display order, then each
+// parent's subtasks in their own display order.
 func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listTasksByProcessIDs, processIds)
 	if err != nil {
@@ -345,15 +549,16 @@ func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64)
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProcessID,
+			&i.ParentID,
 			&i.OwnerID,
 			&i.Title,
 			&i.Color,
+			&i.Status,
 			&i.StartDate,
 			&i.EndDate,
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}

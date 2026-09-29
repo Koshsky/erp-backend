@@ -16,12 +16,19 @@ RETURNING *;
 SELECT p.*
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE p.deleted_at IS NULL
-  AND (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
+WHERE (
+    @sc_all::boolean OR
+    (@sc_self::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_parent::boolean AND pr.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY p.sort_order ASC, p.id ASC
@@ -31,20 +38,26 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE p.deleted_at IS NULL
-  AND (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
+WHERE (
+    @sc_all::boolean OR
+    (@sc_self::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_parent::boolean AND pr.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 
 -- name: FindProcess :one
 SELECT *
 FROM processes
-WHERE id = @id::bigint
-	AND deleted_at IS NULL;
+WHERE id = @id::bigint;
     
 
 -- name: UpdateProcess :one
@@ -57,34 +70,29 @@ SET
 	project_id = COALESCE(@project_id, project_id),
 	owner_id = COALESCE(@owner_id, owner_id),
 	updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = @process_id::bigint
+WHERE id = @process_id::bigint
 RETURNING *;
 
 -- name: DeleteProcess :exec
-UPDATE processes
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = @process_id::bigint;
+DELETE FROM processes
+WHERE id = @process_id::bigint;
 
 -- name: OwnerChain :one
 SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
        COALESCE(p.owner_id, 0)::bigint  AS process_owner
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE p.id = @id::bigint
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL;
+WHERE p.id = @id::bigint;
 
 -- name: ReorderProcessesMark :exec
 -- Phase 1 of the two-phase reorder (runs inside one transaction with
 -- ReorderProcessesApply): park every process on a temporary offset slot so the
--- follow-up write cannot transiently violate the partial unique index
+-- follow-up write cannot transiently violate the unique index
 -- (project_id, sort_order) when values swap. The caller sends the whole group.
 UPDATE processes p
 SET sort_order = x.ord + 1000000, updated_at = NOW()
 FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE p.id = x.id AND p.deleted_at IS NULL;
+WHERE p.id = x.id;
 
 -- name: ReorderProcessesApply :exec
 -- Phase 2 of the two-phase reorder: write the final positions. The group is
@@ -93,7 +101,7 @@ WHERE p.id = x.id AND p.deleted_at IS NULL;
 UPDATE processes p
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest(@ids::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE p.id = x.id AND p.deleted_at IS NULL;
+WHERE p.id = x.id;
 
 -- name: ListProcessIdsByProject :many
 -- Active process ids of a project — to validate a reorder request covers the
@@ -101,5 +109,4 @@ WHERE p.id = x.id AND p.deleted_at IS NULL;
 SELECT id
 FROM processes
 WHERE project_id = @project_id::bigint
-	AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC;

@@ -8,24 +8,22 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countAutoCreatedEntities = `-- name: CountAutoCreatedEntities :one
 SELECT
   (SELECT COUNT(*) FROM processes
-     WHERE project_id = $1::bigint AND deleted_at IS NULL) AS processes,
+     WHERE project_id = $1::bigint) AS processes,
   (SELECT COUNT(*) FROM tasks t
      JOIN processes p ON p.id = t.process_id
-     WHERE p.project_id = $1::bigint
-       AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS tasks,
+     WHERE p.project_id = $1::bigint) AS tasks,
   (SELECT COUNT(*) FROM assignments a
      JOIN tasks t ON t.id = a.task_id
      JOIN processes p ON p.id = t.process_id
-     WHERE p.project_id = $1::bigint
-       AND a.deleted_at IS NULL AND t.deleted_at IS NULL AND p.deleted_at IS NULL) AS assignments
+     WHERE p.project_id = $1::bigint) AS assignments
 `
 
 type CountAutoCreatedEntitiesRow struct {
@@ -47,22 +45,37 @@ func (q *Queries) CountAutoCreatedEntities(ctx context.Context, projectID int64)
 const countProjects = `-- name: CountProjects :one
 SELECT COUNT(*)
 FROM projects
-WHERE deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    ($4::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
+    )) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR owner_id = $6::bigint)
 `
 
 type CountProjectsParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll   bool  `json:"sc_all"`
+	ScSelf  bool  `json:"sc_self"`
+	UserID  int64 `json:"user_id"`
+	ScDown  bool  `json:"sc_down"`
+	ScNone  bool  `json:"sc_none"`
+	OwnerID int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countProjects, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countProjects,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScDown,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -78,15 +91,15 @@ VALUES (
   $5,
   $6
 )
-ON CONFLICT (code) WHERE deleted_at IS NULL
+ON CONFLICT (code)
 DO NOTHING
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 `
 
 type CreateProjectParams struct {
 	Code      string         `json:"code"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	Priority  int64          `json:"priority"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Color     sql.NullString `json:"color"`
@@ -114,16 +127,13 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteProject = `-- name: DeleteProject :exec
-UPDATE projects
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = $1::bigint
+DELETE FROM projects
+WHERE id = $1::bigint
 `
 
 func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
@@ -132,10 +142,9 @@ func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
 }
 
 const findProject = `-- name: FindProject :one
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 FROM projects
-WHERE deleted_at IS NULL
-  AND id = $1::bigint
+WHERE id = $1::bigint
 `
 
 func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, error) {
@@ -151,36 +160,46 @@ func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, er
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 FROM projects
-WHERE deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    ($4::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
+    )) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR owner_id = $6::bigint)
 ORDER BY id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $8::bigint OFFSET $7::bigint
 `
 
 type ListProjectsParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listProjects,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScDown,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,
@@ -202,7 +221,6 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -218,7 +236,6 @@ const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(owner_id, 0)::bigint AS owner_id
 FROM projects
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
@@ -238,17 +255,16 @@ SET
 	end_date = $5,
   owner_id = $6,
 	updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = $7::bigint
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, deleted_at
+WHERE id = $7::bigint
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 `
 
 type UpdateProjectParams struct {
 	Code      string         `json:"code"`
 	Color     sql.NullString `json:"color"`
 	Priority  int64          `json:"priority"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	ProjectID int64          `json:"project_id"`
 }
@@ -274,7 +290,6 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

@@ -8,36 +8,49 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*)
 FROM users
-WHERE deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND manager_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND manager_id = $3::bigint) OR
+    $4::boolean
   )
-  AND ($3::text = '' OR preset = $3::text)
-  AND ($4::bigint = 0 OR manager_id = $4::bigint)
+  AND ($5::text = '' OR preset = $5::text)
+  AND ($6::bigint = 0 OR manager_id = $6::bigint)
+  AND (
+    $7::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || $7::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || $7::text || '%' ESCAPE '\'
+  )
 `
 
 type CountUsersParams struct {
-	ScopeView    string `json:"scope_view"`
+	ScAll        bool   `json:"sc_all"`
+	ScSelf       bool   `json:"sc_self"`
 	UserID       int64  `json:"user_id"`
+	ScNone       bool   `json:"sc_none"`
 	PresetFilter string `json:"preset_filter"`
 	ManagerID    int64  `json:"manager_id"`
+	Search       string `json:"search"`
 }
 
 func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countUsers,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScNone,
 		arg.PresetFilter,
 		arg.ManagerID,
+		arg.Search,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -47,7 +60,7 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (last_name, first_name, middle_name, username, preset, password_hash, manager_id, position, hire_date, termination_date)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -91,7 +104,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -105,8 +117,8 @@ WHERE user_id = $1::bigint
 
 type DeleteOverlappingParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) DeleteOverlapping(ctx context.Context, arg DeleteOverlappingParams) error {
@@ -125,8 +137,8 @@ WHERE user_id = $1::bigint
 type DeleteOverlappingByStateParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) DeleteOverlappingByState(ctx context.Context, arg DeleteOverlappingByStateParams) error {
@@ -140,10 +152,8 @@ func (q *Queries) DeleteOverlappingByState(ctx context.Context, arg DeleteOverla
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-UPDATE users
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM users
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
@@ -152,10 +162,9 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
 WHERE id = $1
-	AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -176,16 +185,14 @@ func (q *Queries) FindUser(ctx context.Context, userID int64) (User, error) {
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const findUserByUsername = `-- name: FindUserByUsername :one
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
 WHERE username = $1
-	AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -206,7 +213,6 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -220,8 +226,8 @@ RETURNING id, user_id, state_id, start_date, end_date, created_at, updated_at
 type InsertStateRangeParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 func (q *Queries) InsertStateRange(ctx context.Context, arg InsertStateRangeParams) (UserState, error) {
@@ -273,9 +279,8 @@ func (q *Queries) InsertUserPermission(ctx context.Context, arg InsertUserPermis
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
-WHERE deleted_at IS NULL
 ORDER BY id ASC
 `
 
@@ -302,7 +307,6 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.TerminationDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -326,15 +330,15 @@ FOR UPDATE
 
 type ListOverlappingStatesParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListOverlappingStatesRow struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 	StateID   int64     `json:"state_id"`
 }
 
@@ -378,15 +382,15 @@ FOR UPDATE
 type ListOverlappingStatesByStateParams struct {
 	UserID    int64     `json:"user_id"`
 	StateID   int64     `json:"state_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListOverlappingStatesByStateRow struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 	StateID   int64     `json:"state_id"`
 }
 
@@ -435,15 +439,15 @@ ORDER BY es.start_date ASC
 
 type ListStatesByUserRangeParams struct {
 	UserID    int64     `json:"user_id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 type ListStatesByUserRangeRow struct {
 	ID          int64     `json:"id"`
 	UserID      int64     `json:"user_id"`
-	StartDate   time.Time `json:"start_date"`
-	EndDate     time.Time `json:"end_date"`
+	StartDate   date.Date `json:"start_date"`
+	EndDate     date.Date `json:"end_date"`
 	StateID     int64     `json:"state_id"`
 	StateCode   string    `json:"state_code"`
 	StateName   string    `json:"state_name"`
@@ -480,38 +484,115 @@ func (q *Queries) ListStatesByUserRange(ctx context.Context, arg ListStatesByUse
 	return items, nil
 }
 
+const listStatesByUsersRange = `-- name: ListStatesByUsersRange :many
+SELECT es.id, es.user_id, es.start_date, es.end_date, es.state_id,
+	s.code AS state_code, s.name AS state_name, s.is_available
+FROM user_states es
+JOIN states s ON s.id = es.state_id
+WHERE es.user_id = ANY($1::bigint[])
+	AND es.end_date >= $2::date
+	AND es.start_date <= $3::date
+ORDER BY es.user_id ASC, es.start_date ASC
+`
+
+type ListStatesByUsersRangeParams struct {
+	UserIds   []int64   `json:"user_ids"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
+}
+
+type ListStatesByUsersRangeRow struct {
+	ID          int64     `json:"id"`
+	UserID      int64     `json:"user_id"`
+	StartDate   date.Date `json:"start_date"`
+	EndDate     date.Date `json:"end_date"`
+	StateID     int64     `json:"state_id"`
+	StateCode   string    `json:"state_code"`
+	StateName   string    `json:"state_name"`
+	IsAvailable bool      `json:"is_available"`
+}
+
+// Batch variant of ListStatesByUserRange for a set of workers in one request
+// (no N+1 per employee). The rows of the range are ordered by user so the
+// caller can group them without sorting.
+func (q *Queries) ListStatesByUsersRange(ctx context.Context, arg ListStatesByUsersRangeParams) ([]ListStatesByUsersRangeRow, error) {
+	rows, err := q.db.Query(ctx, listStatesByUsersRange, arg.UserIds, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStatesByUsersRangeRow{}
+	for rows.Next() {
+		var i ListStatesByUsersRangeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.StateID,
+			&i.StateCode,
+			&i.StateName,
+			&i.IsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
-SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
-WHERE deleted_at IS NULL
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND manager_id = $3::bigint) OR
+    $4::boolean
+  )
   -- For non-admin: only direct subordinates (manager_id = current user);
   -- admin sees everyone. The user himself is not included here (the timesheet
   -- adds oneself on the client separately).
+  AND ($5::text = '' OR preset = $5::text)
+  AND ($6::bigint = 0 OR manager_id = $6::bigint)
+  -- Optional search: a case-insensitive substring over the composed full name
+  -- (last + first + middle) or the login; an empty pattern disables the filter.
+  -- The caller passes the pattern already lowercased and escaped (see the
+  -- normalizeSearch helper in user/service).
   AND (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND manager_id = $2::bigint)
+    $7::text = '' OR
+    LOWER(
+      last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
+    ) LIKE '%' || $7::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || $7::text || '%' ESCAPE '\'
   )
-  AND ($3::text = '' OR preset = $3::text)
-  AND ($4::bigint = 0 OR manager_id = $4::bigint)
 ORDER BY id ASC
-LIMIT $6::bigint OFFSET $5::bigint
+LIMIT $9::bigint OFFSET $8::bigint
 `
 
 type ListUsersParams struct {
-	ScopeView    string `json:"scope_view"`
+	ScAll        bool   `json:"sc_all"`
+	ScSelf       bool   `json:"sc_self"`
 	UserID       int64  `json:"user_id"`
+	ScNone       bool   `json:"sc_none"`
 	PresetFilter string `json:"preset_filter"`
 	ManagerID    int64  `json:"manager_id"`
+	Search       string `json:"search"`
 	PageOffset   int64  `json:"page_offset"`
 	PageLimit    int64  `json:"page_limit"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
 	rows, err := q.db.Query(ctx, listUsers,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScNone,
 		arg.PresetFilter,
 		arg.ManagerID,
+		arg.Search,
 		arg.PageOffset,
 		arg.PageLimit,
 	)
@@ -536,8 +617,40 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.TerminationDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUsersByIDs = `-- name: ListUsersByIDs :many
+SELECT id, manager_id
+FROM users
+WHERE id = ANY($1::bigint[])
+`
+
+type ListUsersByIDsRow struct {
+	ID        int64       `json:"id"`
+	ManagerID pgtype.Int8 `json:"manager_id"`
+}
+
+// Batch owner lookup for scope checks: the (id, manager_id) pairs of the
+// requested users in one round trip (replaces N FindUser calls per request).
+func (q *Queries) ListUsersByIDs(ctx context.Context, userIds []int64) ([]ListUsersByIDsRow, error) {
+	rows, err := q.db.Query(ctx, listUsersByIDs, userIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUsersByIDsRow{}
+	for rows.Next() {
+		var i ListUsersByIDsRow
+		if err := rows.Scan(&i.ID, &i.ManagerID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -562,7 +675,6 @@ const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(manager_id, id)::bigint AS owner_id
 FROM users
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 // Record owner: the manager, or the user himself when there is none
@@ -589,8 +701,7 @@ SET
 	termination_date = $10,
 	updated_at = NOW()
 WHERE id = $11
-	AND deleted_at IS NULL
-RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -636,7 +747,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.TerminationDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -645,7 +755,6 @@ const updateUserPassword = `-- name: UpdateUserPassword :exec
 UPDATE users
 SET password_hash = $1, updated_at = NOW()
 WHERE id = $2
-	AND deleted_at IS NULL
 `
 
 type UpdateUserPasswordParams struct {
@@ -663,7 +772,6 @@ SELECT EXISTS(
 	SELECT 1
 	FROM users
 	WHERE username = $1
-		AND deleted_at IS NULL
 )
 `
 

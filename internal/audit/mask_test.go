@@ -51,8 +51,8 @@ func TestExtractEntityID(t *testing.T) {
 		body string
 		want *int64
 	}{
-		{"data.id", `{"data":{"id":12},"error":{}}`, int64Ptr(12)},
-		{"data.user.id", `{"data":{"user":{"id":7}},"error":{}}`, int64Ptr(7)},
+		{"data.id", `{"data":{"id":12},"error":{}}`, new(int64(12))},
+		{"data.user.id", `{"data":{"user":{"id":7}},"error":{}}`, new(int64(7))},
 		{"no id", `{"data":{"code":"P-1"},"error":{}}`, nil},
 		{"bad json", `nope`, nil},
 	}
@@ -104,5 +104,3 @@ func TestClassify(t *testing.T) {
 		})
 	}
 }
-
-func int64Ptr(v int64) *int64 { return &v }

@@ -635,7 +635,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user; the refresh token goes into an HttpOnly cookie",
+                "description": "Authenticate user; the refresh token is returned both in the response body and in an HttpOnly cookie",
                 "consumes": [
                     "application/json"
                 ],
@@ -720,7 +720,10 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Revoke the refresh session and clear the cookie (idempotent)",
+                "description": "Revoke the refresh session and clear the cookie; the token is read from the body ({refresh_token}) or the HttpOnly cookie (idempotent)",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -728,6 +731,16 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Logout",
+                "parameters": [
+                    {
+                        "description": "Refresh token (optional; falls back to the HttpOnly cookie)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -758,7 +771,10 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Rotate the refresh session from the HttpOnly cookie; returns a new access token",
+                "description": "Rotate the refresh session; the token is read from the body ({refresh_token}) or the HttpOnly cookie, and a new refresh token is returned in both",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -766,6 +782,16 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Refresh Token",
+                "parameters": [
+                    {
+                        "description": "Refresh token (optional; falls back to the HttpOnly cookie)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2722,7 +2748,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/policies.KindInfo"
+                                                "$ref": "#/definitions/engine.KindInfo"
                                             }
                                         },
                                         "error": {
@@ -3082,7 +3108,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/domain.Preset"
+                                                "$ref": "#/definitions/dto.PresetView"
                                             }
                                         },
                                         "error": {
@@ -3134,7 +3160,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/domain.Preset"
+                                            "$ref": "#/definitions/dto.PresetView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -3212,7 +3238,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/domain.Preset"
+                                            "$ref": "#/definitions/dto.PresetView"
                                         },
                                         "error": {
                                             "type": "object"
@@ -4971,6 +4997,365 @@ const docTemplate = `{
                 }
             }
         },
+        "/task/{id}/dependencies": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get all dependency links of a task (the predecessors it depends on, with the link type)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "List task dependencies",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.DependencyResponse"
+                                            }
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create a scheduling link: the task (task_id) depends on depends_on_task_id with the given type (fs/ss/ff/sf)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Create task dependency",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dependency data",
+                        "name": "dependency",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateDependencyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.DependencyResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/task/{id}/dependencies/{dep_id}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Change the type of an existing dependency link (fs/ss/ff/sf)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Update task dependency",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Dependency ID",
+                        "name": "dep_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New dependency type",
+                        "name": "dependency",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateDependencyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.DependencyResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a dependency link by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Delete task dependency",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Dependency ID",
+                        "name": "dep_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/timesheet/calendar": {
             "get": {
                 "security": [
@@ -5498,6 +5883,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Case-insensitive substring of the full name or login (max 128 chars)",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Page offset",
                         "name": "offset",
@@ -5816,6 +6207,144 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/days": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Batch replacement of GET /user/{id}/days: returns the state ranges of several workers over one date range, with one entry per requested id (empty days when the worker has none) and no N+1 requests per employee.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Batch list worker days",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated user IDs (max 200)",
+                        "name": "ids",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.UserStatesResponse"
+                                            }
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/user/{id}": {
             "get": {
                 "security": [
@@ -6001,7 +6530,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Delete a user by ID (soft delete)",
+                "description": "Delete a user by ID (moves the account to the archive; 409 if the user is referenced)",
                 "produces": [
                     "application/json"
                 ],
@@ -6024,6 +6553,24 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "allOf": [
                                 {
@@ -6447,7 +6994,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Generate a new random password for a user and return it once",
+                "description": "Generate a new random password for a user (admin only; the new password is never returned)",
                 "produces": [
                     "application/json"
                 ],
@@ -6465,20 +7012,20 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.SuccessResponse"
+                                    "$ref": "#/definitions/response.ErrorResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ResetPasswordResponse"
-                                        },
-                                        "error": {
                                             "type": "object"
                                         }
                                     }
@@ -6486,8 +7033,8 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "allOf": [
                                 {
@@ -6527,20 +7074,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Preset": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.AddMemberRequest": {
             "type": "object",
             "properties": {
@@ -6706,6 +7239,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 900
                 },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "a1b2c3d4..."
+                },
                 "token_type": {
                     "type": "string",
                     "example": "Bearer"
@@ -6861,6 +7398,25 @@ const docTemplate = `{
                     "description": "Reply to another comment of the same task; empty means a root comment.",
                     "type": "integer",
                     "example": 3
+                }
+            }
+        },
+        "dto.CreateDependencyRequest": {
+            "type": "object",
+            "properties": {
+                "depends_on_task_id": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "fs",
+                        "ss",
+                        "ff",
+                        "sf"
+                    ],
+                    "example": "fs"
                 }
             }
         },
@@ -7035,6 +7591,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "parent_id": {
+                    "description": "ParentID — optional subtask (operation) link: task of the given parent.\nWhen set, process_id must point to the parent's process; dates and\nowner may be omitted and are inherited from the parent by the service.",
+                    "type": "integer",
+                    "example": 10
+                },
                 "process_id": {
                     "type": "integer",
                     "example": 1
@@ -7043,6 +7604,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "not_started"
                 },
                 "title": {
                     "type": "string",
@@ -7115,12 +7680,43 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DependencyResponse": {
+            "type": "object",
+            "properties": {
+                "depends_on_task_id": {
+                    "description": "Predecessor task of the link.",
+                    "type": "integer",
+                    "example": 10
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "task_id": {
+                    "description": "Dependent task (successor) of the link.",
+                    "type": "integer",
+                    "example": 42
+                },
+                "type": {
+                    "description": "Dependency type: fs | ss | ff | sf.",
+                    "type": "string",
+                    "example": "fs"
+                }
+            }
+        },
         "dto.DetailedProcess": {
             "type": "object",
             "properties": {
                 "color": {
                     "type": "string",
                     "example": "#0f83c4"
+                },
+                "dependencies": {
+                    "description": "Scheduling links between the tasks of the process (the successor\ntask_id depends on depends_on_task_id with the given type).",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TaskDependency"
+                    }
                 },
                 "end_date": {
                     "type": "string",
@@ -7234,13 +7830,17 @@ const docTemplate = `{
                     "example": 1
                 },
                 "order": {
-                    "description": "Order of the task within its process (ascending display order).",
+                    "description": "Order of the task within its parent group (ascending display order):\ntop-level tasks sort within the process, subtasks within the parent.",
                     "type": "integer",
                     "example": 1
                 },
                 "owner_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "parent_id": {
+                    "description": "ParentID — subtask (operation) link; NULL for top-level tasks.",
+                    "type": "integer"
                 },
                 "process_id": {
                     "type": "integer",
@@ -7256,6 +7856,18 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "description": "Execution status: not_started | in_progress | done.",
+                    "type": "string",
+                    "example": "not_started"
+                },
+                "subtasks": {
+                    "description": "Subtasks (operations) attached to this task, in display order.\nPresent only on top-level tasks; subtasks cannot have subtasks.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DetailedTask"
+                    }
                 },
                 "title": {
                     "type": "string",
@@ -7364,6 +7976,15 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.OperationTemplate": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "example": "Подготовка площадки"
+                }
+            }
+        },
         "dto.Permission": {
             "type": "object",
             "properties": {
@@ -7465,6 +8086,10 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "example": "Внешний аудит"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "auditor"
                 }
             }
         },
@@ -7481,6 +8106,20 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "auditor"
+                }
+            }
+        },
+        "dto.PresetView": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
@@ -7674,6 +8313,15 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.RefreshRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "example": "a1b2c3d4..."
+                }
+            }
+        },
         "dto.ReorderProcessRequest": {
             "type": "object",
             "properties": {
@@ -7701,15 +8349,6 @@ const docTemplate = `{
                 "process_id": {
                     "type": "integer",
                     "example": 1
-                }
-            }
-        },
-        "dto.ResetPasswordResponse": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "example": "Xy9kLm2QrT8wAb3z"
                 }
             }
         },
@@ -7963,6 +8602,27 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.TaskDependency": {
+            "type": "object",
+            "properties": {
+                "depends_on_task_id": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "task_id": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "type": {
+                    "type": "string",
+                    "example": "fs"
+                }
+            }
+        },
         "dto.TaskPlanning": {
             "type": "object",
             "properties": {
@@ -7987,17 +8647,25 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "order": {
-                    "description": "Order of the task within its process (ascending display order).",
+                    "description": "Order of the task within its parent group (ascending display order):\ntop-level tasks sort within the process, subtasks within the parent.",
                     "type": "integer",
                     "example": 1
                 },
                 "owner_id": {
                     "type": "integer"
                 },
+                "parent_id": {
+                    "description": "ParentID — subtask (operation) link; NULL for top-level tasks.",
+                    "type": "integer"
+                },
                 "process_id": {
                     "type": "integer"
                 },
                 "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Execution status: not_started | in_progress | done.",
                     "type": "string"
                 },
                 "title": {
@@ -8011,6 +8679,13 @@ const docTemplate = `{
                 "color": {
                     "type": "string",
                     "example": "#0f83c4"
+                },
+                "operations": {
+                    "description": "Operations (subtasks) of the task — created as subtasks (parent_id)\nwith the task's dates. Status is always not_started; resources are not\nbound to subtasks.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.OperationTemplate"
+                    }
                 },
                 "resources": {
                     "type": "array",
@@ -8038,6 +8713,21 @@ const docTemplate = `{
                 "task_id": {
                     "type": "integer",
                     "example": 1
+                }
+            }
+        },
+        "dto.UpdateDependencyRequest": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "fs",
+                        "ss",
+                        "ff",
+                        "sf"
+                    ],
+                    "example": "ss"
                 }
             }
         },
@@ -8189,10 +8879,7 @@ const docTemplate = `{
                     "example": "2026-02-01"
                 },
                 "owner_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "process_id": {
+                    "description": "ProcessID is intentionally absent: a task never changes its process.\nParentID is absent too: the parent is fixed at creation.",
                     "type": "integer",
                     "example": 1
                 },
@@ -8200,6 +8887,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date",
                     "example": "2026-01-01"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "in_progress"
                 },
                 "title": {
                     "type": "string",
@@ -8435,6 +9126,54 @@ const docTemplate = `{
                 "state_name": {
                     "type": "string",
                     "example": "Отпуск"
+                },
+                "user_id": {
+                    "description": "UserID is set only in batch responses (GET /user/days), where one worker's\nranges are nested among several — hence omitempty.",
+                    "type": "integer",
+                    "example": 7
+                }
+            }
+        },
+        "dto.UserStatesResponse": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserStateResponse"
+                    }
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 7
+                }
+            }
+        },
+        "engine.KindInfo": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/engine.ParamInfo"
+                    }
+                }
+            }
+        },
+        "engine.ParamInfo": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -8452,34 +9191,6 @@ const docTemplate = `{
                 "timestamp": {
                     "type": "string",
                     "example": "2026-08-09T10:30:00Z"
-                }
-            }
-        },
-        "policies.KindInfo": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/policies.ParamInfo"
-                    }
-                }
-            }
-        },
-        "policies.ParamInfo": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "required": {
-                    "type": "boolean"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },
@@ -8532,9 +9243,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost",
+	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
-	Schemes:          []string{"https"},
+	Schemes:          []string{"http"},
 	Title:            "Enterprise Resource Planning",
 	Description:      "For managing the enterprise's universal resources",
 	InfoInstanceName: "swagger",

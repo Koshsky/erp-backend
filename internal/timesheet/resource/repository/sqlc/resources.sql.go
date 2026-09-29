@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -45,22 +46,30 @@ func (q *Queries) CountMembersByResourceID(ctx context.Context, resourceID int64
 const countResources = `-- name: CountResources :one
 SELECT COUNT(*)
 FROM resources
-WHERE deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    $4::boolean
   )
-  AND ($3::bigint = 0 OR owner_id = $3::bigint)
+  AND ($5::bigint = 0 OR owner_id = $5::bigint)
 `
 
 type CountResourcesParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll   bool  `json:"sc_all"`
+	ScSelf  bool  `json:"sc_self"`
+	UserID  int64 `json:"user_id"`
+	ScNone  bool  `json:"sc_none"`
+	OwnerID int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countResources, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countResources,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -69,9 +78,9 @@ func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) 
 const createResource = `-- name: CreateResource :one
 INSERT INTO resources (title, code, color, owner_id)
 VALUES ($1, $2, $3, $4)
-ON CONFLICT (code) WHERE deleted_at IS NULL
+ON CONFLICT (code)
 DO NOTHING
-RETURNING id, title, code, color, owner_id, created_at, updated_at, deleted_at
+RETURNING id, title, code, color, owner_id, created_at, updated_at
 `
 
 type CreateResourceParams struct {
@@ -99,16 +108,13 @@ func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) 
 		&i.OwnerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteResource = `-- name: DeleteResource :exec
-UPDATE resources
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM resources
 WHERE id = $1
-    AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteResource(ctx context.Context, resourceID int64) error {
@@ -119,12 +125,11 @@ func (q *Queries) DeleteResource(ctx context.Context, resourceID int64) error {
 const findResource = `-- name: FindResource :one
 SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
-    r.created_at, r.updated_at, r.deleted_at
+    r.created_at, r.updated_at
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
-WHERE r.deleted_at IS NULL
-	AND r.id = $1::bigint
-GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+WHERE r.id = $1::bigint
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at
 `
 
 type FindResourceRow struct {
@@ -136,7 +141,6 @@ type FindResourceRow struct {
 	EmployeesCount int64          `json:"employees_count"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      **time.Time    `json:"deleted_at"`
 }
 
 func (q *Queries) FindResource(ctx context.Context, resourceID int64) (FindResourceRow, error) {
@@ -151,7 +155,6 @@ func (q *Queries) FindResource(ctx context.Context, resourceID int64) (FindResou
 		&i.EmployeesCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -160,7 +163,6 @@ const findUserManager = `-- name: FindUserManager :one
 SELECT manager_id
 FROM users
 WHERE id = $1::bigint
-  AND deleted_at IS NULL
 `
 
 func (q *Queries) FindUserManager(ctx context.Context, userID int64) (pgtype.Int8, error) {
@@ -177,7 +179,6 @@ SELECT u.id, CONCAT_WS(' ', NULLIF(u.last_name, ''), NULLIF(u.first_name, ''), N
 FROM resource_members rm
 JOIN users u ON u.id = rm.user_id
 WHERE rm.resource_id = $1::bigint
-  AND u.deleted_at IS NULL
 ORDER BY u.id ASC
 `
 
@@ -227,7 +228,7 @@ SELECT u.id AS user_id,
        es.start_date, es.end_date
 FROM user_states es
 JOIN resource_members rm ON rm.user_id = es.user_id AND rm.resource_id = $1::bigint
-JOIN users u ON u.id = es.user_id AND u.deleted_at IS NULL
+JOIN users u ON u.id = es.user_id
 JOIN states s ON s.id = es.state_id
 WHERE s.is_available = FALSE
   AND es.end_date >= $2::date
@@ -237,8 +238,8 @@ ORDER BY es.start_date ASC, u.last_name ASC
 
 type ListResourceAbsenceParams struct {
 	ResourceID int64     `json:"resource_id"`
-	StartDate  time.Time `json:"start_date"`
-	EndDate    time.Time `json:"end_date"`
+	StartDate  date.Date `json:"start_date"`
+	EndDate    date.Date `json:"end_date"`
 }
 
 type ListResourceAbsenceRow struct {
@@ -247,8 +248,8 @@ type ListResourceAbsenceRow struct {
 	StateID   int64     `json:"state_id"`
 	StateCode string    `json:"state_code"`
 	StateName string    `json:"state_name"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate date.Date `json:"start_date"`
+	EndDate   date.Date `json:"end_date"`
 }
 
 // Resource member absences (states with is_available = false) for the window.
@@ -283,26 +284,28 @@ func (q *Queries) ListResourceAbsence(ctx context.Context, arg ListResourceAbsen
 const listResources = `-- name: ListResources :many
 SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
-    r.created_at, r.updated_at, r.deleted_at
+    r.created_at, r.updated_at
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
-WHERE r.deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND r.owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND r.owner_id = $3::bigint) OR
+    $4::boolean
   )
-  AND ($3::bigint = 0 OR r.owner_id = $3::bigint)
-GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+  AND ($5::bigint = 0 OR r.owner_id = $5::bigint)
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at
 ORDER BY r.id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $7::bigint OFFSET $6::bigint
 `
 
 type ListResourcesParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 type ListResourcesRow struct {
@@ -314,13 +317,14 @@ type ListResourcesRow struct {
 	EmployeesCount int64          `json:"employees_count"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      **time.Time    `json:"deleted_at"`
 }
 
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
 	rows, err := q.db.Query(ctx, listResources,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,
@@ -341,7 +345,6 @@ func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([
 			&i.EmployeesCount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -356,12 +359,11 @@ func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([
 const listResourcesByOwnerID = `-- name: ListResourcesByOwnerID :many
 SELECT r.id, r.code, r.title, r.color, r.owner_id,
     COUNT(rm.user_id)::bigint AS employees_count,
-    r.created_at, r.updated_at, r.deleted_at
+    r.created_at, r.updated_at
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
-WHERE r.deleted_at IS NULL
-	AND r.owner_id = $1::bigint
-GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at, r.deleted_at
+WHERE r.owner_id = $1::bigint
+GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at
 ORDER BY r.id ASC
 `
 
@@ -374,7 +376,6 @@ type ListResourcesByOwnerIDRow struct {
 	EmployeesCount int64          `json:"employees_count"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      **time.Time    `json:"deleted_at"`
 }
 
 func (q *Queries) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]ListResourcesByOwnerIDRow, error) {
@@ -395,7 +396,6 @@ func (q *Queries) ListResourcesByOwnerID(ctx context.Context, ownerID int64) ([]
 			&i.EmployeesCount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -411,7 +411,6 @@ const ownerChain = `-- name: OwnerChain :one
 SELECT COALESCE(owner_id, 0)::bigint AS owner_id
 FROM resources
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) OwnerChain(ctx context.Context, id int64) (int64, error) {
@@ -446,8 +445,7 @@ SET
 	owner_id = $4,
 	updated_at = NOW()
 WHERE id = $5
-    AND deleted_at IS NULL
-RETURNING id, title, code, color, owner_id, created_at, updated_at, deleted_at
+RETURNING id, title, code, color, owner_id, created_at, updated_at
 `
 
 type UpdateResourceParams struct {
@@ -475,7 +473,6 @@ func (q *Queries) UpdateResource(ctx context.Context, arg UpdateResourceParams) 
 		&i.OwnerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

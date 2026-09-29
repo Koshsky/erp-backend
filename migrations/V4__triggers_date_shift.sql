@@ -39,8 +39,7 @@ BEGIN
 				ELSE p.end_date + shift_days
 			END,
 			updated_at = NOW()
-		WHERE p.project_id = NEW.id
-		  AND p.deleted_at IS NULL;
+		WHERE p.project_id = NEW.id;
 	END IF;
 
 	RETURN NEW;
@@ -50,11 +49,7 @@ $$;
 CREATE TRIGGER trg_projects_shift_process_dates
 AFTER UPDATE OF start_date, end_date ON projects
 FOR EACH ROW
-WHEN (
-	OLD.deleted_at IS NULL
-	AND NEW.deleted_at IS NULL
-	AND (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
-)
+WHEN (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
 EXECUTE FUNCTION fn_projects_shift_process_dates();
 
 -- =============================================
@@ -94,8 +89,7 @@ BEGIN
 				ELSE t.end_date + shift_days
 			END,
 			updated_at = NOW()
-		WHERE t.process_id = NEW.id
-		  AND t.deleted_at IS NULL;
+		WHERE t.process_id = NEW.id;
 	END IF;
 
 	RETURN NEW;
@@ -105,11 +99,7 @@ $$;
 CREATE TRIGGER trg_processes_shift_task_dates
 AFTER UPDATE OF start_date, end_date ON processes
 FOR EACH ROW
-WHEN (
-	OLD.deleted_at IS NULL
-	AND NEW.deleted_at IS NULL
-	AND (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
-)
+WHEN (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
 EXECUTE FUNCTION fn_processes_shift_task_dates();
 
 -- =============================================
@@ -139,8 +129,7 @@ BEGIN
 				ELSE m.date + shift_days
 			END,
 			updated_at = NOW()
-		WHERE m.process_id = NEW.id
-		  AND m.deleted_at IS NULL;
+		WHERE m.process_id = NEW.id;
 	END IF;
 
 	RETURN NEW;
@@ -150,9 +139,5 @@ $$;
 CREATE TRIGGER trg_processes_shift_milestone_dates
 AFTER UPDATE OF start_date, end_date ON processes
 FOR EACH ROW
-WHEN (
-	OLD.deleted_at IS NULL
-	AND NEW.deleted_at IS NULL
-	AND (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
-)
+WHEN (NEW.start_date > OLD.start_date OR NEW.end_date < OLD.end_date)
 EXECUTE FUNCTION fn_processes_shift_milestone_dates();

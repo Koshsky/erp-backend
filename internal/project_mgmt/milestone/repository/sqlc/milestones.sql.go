@@ -8,7 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
+
+	"github.com/Koshsky/erp-backend/pkg/date"
 )
 
 const countMilestones = `-- name: CountMilestones :one
@@ -16,23 +17,33 @@ SELECT COUNT(*)
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE m.deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR p.owner_id = $6::bigint OR pr.owner_id = $6::bigint)
 `
 
 type CountMilestonesParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll      bool  `json:"sc_all"`
+	ScParent   bool  `json:"sc_parent"`
+	UserID     int64 `json:"user_id"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountMilestones(ctx context.Context, arg CountMilestonesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countMilestones, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countMilestones,
+		arg.ScAll,
+		arg.ScParent,
+		arg.UserID,
+		arg.ScAncestor,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -41,7 +52,7 @@ func (q *Queries) CountMilestones(ctx context.Context, arg CountMilestonesParams
 const createMilestone = `-- name: CreateMilestone :one
 INSERT INTO milestones (process_id, title, content, color, date)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, process_id, title, content, color, date, created_at, updated_at, deleted_at
+RETURNING id, process_id, title, content, color, date, created_at, updated_at
 `
 
 type CreateMilestoneParams struct {
@@ -49,7 +60,7 @@ type CreateMilestoneParams struct {
 	Title     string         `json:"title"`
 	Content   string         `json:"content"`
 	Color     sql.NullString `json:"color"`
-	Date      time.Time      `json:"date"`
+	Date      date.Date      `json:"date"`
 }
 
 func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams) (Milestone, error) {
@@ -70,16 +81,13 @@ func (q *Queries) CreateMilestone(ctx context.Context, arg CreateMilestoneParams
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteMilestone = `-- name: DeleteMilestone :exec
-UPDATE milestones
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM milestones
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteMilestone(ctx context.Context, milestoneID int64) error {
@@ -88,10 +96,9 @@ func (q *Queries) DeleteMilestone(ctx context.Context, milestoneID int64) error 
 }
 
 const findMilestone = `-- name: FindMilestone :one
-SELECT id, process_id, title, content, color, date, created_at, updated_at, deleted_at
+SELECT id, process_id, title, content, color, date, created_at, updated_at
 FROM milestones
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milestone, error) {
@@ -106,39 +113,44 @@ func (q *Queries) FindMilestone(ctx context.Context, milestoneID int64) (Milesto
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listMilestones = `-- name: ListMilestones :many
-SELECT m.id, m.process_id, m.title, m.content, m.color, m.date, m.created_at, m.updated_at, m.deleted_at
+SELECT m.id, m.process_id, m.title, m.content, m.color, m.date, m.created_at, m.updated_at
 FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE m.deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint))
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR p.owner_id = $6::bigint OR pr.owner_id = $6::bigint)
 ORDER BY m.id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $8::bigint OFFSET $7::bigint
 `
 
 type ListMilestonesParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScParent   bool  `json:"sc_parent"`
+	UserID     int64 `json:"user_id"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListMilestones(ctx context.Context, arg ListMilestonesParams) ([]Milestone, error) {
 	rows, err := q.db.Query(ctx, listMilestones,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScParent,
 		arg.UserID,
+		arg.ScAncestor,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,
@@ -159,7 +171,6 @@ func (q *Queries) ListMilestones(ctx context.Context, arg ListMilestonesParams) 
 			&i.Date,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -178,9 +189,6 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE m.id = $1::bigint
-	AND m.deleted_at IS NULL
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL
 `
 
 type OwnerChainRow struct {
@@ -205,8 +213,7 @@ SET
 	date = $5,
 	updated_at = NOW()
 WHERE id = $6
-	AND deleted_at IS NULL
-RETURNING id, process_id, title, content, color, date, created_at, updated_at, deleted_at
+RETURNING id, process_id, title, content, color, date, created_at, updated_at
 `
 
 type UpdateMilestoneParams struct {
@@ -214,7 +221,7 @@ type UpdateMilestoneParams struct {
 	Title       string         `json:"title"`
 	Content     string         `json:"content"`
 	Color       sql.NullString `json:"color"`
-	Date        time.Time      `json:"date"`
+	Date        date.Date      `json:"date"`
 	MilestoneID int64          `json:"milestone_id"`
 }
 
@@ -237,7 +244,6 @@ func (q *Queries) UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams
 		&i.Date,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

@@ -30,7 +30,7 @@ func New(levelValue, formatValue string) (*slog.Logger, error) {
 		return nil, fmt.Errorf("unsupported log format: %s", formatValue)
 	}
 
-	return slog.New(handler), nil
+	return slog.New(NewContextHandler(handler)), nil
 }
 
 func WithComponent(base *slog.Logger, component string) *slog.Logger {

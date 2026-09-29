@@ -22,7 +22,7 @@ type StateService struct {
 // NewStateService builds the StateService service.
 func NewStateService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.StateRepository) *StateService {
 	return &StateService{
-		logger:     logger,
+		logger:     logger.With("component", "state_service"),
 		repository: r,
 		mapper:     NewStateMapper(),
 		validator:  &StateValidator{},
@@ -44,12 +44,11 @@ func (s *StateService) CreateState(ctx context.Context, req dto.CreateStateReque
 	ctx, end := s.tracer.Start(ctx, "state.CreateState")
 	defer end(nil)
 
-	state := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateState(&state); err != nil {
+	if err := s.validator.ValidateState(req.Code, req.Name); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateState(ctx, state)
+	created, err := s.repository.CreateState(ctx, req.Code, req.Name, req.IsAvailable)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +86,16 @@ func (s *StateService) UpdateState(
 		return nil, errors.ErrStateNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(state, req)
-	if err = s.validator.ValidateState(state); err != nil {
+	if req.Code != nil {
+		state.Code = *req.Code
+	}
+	if req.Name != nil {
+		state.Name = *req.Name
+	}
+	if req.IsAvailable != nil {
+		state.IsAvailable = *req.IsAvailable
+	}
+	if err = s.validator.ValidateState(state.Code, state.Name); err != nil {
 		return nil, err
 	}
 

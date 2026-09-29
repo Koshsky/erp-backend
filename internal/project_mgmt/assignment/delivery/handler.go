@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/dto"
 	"github.com/Koshsky/erp-backend/internal/response"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
@@ -25,7 +25,7 @@ type AssignmentHandler struct {
 // NewAssignmentHandler builds the AssignmentHandler handler.
 func NewAssignmentHandler(logger *slog.Logger, svc *service.AssignmentService, mw *rbac.Middleware) *AssignmentHandler {
 	return &AssignmentHandler{
-		logger:  logger,
+		logger:  logger.With("component", "assignment_handler"),
 		service: svc,
 		mw:      mw,
 	}
@@ -58,7 +58,7 @@ func (h *AssignmentHandler) ListAssignments(c *gin.Context) {
 	items, total, err := h.service.ListAssignments(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceAssignment),
+		engine.CompileViewScopeUser(user, rbac.ResourceAssignment),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

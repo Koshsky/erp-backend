@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"sort"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	repo "github.com/Koshsky/erp-backend/internal/planning/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -20,7 +21,7 @@ type PlanningService struct {
 // NewPlanningService builds the PlanningService service.
 func NewPlanningService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.PlanningRepository) *PlanningService {
 	return &PlanningService{
-		logger:     logger,
+		logger:     logger.With("component", "planning_service"),
 		tracer:     tracer,
 		repository: r,
 	}
@@ -29,51 +30,62 @@ func NewPlanningService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 func (s *PlanningService) GetProjectPlanning(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) (*dto.ProjectPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetProjectPlanning")
 	defer end(nil)
 
-	projects, err := s.repository.ListProjects(ctx, userID, viewScope)
+	projects, err := s.repository.ListProjects(ctx, userID, scope)
 	if err != nil {
 		return nil, err
 	}
+	projectDTOs := make([]dto.Project, len(projects))
+	for i, p := range projects {
+		projectDTOs[i] = toProject(p)
+	}
 
 	return &dto.ProjectPlanning{
-		Projects: projects,
+		Projects: projectDTOs,
 	}, nil
 }
 
 func (s *PlanningService) GetProcessPlanning(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
+	projectScope rbac.ListScope,
 ) (*dto.ProcessPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetProcessPlanning")
 	defer end(nil)
 
 	// Scoped by process.view (ListProcesses): a caller with the right sees its
 	// processes even when it has no project.view (e.g. vp). The processes are
-	// grouped under their parent projects, which are re-fetched by ids.
-	processes, err := s.repository.ListProcesses(ctx, userID, viewScope)
+	// grouped under their parent projects, which are re-fetched by ids and
+	// scoped by the caller's project view zone (projectScope) — the
+	// aggregate must not disclose full project rows of projects outside that
+	// zone. A caller with no project view rule (empty zone) gets all parent
+	// projects: reference rows with no resolved zone must not hide the
+	// visible processes (the SQL falls back to include-all).
+	processes, err := s.repository.ListProcesses(ctx, userID, scope)
 	if err != nil {
 		return nil, err
 	}
 	grouped := make(map[int64][]dto.Process)
-	for _, p := range processes {
+	for _, row := range processes {
+		p := toProcess(row)
 		grouped[p.ProjectID] = append(grouped[p.ProjectID], p)
 	}
 	projectIDs := make([]int64, 0, len(grouped))
 	for projectID := range grouped {
 		projectIDs = append(projectIDs, projectID)
 	}
-	projects, err := s.repository.ListProjectsByIDs(ctx, projectIDs)
+	projects, err := s.repository.ListProjectsByIDs(ctx, projectIDs, userID, projectScope)
 	if err != nil {
 		return nil, err
 	}
 	byID := make(map[int64]dto.Project, len(projects))
 	for _, p := range projects {
-		byID[p.ID] = p
+		byID[p.ID] = toProject(p)
 	}
 
 	planning := dto.ProcessPlanning{Projects: make([]dto.DetailedProject, 0, len(byID))}
@@ -103,12 +115,13 @@ func (s *PlanningService) GetProcessPlanning(
 func (s *PlanningService) GetTaskPlanning(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
+	resourceScope rbac.ListScope,
 ) (*dto.TaskPlanning, error) {
 	ctx, end := s.tracer.Start(ctx, "planning.GetTaskPlanning")
 	defer end(nil)
 
-	processes, err := s.loadProcesses(ctx, userID, viewScope)
+	processes, err := s.loadProcesses(ctx, userID, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +132,15 @@ func (s *PlanningService) GetTaskPlanning(
 		}, nil
 	}
 
-	milestones, tasks, assignments, resourcesMap, commentCounts, err := s.loadAllData(ctx, processes)
+	milestones, tasks, assignments, resourcesMap, commentCounts, dependencies, err := s.loadAllData(
+		ctx,
+		processes,
+		userID,
+		resourceScope,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.buildPlanning(processes, milestones, tasks, assignments, resourcesMap, commentCounts), nil
+	return s.buildPlanning(processes, milestones, tasks, assignments, resourcesMap, commentCounts, dependencies), nil
 }

@@ -8,8 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -17,24 +17,47 @@ const countProcesses = `-- name: CountProcesses :one
 SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE p.deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
-    ($1::text = 'own' AND p.owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND pr.owner_id = $3::bigint) OR
+    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
   )
-  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($9::bigint = 0 OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
 `
 
 type CountProcessesParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountProcesses(ctx context.Context, arg CountProcessesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countProcesses, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countProcesses,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -52,14 +75,14 @@ VALUES (
 	-- New process goes to the end of its project group.
 	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM processes WHERE project_id = $1::bigint)
 )
-RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at
 `
 
 type CreateProcessParams struct {
 	ProjectID int64          `json:"project_id"`
 	Title     string         `json:"title"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Color     sql.NullString `json:"color"`
 }
@@ -85,16 +108,13 @@ func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (P
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteProcess = `-- name: DeleteProcess :exec
-UPDATE processes
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = $1::bigint
+DELETE FROM processes
+WHERE id = $1::bigint
 `
 
 func (q *Queries) DeleteProcess(ctx context.Context, processID int64) error {
@@ -103,10 +123,9 @@ func (q *Queries) DeleteProcess(ctx context.Context, processID int64) error {
 }
 
 const findProcess = `-- name: FindProcess :one
-SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at
 FROM processes
 WHERE id = $1::bigint
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) FindProcess(ctx context.Context, id int64) (Process, error) {
@@ -123,7 +142,6 @@ func (q *Queries) FindProcess(ctx context.Context, id int64) (Process, error) {
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -132,7 +150,6 @@ const listProcessIdsByProject = `-- name: ListProcessIdsByProject :many
 SELECT id
 FROM processes
 WHERE project_id = $1::bigint
-	AND deleted_at IS NULL
 ORDER BY sort_order ASC, id ASC
 `
 
@@ -159,33 +176,52 @@ func (q *Queries) ListProcessIdsByProject(ctx context.Context, projectID int64) 
 }
 
 const listProcesss = `-- name: ListProcesss :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.deleted_at
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
-WHERE p.deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND pr.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
-    ($1::text = 'own' AND p.owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND p.owner_id = $3::bigint) OR
+    ($4::boolean AND pr.owner_id = $3::bigint) OR
+    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
   )
-  AND ($3::bigint = 0 OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($9::bigint = 0 OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
 ORDER BY p.sort_order ASC, p.id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $11::bigint OFFSET $10::bigint
 `
 
 type ListProcesssParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]Process, error) {
 	rows, err := q.db.Query(ctx, listProcesss,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,
@@ -208,7 +244,6 @@ func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]P
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -226,8 +261,6 @@ SELECT COALESCE(pr.owner_id, 0)::bigint AS project_owner,
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE p.id = $1::bigint
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL
 `
 
 type OwnerChainRow struct {
@@ -246,7 +279,7 @@ const reorderProcessesApply = `-- name: ReorderProcessesApply :exec
 UPDATE processes p
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE p.id = x.id AND p.deleted_at IS NULL
+WHERE p.id = x.id
 `
 
 // Phase 2 of the two-phase reorder: write the final positions. The group is
@@ -261,12 +294,12 @@ const reorderProcessesMark = `-- name: ReorderProcessesMark :exec
 UPDATE processes p
 SET sort_order = x.ord + 1000000, updated_at = NOW()
 FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE p.id = x.id AND p.deleted_at IS NULL
+WHERE p.id = x.id
 `
 
 // Phase 1 of the two-phase reorder (runs inside one transaction with
 // ReorderProcessesApply): park every process on a temporary offset slot so the
-// follow-up write cannot transiently violate the partial unique index
+// follow-up write cannot transiently violate the unique index
 // (project_id, sort_order) when values swap. The caller sends the whole group.
 func (q *Queries) ReorderProcessesMark(ctx context.Context, ids []int64) error {
 	_, err := q.db.Exec(ctx, reorderProcessesMark, ids)
@@ -283,16 +316,15 @@ SET
 	project_id = COALESCE($5, project_id),
 	owner_id = COALESCE($6, owner_id),
 	updated_at = NOW()
-WHERE deleted_at IS NULL
-	AND id = $7::bigint
-RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+WHERE id = $7::bigint
+RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at
 `
 
 type UpdateProcessParams struct {
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	ProjectID int64          `json:"project_id"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	ProcessID int64          `json:"process_id"`
@@ -320,7 +352,6 @@ func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (P
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

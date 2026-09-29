@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
@@ -23,7 +26,7 @@ type ResourceService struct {
 // NewResourceService builds the ResourceService service.
 func NewResourceService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.ResourceRepository) *ResourceService {
 	return &ResourceService{
-		logger:     logger,
+		logger:     logger.With("component", "resource_service"),
 		repository: r,
 		mapper:     NewResourceMapper(),
 		validator:  &ResourceValidator{},
@@ -34,18 +37,18 @@ func NewResourceService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 func (s *ResourceService) ListResources(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ResourceResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "resource.ListResources")
 	defer end(nil)
 
-	rows, err := s.repository.ListResources(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListResources(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountResources(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountResources(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -67,12 +70,11 @@ func (s *ResourceService) CreateResource(
 		req.OwnerID = &userID
 	}
 
-	resource := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateResource(&resource); err != nil {
+	if err := s.validator.ValidateResource(req.Code, req.Title, req.Color); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateResource(ctx, resource)
+	created, err := s.repository.CreateResource(ctx, req.Code, req.Title, req.Color, req.OwnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +111,38 @@ func (s *ResourceService) UpdateResource(
 		return nil, errors.ErrResourceNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(resource, req)
-	if err = s.validator.ValidateResource(resource); err != nil {
+	if req.Code != nil {
+		resource.Code = *req.Code
+	}
+	if req.Title != nil {
+		resource.Title = *req.Title
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			resource.Color = sql.NullString{}
+		} else {
+			resource.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.OwnerID != nil {
+		resource.OwnerID = *req.OwnerID
+	}
+	if err = s.validator.ValidateResource(
+		resource.Code,
+		resource.Title,
+		nullable.StringPtr(resource.Color),
+	); err != nil {
 		return nil, err
 	}
 
-	updated, err := s.repository.UpdateResource(ctx, *resource)
+	updated, err := s.repository.UpdateResource(
+		ctx,
+		resource.ID,
+		resource.Code,
+		resource.Title,
+		nullable.StringPtr(resource.Color),
+		&resource.OwnerID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +245,7 @@ func (s *ResourceService) ListAbsence(
 	if err := s.validator.ValidateDayRange(start, end); err != nil {
 		return nil, err
 	}
-	absences, err := s.repository.ListAbsence(ctx, resourceID, start.Time(), end.Time())
+	absences, err := s.repository.ListAbsence(ctx, resourceID, start, end)
 	if err != nil {
 		return nil, err
 	}

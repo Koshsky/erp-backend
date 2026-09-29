@@ -23,11 +23,37 @@ const (
 	AttrUserID         = "user.id"
 	AttrUserRole       = "user.role"
 	AttrErrorMessage   = "error.message"
+	AttrRequestID      = "request.id"
 )
+
+// RequestIDKey is the gin context key under which the per-request id is
+// stored (assigned by the server's requestID middleware, L6). Kept here so
+// the root span middleware can read it without a server import cycle.
+const RequestIDKey = "x-request-id"
 
 // ginSpanKey stores the root span on the gin context so handlers and later
 // middleware can attach attributes (e.g. the authenticated user id).
 const ginSpanKey = "tracing.root_span"
+
+// requestIDKey is the context key under which the per-request id is carried
+// in the request context (via WithRequestID). A zero-size struct type is used
+// instead of a package-level variable so the key is collision-free and
+// gochecknoglobals stays satisfied.
+type requestIDKey struct{}
+
+// WithRequestID returns a context carrying the per-request id, so that
+// context-aware slog logging (logger.ContextHandler) attaches request_id to
+// every record emitted during the request.
+func WithRequestID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, requestIDKey{}, id)
+}
+
+// RequestIDFrom returns the per-request id stored via WithRequestID, or an
+// empty string outside a request.
+func RequestIDFrom(ctx context.Context) string {
+	id, _ := ctx.Value(requestIDKey{}).(string)
+	return id
+}
 
 // Tracer is the app-wide tracer facade. It wraps a *trace.Tracer obtained from
 // the shared provider; when tracing is disabled the no-op tracer is used.
@@ -117,6 +143,7 @@ func (t *Tracer) HTTPRootSpan() gin.HandlerFunc {
 			attribute.String(AttrHTTPMethod, c.Request.Method),
 			attribute.String(AttrHTTPPath, c.Request.RequestURI),
 			attribute.Int(AttrHTTPStatusCode, status),
+			attribute.String(AttrRequestID, c.GetString(RequestIDKey)),
 		)
 		if status >= http.StatusInternalServerError {
 			span.SetStatus(codes.Error, "http server error")

@@ -24,7 +24,7 @@ ALTER TABLE rbac_preset_rules RENAME COLUMN role TO preset;
 
 -- 3. users.role -> users.preset (nullable; the role value becomes the preset).
 ALTER TABLE users ADD COLUMN preset TEXT REFERENCES rbac_presets(name);
-UPDATE users SET preset = role WHERE deleted_at IS NULL;
+UPDATE users SET preset = role;
 
 -- 4. Drop the old role column and its FK (the FK was renamed along with the
 --    table, but the users.role column still points at rbac_presets(name)).
@@ -41,16 +41,10 @@ CREATE TABLE user_permissions (
     granted     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ,
     updated_by  BIGINT,
     CHECK (NOT granted OR scope IN ('all', 'own', 'parent', 'ancestor'))
 );
-CREATE UNIQUE INDEX idx_user_permissions_active
-ON user_permissions(user_id, resource, action) WHERE deleted_at IS NULL;
-
--- 6. Soft-delete protection (same trigger function as the other tables, V5).
-CREATE TRIGGER block_hard_delete_on_user_permissions
-BEFORE DELETE ON user_permissions
-FOR EACH ROW EXECUTE FUNCTION block_hard_delete();
+CREATE UNIQUE INDEX idx_user_permissions_unique
+ON user_permissions(user_id, resource, action);
 
 COMMIT;

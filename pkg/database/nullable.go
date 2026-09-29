@@ -25,6 +25,15 @@ func ToInt8(v *int64) pgtype.Int8 {
 	return pgtype.Int8{Int64: *v, Valid: true}
 }
 
+// PtrValueOr dereferences a pointer, returning fallback when v is nil.
+// Useful for passing optional ids through non-nullable query parameters.
+func PtrValueOr(v *int64, fallback int64) int64 {
+	if v == nil {
+		return fallback
+	}
+	return *v
+}
+
 // StringPtr converts a [sql.NullString] into a *string, returning nil when unset/empty.
 func StringPtr(v sql.NullString) *string {
 	if !v.Valid || v.String == "" {

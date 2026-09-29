@@ -15,13 +15,17 @@ sql:
         emit_empty_slices: true
         out: "./sqlc"
         emit_interface: false
+        omit_unused_structs: true
         overrides:
           - db_type: "timestamptz"
             go_type: "time.Time"
           - db_type: "timestamp"
             go_type: "time.Time"
           - db_type: "date"
-            go_type: "time.Time"
+            go_type: "github.com/Koshsky/erp-backend/pkg/date.Date"
+          - db_type: "date"
+            nullable: true
+            go_type: "github.com/jackc/pgx/v5/pgtype.Date"
           - db_type: "uuid"
             go_type: "github.com/google/uuid.UUID"
           - db_type: "jsonb"

@@ -25,6 +25,10 @@ func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup, changePasswordGuar
 		r.DELETE("/:id", h.mw.Check("user_admin.delete"), h.DeleteUser)
 		r.POST("/:id/reset-password", h.mw.Check("user_admin.update"), h.ResetPassword)
 		// Employee timesheet.
+		// GET /user/days — the batch variant of /user/{id}/days (several
+		// workers in one request); scoped like the list, so the SQL view scope
+		// filter per user covers "own"/"all".
+		r.GET("/days", h.mw.Check("worker.list"), h.ListDaysBatch)
 		r.GET("/:id/days", h.mw.Check("worker.view"), h.ListDays)
 		r.PUT("/:id/days", h.mw.Check("worker.update"), h.SetDays)
 		r.DELETE("/:id/days", h.mw.Check("worker.delete"), h.DeleteDays)

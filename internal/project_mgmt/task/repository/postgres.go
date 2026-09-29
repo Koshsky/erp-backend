@@ -9,8 +9,8 @@ import (
 
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 
+	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/repository/sqlc"
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
@@ -24,18 +24,31 @@ type TaskRepository struct {
 // NewTaskRepository builds the TaskRepository repository.
 func NewTaskRepository(logger *slog.Logger, pool *pgxpool.Pool) *TaskRepository {
 	return &TaskRepository{
-		logger: logger,
+		logger: logger.With("component", "task_repository"),
 		pool:   pool,
 		db:     sqlc.New(pool),
 	}
 }
 
-func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
-	row, err := r.db.CreateTask(ctx, sqlc.CreateTaskParams{
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *TaskRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
+func (r *TaskRepository) CreateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
+	row, err := r.q(ctx).CreateTask(ctx, sqlc.CreateTaskParams{
 		ProcessID: task.ProcessID,
-		OwnerID:   nullable.ToInt8(task.OwnerID),
+		// 0 means "no parent" (the query NULLIFs it to NULL); the real parent
+		// id for subtasks. Both map to the same NULLIF branch in the INSERT.
+		ParentID:  nullable.PtrValueOr(nullable.Int64Ptr(task.ParentID), 0),
+		OwnerID:   task.OwnerID,
 		Title:     task.Title,
-		Color:     nullable.ToString(task.Color),
+		Color:     task.Color,
+		Status:    task.Status,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -43,27 +56,25 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task domain.Task) (*dom
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapTask(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*domain.Task, error) {
-	row, err := r.db.FindTask(ctx, id)
+func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*sqlc.Task, error) {
+	row, err := r.q(ctx).FindTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := mapTask(row)
-	return &mapped, nil
+	return &row, nil
 }
 
-func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*domain.Task, error) {
-	row, err := r.db.UpdateTask(ctx, sqlc.UpdateTaskParams{
+func (r *TaskRepository) UpdateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
+	row, err := r.q(ctx).UpdateTask(ctx, sqlc.UpdateTaskParams{
 		TaskID:    task.ID,
-		ProcessID: task.ProcessID,
-		OwnerID:   nullable.ToInt8(task.OwnerID),
+		OwnerID:   task.OwnerID,
 		Title:     task.Title,
-		Color:     nullable.ToString(task.Color),
+		Color:     task.Color,
+		Status:    task.Status,
 		StartDate: task.StartDate,
 		EndDate:   task.EndDate,
 	})
@@ -71,66 +82,66 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, task domain.Task) (*dom
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
 	}
 
-	mapped := mapTask(row)
-	return &mapped, nil
+	return &row, nil
 }
 
 func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
-	return r.db.DeleteTask(ctx, id)
+	return r.q(ctx).DeleteTask(ctx, id)
 }
 
 func (r *TaskRepository) ListTasks(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
-) ([]domain.Task, error) {
-	rows, err := r.db.ListTasks(ctx, sqlc.ListTasksParams{
-		ScopeView:  viewScope,
+) ([]sqlc.Task, error) {
+	return r.q(ctx).ListTasks(ctx, sqlc.ListTasksParams{
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
 		UserID:     userID,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScSib:      scope.Sib,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
-	if err != nil {
-		return nil, err
-	}
-	tasks := make([]domain.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTask(row))
-	}
-	return tasks, nil
 }
 
-func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error) {
-	return r.db.CountTasks(
+func (r *TaskRepository) CountTasks(
+	ctx context.Context,
+	userID int64,
+	scope rbac.ListScope,
+	ownerID int64,
+) (int64, error) {
+	return r.q(ctx).CountTasks(
 		ctx,
 		sqlc.CountTasksParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:      scope.All,
+			ScSelf:     scope.Self,
+			UserID:     userID,
+			ScParent:   scope.Parent,
+			ScAncestor: scope.Ancestor,
+			ScSib:      scope.Sib,
+			ScDown:     scope.Down,
+			ScNone:     scope.None,
+			OwnerID:    ownerID,
 		},
 	)
 }
 
-func mapTask(row sqlc.Task) domain.Task {
-	return domain.Task{
-		ID:        row.ID,
-		ProcessID: row.ProcessID,
-		OwnerID:   nullable.Int64Ptr(row.OwnerID),
-		Title:     row.Title,
-		Color:     nullable.StringPtr(row.Color),
-		StartDate: row.StartDate,
-		EndDate:   row.EndDate,
-		SortOrder: int(row.SortOrder),
-	}
+// ListSubtasksByParent returns the active subtasks of a task in display order.
+func (r *TaskRepository) ListSubtasksByParent(ctx context.Context, parentID int64) ([]sqlc.Task, error) {
+	return r.q(ctx).ListSubtasksByParent(ctx, parentID)
 }
 
 // ListTaskIDsByProcess returns the active task ids of a process in their
 // display order — to validate a reorder request covers the whole group.
 func (r *TaskRepository) ListTaskIDsByProcess(ctx context.Context, processID int64) ([]int64, error) {
-	return r.db.ListTaskIdsByProcess(ctx, processID)
+	return r.q(ctx).ListTaskIdsByProcess(ctx, processID)
 }
 
 // ReorderTasks rewrites the sort_order of the given task ids by list position
@@ -139,25 +150,33 @@ func (r *TaskRepository) ListTaskIDsByProcess(ctx context.Context, processID int
 // because a single-statement value swap would transiently violate the partial
 // unique index (process_id, sort_order).
 func (r *TaskRepository) ReorderTasks(ctx context.Context, ids []int64) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
 
-	q := r.db.WithTx(tx)
+	q := r.q(ctx)
+	if owned {
+		q = r.db.WithTx(tx)
+	}
 	if err = q.ReorderTasksMark(ctx, ids); err != nil {
 		return err
 	}
 	if err = q.ReorderTasksApply(ctx, ids); err != nil {
 		return err
 	}
+	if !owned {
+		return nil
+	}
 	return tx.Commit(ctx)
 }
 
 // OwnerChain returns the owner chain (for RBAC checks in the middleware).
 func (r *TaskRepository) OwnerChain(ctx context.Context, id int64) (rbac.Owners, error) {
-	row, err := r.db.OwnerChain(ctx, id)
+	row, err := r.q(ctx).OwnerChain(ctx, id)
 	if err != nil {
 		return rbac.Owners{}, err
 	}

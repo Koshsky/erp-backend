@@ -3,7 +3,7 @@
 // Non-secret settings are read from config.yaml (the path is set by the
 // CONFIG_PATH environment variable, defaulting to ./config.yaml). Secrets and
 // the DB URL come only from environment variables: DATABASE_URL, JWT_SECRET_KEY,
-// JWT_REFRESH_KEY.
+// JWT_REFRESH_KEY (legacy-optional, see applyEnv).
 package config
 
 import (
@@ -37,12 +37,31 @@ type Config struct {
 	CORS       CORSConfig       `yaml:"cors"`
 	RateLimit  RateLimitConfig  `yaml:"rate_limiting"`
 	// UserRateLimit is the per authenticated user limit for protected routes.
-	UserRateLimit RateLimitConfig   `yaml:"user_rate_limiting"`
-	Profiling     ProfilingConfig   `yaml:"profiling"`
-	Maintenance   MaintenanceConfig `yaml:"maintenance"`
-	Tracing       TracingConfig     `yaml:"tracing"`
-	RBAC          RBACConfig        `yaml:"rbac"`
-	Audit         AuditConfig       `yaml:"audit"`
+	UserRateLimit RateLimitConfig `yaml:"user_rate_limiting"`
+	Redis         RedisConfig     `yaml:"redis"`
+	Profiling     ProfilingConfig `yaml:"profiling"`
+	Tracing       TracingConfig   `yaml:"tracing"`
+	RBAC          RBACConfig      `yaml:"rbac"`
+	Audit         AuditConfig     `yaml:"audit"`
+	Security      SecurityConfig  `yaml:"security"`
+}
+
+// SecurityConfig — password policy extras.
+type SecurityConfig struct {
+	Password PasswordSecurityConfig `yaml:"password"`
+}
+
+// PasswordSecurityConfig — password validation options.
+type PasswordSecurityConfig struct {
+	// HIBP — optional Have I Been Pwned breach check (k-anonymity range API).
+	HIBP HIBPConfig `yaml:"hibp"`
+}
+
+// HIBPConfig — breach-feed check settings. Best-effort: network failures
+// skip the check; the local policy always applies.
+type HIBPConfig struct {
+	Enabled bool     `yaml:"enabled"`
+	Timeout Duration `yaml:"timeout"`
 }
 
 // RBACConfig — runtime-RBAC settings (rules reload from the DB).
@@ -59,6 +78,14 @@ type HTTPServerConfig struct {
 	ReadTimeout  Duration `yaml:"read_timeout"`
 	WriteTimeout Duration `yaml:"write_timeout"`
 	IdleTimeout  Duration `yaml:"idle_timeout"`
+	// MaxBodyBytes is the per-request body size limit (bytes); larger bodies
+	// are rejected with a 400-class error (H3 — DoS protection).
+	MaxBodyBytes int64 `yaml:"max_body_bytes"`
+	// RequestTimeout is the per-request context timeout (H3): the handler
+	// context is canceled after this duration, aborting long DB queries
+	// (planning/calendar aggregates) so goroutines and pool connections are
+	// released. Must be lower than WriteTimeout to take effect.
+	RequestTimeout Duration `yaml:"request_timeout"`
 	// TrustedProxies is the CIDR/client networks allowed to forward client IP
 	// headers (X-Forwarded-For / X-Real-IP) to the backend. It MUST list only
 	// the reverse proxy (nginx) networks; trusting all networks lets remote
@@ -120,13 +147,6 @@ type ProfilingConfig struct {
 	Address string `yaml:"address"`
 }
 
-// MaintenanceConfig — background data normalization (periodic run of
-// fn_normalize_employee_states for employee_states).
-type MaintenanceConfig struct {
-	Enabled  bool     `yaml:"enabled"`
-	Interval Duration `yaml:"interval"`
-}
-
 // TracingConfig — OpenTelemetry distributed tracing settings (OTLP/gRPC
 // exporter, by default the in-stack Jaeger collector).
 type TracingConfig struct {
@@ -146,7 +166,9 @@ type AuditConfig struct {
 	URL     string   `yaml:"url"`
 	Timeout Duration `yaml:"timeout"`
 	// Sync sends events synchronously inside the request (strict durability,
-	// slower); the default async mode buffers events and retries.
+	// slower; a single attempt bounded by a short per-send budget so the
+	// request never stalls on a down Loki); the default async mode buffers
+	// events and retries off the request goroutine.
 	Sync bool `yaml:"sync"`
 }
 
@@ -157,6 +179,25 @@ type RateLimitConfig struct {
 	Burst             int      `yaml:"burst"`
 	CleanupInterval   Duration `yaml:"cleanup_interval"`
 	Expiration        Duration `yaml:"expiration"`
+}
+
+// RedisConfig is the shared Redis connection settings. Redis backs the rate
+// limiter (M1): the backend is chosen explicitly by config — when enabled,
+// token buckets are shared across instances and an unreachable Redis fails
+// application startup (fail-fast); when disabled, the limiter uses the
+// in-memory implementation. Credentials are non-secret infra settings (prod
+// may add an optional REDIS_PASSWORD-style env override later).
+type RedisConfig struct {
+	Enabled      bool     `yaml:"enabled"`
+	Address      string   `yaml:"address"`
+	Password     string   `yaml:"password"`
+	DB           int      `yaml:"db"`
+	DialTimeout  Duration `yaml:"dial_timeout"`
+	ReadTimeout  Duration `yaml:"read_timeout"`
+	WriteTimeout Duration `yaml:"write_timeout"`
+	PoolSize     int      `yaml:"pool_size"`
+	// KeyPrefix namespaces all Redis keys owned by the application.
+	KeyPrefix string `yaml:"key_prefix"`
 }
 
 // Load loads the configuration: config.yaml plus secrets from environment variables.
@@ -177,8 +218,38 @@ func Load() (*Config, error) {
 		return nil, envErr
 	}
 
+	if validErr := validate(&cfg); validErr != nil {
+		return nil, validErr
+	}
+
 	return &cfg, nil
 }
+
+// validate enforces the invariants a disabled configuration cannot express by
+// itself: an enabled rate limit must carry positive requests_per_second and
+// burst, or the middleware would silently disable itself (requests_per_second
+// <= 0) or hard-block every request (burst <= 0) without any startup warning.
+func validate(cfg *Config) error {
+	for name, limit := range map[string]RateLimitConfig{
+		"rate_limiting":      cfg.RateLimit,
+		"user_rate_limiting": cfg.UserRateLimit,
+	} {
+		if !limit.Enabled {
+			continue
+		}
+		if limit.RequestsPerSecond <= 0 {
+			return fmt.Errorf("%s: requests_per_second must be > 0 when rate limiting is enabled", name)
+		}
+		if limit.Burst <= 0 {
+			return fmt.Errorf("%s: burst must be > 0 when rate limiting is enabled", name)
+		}
+	}
+	return nil
+}
+
+// minJWTSecretLen is the minimum accepted length of JWT_SECRET_KEY (256-bit
+// equivalent in ASCII hex; shorter keys weaken HMAC-SHA256 signatures).
+const minJWTSecretLen = 32
 
 // applyEnv applies secrets and the DB URL from environment variables to the configuration.
 func applyEnv(cfg *Config) error {
@@ -191,17 +262,34 @@ func applyEnv(cfg *Config) error {
 	if cfg.JWT.SecretKey == "" {
 		return fmt.Errorf("JWT_SECRET_KEY is required")
 	}
+	if len(cfg.JWT.SecretKey) < minJWTSecretLen {
+		return fmt.Errorf("JWT_SECRET_KEY must be at least %d characters", minJWTSecretLen)
+	}
 
 	cfg.JWT.RefreshKey = getEnv("JWT_REFRESH_KEY", "")
-	if cfg.JWT.RefreshKey == "" {
-		return fmt.Errorf("JWT_REFRESH_KEY is required")
-	}
+	// JWT_REFRESH_KEY is legacy (AD-06): refresh tokens are opaque and stored
+	// in the DB, the key is never used. It is read for compatibility but is no
+	// longer required on startup (L8).
 
 	// TRACING_ENDPOINT overrides the OTLP exporter endpoint (dev: host-run air
 	// reaches the in-docker Jaeger collector via its published port; kept empty
 	// in the full-stack docker run, which uses the in-network "jaeger:4317").
 	if endpoint := getEnv("TRACING_ENDPOINT", ""); endpoint != "" {
 		cfg.Tracing.ExporterEndpoint = endpoint
+	}
+
+	// REDIS_ADDRESS overrides the Redis endpoint (dev: host-run air reaches
+	// the in-docker Redis service via its published port; kept empty in the
+	// full-stack docker run, which uses the in-network "redis:6379").
+	if address := getEnv("REDIS_ADDRESS", ""); address != "" {
+		cfg.Redis.Address = address
+	}
+
+	// AUDIT_URL overrides the Loki base URL (dev: host-run air reaches the
+	// in-docker Loki service via its published port; kept empty in the
+	// full-stack docker run, which uses the in-network "http://loki:3100").
+	if url := getEnv("AUDIT_URL", ""); url != "" {
+		cfg.Audit.URL = url
 	}
 
 	return nil

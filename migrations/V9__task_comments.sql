@@ -1,24 +1,12 @@
--- Triggers for task_comments (table in V1, indexes in V2).
--- Cascade soft delete: task → its comments.
-CREATE OR REPLACE FUNCTION cascade_soft_delete_task_comments()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE task_comments
-    SET deleted_at = NOW()
-    WHERE task_id = OLD.id
-      AND deleted_at IS NULL;
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_cascade_soft_delete_task_comments
-AFTER UPDATE OF deleted_at ON tasks
-FOR EACH ROW
-WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
-EXECUTE FUNCTION cascade_soft_delete_task_comments();
-
--- Hard-delete ban (the block_hard_delete function is defined in V5).
-CREATE TRIGGER block_hard_delete_on_task_comments
-BEFORE DELETE ON task_comments
-FOR EACH ROW
-EXECUTE FUNCTION block_hard_delete();
+-- =============================================
+-- TASK COMMENTS — OBSOLETE AS OF V5 REWRITE
+-- =============================================
+-- task_comments archiving is covered by the generic archive trigger
+-- (fn_archive_row in V5): deleting a task cascades to its comments (FK
+-- task_comments.task_id → tasks ON DELETE CASCADE), and each comment row is
+-- archived via trg_archive_task_comments. The former cascade-soft-delete and
+-- hard-DELETE-block triggers no longer exist.
+-- This migration is kept as a version marker so existing deployments that
+-- already applied the old triggers drop them here.
+DROP TRIGGER IF EXISTS trigger_cascade_soft_delete_task_comments ON tasks;
+DROP TRIGGER IF EXISTS block_hard_delete_on_task_comments ON task_comments;

@@ -8,8 +8,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 
+	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -18,59 +18,97 @@ SELECT COUNT(*)
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE t.deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
-    ($1::text = 'own' AND t.owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND t.owner_id = $3::bigint) OR
+    ($4::boolean AND p.owner_id = $3::bigint) OR
+    ($5::boolean AND (t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = t.process_id
+          AND s.parent_id IS NOT DISTINCT FROM t.parent_id
+          AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
   )
-  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($9::bigint = 0 OR t.owner_id = $9::bigint OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
 `
 
 type CountTasksParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountTasks(ctx context.Context, arg CountTasksParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countTasks, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countTasks,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (process_id, owner_id, title, color, start_date, end_date, sort_order)
-VALUES (
-	$1,
-	$2,
+INSERT INTO tasks (process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order)
+SELECT
+	$1::bigint,
+	NULLIF($2::bigint, 0),
 	$3,
 	$4,
 	$5,
 	$6,
-	-- New task goes to the end of its process group.
-	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks WHERE process_id = $1)
-)
-RETURNING id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+	$7,
+	$8,
+	-- New task goes to the end of its parent group: top-level tasks append
+	-- within the process, subtasks within the parent task.
+	CASE
+		WHEN $2::bigint IS NULL OR $2::bigint = 0 THEN
+			(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks
+			 WHERE process_id = $1 AND parent_id IS NULL)
+		ELSE
+			(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks
+			 WHERE parent_id = $2)
+	END
+RETURNING id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
 `
 
 type CreateTaskParams struct {
 	ProcessID int64          `json:"process_id"`
+	ParentID  int64          `json:"parent_id"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	Status    string         `json:"status"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, createTask,
 		arg.ProcessID,
+		arg.ParentID,
 		arg.OwnerID,
 		arg.Title,
 		arg.Color,
+		arg.Status,
 		arg.StartDate,
 		arg.EndDate,
 	)
@@ -78,24 +116,23 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
+		&i.ParentID,
 		&i.OwnerID,
 		&i.Title,
 		&i.Color,
+		&i.Status,
 		&i.StartDate,
 		&i.EndDate,
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteTask = `-- name: DeleteTask :exec
-UPDATE tasks
-SET deleted_at = NOW(), updated_at = NOW()
+DELETE FROM tasks
 WHERE id = $1
-	AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
@@ -104,10 +141,9 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int64) error {
 }
 
 const findTask = `-- name: FindTask :one
-SELECT id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
 FROM tasks
-WHERE deleted_at IS NULL
-	AND id = $1::bigint
+WHERE id = $1::bigint
 `
 
 func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) {
@@ -116,29 +152,71 @@ func (q *Queries) FindTask(ctx context.Context, resourceID int64) (Task, error) 
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
+		&i.ParentID,
 		&i.OwnerID,
 		&i.Title,
 		&i.Color,
+		&i.Status,
 		&i.StartDate,
 		&i.EndDate,
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const listSubtasksByParent = `-- name: ListSubtasksByParent :many
+SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
+FROM tasks
+WHERE parent_id = $1::bigint
+ORDER BY sort_order ASC, id ASC
+`
+
+func (q *Queries) ListSubtasksByParent(ctx context.Context, parentID int64) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listSubtasksByParent, parentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Task{}
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProcessID,
+			&i.ParentID,
+			&i.OwnerID,
+			&i.Title,
+			&i.Color,
+			&i.Status,
+			&i.StartDate,
+			&i.EndDate,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listTaskIdsByProcess = `-- name: ListTaskIdsByProcess :many
 SELECT id
 FROM tasks
 WHERE process_id = $1::bigint
-	AND deleted_at IS NULL
+	AND parent_id IS NULL
 ORDER BY sort_order ASC, id ASC
 `
 
-// Active task ids of a process — to validate a reorder request covers the
-// whole group.
+// Active top-level task ids of a process — to validate a reorder request
+// covers the whole (top-level) group. Subtasks are managed by their parent
+// and are not reorderable.
 func (q *Queries) ListTaskIdsByProcess(ctx context.Context, processID int64) ([]int64, error) {
 	rows, err := q.db.Query(ctx, listTaskIdsByProcess, processID)
 	if err != nil {
@@ -160,34 +238,55 @@ func (q *Queries) ListTaskIdsByProcess(ctx context.Context, processID int64) ([]
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT t.id, t.process_id, t.owner_id, t.title, t.color, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at, t.deleted_at
+SELECT t.id, t.process_id, t.parent_id, t.owner_id, t.title, t.color, t.status, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
-WHERE t.deleted_at IS NULL
-  AND (
-    $1::text = 'all' OR
-    ($1::text = 'parent' AND p.owner_id = $2::bigint) OR
-    ($1::text = 'ancestor' AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
-    ($1::text = 'own' AND t.owner_id = $2::bigint)
+WHERE (
+    $1::boolean OR
+    ($2::boolean AND t.owner_id = $3::bigint) OR
+    ($4::boolean AND p.owner_id = $3::bigint) OR
+    ($5::boolean AND (t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($6::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = t.process_id
+          AND s.parent_id IS NOT DISTINCT FROM t.parent_id
+          AND s.owner_id = $3::bigint
+    )) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = $3::bigint
+    )) OR
+    $8::boolean
   )
-  AND ($3::bigint = 0 OR t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)
+  AND ($9::bigint = 0 OR t.owner_id = $9::bigint OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
 ORDER BY t.sort_order ASC, t.id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $11::bigint OFFSET $10::bigint
 `
 
 type ListTasksParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScParent   bool  `json:"sc_parent"`
+	ScAncestor bool  `json:"sc_ancestor"`
+	ScSib      bool  `json:"sc_sib"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listTasks,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScDown,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,
@@ -202,15 +301,16 @@ func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, e
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProcessID,
+			&i.ParentID,
 			&i.OwnerID,
 			&i.Title,
 			&i.Color,
+			&i.Status,
 			&i.StartDate,
 			&i.EndDate,
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -230,9 +330,6 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE t.id = $1::bigint
-	AND t.deleted_at IS NULL
-	AND p.deleted_at IS NULL
-	AND pr.deleted_at IS NULL
 `
 
 type OwnerChainRow struct {
@@ -252,12 +349,12 @@ const reorderTasksApply = `-- name: ReorderTasksApply :exec
 UPDATE tasks t
 SET sort_order = x.ord, updated_at = NOW()
 FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE t.id = x.id AND t.deleted_at IS NULL
+WHERE t.id = x.id
 `
 
 // Phase 2 of the two-phase reorder: write the final positions. The group is
-// the whole active set of the process (validated by the caller), so no target
-// slot collides with rows outside the group.
+// the whole active top-level set of the process (validated by the caller), so
+// no target slot collides with rows outside the group.
 func (q *Queries) ReorderTasksApply(ctx context.Context, ids []int64) error {
 	_, err := q.db.Exec(ctx, reorderTasksApply, ids)
 	return err
@@ -267,13 +364,14 @@ const reorderTasksMark = `-- name: ReorderTasksMark :exec
 UPDATE tasks t
 SET sort_order = x.ord + 1000000, updated_at = NOW()
 FROM unnest($1::bigint[]) WITH ORDINALITY AS x(id, ord)
-WHERE t.id = x.id AND t.deleted_at IS NULL
+WHERE t.id = x.id
 `
 
 // Phase 1 of the two-phase reorder (runs inside one transaction with
 // ReorderTasksApply): park every task on a temporary offset slot so the
-// follow-up write cannot transiently violate the partial unique index
-// (process_id, sort_order) when values swap. The caller sends the whole group.
+// follow-up write cannot transiently violate the unique index
+// (process_id, parent group, sort_order) when values swap. The caller sends
+// the whole top-level group (subtasks keep their positions).
 func (q *Queries) ReorderTasksMark(ctx context.Context, ids []int64) error {
 	_, err := q.db.Exec(ctx, reorderTasksMark, ids)
 	return err
@@ -282,34 +380,33 @@ func (q *Queries) ReorderTasksMark(ctx context.Context, ids []int64) error {
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET
-	process_id = $1,
-	owner_id = $2,
-	title = $3,
-	color = $4,
+	owner_id = $1,
+	title = $2,
+	color = $3,
+	status = $4,
 	start_date = $5,
 	end_date = $6,
 	updated_at = NOW()
 WHERE id = $7
-	AND deleted_at IS NULL
-RETURNING id, process_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, deleted_at
+RETURNING id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at
 `
 
 type UpdateTaskParams struct {
-	ProcessID int64          `json:"process_id"`
 	OwnerID   pgtype.Int8    `json:"owner_id"`
 	Title     string         `json:"title"`
 	Color     sql.NullString `json:"color"`
-	StartDate time.Time      `json:"start_date"`
-	EndDate   time.Time      `json:"end_date"`
+	Status    string         `json:"status"`
+	StartDate date.Date      `json:"start_date"`
+	EndDate   date.Date      `json:"end_date"`
 	TaskID    int64          `json:"task_id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, updateTask,
-		arg.ProcessID,
 		arg.OwnerID,
 		arg.Title,
 		arg.Color,
+		arg.Status,
 		arg.StartDate,
 		arg.EndDate,
 		arg.TaskID,
@@ -318,15 +415,16 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 	err := row.Scan(
 		&i.ID,
 		&i.ProcessID,
+		&i.ParentID,
 		&i.OwnerID,
 		&i.Title,
 		&i.Color,
+		&i.Status,
 		&i.StartDate,
 		&i.EndDate,
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }

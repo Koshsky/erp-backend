@@ -26,7 +26,7 @@ func NewAutoCreateHandler(
 	mw *rbac.Middleware,
 ) *AutoCreateHandler {
 	return &AutoCreateHandler{
-		logger:  logger,
+		logger:  logger.With("component", "auto_create_handler"),
 		service: svc,
 		mw:      mw,
 	}

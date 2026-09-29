@@ -3,8 +3,8 @@ package delivery
 import (
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	planningservice "github.com/Koshsky/erp-backend/internal/planning/service"
-	"github.com/Koshsky/erp-backend/internal/policies"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +27,7 @@ func NewPlanningHandler(
 	mw *rbac.Middleware,
 ) *PlanningHandler {
 	return &PlanningHandler{
-		logger:  logger,
+		logger:  logger.With("component", "planning_handler"),
 		service: svc,
 		mw:      mw,
 	}
@@ -54,7 +54,7 @@ func (h *PlanningHandler) GetProjectPlanning(c *gin.Context) {
 	planning, err := h.service.GetProjectPlanning(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceProject),
+		engine.CompileViewScopeUser(user, rbac.ResourceProject),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
@@ -84,7 +84,8 @@ func (h *PlanningHandler) GetProcessPlanning(c *gin.Context) {
 	planning, err := h.service.GetProcessPlanning(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceProcess),
+		engine.CompileViewScopeUser(user, rbac.ResourceProcess),
+		engine.CompileViewScopeUser(user, rbac.ResourceProject),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)
@@ -114,7 +115,8 @@ func (h *PlanningHandler) GetTaskPlanning(c *gin.Context) {
 	planning, err := h.service.GetTaskPlanning(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceTask),
+		engine.CompileViewScopeUser(user, rbac.ResourceTask),
+		engine.CompileViewScopeUser(user, rbac.ResourceResource),
 	)
 	if err != nil {
 		response.InternalError(c, h.logger, err.Error(), err)

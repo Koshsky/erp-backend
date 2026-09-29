@@ -12,6 +12,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/auto_create/dto"
 	"github.com/Koshsky/erp-backend/internal/auto_create/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/database"
 )
 
 type AutoCreateRepository struct {
@@ -22,14 +23,23 @@ type AutoCreateRepository struct {
 // NewAutoCreateRepository builds the AutoCreateRepository repository.
 func NewAutoCreateRepository(logger *slog.Logger, pool *pgxpool.Pool) *AutoCreateRepository {
 	return &AutoCreateRepository{
-		logger: logger,
+		logger: logger.With("component", "auto_create_repository"),
 		db:     sqlc.New(pool),
 	}
 }
 
+// q resolves the query handle: the request-scoped transaction when one is
+// active (idempotency middleware), otherwise the shared pool.
+func (r *AutoCreateRepository) q(ctx context.Context) *sqlc.Queries {
+	if tx, ok := database.TxFrom(ctx); ok {
+		return sqlc.New(tx)
+	}
+	return r.db
+}
+
 // GetConfig returns the current config (empty + disabled when not set yet).
 func (r *AutoCreateRepository) GetConfig(ctx context.Context) (*dto.AutoCreateConfig, error) {
-	row, err := r.db.GetAutoCreateConfig(ctx)
+	row, err := r.q(ctx).GetAutoCreateConfig(ctx)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return &dto.AutoCreateConfig{Enabled: false, Processes: []dto.ProcessTemplate{}}, nil
@@ -53,7 +63,7 @@ func (r *AutoCreateRepository) UpsertConfig(ctx context.Context, cfg *dto.AutoCr
 	if err != nil {
 		return err
 	}
-	_, err = r.db.UpsertAutoCreateConfig(ctx, sqlc.UpsertAutoCreateConfigParams{
+	_, err = r.q(ctx).UpsertAutoCreateConfig(ctx, sqlc.UpsertAutoCreateConfigParams{
 		Enabled: cfg.Enabled,
 		Config:  raw,
 	})
@@ -62,7 +72,7 @@ func (r *AutoCreateRepository) UpsertConfig(ctx context.Context, cfg *dto.AutoCr
 
 // ExistingResources returns the set of active resource ids present among ids.
 func (r *AutoCreateRepository) ExistingResources(ctx context.Context, ids []int64) (map[int64]struct{}, error) {
-	rows, err := r.db.ListExistingResources(ctx, ids)
+	rows, err := r.q(ctx).ListExistingResources(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +85,7 @@ func (r *AutoCreateRepository) ExistingResources(ctx context.Context, ids []int6
 
 // ExistingUsers returns the set of active user ids present among ids.
 func (r *AutoCreateRepository) ExistingUsers(ctx context.Context, ids []int64) (map[int64]struct{}, error) {
-	rows, err := r.db.ListExistingUsers(ctx, ids)
+	rows, err := r.q(ctx).ListExistingUsers(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,16 @@ type TaskTemplate struct {
 	Title     string            `json:"title"     example:"Пуско-наладочные работы"`
 	Color     *string           `json:"color"     example:"#0f83c4"`
 	Resources []ResourceBinding `json:"resources"`
+	// Operations (subtasks) of the task — created as subtasks (parent_id)
+	// with the task's dates. Status is always not_started; resources are not
+	// bound to subtasks.
+	Operations []OperationTemplate `json:"operations"`
+}
+
+// OperationTemplate — a subtask (operation) of a template task. Only the
+// title is configurable; the subtask inherits the parent task's dates.
+type OperationTemplate struct {
+	Title string `json:"title" example:"Подготовка площадки"`
 }
 
 type ResourceBinding struct {

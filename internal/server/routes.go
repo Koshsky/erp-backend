@@ -10,10 +10,11 @@
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// Note (AD-14): host is a placeholder until a domain appears; once the
-// production domain exists, replace it here (along with AD-03/AD-11).
-//	@host		localhost
-//	@schemes	https
+// Note (AD-14): host is a placeholder until a domain appears; aligned with
+// the dev deployment (http, localhost:8080) — swagger is disabled in prod
+// (M6) and only served by the dev-only cmd/swagger/main.go on :8080.
+//	@host		localhost:8080
+//	@schemes	http
 //	@BasePath	/api/v1
 
 //	@securityDefinitions.apikey	ApiKeyAuth
@@ -32,7 +33,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
 	"github.com/Koshsky/erp-backend/internal/response"
 	"github.com/Koshsky/erp-backend/internal/userctx"
 )
@@ -47,7 +47,7 @@ import (
 func (a *App) registerRoutes(router *gin.Engine) {
 	api := router.Group("/api/v1")
 	api.Use(a.tracer.GinSpan("middleware.ratelimit.public"))
-	api.Use(ratelimit.FromConfig(a.cfg.RateLimit, a.logger))
+	api.Use(a.rateLimiter.FromConfig(a.cfg.RateLimit))
 	// Audit capture for the public routes (only the /auth/* mutations are
 	// classified; everything else passes through untouched).
 	if a.auditMw != nil {
@@ -79,7 +79,7 @@ func (a *App) registerRoutes(router *gin.Engine) {
 	protected.Use(a.tracer.GinSpan("middleware.idempotency"))
 	protected.Use(a.idemMw.Handler())
 	protected.Use(a.tracer.GinSpan("middleware.ratelimit.user"))
-	protected.Use(ratelimit.FromConfigKeyed(a.cfg.UserRateLimit, a.userKey, a.logger))
+	protected.Use(a.rateLimiter.FromConfigKeyed(a.cfg.UserRateLimit, a.userKey))
 	for _, m := range a.modules {
 		m.RegisterProtectedRoutes(protected)
 	}

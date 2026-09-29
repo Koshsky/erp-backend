@@ -1,14 +1,5 @@
 basePath: /api/v1
 definitions:
-  domain.Preset:
-    properties:
-      description:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
   dto.AddMemberRequest:
     properties:
       user_id:
@@ -131,6 +122,9 @@ definitions:
       expires_in:
         example: 900
         type: integer
+      refresh_token:
+        example: a1b2c3d4...
+        type: string
       token_type:
         example: Bearer
         type: string
@@ -241,6 +235,20 @@ definitions:
           comment.
         example: 3
         type: integer
+    type: object
+  dto.CreateDependencyRequest:
+    properties:
+      depends_on_task_id:
+        example: 10
+        type: integer
+      type:
+        enum:
+        - fs
+        - ss
+        - ff
+        - sf
+        example: fs
+        type: string
     type: object
   dto.CreateMilestoneRequest:
     properties:
@@ -365,12 +373,22 @@ definitions:
       owner_id:
         example: 1
         type: integer
+      parent_id:
+        description: |-
+          ParentID — optional subtask (operation) link: task of the given parent.
+          When set, process_id must point to the parent's process; dates and
+          owner may be omitted and are inherited from the parent by the service.
+        example: 10
+        type: integer
       process_id:
         example: 1
         type: integer
       start_date:
         example: "2026-01-01"
         format: date
+        type: string
+      status:
+        example: not_started
         type: string
       title:
         example: Пуско-наладочные работы
@@ -425,11 +443,36 @@ definitions:
       user:
         $ref: '#/definitions/dto.UserResponse'
     type: object
+  dto.DependencyResponse:
+    properties:
+      depends_on_task_id:
+        description: Predecessor task of the link.
+        example: 10
+        type: integer
+      id:
+        example: 1
+        type: integer
+      task_id:
+        description: Dependent task (successor) of the link.
+        example: 42
+        type: integer
+      type:
+        description: 'Dependency type: fs | ss | ff | sf.'
+        example: fs
+        type: string
+    type: object
   dto.DetailedProcess:
     properties:
       color:
         example: '#0f83c4'
         type: string
+      dependencies:
+        description: |-
+          Scheduling links between the tasks of the process (the successor
+          task_id depends on depends_on_task_id with the given type).
+        items:
+          $ref: '#/definitions/dto.TaskDependency'
+        type: array
       end_date:
         example: "2026-02-01"
         format: date
@@ -513,11 +556,16 @@ definitions:
         example: 1
         type: integer
       order:
-        description: Order of the task within its process (ascending display order).
+        description: |-
+          Order of the task within its parent group (ascending display order):
+          top-level tasks sort within the process, subtasks within the parent.
         example: 1
         type: integer
       owner_id:
         example: 1
+        type: integer
+      parent_id:
+        description: ParentID — subtask (operation) link; NULL for top-level tasks.
         type: integer
       process_id:
         example: 1
@@ -530,6 +578,17 @@ definitions:
         example: "2026-01-01"
         format: date
         type: string
+      status:
+        description: 'Execution status: not_started | in_progress | done.'
+        example: not_started
+        type: string
+      subtasks:
+        description: |-
+          Subtasks (operations) attached to this task, in display order.
+          Present only on top-level tasks; subtasks cannot have subtasks.
+        items:
+          $ref: '#/definitions/dto.DetailedTask'
+        type: array
       title:
         example: Пуско-наладочные работы
         type: string
@@ -605,6 +664,12 @@ definitions:
         example: Телевидение
         type: string
     type: object
+  dto.OperationTemplate:
+    properties:
+      title:
+        example: Подготовка площадки
+        type: string
+    type: object
   dto.Permission:
     properties:
       action:
@@ -677,6 +742,9 @@ definitions:
       description:
         example: Внешний аудит
         type: string
+      name:
+        example: auditor
+        type: string
     type: object
   dto.PresetUpsertInput:
     properties:
@@ -688,6 +756,15 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  dto.PresetView:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
     type: object
   dto.Process:
     properties:
@@ -825,6 +902,12 @@ definitions:
       start_date:
         type: string
     type: object
+  dto.RefreshRequest:
+    properties:
+      refresh_token:
+        example: a1b2c3d4...
+        type: string
+    type: object
   dto.ReorderProcessRequest:
     properties:
       ids:
@@ -844,12 +927,6 @@ definitions:
       process_id:
         example: 1
         type: integer
-    type: object
-  dto.ResetPasswordResponse:
-    properties:
-      password:
-        example: Xy9kLm2QrT8wAb3z
-        type: string
     type: object
   dto.Resource:
     properties:
@@ -1030,6 +1107,21 @@ definitions:
         example: Отпуск
         type: string
     type: object
+  dto.TaskDependency:
+    properties:
+      depends_on_task_id:
+        example: 10
+        type: integer
+      id:
+        example: 1
+        type: integer
+      task_id:
+        example: 42
+        type: integer
+      type:
+        example: fs
+        type: string
+    type: object
   dto.TaskPlanning:
     properties:
       processes:
@@ -1046,14 +1138,22 @@ definitions:
       id:
         type: integer
       order:
-        description: Order of the task within its process (ascending display order).
+        description: |-
+          Order of the task within its parent group (ascending display order):
+          top-level tasks sort within the process, subtasks within the parent.
         example: 1
         type: integer
       owner_id:
         type: integer
+      parent_id:
+        description: ParentID — subtask (operation) link; NULL for top-level tasks.
+        type: integer
       process_id:
         type: integer
       start_date:
+        type: string
+      status:
+        description: 'Execution status: not_started | in_progress | done.'
         type: string
       title:
         type: string
@@ -1063,6 +1163,14 @@ definitions:
       color:
         example: '#0f83c4'
         type: string
+      operations:
+        description: |-
+          Operations (subtasks) of the task — created as subtasks (parent_id)
+          with the task's dates. Status is always not_started; resources are not
+          bound to subtasks.
+        items:
+          $ref: '#/definitions/dto.OperationTemplate'
+        type: array
       resources:
         items:
           $ref: '#/definitions/dto.ResourceBinding'
@@ -1082,6 +1190,17 @@ definitions:
       task_id:
         example: 1
         type: integer
+    type: object
+  dto.UpdateDependencyRequest:
+    properties:
+      type:
+        enum:
+        - fs
+        - ss
+        - ff
+        - sf
+        example: ss
+        type: string
     type: object
   dto.UpdateManagerRequest:
     properties:
@@ -1191,14 +1310,17 @@ definitions:
         format: date
         type: string
       owner_id:
-        example: 1
-        type: integer
-      process_id:
+        description: |-
+          ProcessID is intentionally absent: a task never changes its process.
+          ParentID is absent too: the parent is fixed at creation.
         example: 1
         type: integer
       start_date:
         example: "2026-01-01"
         format: date
+        type: string
+      status:
+        example: in_progress
         type: string
       title:
         example: Пуско-наладочные работы
@@ -1370,6 +1492,40 @@ definitions:
       state_name:
         example: Отпуск
         type: string
+      user_id:
+        description: |-
+          UserID is set only in batch responses (GET /user/days), where one worker's
+          ranges are nested among several — hence omitempty.
+        example: 7
+        type: integer
+    type: object
+  dto.UserStatesResponse:
+    properties:
+      days:
+        items:
+          $ref: '#/definitions/dto.UserStateResponse'
+        type: array
+      user_id:
+        example: 7
+        type: integer
+    type: object
+  engine.KindInfo:
+    properties:
+      name:
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/engine.ParamInfo'
+        type: array
+    type: object
+  engine.ParamInfo:
+    properties:
+      key:
+        type: string
+      required:
+        type: boolean
+      type:
+        type: string
     type: object
   errors.DomainError:
     properties:
@@ -1381,24 +1537,6 @@ definitions:
         type: string
       timestamp:
         example: "2026-08-09T10:30:00Z"
-        type: string
-    type: object
-  policies.KindInfo:
-    properties:
-      name:
-        type: string
-      params:
-        items:
-          $ref: '#/definitions/policies.ParamInfo'
-        type: array
-    type: object
-  policies.ParamInfo:
-    properties:
-      key:
-        type: string
-      required:
-        type: boolean
-      type:
         type: string
     type: object
   response.ErrorResponse:
@@ -1425,7 +1563,7 @@ definitions:
 externalDocs:
   description: ERP documentation (placeholder)
   url: https://swagger.io/resources/open-api/
-host: localhost
+host: localhost:8080
 info:
   contact:
     email: shmonov.mv@gmail.com
@@ -1783,7 +1921,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user; the refresh token goes into an HttpOnly cookie
+      description: Authenticate user; the refresh token is returned both in the response
+        body and in an HttpOnly cookie
       parameters:
       - description: Login credentials
         in: body
@@ -1828,7 +1967,16 @@ paths:
       - Auth
   /auth/logout:
     post:
-      description: Revoke the refresh session and clear the cookie (idempotent)
+      consumes:
+      - application/json
+      description: Revoke the refresh session and clear the cookie; the token is read
+        from the body ({refresh_token}) or the HttpOnly cookie (idempotent)
+      parameters:
+      - description: Refresh token (optional; falls back to the HttpOnly cookie)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.RefreshRequest'
       produces:
       - application/json
       responses:
@@ -1850,8 +1998,16 @@ paths:
       - Auth
   /auth/refresh:
     post:
-      description: Rotate the refresh session from the HttpOnly cookie; returns a
-        new access token
+      consumes:
+      - application/json
+      description: Rotate the refresh session; the token is read from the body ({refresh_token})
+        or the HttpOnly cookie, and a new refresh token is returned in both
+      parameters:
+      - description: Refresh token (optional; falls back to the HttpOnly cookie)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.RefreshRequest'
       produces:
       - application/json
       responses:
@@ -2924,7 +3080,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/policies.KindInfo'
+                    $ref: '#/definitions/engine.KindInfo'
                   type: array
                 error:
                   type: object
@@ -3124,7 +3280,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/domain.Preset'
+                    $ref: '#/definitions/dto.PresetView'
                   type: array
                 error:
                   type: object
@@ -3154,7 +3310,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/domain.Preset'
+                  $ref: '#/definitions/dto.PresetView'
                 error:
                   type: object
               type: object
@@ -3213,7 +3369,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/domain.Preset'
+                  $ref: '#/definitions/dto.PresetView'
                 error:
                   type: object
               type: object
@@ -4138,6 +4294,209 @@ paths:
       summary: Delete task comment
       tags:
       - Tasks
+  /task/{id}/dependencies:
+    get:
+      description: Get all dependency links of a task (the predecessors it depends
+        on, with the link type)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.DependencyResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List task dependencies
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: 'Create a scheduling link: the task (task_id) depends on depends_on_task_id
+        with the given type (fs/ss/ff/sf)'
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dependency data
+        in: body
+        name: dependency
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateDependencyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DependencyResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create task dependency
+      tags:
+      - Tasks
+  /task/{id}/dependencies/{dep_id}:
+    delete:
+      description: Delete a dependency link by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dependency ID
+        in: path
+        name: dep_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete task dependency
+      tags:
+      - Tasks
+    put:
+      consumes:
+      - application/json
+      description: Change the type of an existing dependency link (fs/ss/ff/sf)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dependency ID
+        in: path
+        name: dep_id
+        required: true
+        type: integer
+      - description: New dependency type
+        in: body
+        name: dependency
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateDependencyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DependencyResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update task dependency
+      tags:
+      - Tasks
   /task/order:
     put:
       consumes:
@@ -4468,6 +4827,11 @@ paths:
         in: query
         name: include_hash
         type: boolean
+      - description: Case-insensitive substring of the full name or login (max 128
+          chars)
+        in: query
+        name: search
+        type: string
       - description: Page offset
         in: query
         name: offset
@@ -4576,7 +4940,8 @@ paths:
       - Users
   /user/{id}:
     delete:
-      description: Delete a user by ID (soft delete)
+      description: Delete a user by ID (moves the account to the archive; 409 if the
+        user is referenced)
       parameters:
       - description: User ID
         in: path
@@ -4590,6 +4955,15 @@ paths:
           description: No Content
         "400":
           description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "409":
+          description: Conflict
           schema:
             allOf:
             - $ref: '#/definitions/response.ErrorResponse'
@@ -4928,7 +5302,8 @@ paths:
       - Users
   /user/{id}/reset-password:
     post:
-      description: Generate a new random password for a user and return it once
+      description: Generate a new random password for a user (admin only; the new
+        password is never returned)
       parameters:
       - description: User ID
         in: path
@@ -4938,19 +5313,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.ResetPasswordResponse'
-                error:
-                  type: object
-              type: object
+        "204":
+          description: No Content
         "400":
           description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
           schema:
             allOf:
             - $ref: '#/definitions/response.ErrorResponse'
@@ -5043,8 +5418,86 @@ paths:
       summary: Change Password
       tags:
       - Users
+  /user/days:
+    get:
+      description: 'Batch replacement of GET /user/{id}/days: returns the state ranges
+        of several workers over one date range, with one entry per requested id (empty
+        days when the worker has none) and no N+1 requests per employee.'
+      parameters:
+      - description: Comma-separated user IDs (max 200)
+        in: query
+        name: ids
+        required: true
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.UserStatesResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Batch list worker days
+      tags:
+      - Users
 schemes:
-- https
+- http
 securityDefinitions:
   ApiKeyAuth:
     description: '"Provide JWT token in the format: Bearer {token}"'

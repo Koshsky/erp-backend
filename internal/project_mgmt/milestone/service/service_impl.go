@@ -2,12 +2,16 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
+
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/dto"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -26,7 +30,7 @@ func NewMilestoneService(
 	r *repo.MilestoneRepository,
 ) *MilestoneService {
 	return &MilestoneService{
-		logger:     logger,
+		logger:     logger.With("component", "milestone_service"),
 		tracer:     tracer,
 		repository: r,
 		mapper:     NewMilestoneMapper(),
@@ -41,12 +45,17 @@ func (s *MilestoneService) CreateMilestone(
 	ctx, end := s.tracer.Start(ctx, "milestone.CreateMilestone")
 	defer end(nil)
 
-	milestone := s.mapper.ToDomainFromCreate(req)
-	if err := s.validator.ValidateMilestone(&milestone); err != nil {
+	if err := s.validator.ValidateMilestone(
+		req.ProcessID,
+		req.Title,
+		req.Content,
+		req.Color,
+		req.Date,
+	); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateMilestone(ctx, milestone)
+	created, err := s.repository.CreateMilestone(ctx, req.ProcessID, req.Title, req.Content, req.Color, req.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +93,32 @@ func (s *MilestoneService) UpdateMilestone(
 		return nil, errors.ErrMilestoneNotFound
 	}
 
-	s.mapper.ApplyUpdateToDomain(milestone, req)
-	if err = s.validator.ValidateMilestone(milestone); err != nil {
+	if req.Title != nil {
+		milestone.Title = *req.Title
+	}
+	if req.Content != nil {
+		milestone.Content = *req.Content
+	}
+	if req.Color != nil {
+		if *req.Color == "" {
+			milestone.Color = sql.NullString{}
+		} else {
+			milestone.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if req.Date != nil {
+		milestone.Date = *req.Date
+	}
+	if req.ProcessID != nil {
+		milestone.ProcessID = *req.ProcessID
+	}
+	if err = s.validator.ValidateMilestone(
+		milestone.ProcessID,
+		milestone.Title,
+		milestone.Content,
+		nullable.StringPtr(milestone.Color),
+		milestone.Date,
+	); err != nil {
 		return nil, err
 	}
 
@@ -118,18 +151,18 @@ func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error 
 func (s *MilestoneService) ListMilestones(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.MilestoneResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "milestone.ListMilestones")
 	defer end(nil)
 
-	rows, err := s.repository.ListMilestones(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListMilestones(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountMilestones(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountMilestones(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

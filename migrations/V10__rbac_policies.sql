@@ -147,23 +147,3 @@ INSERT INTO rbac_route_policies (name, kind, params) VALUES
     ('autocreate.list',   'entity', '{"resource":"rbac_config","action":"view","owner":"none"}'),
     ('autocreate.update', 'entity', '{"resource":"rbac_config","action":"update","owner":"none"}'),
     ('rbac.manage',       'entity', '{"resource":"rbac_config","action":"view","owner":"none"}');
-
--- =============================================
--- BLOCK hard DELETE (same protection as for the other tables, V5)
--- =============================================
-CREATE TRIGGER block_hard_delete_on_rbac_presets
-BEFORE DELETE ON rbac_presets
-FOR EACH ROW EXECUTE FUNCTION block_hard_delete();
-
-CREATE TRIGGER block_hard_delete_on_rbac_preset_rules
-BEFORE DELETE ON rbac_preset_rules
-FOR EACH ROW EXECUTE FUNCTION block_hard_delete();
-
-CREATE TRIGGER block_hard_delete_on_rbac_route_policies
-BEFORE DELETE ON rbac_route_policies
-FOR EACH ROW EXECUTE FUNCTION block_hard_delete();
-
--- Per-user overrides are replaced by soft-delete (audit), never hard-deleted.
-CREATE TRIGGER block_hard_delete_on_user_permissions
-BEFORE DELETE ON user_permissions
-FOR EACH ROW EXECUTE FUNCTION block_hard_delete();

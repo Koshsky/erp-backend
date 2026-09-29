@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"strconv"
 
-	"github.com/Koshsky/erp-backend/internal/policies"
+	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/service"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
@@ -26,7 +26,7 @@ type ResourceHandler struct {
 // NewResourceHandler builds the ResourceHandler handler.
 func NewResourceHandler(logger *slog.Logger, svc *service.ResourceService, mw *rbac.Middleware) *ResourceHandler {
 	return &ResourceHandler{
-		logger:  logger,
+		logger:  logger.With("component", "resource_handler"),
 		service: svc,
 		mw:      mw,
 	}
@@ -59,7 +59,7 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 	items, total, err := h.service.ListResources(
 		c.Request.Context(),
 		user.ID,
-		policies.ViewScopeCodeUser(user, rbac.ResourceResource),
+		engine.CompileViewScopeUser(user, rbac.ResourceResource),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

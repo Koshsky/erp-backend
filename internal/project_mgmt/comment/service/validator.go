@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 
-	"github.com/Koshsky/erp-backend/internal/project_mgmt/comment/domain"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
@@ -15,17 +14,17 @@ type CommentValidator struct {
 	validator.Validator
 }
 
-func (v *CommentValidator) ValidateComment(c *domain.Comment) error {
-	if err := v.ValidatePositiveID(c.TaskID, "task_id"); err != nil {
+func (v *CommentValidator) ValidateComment(taskID, authorID int64, content string) error {
+	if err := v.ValidatePositiveID(taskID, "task_id"); err != nil {
 		return err
 	}
-	if err := v.ValidatePositiveID(c.AuthorID, "author_id"); err != nil {
+	if err := v.ValidatePositiveID(authorID, "author_id"); err != nil {
 		return err
 	}
-	if err := v.ValidateRequiredText(c.Content, "content"); err != nil {
+	if err := v.ValidateRequiredText(content, "content"); err != nil {
 		return err
 	}
-	if len([]rune(c.Content)) > maxCommentContentLen {
+	if len([]rune(content)) > maxCommentContentLen {
 		return errors.NewFieldError(
 			"content",
 			"max_length",
