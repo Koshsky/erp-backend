@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/dto"
 )
 
@@ -10,7 +11,7 @@ type TaskService interface {
 	ListTasks(
 		ctx context.Context,
 		userID int64,
-		viewScope string,
+		scope rbac.ListScope,
 		ownerID int64,
 		limit, offset int,
 	) ([]dto.TaskResponse, int64, error)

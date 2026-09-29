@@ -17,23 +17,26 @@ const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*)
 FROM users
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND manager_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND manager_id = $3::bigint) OR
+    $4::boolean
   )
-  AND ($3::text = '' OR preset = $3::text)
-  AND ($4::bigint = 0 OR manager_id = $4::bigint)
+  AND ($5::text = '' OR preset = $5::text)
+  AND ($6::bigint = 0 OR manager_id = $6::bigint)
   AND (
-    $5::text = '' OR
+    $7::text = '' OR
     LOWER(
       last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
-    ) LIKE '%' || $5::text || '%' ESCAPE '\' OR
-    LOWER(username) LIKE '%' || $5::text || '%' ESCAPE '\'
+    ) LIKE '%' || $7::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || $7::text || '%' ESCAPE '\'
   )
 `
 
 type CountUsersParams struct {
-	ScopeView    string `json:"scope_view"`
+	ScAll        bool   `json:"sc_all"`
+	ScSelf       bool   `json:"sc_self"`
 	UserID       int64  `json:"user_id"`
+	ScNone       bool   `json:"sc_none"`
 	PresetFilter string `json:"preset_filter"`
 	ManagerID    int64  `json:"manager_id"`
 	Search       string `json:"search"`
@@ -41,8 +44,10 @@ type CountUsersParams struct {
 
 func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countUsers,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScNone,
 		arg.PresetFilter,
 		arg.ManagerID,
 		arg.Search,
@@ -543,32 +548,35 @@ const listUsers = `-- name: ListUsers :many
 SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND manager_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND manager_id = $3::bigint) OR
+    $4::boolean
   )
   -- For non-admin: only direct subordinates (manager_id = current user);
   -- admin sees everyone. The user himself is not included here (the timesheet
   -- adds oneself on the client separately).
-  AND ($3::text = '' OR preset = $3::text)
-  AND ($4::bigint = 0 OR manager_id = $4::bigint)
+  AND ($5::text = '' OR preset = $5::text)
+  AND ($6::bigint = 0 OR manager_id = $6::bigint)
   -- Optional search: a case-insensitive substring over the composed full name
   -- (last + first + middle) or the login; an empty pattern disables the filter.
   -- The caller passes the pattern already lowercased and escaped (see the
   -- normalizeSearch helper in user/service).
   AND (
-    $5::text = '' OR
+    $7::text = '' OR
     LOWER(
       last_name || ' ' || first_name || ' ' || COALESCE(middle_name, '')
-    ) LIKE '%' || $5::text || '%' ESCAPE '\' OR
-    LOWER(username) LIKE '%' || $5::text || '%' ESCAPE '\'
+    ) LIKE '%' || $7::text || '%' ESCAPE '\' OR
+    LOWER(username) LIKE '%' || $7::text || '%' ESCAPE '\'
   )
 ORDER BY id ASC
-LIMIT $7::bigint OFFSET $6::bigint
+LIMIT $9::bigint OFFSET $8::bigint
 `
 
 type ListUsersParams struct {
-	ScopeView    string `json:"scope_view"`
+	ScAll        bool   `json:"sc_all"`
+	ScSelf       bool   `json:"sc_self"`
 	UserID       int64  `json:"user_id"`
+	ScNone       bool   `json:"sc_none"`
 	PresetFilter string `json:"preset_filter"`
 	ManagerID    int64  `json:"manager_id"`
 	Search       string `json:"search"`
@@ -578,8 +586,10 @@ type ListUsersParams struct {
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
 	rows, err := q.db.Query(ctx, listUsers,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScNone,
 		arg.PresetFilter,
 		arg.ManagerID,
 		arg.Search,

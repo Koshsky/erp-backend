@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 	"github.com/Koshsky/erp-backend/pkg/date"
@@ -16,7 +17,7 @@ type UserService interface {
 	ListUsers(
 		ctx context.Context,
 		userID int64,
-		viewScope string,
+		scope rbac.ListScope,
 		presetFilter string,
 		managerID int64,
 		search string,

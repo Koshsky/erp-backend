@@ -9,9 +9,10 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+    @sc_all::boolean OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY m.id ASC
@@ -23,9 +24,10 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint))
+    @sc_all::boolean OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 

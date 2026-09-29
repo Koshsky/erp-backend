@@ -79,6 +79,10 @@ CREATE TRIGGER trg_archive_task_comments
 BEFORE DELETE ON task_comments
 FOR EACH ROW EXECUTE FUNCTION fn_archive_row();
 
+CREATE TRIGGER trg_archive_task_dependencies
+BEFORE DELETE ON task_dependencies
+FOR EACH ROW EXECUTE FUNCTION fn_archive_row();
+
 CREATE TRIGGER trg_archive_rbac_preset_rules
 BEFORE DELETE ON rbac_preset_rules
 FOR EACH ROW EXECUTE FUNCTION fn_archive_row();

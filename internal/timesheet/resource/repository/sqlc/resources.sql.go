@@ -47,20 +47,29 @@ const countResources = `-- name: CountResources :one
 SELECT COUNT(*)
 FROM resources
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    $4::boolean
   )
-  AND ($3::bigint = 0 OR owner_id = $3::bigint)
+  AND ($5::bigint = 0 OR owner_id = $5::bigint)
 `
 
 type CountResourcesParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll   bool  `json:"sc_all"`
+	ScSelf  bool  `json:"sc_self"`
+	UserID  int64 `json:"user_id"`
+	ScNone  bool  `json:"sc_none"`
+	OwnerID int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countResources, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countResources,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -279,21 +288,24 @@ SELECT r.id, r.code, r.title, r.color, r.owner_id,
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND r.owner_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND r.owner_id = $3::bigint) OR
+    $4::boolean
   )
-  AND ($3::bigint = 0 OR r.owner_id = $3::bigint)
+  AND ($5::bigint = 0 OR r.owner_id = $5::bigint)
 GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at
 ORDER BY r.id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $7::bigint OFFSET $6::bigint
 `
 
 type ListResourcesParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 type ListResourcesRow struct {
@@ -309,8 +321,10 @@ type ListResourcesRow struct {
 
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
 	rows, err := q.db.Query(ctx, listResources,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,

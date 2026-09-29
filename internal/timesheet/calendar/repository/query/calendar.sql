@@ -7,9 +7,9 @@
 SELECT id, title, code, owner_id
 FROM resources
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND owner_id = @user_id::bigint) OR
-    @scope_view::text = ''
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    @sc_none::boolean
 )
 ORDER BY id ASC;
 

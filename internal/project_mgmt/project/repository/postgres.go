@@ -104,13 +104,16 @@ func (r *ProjectRepository) DeleteProject(ctx context.Context, id int64) error {
 func (r *ProjectRepository) ListProjects(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Project, error) {
 	return r.q(ctx).ListProjects(ctx, sqlc.ListProjectsParams{
-		ScopeView:  viewScope,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
 		UserID:     userID,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
@@ -119,16 +122,18 @@ func (r *ProjectRepository) ListProjects(
 
 func (r *ProjectRepository) CountProjects(
 	ctx context.Context,
-	userID int64,
-	viewScope string,
+	_ int64,
+	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountProjects(
 		ctx,
 		sqlc.CountProjectsParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:   scope.All,
+			ScSelf:  scope.Self,
+			ScDown:  scope.Down,
+			ScNone:  scope.None,
+			OwnerID: ownerID,
 		},
 	)
 }

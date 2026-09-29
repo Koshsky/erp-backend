@@ -58,7 +58,7 @@ func (h *MilestoneHandler) ListMilestones(c *gin.Context) {
 	items, total, err := h.service.ListMilestones(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceMilestone),
+		engine.CompileViewScopeUser(user, rbac.ResourceMilestone),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

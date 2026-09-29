@@ -92,26 +92,43 @@ func (r *TaskRepository) DeleteTask(ctx context.Context, id int64) error {
 func (r *TaskRepository) ListTasks(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Task, error) {
 	return r.q(ctx).ListTasks(ctx, sqlc.ListTasksParams{
-		ScopeView:  viewScope,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
 		UserID:     userID,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScSib:      scope.Sib,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
 	})
 }
 
-func (r *TaskRepository) CountTasks(ctx context.Context, userID int64, viewScope string, ownerID int64) (int64, error) {
+func (r *TaskRepository) CountTasks(
+	ctx context.Context,
+	userID int64,
+	scope rbac.ListScope,
+	ownerID int64,
+) (int64, error) {
 	return r.q(ctx).CountTasks(
 		ctx,
 		sqlc.CountTasksParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:      scope.All,
+			ScSelf:     scope.Self,
+			UserID:     userID,
+			ScParent:   scope.Parent,
+			ScAncestor: scope.Ancestor,
+			ScSib:      scope.Sib,
+			ScDown:     scope.Down,
+			ScNone:     scope.None,
+			OwnerID:    ownerID,
 		},
 	)
 }

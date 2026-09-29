@@ -108,13 +108,16 @@ func (r *AssignmentRepository) DeleteAssignment(ctx context.Context, id int64) e
 func (r *AssignmentRepository) ListAssignments(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Assignment, error) {
 	return r.q(ctx).ListAssigments(ctx, sqlc.ListAssigmentsParams{
-		ScopeView:  viewScope,
+		ScAll:      scope.All,
 		UserID:     userID,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScNone:     scope.None,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
@@ -123,16 +126,18 @@ func (r *AssignmentRepository) ListAssignments(
 
 func (r *AssignmentRepository) CountAssignments(
 	ctx context.Context,
-	userID int64,
-	viewScope string,
+	_ int64,
+	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountAssignments(
 		ctx,
 		sqlc.CountAssignmentsParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:      scope.All,
+			ScParent:   scope.Parent,
+			ScAncestor: scope.Ancestor,
+			ScNone:     scope.None,
+			OwnerID:    ownerID,
 		},
 	)
 }

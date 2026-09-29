@@ -5,8 +5,9 @@ SELECT r.id, r.code, r.title, r.color, r.owner_id,
 FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND r.owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND r.owner_id = @user_id::bigint) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR r.owner_id = @owner_id::bigint)
 GROUP BY r.id, r.code, r.title, r.color, r.owner_id, r.created_at, r.updated_at
@@ -17,8 +18,9 @@ LIMIT @page_limit::bigint OFFSET @page_offset::bigint;
 SELECT COUNT(*)
 FROM resources
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'own' AND owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND owner_id = @user_id::bigint) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint);
 

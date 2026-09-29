@@ -241,7 +241,7 @@ func (s *UserService) validateCreatePermissions(
 		if p.Granted {
 			parsed, okScope := engine.ParseScope(p.Scope)
 			if !okScope || parsed == engine.ScopeNone {
-				return nil, errors.BadRequest("недопустимая зона " + p.Scope + " (all|own|parent|ancestor)")
+				return nil, errors.BadRequest("недопустимая зона " + p.Scope + " (all|self|up1|up|sib|down|none)")
 			}
 			if !engine.ScopeApplicable(res, parsed) {
 				return nil, errors.BadRequest("зона " + p.Scope + " неприменима к ресурсу " + p.Resource)
@@ -435,7 +435,7 @@ func (s *UserService) checkPresetChange(
 	if *newPreset == userdomain.PresetAdmin || !user.Preset.Valid || user.Preset.String != userdomain.PresetAdmin {
 		return nil
 	}
-	admins, err := s.repository.CountUsers(ctx, 0, scopeAllCode, userdomain.PresetAdmin, 0, "")
+	admins, err := s.repository.CountUsers(ctx, 0, rbac.ListScope{All: true}, userdomain.PresetAdmin, 0, "")
 	if err != nil {
 		return err
 	}
@@ -580,7 +580,7 @@ func (s *UserService) NormalizeSearch(search string) (string, error) {
 func (s *UserService) ListUsers(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	presetFilter string,
 	managerID int64,
 	search string,
@@ -590,11 +590,11 @@ func (s *UserService) ListUsers(
 	defer end(nil)
 
 	search = normalizeSearch(search)
-	users, err := s.repository.ListUsers(ctx, userID, viewScope, presetFilter, managerID, search, limit, offset)
+	users, err := s.repository.ListUsers(ctx, userID, scope, presetFilter, managerID, search, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountUsers(ctx, userID, viewScope, presetFilter, managerID, search)
+	total, err := s.repository.CountUsers(ctx, userID, scope, presetFilter, managerID, search)
 	if err != nil {
 		return nil, 0, err
 	}

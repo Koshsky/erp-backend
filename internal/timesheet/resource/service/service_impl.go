@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/resource/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/resource/dto"
@@ -36,18 +37,18 @@ func NewResourceService(logger *slog.Logger, tracer *tracingpkg.Tracer, r *repo.
 func (s *ResourceService) ListResources(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ResourceResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "resource.ListResources")
 	defer end(nil)
 
-	rows, err := s.repository.ListResources(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListResources(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountResources(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountResources(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

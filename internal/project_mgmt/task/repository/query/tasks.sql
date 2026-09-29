@@ -27,10 +27,20 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND t.owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND t.owner_id = @user_id::bigint) OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = t.process_id
+          AND s.parent_id IS NOT DISTINCT FROM t.parent_id
+          AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY t.sort_order ASC, t.id ASC
@@ -42,10 +52,20 @@ FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND p.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND t.owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND t.owner_id = @user_id::bigint) OR
+    (@sc_parent::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (t.owner_id = @user_id::bigint OR p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = t.process_id
+          AND s.parent_id IS NOT DISTINCT FROM t.parent_id
+          AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR t.owner_id = @owner_id::bigint OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 

@@ -1,8 +1,11 @@
+package engine
+
 // Access rules data: the permission matrix (preset × resource × action →
 // ownership scope) as plain data, its codecs (resources/actions/scopes) and
-// zone applicability. The matrix is the reset source and the compiled view of
-// the Casbin allow policies; runtime decisions live in decision.go.
-package engine
+// the tree-zone applicability. Scopes are now EXPRESSIONS over the ownership
+// tree (see scopeexpr.go): legacy zones ({own, parent, ancestor}) map 1:1 to
+// expressions ({self, up1, up}); the matrix remains the reset source and the
+// compiled view of the Casbin allow policies.
 
 import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -20,16 +23,15 @@ const (
 	ActionDelete
 )
 
-// Scope — ownership zone required for an action. The mechanism is single: "owner of
-// the parent element". Absence of a rule = ScopeNone (no access).
-type Scope int
-
+// Scope — the ownership-scope expression required for an action. Legacy zone
+// codes map to expressions: own→"self", parent→"up1", ancestor→"up". Absence
+// of a rule = ScopeNone (no access).
 const (
-	ScopeNone Scope = iota
-	ScopeAll
-	ScopeOwn      // owner of the row itself (project for rp; resource/worker for vp)
-	ScopeParent   // owner of the immediate parent (managing one level down)
-	ScopeAncestor // owner of the ancestor one level above the parent (viewing tasks through the project)
+	ScopeNone     = ""    // no rule / explicit deny
+	ScopeAll      = "all" // unconditional access
+	ScopeOwn      = "self"
+	ScopeParent   = "up1"
+	ScopeAncestor = "up"
 )
 
 // String resource codes (mirror V15 and the kind schemas).
@@ -59,18 +61,10 @@ const (
 	actDelete = "delete"
 )
 
-// String ownership zone codes.
-const (
-	scopeAll      = "all"
-	scopeOwn      = "own"
-	scopeParent   = "parent"
-	scopeAncestor = "ancestor"
-)
-
-// Rule binds a preset and the required access zone.
+// Rule binds a preset and the required access scope expression.
 type Rule struct {
 	Role  string
-	Scope Scope
+	Scope string
 }
 
 // MatrixRule — a matrix row (for building from the DB and defaults).
@@ -78,7 +72,7 @@ type MatrixRule struct {
 	Res   rbac.Resource
 	Act   Action
 	Role  string
-	Scope Scope
+	Scope string
 }
 
 // DefaultMatrixRules returns the built-in matrix rules (for reset).
@@ -291,9 +285,9 @@ func DefaultMatrix() Matrix {
 	return defaultMatrix
 }
 
-// ScopeFor returns the required access zone for (preset, resource, action).
+// ScopeFor returns the required access scope expression for (preset, resource, action).
 // admin gets ScopeAll (a protective invariant, not stored in the DB).
-func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) Scope {
+func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) string {
 	if role == userdomain.PresetAdmin {
 		return ScopeAll
 	}
@@ -312,7 +306,7 @@ func (m Matrix) ScopeFor(role string, res rbac.Resource, act Action) Scope {
 // overrideScope returns the caller's individual override for (resource, action):
 // (scope, true) — an explicit grant/revoke rule matched; (ScopeNone, false) —
 // no override (fall back to the preset).
-func overrideScope(u userctx.UserContext, res rbac.Resource, act Action) (Scope, bool) {
+func overrideScope(u userctx.UserContext, res rbac.Resource, act Action) (string, bool) {
 	for _, r := range u.Rules {
 		if r.Resource != ResourceName(res) || r.Action != ActionName(act) {
 			continue
@@ -329,12 +323,12 @@ func overrideScope(u userctx.UserContext, res rbac.Resource, act Action) (Scope,
 	return ScopeNone, false
 }
 
-// ScopeForUser returns the caller's effective zone for (resource, action):
+// ScopeForUser returns the caller's effective scope expression for (resource, action):
 // admin — ScopeAll (a bypass; overrides do not apply); a per-user override —
-// its scope (a revoked rule — ScopeNone); otherwise the preset matrix rule.
+// its expression (a revoked rule — ScopeNone); otherwise the preset matrix rule.
 // This is the data-level view (used by the admin editor views); the runtime
 // decisions go through the Casbin snapshot (ScopeForUser in decision.go).
-func (m Matrix) ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
+func (m Matrix) ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) string {
 	if u.Admin {
 		return ScopeAll
 	}
@@ -371,15 +365,6 @@ var actionNames = map[Action]string{
 	ActionDelete: actDelete,
 }
 
-//nolint:gochecknoglobals // scope codex ("none" is not stored: absence of a row = no access)
-var scopeNames = map[Scope]string{
-	ScopeNone:     "",
-	ScopeAll:      scopeAll,
-	ScopeOwn:      scopeOwn,
-	ScopeParent:   scopeParent,
-	ScopeAncestor: scopeAncestor,
-}
-
 // ResourceName returns the string resource code ("" — unknown).
 func ResourceName(res rbac.Resource) string { return resourceNames[res] }
 
@@ -406,89 +391,5 @@ func ParseAction(s string) (Action, bool) {
 	return 0, false
 }
 
-// ScopeName returns the string zone code ("" — no access, not stored).
-func ScopeName(scope Scope) string { return scopeNames[scope] }
-
-// ParseScope parses a string zone code.
-func ParseScope(s string) (Scope, bool) {
-	for scope, name := range scopeNames {
-		if name == s {
-			return scope, true
-		}
-	}
-	return 0, false
-}
-
-//nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
-var ownApplicable = map[rbac.Resource]bool{
-	rbac.ResourceProject:      true,
-	rbac.ResourceProcess:      true,
-	rbac.ResourceTask:         true,
-	rbac.ResourceMilestone:    false,
-	rbac.ResourceAssignment:   false,
-	rbac.ResourceState:        false,
-	rbac.ResourceResource:     true,
-	rbac.ResourceWorker:       true,
-	rbac.ResourceComment:      false,
-	rbac.ResourceUserCatalog:  false,
-	rbac.ResourceRBACConfig:   false,
-	rbac.ResourceUserAdmin:    false,
-	rbac.ResourceStateAdmin:   false,
-	rbac.ResourceOrgStructure: false,
-	rbac.ResourceAudit:        false,
-}
-
-//nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
-var parentApplicable = map[rbac.Resource]bool{
-	rbac.ResourceProject:      false,
-	rbac.ResourceProcess:      true,
-	rbac.ResourceTask:         true,
-	rbac.ResourceMilestone:    true,
-	rbac.ResourceAssignment:   true,
-	rbac.ResourceState:        false,
-	rbac.ResourceResource:     false,
-	rbac.ResourceWorker:       false,
-	rbac.ResourceComment:      false,
-	rbac.ResourceUserCatalog:  false,
-	rbac.ResourceRBACConfig:   false,
-	rbac.ResourceUserAdmin:    false,
-	rbac.ResourceStateAdmin:   false,
-	rbac.ResourceOrgStructure: false,
-	rbac.ResourceAudit:        false,
-}
-
-//nolint:gochecknoglobals // scope applicability maps (complete: every resource listed)
-var ancestorApplicable = map[rbac.Resource]bool{
-	rbac.ResourceProject:      false,
-	rbac.ResourceProcess:      true,
-	rbac.ResourceTask:         true,
-	rbac.ResourceMilestone:    true,
-	rbac.ResourceAssignment:   true,
-	rbac.ResourceState:        false,
-	rbac.ResourceResource:     false,
-	rbac.ResourceWorker:       false,
-	rbac.ResourceComment:      false,
-	rbac.ResourceUserCatalog:  false,
-	rbac.ResourceRBACConfig:   false,
-	rbac.ResourceUserAdmin:    false,
-	rbac.ResourceStateAdmin:   false,
-	rbac.ResourceOrgStructure: false,
-	rbac.ResourceAudit:        false,
-}
-
-// ScopeApplicable reports whether a zone is applicable to a resource (for rule validation).
-func ScopeApplicable(res rbac.Resource, scope Scope) bool {
-	switch scope {
-	case ScopeAll:
-		return true
-	case ScopeOwn:
-		return ownApplicable[res]
-	case ScopeParent:
-		return parentApplicable[res]
-	case ScopeAncestor:
-		return ancestorApplicable[res]
-	case ScopeNone:
-		return false
-	}
-	return false
-}
+// ScopeName returns the canonical expression of a scope value (identity).
+func ScopeName(scope string) string { return scope }

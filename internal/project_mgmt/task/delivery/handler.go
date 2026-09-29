@@ -58,7 +58,7 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 	items, total, err := h.service.ListTasks(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceTask),
+		engine.CompileViewScopeUser(user, rbac.ResourceTask),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

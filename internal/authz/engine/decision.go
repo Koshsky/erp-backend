@@ -1,9 +1,17 @@
-// Runtime access decisions over the Casbin snapshot: scope resolution for the
-// caller (preset + per-user overrides + admin bypass), entity authorization
-// (the ABAC matcher) and the route-check entry points (EnforceTarget).
 package engine
 
+// Runtime access decisions over the Casbin snapshot: scope resolution for the
+// caller (preset + per-user overrides + admin bypass), entity authorization
+// (zone evaluation in Go + the ABAC presence matcher) and the route-check
+// entry points (EnforceTarget).
+//
+// Zone evaluation moved out of the Casbin model: the effective scope EXPRESSION
+// of the caller is evaluated in Go (EvalScope, chain + optional owner probes)
+// BEFORE the presence check; the matcher only verifies that an allow row
+// exists without a deny (plus the author_or / owner_match business legs).
+
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -11,6 +19,15 @@ import (
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
+
+// Policy effect codes of the Casbin rows.
+const (
+	eftAllow = "allow"
+	eftDeny  = "deny"
+)
+
+// Initial capacity of the assembled matrix rule slice.
+const matrixInitCap = 64
 
 // resActKey returns the canonical "<resource>/<action>" policy object.
 func resActKey(res rbac.Resource, act Action) string {
@@ -57,9 +74,10 @@ func numericSub(sub string) bool {
 	return err == nil
 }
 
-// enforce runs the ABAC matcher for a subject and object; the admin bypass is
-// a code-level invariant (deny rows must not affect admins).
-func (s *Snapshot) enforce(sub Subject, obj Object) bool {
+// enforcePresence runs the ABAC presence matcher (allow row + no deny; the
+// zone was already evaluated Go-side). The admin bypass is a code-level
+// invariant (deny rows must not affect admins).
+func (s *Snapshot) enforcePresence(sub Subject, obj Object) bool {
 	if sub.Admin {
 		return true
 	}
@@ -73,13 +91,13 @@ func (s *Snapshot) enforce(sub Subject, obj Object) bool {
 // CurrentMatrix returns the effective preset matrix assembled from the Casbin
 // allow rows (the matrix/explain API source; admin bypass is not stored).
 func CurrentMatrix() Matrix {
-	rules := make([]MatrixRule, 0, 64)
+	rules := make([]MatrixRule, 0, matrixInitCap)
 	rows, err := current().e.GetPolicy()
 	if err != nil {
 		return NewMatrix(rules)
 	}
 	for _, row := range rows {
-		if len(row) < 4 || row[3] != "allow" || numericSub(row[0]) {
+		if len(row) < 4 || row[3] != eftAllow || numericSub(row[0]) {
 			continue
 		}
 		res, act, keyErr := splitKey(row[1])
@@ -87,7 +105,7 @@ func CurrentMatrix() Matrix {
 			continue
 		}
 		scope, ok := ParseScope(row[2])
-		if !ok || scope == ScopeNone {
+		if !ok || scope == ScopeNone || scope == ownerModeNone {
 			continue
 		}
 		rules = append(rules, MatrixRule{Res: res, Act: act, Role: row[0], Scope: scope})
@@ -95,8 +113,8 @@ func CurrentMatrix() Matrix {
 	return NewMatrix(rules)
 }
 
-// scopeFor resolves the preset zone (admin gets ScopeAll — invariant).
-func scopeFor(role string, res rbac.Resource, act Action) Scope {
+// scopeFor resolves the preset scope expression (admin gets ScopeAll — invariant).
+func scopeFor(role string, res rbac.Resource, act Action) string {
 	if role == userdomain.PresetAdmin {
 		return ScopeAll
 	}
@@ -111,10 +129,10 @@ func scopeFor(role string, res rbac.Resource, act Action) Scope {
 	return scope
 }
 
-// scopeForUser resolves the caller's effective zone: admin — ScopeAll; a
-// user-level deny (p2) — ScopeNone; a user-level grant — its scope; otherwise
-// the preset zone through the role hierarchy (g).
-func scopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
+// scopeForUser resolves the caller's effective scope expression: admin —
+// ScopeAll; a user-level deny (p2) — ScopeNone; a user-level grant — its
+// expression; otherwise the preset expression through the role hierarchy (g).
+func scopeForUser(u userctx.UserContext, res rbac.Resource, act Action) string {
 	if u.Admin {
 		return ScopeAll
 	}
@@ -126,18 +144,40 @@ func scopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
 	// user grants and the preset rows.
 	if rows, err := s.e.GetFilteredPolicy(0, uid, key); err == nil {
 		for _, row := range rows {
-			if len(row) >= 4 && row[3] == "deny" {
+			if len(row) >= 4 && row[3] == eftDeny {
 				return ScopeNone
 			}
 		}
 	}
+	if scope, ok := implicitScope(s, key, uid); ok {
+		return scope
+	}
+	// Direct preset row fallback (mirrors the matcher's p.sub == r.sub.Role):
+	// useful before the grouping rows are loaded (tests, tooling) — the preset
+	// row itself is authoritative for the role.
+	if rows, err := s.e.GetFilteredPolicy(0, u.Preset, key); err == nil {
+		for _, row := range rows {
+			if len(row) >= 4 && row[3] == eftAllow {
+				if scope, ok := ParseScope(row[2]); ok {
+					return scope
+				}
+			}
+		}
+	}
+	return ScopeNone
+}
+
+// implicitScope scans the caller's implicit permissions (preset through g +
+// user-level rows): a user-level grant wins; otherwise the preset's row is
+// the fallback. ok=false — nothing found.
+func implicitScope(s *Snapshot, key, uid string) (string, bool) {
 	perms, err := s.e.GetImplicitPermissionsForUser(uid)
 	if err != nil {
-		return ScopeNone
+		return ScopeNone, false
 	}
 	fallback := ScopeNone
 	for _, p := range perms {
-		if len(p) < 4 || p[1] != key || p[3] != "allow" {
+		if len(p) < 4 || p[1] != key || p[3] != eftAllow {
 			continue
 		}
 		scope, ok := ParseScope(p[2])
@@ -145,16 +185,19 @@ func scopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
 			continue
 		}
 		if p[0] == uid {
-			return scope // a user-level grant wins over the preset
+			return scope, true // a user-level grant wins over the preset
 		}
 		fallback = scope
 	}
-	return fallback
+	if fallback != ScopeNone {
+		return fallback, true
+	}
+	return ScopeNone, false
 }
 
-// ScopeForUser returns the caller's effective zone (admin bypass + per-user
-// overrides applied; Casbin snapshot).
-func ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) Scope {
+// ScopeForUser returns the caller's effective scope expression (admin bypass +
+// per-user overrides applied; Casbin snapshot).
+func ScopeForUser(u userctx.UserContext, res rbac.Resource, act Action) string {
 	return scopeForUser(u, res, act)
 }
 
@@ -168,57 +211,59 @@ func CanUser(u userctx.UserContext, res rbac.Resource, act Action) bool {
 	return scopeForUser(u, res, act) != ScopeNone
 }
 
-// ViewScopeCode returns the string code of the preset view zone for listing
-// requests (all|own|parent|ancestor).
+// ViewScopeCode returns the view scope expression of a preset for listing
+// requests (canonical: all | none-ish "" | self | up1 | up | region). The
+// list-scope compiler (sqlscope.go CompileViewScopeUser) turns it into the
+// boolean bundle the SQL skeletons consume.
 func ViewScopeCode(role string, res rbac.Resource) string {
-	return ScopeName(scopeFor(role, res, ActionView))
+	return scopeFor(role, res, ActionView)
 }
 
-// ViewScopeCodeUser returns the string code of the caller's view zone for
-// listing requests (admin bypass + per-user overrides applied).
+// ViewScopeCodeUser returns the caller's view scope expression for listing
+// requests (admin bypass + per-user overrides applied).
 func ViewScopeCodeUser(u userctx.UserContext, res rbac.Resource) string {
-	return ScopeName(scopeForUser(u, res, ActionView))
+	return scopeForUser(u, res, ActionView)
 }
 
 // Authorize reports whether a preset may perform an action on an entity with
-// its owners (the preset introspection path: matrix scope + owner comparison;
-// per-user overrides do not apply — mirror the matcher's scope leg).
+// its owners (the preset introspection path: effective expression + chain
+// evaluation; per-user overrides do not apply).
 func Authorize(role string, res rbac.Resource, act Action, owners rbac.Owners, userID int64) bool {
 	if role == userdomain.PresetAdmin {
 		return true
 	}
-	return authorizeScope(scopeFor(role, res, act), res, owners, userID)
+	scope := scopeFor(role, res, act)
+	if scope == ScopeNone {
+		return false
+	}
+	return authorizeScope(scope, res, owners, userID)
 }
 
 // AuthorizeUser reports whether the caller may perform an action on an entity
-// with its owners (admin bypass + per-user overrides applied; the ABAC matcher
-// evaluates the ownership zone).
+// with its owners (admin bypass + per-user overrides applied; zone = the
+// effective expression + chain; presence via the Casbin snapshot).
 func AuthorizeUser(u userctx.UserContext, res rbac.Resource, act Action, owners rbac.Owners, userID int64) bool {
-	return current().enforce(
+	if u.Admin {
+		return true
+	}
+	scope := scopeForUser(u, res, act)
+	if scope == ScopeNone {
+		return false
+	}
+	if !EvalScope(context.TODO(), scope, res, owners, userID, 0, nil) {
+		return false
+	}
+	return current().enforcePresence(
 		Subject{ID: itoa(userID), Role: u.Preset, Admin: u.Admin},
 		buildObject(res, act, owners, "", 0, rbac.Owners{}),
 	)
 }
 
-// authorizeScope — the owner-chain mechanism for a resolved zone (the preset
-// introspection mirror of the matcher's scope leg).
-func authorizeScope(scope Scope, res rbac.Resource, owners rbac.Owners, userID int64) bool {
-	switch scope {
-	case ScopeNone:
-		return false
-	case ScopeAll:
-		return true
-	case ScopeOwn:
-		owner := ownField(res, owners)
-		return userID != 0 && owner != 0 && owner == userID
-	case ScopeParent:
-		parent := parentField(res, owners)
-		return userID != 0 && parent != 0 && parent == userID
-	case ScopeAncestor:
-		return ancestorMatch(res, owners, userID)
-	default:
-		return false
-	}
+// authorizeScope — the expression evaluation for an entity chain (the preset
+// introspection mirror; legacy zones behave as before: self = own, up1 =
+// parent, up = ancestor).
+func authorizeScope(scope string, res rbac.Resource, owners rbac.Owners, userID int64) bool {
+	return EvalScope(context.TODO(), scope, res, owners, userID, 0, nil)
 }
 
 // ownField returns the owner of the row itself (chain L0) for a resource
@@ -281,7 +326,8 @@ func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 }
 
 // Target — a route-check target assembled by the kind builders: the implied
-// (resource, action), the resolved owner chain and the special route modes.
+// (resource, action), the resolved owner chain, the entity id (for data
+// dependent moves) and the special route modes.
 type Target struct {
 	Res    rbac.Resource
 	Act    Action
@@ -291,18 +337,49 @@ type Target struct {
 	AuthorID int64
 	// OwnerB — the compared owner chain of ModeOwnerMatch.
 	OwnerB rbac.Owners
+	// ID — the target entity id (for sib/down probes; 0 — not applicable).
+	ID int64
+	// Ctx — the request context (for the owner probes).
+	Ctx context.Context
 }
 
-// EnforceTarget runs the ABAC matcher for a route-check target.
+// EnforceTarget runs the route authorization: the caller's effective scope
+// expression evaluated over the owner chain (+ probes when the target carries
+// an id/context) and the Casbin presence check. The author_or mode skips the
+// zone pre-check for the author leg — the author is allowed regardless of the
+// parent's zone (the matcher enforces the disjunction).
 func EnforceTarget(u userctx.UserContext, t Target) bool {
+	if u.Admin {
+		return true
+	}
+	if t.Mode != ModeAuthorOr || t.AuthorID != u.ID {
+		scope := scopeForUser(u, t.Res, t.Act)
+		if scope == ScopeNone {
+			return false
+		}
+		probe := currentProbe()
+		if !EvalScope(t.Ctx, scope, t.Res, t.Owners, u.ID, t.ID, probe) {
+			return false
+		}
+	}
 	obj := buildObject(t.Res, t.Act, t.Owners, t.Mode, t.AuthorID, t.OwnerB)
-	return current().enforce(Subject{ID: itoa(u.ID), Role: u.Preset, Admin: u.Admin}, obj)
+	return current().enforcePresence(
+		Subject{ID: itoa(u.ID), Role: u.Preset, Admin: u.Admin},
+		obj,
+	)
 }
 
 // buildObject maps an owner chain into the object's ABAC attributes by the
 // resource's zone semantics (mirror ownField/parentField; the ancestor zone
-// uses the full chain).
-func buildObject(res rbac.Resource, act Action, owners rbac.Owners, mode string, authorID int64, ownerB rbac.Owners) Object {
+// uses the full chain; the zone leg itself is evaluated Go-side).
+func buildObject(
+	res rbac.Resource,
+	act Action,
+	owners rbac.Owners,
+	mode string,
+	authorID int64,
+	ownerB rbac.Owners,
+) Object {
 	return Object{
 		Key:            resActKey(res, act),
 		Mode:           mode,

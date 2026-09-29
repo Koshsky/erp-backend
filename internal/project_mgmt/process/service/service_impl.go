@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
@@ -187,18 +188,18 @@ func (s *ProcessService) ReorderProcesses(
 func (s *ProcessService) ListProcesses(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ProcessResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "process.ListProcesses")
 	defer end(nil)
 
-	rows, err := s.repository.ListProcesss(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListProcesss(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountProcesses(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountProcesses(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

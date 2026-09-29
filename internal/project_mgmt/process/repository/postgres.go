@@ -96,13 +96,19 @@ func (r *ProcessRepository) DeleteProcess(ctx context.Context, id int64) error {
 func (r *ProcessRepository) ListProcesss(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]sqlc.Process, error) {
 	return r.q(ctx).ListProcesss(ctx, sqlc.ListProcesssParams{
-		ScopeView:  viewScope,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
 		UserID:     userID,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScSib:      scope.Sib,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
 		OwnerID:    ownerID,
 		PageLimit:  int64(limit),
 		PageOffset: int64(offset),
@@ -111,16 +117,21 @@ func (r *ProcessRepository) ListProcesss(
 
 func (r *ProcessRepository) CountProcesses(
 	ctx context.Context,
-	userID int64,
-	viewScope string,
+	_ int64,
+	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountProcesses(
 		ctx,
 		sqlc.CountProcessesParams{
-			ScopeView: viewScope,
-			UserID:    userID,
-			OwnerID:   ownerID,
+			ScAll:      scope.All,
+			ScSelf:     scope.Self,
+			ScParent:   scope.Parent,
+			ScAncestor: scope.Ancestor,
+			ScSib:      scope.Sib,
+			ScDown:     scope.Down,
+			ScNone:     scope.None,
+			OwnerID:    ownerID,
 		},
 	)
 }

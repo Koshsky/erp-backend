@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/assignment/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -126,18 +128,18 @@ func (s *AssignmentService) DeleteAssignment(ctx context.Context, id int64) erro
 func (s *AssignmentService) ListAssignments(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.AssignmentResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "assignment.ListAssignments")
 	defer end(nil)
 
-	rows, err := s.repository.ListAssignments(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListAssignments(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountAssignments(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountAssignments(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -59,7 +59,7 @@ func (h *ResourceHandler) ListResources(c *gin.Context) {
 	items, total, err := h.service.ListResources(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceResource),
+		engine.CompileViewScopeUser(user, rbac.ResourceResource),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

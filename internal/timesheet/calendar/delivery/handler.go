@@ -63,7 +63,7 @@ func (h *CalendarHandler) GetCalendar(c *gin.Context) {
 	planning, err := h.service.GetCalendar(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceResource),
+		engine.CompileViewScopeUser(user, rbac.ResourceResource),
 		start,
 		end,
 	)

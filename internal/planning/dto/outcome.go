@@ -23,6 +23,9 @@ type DetailedProcess struct {
 
 	Tasks      []DetailedTask `json:"tasks"`
 	Milestones []Milestone    `json:"milestones"`
+	// Scheduling links between the tasks of the process (the successor
+	// task_id depends on depends_on_task_id with the given type).
+	Dependencies []TaskDependency `json:"dependencies,omitempty"`
 }
 
 type DetailedTask struct {

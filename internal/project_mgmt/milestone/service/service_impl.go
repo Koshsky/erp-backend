@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
+
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/milestone/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -149,18 +151,18 @@ func (s *MilestoneService) DeleteMilestone(ctx context.Context, id int64) error 
 func (s *MilestoneService) ListMilestones(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.MilestoneResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "milestone.ListMilestones")
 	defer end(nil)
 
-	rows, err := s.repository.ListMilestones(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListMilestones(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountMilestones(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountMilestones(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -236,6 +236,20 @@ definitions:
         example: 3
         type: integer
     type: object
+  dto.CreateDependencyRequest:
+    properties:
+      depends_on_task_id:
+        example: 10
+        type: integer
+      type:
+        enum:
+        - fs
+        - ss
+        - ff
+        - sf
+        example: fs
+        type: string
+    type: object
   dto.CreateMilestoneRequest:
     properties:
       color:
@@ -429,11 +443,36 @@ definitions:
       user:
         $ref: '#/definitions/dto.UserResponse'
     type: object
+  dto.DependencyResponse:
+    properties:
+      depends_on_task_id:
+        description: Predecessor task of the link.
+        example: 10
+        type: integer
+      id:
+        example: 1
+        type: integer
+      task_id:
+        description: Dependent task (successor) of the link.
+        example: 42
+        type: integer
+      type:
+        description: 'Dependency type: fs | ss | ff | sf.'
+        example: fs
+        type: string
+    type: object
   dto.DetailedProcess:
     properties:
       color:
         example: '#0f83c4'
         type: string
+      dependencies:
+        description: |-
+          Scheduling links between the tasks of the process (the successor
+          task_id depends on depends_on_task_id with the given type).
+        items:
+          $ref: '#/definitions/dto.TaskDependency'
+        type: array
       end_date:
         example: "2026-02-01"
         format: date
@@ -1065,6 +1104,21 @@ definitions:
         example: Отпуск
         type: string
     type: object
+  dto.TaskDependency:
+    properties:
+      depends_on_task_id:
+        example: 10
+        type: integer
+      id:
+        example: 1
+        type: integer
+      task_id:
+        example: 42
+        type: integer
+      type:
+        example: fs
+        type: string
+    type: object
   dto.TaskPlanning:
     properties:
       processes:
@@ -1133,6 +1187,17 @@ definitions:
       task_id:
         example: 1
         type: integer
+    type: object
+  dto.UpdateDependencyRequest:
+    properties:
+      type:
+        enum:
+        - fs
+        - ss
+        - ff
+        - sf
+        example: ss
+        type: string
     type: object
   dto.UpdateManagerRequest:
     properties:
@@ -4224,6 +4289,209 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Delete task comment
+      tags:
+      - Tasks
+  /task/{id}/dependencies:
+    get:
+      description: Get all dependency links of a task (the predecessors it depends
+        on, with the link type)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.DependencyResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List task dependencies
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: 'Create a scheduling link: the task (task_id) depends on depends_on_task_id
+        with the given type (fs/ss/ff/sf)'
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dependency data
+        in: body
+        name: dependency
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateDependencyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DependencyResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create task dependency
+      tags:
+      - Tasks
+  /task/{id}/dependencies/{dep_id}:
+    delete:
+      description: Delete a dependency link by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dependency ID
+        in: path
+        name: dep_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete task dependency
+      tags:
+      - Tasks
+    put:
+      consumes:
+      - application/json
+      description: Change the type of an existing dependency link (fs/ss/ff/sf)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dependency ID
+        in: path
+        name: dep_id
+        required: true
+        type: integer
+      - description: New dependency type
+        in: body
+        name: dependency
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateDependencyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DependencyResponse'
+                error:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update task dependency
       tags:
       - Tasks
   /task/order:

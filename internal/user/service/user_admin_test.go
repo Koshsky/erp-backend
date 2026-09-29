@@ -9,6 +9,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/tracing"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/internal/user/dto"
@@ -114,7 +115,7 @@ func (r *stubRepo) DeleteUser(_ context.Context, _ int64) error { return nil }
 
 func (r *stubRepo) ListUsers(
 	_ context.Context,
-	_ int64, _ string, _ string, _ int64, _ string, _ int, _ int,
+	_ int64, _ rbac.ListScope, _ string, _ int64, _ string, _ int, _ int,
 ) ([]sqlc.User, error) {
 	return nil, nil
 }
@@ -122,7 +123,7 @@ func (r *stubRepo) ListUsers(
 func (r *stubRepo) CountUsers(
 	_ context.Context,
 	_ int64,
-	_ string,
+	_ rbac.ListScope,
 	presetFilter string,
 	_ int64,
 	_ string,

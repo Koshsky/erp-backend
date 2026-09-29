@@ -46,20 +46,36 @@ const countProjects = `-- name: CountProjects :one
 SELECT COUNT(*)
 FROM projects
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    ($4::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
+    )) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR owner_id = $6::bigint)
 `
 
 type CountProjectsParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
-	OwnerID   int64  `json:"owner_id"`
+	ScAll   bool  `json:"sc_all"`
+	ScSelf  bool  `json:"sc_self"`
+	UserID  int64 `json:"user_id"`
+	ScDown  bool  `json:"sc_down"`
+	ScNone  bool  `json:"sc_none"`
+	OwnerID int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countProjects, arg.ScopeView, arg.UserID, arg.OwnerID)
+	row := q.db.QueryRow(ctx, countProjects,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScDown,
+		arg.ScNone,
+		arg.OwnerID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -152,26 +168,38 @@ const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
 FROM projects
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint)
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    ($4::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
+    )) OR
+    $5::boolean
   )
-  AND ($3::bigint = 0 OR owner_id = $3::bigint)
+  AND ($6::bigint = 0 OR owner_id = $6::bigint)
 ORDER BY id ASC
-LIMIT $5::bigint OFFSET $4::bigint
+LIMIT $8::bigint OFFSET $7::bigint
 `
 
 type ListProjectsParams struct {
-	ScopeView  string `json:"scope_view"`
-	UserID     int64  `json:"user_id"`
-	OwnerID    int64  `json:"owner_id"`
-	PageOffset int64  `json:"page_offset"`
-	PageLimit  int64  `json:"page_limit"`
+	ScAll      bool  `json:"sc_all"`
+	ScSelf     bool  `json:"sc_self"`
+	UserID     int64 `json:"user_id"`
+	ScDown     bool  `json:"sc_down"`
+	ScNone     bool  `json:"sc_none"`
+	OwnerID    int64 `json:"owner_id"`
+	PageOffset int64 `json:"page_offset"`
+	PageLimit  int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listProjects,
-		arg.ScopeView,
+		arg.ScAll,
+		arg.ScSelf,
 		arg.UserID,
+		arg.ScDown,
+		arg.ScNone,
 		arg.OwnerID,
 		arg.PageOffset,
 		arg.PageLimit,

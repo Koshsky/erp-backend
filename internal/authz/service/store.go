@@ -157,7 +157,7 @@ func (s *PolicyStore) Reload(ctx context.Context) error {
 			input.Denies = append(input.Denies, engine.RuleDeny{Sub: sub, Key: key})
 		}
 	}
-	if err := engine.Publish(input); err != nil {
+	if err = engine.Publish(input); err != nil {
 		return fmt.Errorf("сборка Casbin-политик: %w", err)
 	}
 

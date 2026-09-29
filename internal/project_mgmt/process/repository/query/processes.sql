@@ -17,10 +17,18 @@ SELECT p.*
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_parent::boolean AND pr.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint)
 ORDER BY p.sort_order ASC, p.id ASC
@@ -31,10 +39,18 @@ SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    @scope_view::text = 'all' OR
-    (@scope_view::text = 'parent' AND pr.owner_id = @user_id::bigint) OR
-    (@scope_view::text = 'ancestor' AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
-    (@scope_view::text = 'own' AND p.owner_id = @user_id::bigint)
+    @sc_all::boolean OR
+    (@sc_self::boolean AND p.owner_id = @user_id::bigint) OR
+    (@sc_parent::boolean AND pr.owner_id = @user_id::bigint) OR
+    (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
+    (@sc_sib::boolean AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = @user_id::bigint
+    )) OR
+    (@sc_down::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = @user_id::bigint
+    )) OR
+    @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR p.owner_id = @owner_id::bigint OR pr.owner_id = @owner_id::bigint);
 

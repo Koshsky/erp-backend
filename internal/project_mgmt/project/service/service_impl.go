@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 
@@ -173,18 +174,18 @@ func (s *ProjectService) DeleteProject(ctx context.Context, id int64) error {
 func (s *ProjectService) ListProjects(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 	ownerID int64,
 	limit, offset int,
 ) ([]dto.ProjectResponse, int64, error) {
 	ctx, end := s.tracer.Start(ctx, "project.ListProjects")
 	defer end(nil)
 
-	rows, err := s.repository.ListProjects(ctx, userID, viewScope, ownerID, limit, offset)
+	rows, err := s.repository.ListProjects(ctx, userID, scope, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repository.CountProjects(ctx, userID, viewScope, ownerID)
+	total, err := s.repository.CountProjects(ctx, userID, scope, ownerID)
 	if err != nil {
 		return nil, 0, err
 	}

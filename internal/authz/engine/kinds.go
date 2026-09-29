@@ -1,7 +1,8 @@
+package engine
+
 // Kind builders: the request-side mechanisms that translate an HTTP request
 // (params, body, URL) into the ABAC target evaluated by the Casbin snapshot.
 // The zone decision itself stays in the model's matcher.
-package engine
 
 import (
 	"fmt"
@@ -267,7 +268,7 @@ func buildEntity(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 // noOwnerCheck — matrix check for a resource without owners (state, virtual ones).
 func noOwnerCheck(res rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
-		if !EnforceTarget(rc.User, Target{Res: res, Act: act}) {
+		if !EnforceTarget(rc.User, Target{Res: res, Act: act, Ctx: rc.C.Request.Context()}) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -334,7 +335,10 @@ func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		if ownerID == 0 && defaultSelf {
 			ownerID = rc.User.ID
 		}
-		if !EnforceTarget(rc.User, Target{Res: res, Act: ActionCreate, Owners: makeOwners(ownerID)}) {
+		if !EnforceTarget(
+			rc.User,
+			Target{Res: res, Act: ActionCreate, Owners: makeOwners(ownerID), Ctx: rc.C.Request.Context()},
+		) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -453,9 +457,9 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 		}
 		compareOwners := rbac.Owners{}
 		if mode == ModeOwnerMatch {
-			compareID, bodyErr := rc.BodyID(spec.compareFrom)
-			if bodyErr != nil {
-				return bodyErr
+			compareID, cmpErr := rc.BodyID(spec.compareFrom)
+			if cmpErr != nil {
+				return cmpErr
 			}
 			compareOwners, ownerErr = rc.Owners(spec.compareRes, compareID)
 			if ownerErr != nil {
@@ -464,6 +468,7 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 		}
 		if !EnforceTarget(rc.User, Target{
 			Res: spec.res, Act: spec.act, Owners: primaryOwners, Mode: mode, OwnerB: compareOwners,
+			Ctx: rc.C.Request.Context(),
 		}) {
 			return errors.Forbidden(
 				"недостаточно прав: действие доступно владельцу родительского элемента (или администратору)",
@@ -519,6 +524,7 @@ func buildAuthorOr(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		// author_or mode).
 		if !EnforceTarget(rc.User, Target{
 			Res: rightRes, Act: rightAct, Owners: owners, Mode: ModeAuthorOr, AuthorID: owners.Owner,
+			Ctx: rc.C.Request.Context(),
 		}) {
 			return errors.ErrForbidden
 		}
@@ -570,7 +576,7 @@ func buildParentAction(params map[string]any) (func(*rbac.CheckCtx) error, error
 		if ownerErr != nil {
 			return ownerErr
 		}
-		if !EnforceTarget(rc.User, Target{Res: res, Act: act, Owners: owners}) {
+		if !EnforceTarget(rc.User, Target{Res: res, Act: act, Owners: owners, Ctx: rc.C.Request.Context()}) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -641,7 +647,9 @@ func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 		if err != nil {
 			return err
 		}
-		if !EnforceTarget(rc.User, Target{Res: rsrc, Act: act, Owners: owners}) {
+		if !EnforceTarget(rc.User, Target{
+			Res: rsrc, Act: act, Owners: owners, ID: id, Ctx: rc.C.Request.Context(),
+		}) {
 			return viewOrForbidden(act)
 		}
 		return nil
@@ -655,7 +663,9 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 		if err != nil {
 			return err
 		}
-		if !EnforceTarget(rc.User, Target{Res: rsrc, Act: ActionCreate, Owners: owners}) {
+		if !EnforceTarget(rc.User, Target{
+			Res: rsrc, Act: ActionCreate, Owners: owners, Ctx: rc.C.Request.Context(),
+		}) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -770,6 +780,29 @@ var defaultRouteSpecs = []RouteSpec{
 			paramParentResource: resProcess,
 			paramParentFrom:     bodyKeyProcessID,
 		},
+	},
+	{
+		// Scheduling links nested under /task/:id/dependencies(/:dep_id):
+		// the entity kind resolves the affected task by the :id path param
+		// (task.comment.*-style); viewing — task.view, mutations — task.update.
+		Name:   "task.dependency.list",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resTask, paramAction: actView, paramOwner: ownerModeID},
+	},
+	{
+		Name:   "task.dependency.create",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resTask, paramAction: actUpdate, paramOwner: ownerModeID},
+	},
+	{
+		Name:   "task.dependency.update",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resTask, paramAction: actUpdate, paramOwner: ownerModeID},
+	},
+	{
+		Name:   "task.dependency.delete",
+		Kind:   kindEntity,
+		Params: map[string]any{paramResource: resTask, paramAction: actUpdate, paramOwner: ownerModeID},
 	},
 	{
 		Name:   "milestone.list",

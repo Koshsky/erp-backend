@@ -58,7 +58,7 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	items, total, err := h.service.ListProjects(
 		c.Request.Context(),
 		user.ID,
-		engine.ViewScopeCodeUser(user, rbac.ResourceProject),
+		engine.CompileViewScopeUser(user, rbac.ResourceProject),
 		response.QueryID(c, "owner_id"),
 		limit,
 		offset,

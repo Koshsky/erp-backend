@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/database"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/planning/repository/sqlc"
 )
 
@@ -33,10 +34,17 @@ func (r *PlanningRepository) q(ctx context.Context) *sqlc.Queries {
 	return r.db
 }
 
-func (r *PlanningRepository) ListProjects(ctx context.Context, userID int64, viewScope string) ([]sqlc.Project, error) {
+func (r *PlanningRepository) ListProjects(
+	ctx context.Context,
+	userID int64,
+	scope rbac.ListScope,
+) ([]sqlc.Project, error) {
 	return r.q(ctx).ListProjects(ctx, sqlc.ListProjectsParams{
-		UserID:    userID,
-		ScopeView: viewScope,
+		UserID: userID,
+		ScAll:  scope.All,
+		ScSelf: scope.Self,
+		ScDown: scope.Down,
+		ScNone: scope.None,
 	})
 }
 
@@ -48,12 +56,15 @@ func (r *PlanningRepository) ListProjectsByIDs(
 	ctx context.Context,
 	ids []int64,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.Project, error) {
 	return r.q(ctx).ListProjectsByIDs(ctx, sqlc.ListProjectsByIDsParams{
-		Ids:       ids,
-		UserID:    userID,
-		ScopeView: viewScope,
+		Ids:    ids,
+		UserID: userID,
+		ScAll:  scope.All,
+		ScSelf: scope.Self,
+		ScDown: scope.Down,
+		ScNone: scope.None,
 	})
 }
 
@@ -61,11 +72,17 @@ func (r *PlanningRepository) ListProjectsByIDs(
 func (r *PlanningRepository) ListProcesses(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.ListProcessesRow, error) {
 	return r.q(ctx).ListProcesses(ctx, sqlc.ListProcessesParams{
-		UserID:    userID,
-		ScopeView: viewScope,
+		UserID:     userID,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScSib:      scope.Sib,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
 	})
 }
 
@@ -76,11 +93,17 @@ func (r *PlanningRepository) ListProcesses(
 func (r *PlanningRepository) ListProcessesByTaskScope(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.ListProcessesByTaskScopeRow, error) {
 	return r.q(ctx).ListProcessesByTaskScope(ctx, sqlc.ListProcessesByTaskScopeParams{
-		UserID:    userID,
-		ScopeView: viewScope,
+		UserID:     userID,
+		ScAll:      scope.All,
+		ScSelf:     scope.Self,
+		ScParent:   scope.Parent,
+		ScAncestor: scope.Ancestor,
+		ScSib:      scope.Sib,
+		ScDown:     scope.Down,
+		ScNone:     scope.None,
 	})
 }
 
@@ -121,15 +144,26 @@ func (r *PlanningRepository) ListTaskCommentCountsByTaskIDs(
 	return counts, nil
 }
 
+// ListTaskDependenciesByProcessIDs returns the scheduling links between tasks
+// of the given processes (the planning read model for the task diagram).
+func (r *PlanningRepository) ListTaskDependenciesByProcessIDs(
+	ctx context.Context,
+	processIDs []int64,
+) ([]sqlc.ListTaskDependenciesByProcessIDsRow, error) {
+	return r.q(ctx).ListTaskDependenciesByProcessIDs(ctx, processIDs)
+}
+
 // ListResources returns resources within the caller's resource view zone; an
 // empty zone (no resource view rule) includes all rows (reference fallback).
 func (r *PlanningRepository) ListResources(
 	ctx context.Context,
 	userID int64,
-	viewScope string,
+	scope rbac.ListScope,
 ) ([]sqlc.Resource, error) {
 	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
-		UserID:    userID,
-		ScopeView: viewScope,
+		UserID: userID,
+		ScAll:  scope.All,
+		ScSelf: scope.Self,
+		ScNone: scope.None,
 	})
 }

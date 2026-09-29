@@ -64,16 +64,18 @@ const listResources = `-- name: ListResources :many
 SELECT id, title, code, owner_id
 FROM resources
 WHERE (
-    $1::text = 'all' OR
-    ($1::text = 'own' AND owner_id = $2::bigint) OR
-    $1::text = ''
+    $1::boolean OR
+    ($2::boolean AND owner_id = $3::bigint) OR
+    $4::boolean
 )
 ORDER BY id ASC
 `
 
 type ListResourcesParams struct {
-	ScopeView string `json:"scope_view"`
-	UserID    int64  `json:"user_id"`
+	ScAll  bool  `json:"sc_all"`
+	ScSelf bool  `json:"sc_self"`
+	UserID int64 `json:"user_id"`
+	ScNone bool  `json:"sc_none"`
 }
 
 type ListResourcesRow struct {
@@ -89,7 +91,12 @@ type ListResourcesRow struct {
 // resolves empty (no rule / none) gets every row — reference data must not be
 // dropped then.
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
-	rows, err := q.db.Query(ctx, listResources, arg.ScopeView, arg.UserID)
+	rows, err := q.db.Query(ctx, listResources,
+		arg.ScAll,
+		arg.ScSelf,
+		arg.UserID,
+		arg.ScNone,
+	)
 	if err != nil {
 		return nil, err
 	}
