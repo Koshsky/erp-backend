@@ -47,6 +47,24 @@ services:
     networks:
       - app-network
 
+  # Rate limiter backend (M1): shared token buckets across instances. Port is
+  # published so the host-run `air` (make dev) reaches it at localhost:6379,
+  # matching REDIS_ADDRESS in the Makefile — the docker-service name "redis"
+  # is not resolvable from the host (config.yaml keeps "redis:6379" for the
+  # all-in-docker run).
+  redis:
+    image: redis:7-alpine
+    container_name: redis-dev
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Audit-log storage: Grafana Loki + Grafana UI. Ports are published so the
   # host-run `air` (make dev) reaches loki at localhost:3100, matching
   # config.yaml (audit.url) — same infra config as the root docker-compose.yml.

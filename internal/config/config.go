@@ -278,5 +278,19 @@ func applyEnv(cfg *Config) error {
 		cfg.Tracing.ExporterEndpoint = endpoint
 	}
 
+	// REDIS_ADDRESS overrides the Redis endpoint (dev: host-run air reaches
+	// the in-docker Redis service via its published port; kept empty in the
+	// full-stack docker run, which uses the in-network "redis:6379").
+	if address := getEnv("REDIS_ADDRESS", ""); address != "" {
+		cfg.Redis.Address = address
+	}
+
+	// AUDIT_URL overrides the Loki base URL (dev: host-run air reaches the
+	// in-docker Loki service via its published port; kept empty in the
+	// full-stack docker run, which uses the in-network "http://loki:3100").
+	if url := getEnv("AUDIT_URL", ""); url != "" {
+		cfg.Audit.URL = url
+	}
+
 	return nil
 }

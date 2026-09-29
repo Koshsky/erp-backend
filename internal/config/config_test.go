@@ -78,3 +78,56 @@ func TestLoadAllowsDisabledRateLimits(t *testing.T) {
 		t.Fatalf("Load() error = %v, want nil for disabled rate limits", err)
 	}
 }
+
+// TestLoadEnvEndpointOverrides checks the dev-mode env overrides that point a
+// host-run binary (air) at the published ports of the in-docker infra
+// (TRACING_ENDPOINT / REDIS_ADDRESS / AUDIT_URL): each overrides the matching
+// config.yaml value when set and falls back to the file value when empty.
+func TestLoadEnvEndpointOverrides(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://test")
+	t.Setenv("JWT_SECRET_KEY", "12345678901234567890123456789012")
+
+	const yaml = "tracing:\n  enabled: true\n  exporter_endpoint: jaeger:4317\nredis:\n  enabled: true\n  address: redis:6379\naudit:\n  enabled: true\n  url: http://loki:3100\n"
+
+	t.Run("set overrides the yaml value", func(t *testing.T) {
+		t.Setenv("CONFIG_PATH", writeConfig(t, yaml))
+		t.Setenv("TRACING_ENDPOINT", "localhost:4317")
+		t.Setenv("REDIS_ADDRESS", "localhost:6379")
+		t.Setenv("AUDIT_URL", "http://localhost:3100")
+
+		cfg, err := config.Load()
+		if err != nil {
+			t.Fatalf("Load() error = %v", err)
+		}
+		if cfg.Tracing.ExporterEndpoint != "localhost:4317" {
+			t.Errorf("ExporterEndpoint = %q, want localhost:4317", cfg.Tracing.ExporterEndpoint)
+		}
+		if cfg.Redis.Address != "localhost:6379" {
+			t.Errorf("Redis.Address = %q, want localhost:6379", cfg.Redis.Address)
+		}
+		if cfg.Audit.URL != "http://localhost:3100" {
+			t.Errorf("Audit.URL = %q, want http://localhost:3100", cfg.Audit.URL)
+		}
+	})
+
+	t.Run("unset keeps the yaml value", func(t *testing.T) {
+		t.Setenv("CONFIG_PATH", writeConfig(t, yaml))
+		t.Setenv("TRACING_ENDPOINT", "")
+		t.Setenv("REDIS_ADDRESS", "")
+		t.Setenv("AUDIT_URL", "")
+
+		cfg, err := config.Load()
+		if err != nil {
+			t.Fatalf("Load() error = %v", err)
+		}
+		if cfg.Tracing.ExporterEndpoint != "jaeger:4317" {
+			t.Errorf("ExporterEndpoint = %q, want jaeger:4317", cfg.Tracing.ExporterEndpoint)
+		}
+		if cfg.Redis.Address != "redis:6379" {
+			t.Errorf("Redis.Address = %q, want redis:6379", cfg.Redis.Address)
+		}
+		if cfg.Audit.URL != "http://loki:3100" {
+			t.Errorf("Audit.URL = %q, want http://loki:3100", cfg.Audit.URL)
+		}
+	})
+}
