@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Admin password reset now returns the generated password in the response (shown once).
 - States support a custom color (`#RRGGBB`) on create/update.
+- Seed migrations re-sync their serial sequences in place, so fresh databases never collide on default inserts.
 
 ## [1.0.1] - 2026-09-30
 
