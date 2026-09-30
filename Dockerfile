@@ -2,12 +2,17 @@ FROM golang:1.27-alpine AS builder
 
 WORKDIR /src
 
+# Semantic version of the release (SemVer tag, e.g. v1.0.0); baked into the
+# binary via main.version (see cmd/service/main.go). Default "dev" for ad-hoc
+# builds; scripts/deploy.sh always passes the release tag.
+ARG APP_VERSION=dev
+
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/service ./cmd/service
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${APP_VERSION}" -o /out/service ./cmd/service
 
 FROM alpine:3.21
 

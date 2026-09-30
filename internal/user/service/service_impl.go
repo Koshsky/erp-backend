@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
@@ -552,7 +553,18 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 	ctx, end := s.tracer.Start(ctx, "user.DeleteUser")
 	defer end(nil)
 
-	if err := s.repository.DeleteUser(ctx, id); err != nil {
+	// Fail early with a human-readable list of blocking records instead of a
+	// bare FK violation. The delete itself still guards against races via
+	// mapUserDeleteErr in the repository.
+	refs, err := s.repository.UserReferences(ctx, id)
+	if err != nil {
+		return err
+	}
+	if msg := userReferencesConflict(refs); msg != "" {
+		return errors.Conflict(msg)
+	}
+
+	if err = s.repository.DeleteUser(ctx, id); err != nil {
 		return err
 	}
 
@@ -565,6 +577,35 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 	// otherwise keep granting rights while the account is gone.
 	s.refreshRBAC(ctx)
 	return nil
+}
+
+// userReferencesConflict renders a 409 message listing the records that
+// reference the user; an empty string means nothing blocks the deletion.
+func userReferencesConflict(refs sqlc.ListUserReferencesRow) string {
+	type refGroup struct {
+		count int64
+		label string
+	}
+	groups := []refGroup{
+		{refs.Managees, "подчинённые"},
+		{refs.Resources, "ресурсы"},
+		{refs.Projects, "проекты"},
+		{refs.Processes, "процессы"},
+		{refs.Tasks, "задачи"},
+		{refs.Comments, "комментарии"},
+		{refs.AutoCreateTemplates, "шаблоны автосоздания"},
+	}
+	parts := make([]string, 0, len(groups))
+	for _, g := range groups {
+		if g.count > 0 {
+			parts = append(parts, fmt.Sprintf("%s — %d", g.label, g.count))
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return "пользователя нельзя удалить: на него ссылаются " + strings.Join(parts, ", ") +
+		" — сначала переназначьте или удалите их"
 }
 
 // NormalizeSearch validates and prepares the free-text search pattern of the

@@ -544,6 +544,47 @@ func (q *Queries) ListStatesByUsersRange(ctx context.Context, arg ListStatesByUs
 	return items, nil
 }
 
+const listUserReferences = `-- name: ListUserReferences :one
+SELECT
+    (SELECT count(*)::bigint FROM users u WHERE u.manager_id = $1::bigint) AS managees,
+    (SELECT count(*)::bigint FROM resources r WHERE r.owner_id = $1::bigint) AS resources,
+    (SELECT count(*)::bigint FROM projects p WHERE p.owner_id = $1::bigint) AS projects,
+    (SELECT count(*)::bigint FROM processes pr WHERE pr.owner_id = $1::bigint) AS processes,
+    (SELECT count(*)::bigint FROM tasks t WHERE t.owner_id = $1::bigint) AS tasks,
+    (SELECT count(*)::bigint FROM task_comments c WHERE c.author_id = $1::bigint) AS comments,
+    (SELECT count(*)::bigint FROM project_auto_create pac, jsonb_array_elements(pac.config) e
+      WHERE (e->>'owner_id')::bigint = $1::bigint) AS auto_create_templates
+`
+
+type ListUserReferencesRow struct {
+	Managees            int64 `json:"managees"`
+	Resources           int64 `json:"resources"`
+	Projects            int64 `json:"projects"`
+	Processes           int64 `json:"processes"`
+	Tasks               int64 `json:"tasks"`
+	Comments            int64 `json:"comments"`
+	AutoCreateTemplates int64 `json:"auto_create_templates"`
+}
+
+// Counts of records that reference the user and block deletion (FK RESTRICT):
+// managees, owned resources/projects/processes/tasks, comment authorship and
+// auto-create template owners stored in the jsonb config (no FK, but a deleted
+// owner would break template-driven project creation).
+func (q *Queries) ListUserReferences(ctx context.Context, userID int64) (ListUserReferencesRow, error) {
+	row := q.db.QueryRow(ctx, listUserReferences, userID)
+	var i ListUserReferencesRow
+	err := row.Scan(
+		&i.Managees,
+		&i.Resources,
+		&i.Projects,
+		&i.Processes,
+		&i.Tasks,
+		&i.Comments,
+		&i.AutoCreateTemplates,
+	)
+	return i, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, last_name, first_name, middle_name, preset, username, password_hash, manager_id, position, hire_date, termination_date, created_at, updated_at
 FROM users
