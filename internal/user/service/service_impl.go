@@ -161,7 +161,17 @@ func (s *UserService) createUserInternal(
 	}
 	req.Username = NormalizeUsername(req.Username)
 	if req.Username == "" {
-		username, err := s.generateUsername(ctx, req.LastName, presetName(req.Preset))
+		middleName := ""
+		if req.MiddleName != nil {
+			middleName = *req.MiddleName
+		}
+		username, err := s.generateUsername(
+			ctx,
+			req.LastName,
+			req.FirstName,
+			middleName,
+			presetName(req.Preset),
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -259,16 +269,21 @@ func (s *UserService) validateCreatePermissions(
 	return out, nil
 }
 
-// generateUsername builds a unique login: transliteration of the last name
-// (last_name); if taken, appends a numeric suffix; if there is nothing to
-// transliterate — falls back to prefix+random suffix.
-func (s *UserService) generateUsername(ctx context.Context, name, preset string) (string, error) {
+// generateUsername builds a unique login as `<translit(last)>.<initials>` —
+// the surname transliteration plus the first letters of the given and middle
+// names (e.g. «Шмонов Матвей Васильевич» → `shmonov.mv`); if taken, appends a
+// numeric suffix; if there is nothing to transliterate — falls back to
+// prefix+random suffix.
+func (s *UserService) generateUsername(
+	ctx context.Context,
+	lastName, firstName, middleName, preset string,
+) (string, error) {
 	prefix := "user_"
 	if preset == userdomain.PresetWorker {
 		prefix = "worker_"
 	}
 
-	base := creds.Transliterate(name)
+	base := translitWithInitials(lastName, firstName, middleName)
 	if base == "" {
 		suffix, err := creds.RandomUsernameSuffix()
 		if err != nil {
@@ -289,6 +304,30 @@ func (s *UserService) generateUsername(ctx context.Context, name, preset string)
 		username = fmt.Sprintf("%s%d", base, i)
 	}
 	return "", errors.NewValidationError("не удалось сгенерировать свободный логин: исчерпаны все варианты")
+}
+
+// translitWithInitials — `<translit(last)>.<translit(first)[0]><translit(middle)[0]>`
+// (e.g. «Шмонов Матвей Васильевич» → `shmonov.mv`), or just the surname when
+// there are no name parts; '' when nothing transliterates.
+func translitWithInitials(lastName, firstName, middleName string) string {
+	last := creds.Transliterate(lastName)
+	initials := firstLetter(firstName) + firstLetter(middleName)
+	if last == "" {
+		return initials
+	}
+	if initials == "" {
+		return last
+	}
+	return last + "." + initials
+}
+
+// firstLetter — the first transliterated letter of a name part ('' when empty).
+func firstLetter(part string) string {
+	t := creds.Transliterate(part)
+	if t == "" {
+		return ""
+	}
+	return t[:1]
 }
 
 // ResetPassword generates a new random password for the user. Admin-only: the
