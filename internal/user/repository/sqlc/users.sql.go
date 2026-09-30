@@ -552,8 +552,11 @@ SELECT
     (SELECT count(*)::bigint FROM processes pr WHERE pr.owner_id = $1::bigint) AS processes,
     (SELECT count(*)::bigint FROM tasks t WHERE t.owner_id = $1::bigint) AS tasks,
     (SELECT count(*)::bigint FROM task_comments c WHERE c.author_id = $1::bigint) AS comments,
-    (SELECT count(*)::bigint FROM project_auto_create pac, jsonb_array_elements(pac.config) e
-      WHERE (e->>'owner_id')::bigint = $1::bigint) AS auto_create_templates
+    (SELECT count(*)::bigint
+     FROM project_auto_create pac, jsonb_array_elements(
+       CASE WHEN jsonb_typeof(pac.config) = 'array' THEN pac.config ELSE '[]'::jsonb END
+     ) e
+     WHERE e->'owner_id' = to_jsonb($1::bigint)) AS auto_create_templates
 `
 
 type ListUserReferencesRow struct {
@@ -569,7 +572,12 @@ type ListUserReferencesRow struct {
 // Counts of records that reference the user and block deletion (FK RESTRICT):
 // managees, owned resources/projects/processes/tasks, comment authorship and
 // auto-create template owners stored in the jsonb config (no FK, but a deleted
-// owner would break template-driven project creation).
+// owner would break template-driven project creation). The jsonb walk is
+// defensive: a malformed/legacy config (non-array shape, or an element with a
+// missing/null/non-numeric owner_id) must not abort the deletion precheck with
+// a cast or extraction error — elements are matched by strict jsonb equality
+// with the numeric user id, so anything that is not the same JSON number
+// simply does not match.
 func (q *Queries) ListUserReferences(ctx context.Context, userID int64) (ListUserReferencesRow, error) {
 	row := q.db.QueryRow(ctx, listUserReferences, userID)
 	var i ListUserReferencesRow
