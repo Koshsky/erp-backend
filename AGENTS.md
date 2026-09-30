@@ -6,6 +6,7 @@ Go 1.27 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 
 - Code comments, documentation, and commit messages are written in **English only**.
 - User-facing API error messages and runtime logs stay in Russian (the product language) — do not translate them.
+- **Deliberate exception — CHANGELOG entries are bilingual** (English first, then Russian), see the Changelog bullet under Style/process; never strip the Russian half.
 
 ## Commands
 - `make dev` — dev stack: `docker compose up -d db flyway` + the API served locally by `air` (auto-reload on change; binary in `build/`, ignored). `make infra` only starts db+flyway, `make reset` wipes the DB volume (`docker compose down -v`), `make stop` stops the containers. `Makefile` includes `backend/.env` (symlink to the repo-root `.env`).
@@ -45,5 +46,6 @@ Go 1.27 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 
 ## Style / process
 - Conventional commits (`feat/fix/refactor/chore/docs`).
+- When a user-facing change lands, add a brief **bilingual (EN, then RU)** entry to `CHANGELOG.md` `## [Unreleased]` in the same commit (see root `AGENTS.md` → Changelog (between releases)).
 - The golangci config is strict: no package-level vars, no `init()`, no magic numbers, `log/slog` only (stdlib `log` is denied outside `main`), doc comments end with a period (exempt in `delivery/`), function length/complexity caps. Don't add `//nolint` without an explanation.
 - Logging follows the per-component pattern: every constructor enriches the injected `*slog.Logger` with a `component` field (`logger.With("component", "<module>_<layer>")`) and uses the `<Level>Context(ctx, …)` methods wherever a context is in scope. `internal/logger`'s `ContextHandler` attaches `trace_id`/`span_id`/`request_id` from the request context automatically, correlating logs with OpenTelemetry spans. Never introduce a global logger (`slog.SetDefault` or a package-level logger) — the logger stays constructor-injected.
