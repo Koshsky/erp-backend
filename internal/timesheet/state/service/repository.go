@@ -7,7 +7,7 @@ import (
 )
 
 type StateRepository interface {
-	CreateState(ctx context.Context, code, name string, isAvailable bool) (*sqlc.State, error)
+	CreateState(ctx context.Context, code, name string, isAvailable bool, color *string) (*sqlc.State, error)
 	FindState(ctx context.Context, id int64) (*sqlc.State, error)
 	UpdateState(ctx context.Context, state sqlc.State) (*sqlc.State, error)
 	DeleteState(ctx context.Context, id int64) error

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Admin password reset now returns the generated password in the response (shown once).
+- States support a custom color (`#RRGGBB`) on create/update.
 
 ## [1.0.1] - 2026-09-30
 

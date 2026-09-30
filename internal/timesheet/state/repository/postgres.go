@@ -11,6 +11,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/database"
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	errapi "github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -36,11 +37,17 @@ func (r *StateRepository) q(ctx context.Context) *sqlc.Queries {
 	return r.db
 }
 
-func (r *StateRepository) CreateState(ctx context.Context, code, name string, isAvailable bool) (*sqlc.State, error) {
+func (r *StateRepository) CreateState(
+	ctx context.Context,
+	code, name string,
+	isAvailable bool,
+	color *string,
+) (*sqlc.State, error) {
 	row, err := r.q(ctx).CreateState(ctx, sqlc.CreateStateParams{
 		Code:        code,
 		Name:        name,
 		IsAvailable: isAvailable,
+		Color:       nullable.ToString(color),
 	})
 	if err != nil {
 		// Idempotent create: the code already exists (ON CONFLICT
@@ -67,6 +74,7 @@ func (r *StateRepository) UpdateState(ctx context.Context, state sqlc.State) (*s
 		Code:        state.Code,
 		Name:        state.Name,
 		IsAvailable: state.IsAvailable,
+		Color:       state.Color,
 	})
 	if err != nil {
 		return nil, err

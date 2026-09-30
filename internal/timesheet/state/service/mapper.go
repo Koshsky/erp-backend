@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/dto"
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/repository/sqlc"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 )
 
 type StateMapper struct{}
@@ -20,6 +21,7 @@ func (m *StateMapper) ToDTO(state *sqlc.State) *dto.StateResponse {
 		Code:        state.Code,
 		Name:        state.Name,
 		IsAvailable: state.IsAvailable,
+		Color:       nullable.StringPtr(state.Color),
 	}
 }
 

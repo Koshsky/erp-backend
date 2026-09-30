@@ -7,32 +7,40 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createState = `-- name: CreateState :one
-INSERT INTO states (code, name, is_available)
-VALUES ($1, $2, $3)
+INSERT INTO states (code, name, is_available, color)
+VALUES ($1, $2, $3, $4)
 ON CONFLICT ON CONSTRAINT states_code_key
 DO NOTHING
-RETURNING id, code, name, is_available, created_at, updated_at
+RETURNING id, code, name, is_available, color, created_at, updated_at
 `
 
 type CreateStateParams struct {
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	IsAvailable bool   `json:"is_available"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	IsAvailable bool           `json:"is_available"`
+	Color       sql.NullString `json:"color"`
 }
 
 // Idempotent create by business key code: if the code already exists we
 // insert nothing; the calling code (repository) turns the conflict into 409.
 func (q *Queries) CreateState(ctx context.Context, arg CreateStateParams) (State, error) {
-	row := q.db.QueryRow(ctx, createState, arg.Code, arg.Name, arg.IsAvailable)
+	row := q.db.QueryRow(ctx, createState,
+		arg.Code,
+		arg.Name,
+		arg.IsAvailable,
+		arg.Color,
+	)
 	var i State
 	err := row.Scan(
 		&i.ID,
 		&i.Code,
 		&i.Name,
 		&i.IsAvailable,
+		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -50,7 +58,7 @@ func (q *Queries) DeleteState(ctx context.Context, stateID int64) error {
 }
 
 const findState = `-- name: FindState :one
-SELECT id, code, name, is_available, created_at, updated_at FROM states
+SELECT id, code, name, is_available, color, created_at, updated_at FROM states
 WHERE id = $1::bigint
 `
 
@@ -62,6 +70,7 @@ func (q *Queries) FindState(ctx context.Context, stateID int64) (State, error) {
 		&i.Code,
 		&i.Name,
 		&i.IsAvailable,
+		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -69,7 +78,7 @@ func (q *Queries) FindState(ctx context.Context, stateID int64) (State, error) {
 }
 
 const listStates = `-- name: ListStates :many
-SELECT id, code, name, is_available, created_at, updated_at FROM states
+SELECT id, code, name, is_available, color, created_at, updated_at FROM states
 ORDER BY id ASC
 `
 
@@ -87,6 +96,7 @@ func (q *Queries) ListStates(ctx context.Context) ([]State, error) {
 			&i.Code,
 			&i.Name,
 			&i.IsAvailable,
+			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -106,16 +116,18 @@ SET
 	code = $1,
 	name = $2,
 	is_available = $3,
+	color = $4,
 	updated_at = NOW()
-WHERE id = $4
-RETURNING id, code, name, is_available, created_at, updated_at
+WHERE id = $5
+RETURNING id, code, name, is_available, color, created_at, updated_at
 `
 
 type UpdateStateParams struct {
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	IsAvailable bool   `json:"is_available"`
-	StateID     int64  `json:"state_id"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	IsAvailable bool           `json:"is_available"`
+	Color       sql.NullString `json:"color"`
+	StateID     int64          `json:"state_id"`
 }
 
 func (q *Queries) UpdateState(ctx context.Context, arg UpdateStateParams) (State, error) {
@@ -123,6 +135,7 @@ func (q *Queries) UpdateState(ctx context.Context, arg UpdateStateParams) (State
 		arg.Code,
 		arg.Name,
 		arg.IsAvailable,
+		arg.Color,
 		arg.StateID,
 	)
 	var i State
@@ -131,6 +144,7 @@ func (q *Queries) UpdateState(ctx context.Context, arg UpdateStateParams) (State
 		&i.Code,
 		&i.Name,
 		&i.IsAvailable,
+		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
