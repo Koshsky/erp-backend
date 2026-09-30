@@ -330,13 +330,13 @@ func firstLetter(part string) string {
 	return t[:1]
 }
 
-// ResetPassword generates a new random password for the user. Admin-only: the
-// route is reachable by user_admin.update holders, but resetting a password —
-// like preset assignment — stays an admin privilege (a non-admin with the grant
-// must not be able to reset any account, in particular an admin's, and take it
-// over). The new password is never returned to the caller; the reset is
-// recorded in the audit trail and the service log.
-func (s *UserService) ResetPassword(ctx context.Context, id int64, caller userctx.UserContext) error {
+// ResetPassword generates a new random password for the user and returns the
+// raw password for one-time display. Admin-only: the route is reachable by
+// user_admin.update holders, but resetting a password — like preset assignment
+// — stays an admin privilege (a non-admin with the grant must not be able to
+// reset any account, in particular an admin's, and take it over). The reset is
+// recorded in the audit trail and the service log (never the raw password).
+func (s *UserService) ResetPassword(ctx context.Context, id int64, caller userctx.UserContext) (string, error) {
 	ctx, end := s.tracer.Start(ctx, "user.ResetPassword")
 	defer end(nil)
 
@@ -344,24 +344,24 @@ func (s *UserService) ResetPassword(ctx context.Context, id int64, caller userct
 	// the admin bypass resolved by the RBAC store (EffectiveUser.Admin), not
 	// merely an individual grant.
 	if !caller.Admin {
-		return errors.ErrForbidden
+		return "", errors.ErrForbidden
 	}
 
 	user, err := s.repository.FindUser(ctx, id)
 	if err != nil || user == nil {
-		return errors.NotFound("user not found")
+		return "", errors.NotFound("user not found")
 	}
 
 	raw, err := creds.RandomPassword()
 	if err != nil {
-		return err
+		return "", err
 	}
 	hash, err := hasher.Hash(raw)
 	if err != nil {
-		return fmt.Errorf("failed to hash password")
+		return "", fmt.Errorf("failed to hash password")
 	}
 	if err = s.repository.UpdatePassword(ctx, id, hash); err != nil {
-		return err
+		return "", err
 	}
 
 	// Same as ChangePassword: a reset invalidates every existing session.
@@ -373,7 +373,7 @@ func (s *UserService) ResetPassword(ctx context.Context, id int64, caller userct
 		"user_id", id,
 		"caller_id", caller.ID,
 	)
-	return nil
+	return raw, nil
 }
 
 func (s *UserService) FindUserByUsername(ctx context.Context, username string) (*dto.UserResponse, error) {

@@ -5,6 +5,10 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+- Сброс пароля администратором теперь возвращает сгенерированный пароль в ответе (показывается один раз).
+
 ## [1.0.1] - 2026-09-30
 
 ### Fixed

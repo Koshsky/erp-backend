@@ -418,7 +418,7 @@ func TestResetPasswordAdminOnly(t *testing.T) {
 
 	// Non-admin with user_admin.update (vp): forbidden, password untouched,
 	// no session revocation.
-	if err := svc.ResetPassword(context.Background(), 2, vp(10)); !errors.IsForbidden(err) {
+	if _, err := svc.ResetPassword(context.Background(), 2, vp(10)); !errors.IsForbidden(err) {
 		t.Errorf("не-админ сбрасывает пароль: err=%v; want forbidden", err)
 	}
 	if len(repo.passwordUpdated) != 0 {
@@ -429,16 +429,21 @@ func TestResetPasswordAdminOnly(t *testing.T) {
 	}
 
 	// Resetting an admin account by a non-admin — the same forbidden.
-	if err := svc.ResetPassword(context.Background(), 3, vp(10)); !errors.IsForbidden(err) {
+	if _, err := svc.ResetPassword(context.Background(), 3, vp(10)); !errors.IsForbidden(err) {
 		t.Errorf("не-админ сбрасывает пароль администратора: err=%v; want forbidden", err)
 	}
 	if len(repo.passwordUpdated) != 0 {
 		t.Errorf("пароль администратора изменён не-админом: %v", repo.passwordUpdated)
 	}
 
-	// An admin may reset any account; the write happens and sessions die.
-	if err := svc.ResetPassword(context.Background(), 2, admin(1)); err != nil {
+	// An admin may reset any account; the write happens, sessions die and the
+	// freshly generated password is returned for one-time display.
+	raw, err := svc.ResetPassword(context.Background(), 2, admin(1))
+	if err != nil {
 		t.Fatalf("админ сбрасывает пароль: %v; want ok", err)
+	}
+	if raw == "" {
+		t.Error("админский сброс пароля: пустой пароль возвращён")
 	}
 	if !slices.Contains(repo.passwordUpdated, 2) {
 		t.Errorf("пароль не обновлён админом: %v", repo.passwordUpdated)

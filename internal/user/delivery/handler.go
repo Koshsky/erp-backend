@@ -196,15 +196,15 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 }
 
 // ResetPassword handles the request to reset a user's password (admin-only; the
-// new password is generated server-side and never returned to the caller).
+// new password is generated server-side and returned once for one-time display).
 //
 //	@Tags			Users
 //	@Summary		Reset user password
-//	@Description	Generate a new random password for a user (admin only; the new password is never returned)
+//	@Description	Generate a new random password for a user (admin only) and return it once
 //	@Security		ApiKeyAuth
 //	@Produce		json
-//	@Param			id	path	int	true	"User ID"
-//	@Success		204
+//	@Param			id	path		int	true	"User ID"
+//	@Success		200	{object}	response.SuccessResponse{data=dto.ResetPasswordResult,error=nil}
 //	@Failure		400	{object}	response.ErrorResponse{data=nil}
 //	@Failure		403	{object}	response.ErrorResponse{data=nil}
 //	@Failure		500	{object}	response.ErrorResponse{data=nil}
@@ -222,11 +222,12 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.ResetPassword(c.Request.Context(), id, caller); err != nil {
+	raw, err := h.service.ResetPassword(c.Request.Context(), id, caller)
+	if err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}
-	response.NoContent(c)
+	response.OK(c, dto.ResetPasswordResult{Password: raw})
 }
 
 // UpdateUser handles updating a user.
