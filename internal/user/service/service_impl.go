@@ -308,7 +308,7 @@ func (s *UserService) generateUsername(
 
 // translitWithInitials — `<translit(last)>.<translit(first)[0]><translit(middle)[0]>`
 // (e.g. «Шмонов Матвей Васильевич» → `shmonov.mv`), or just the surname when
-// there are no name parts; '' when nothing transliterates.
+// there are no name parts; ” when nothing transliterates.
 func translitWithInitials(lastName, firstName, middleName string) string {
 	last := creds.Transliterate(lastName)
 	initials := firstLetter(firstName) + firstLetter(middleName)
@@ -321,7 +321,7 @@ func translitWithInitials(lastName, firstName, middleName string) string {
 	return last + "." + initials
 }
 
-// firstLetter — the first transliterated letter of a name part ('' when empty).
+// firstLetter — the first transliterated letter of a name part (” when empty).
 func firstLetter(part string) string {
 	t := creds.Transliterate(part)
 	if t == "" {
