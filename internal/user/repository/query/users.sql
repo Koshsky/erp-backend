@@ -115,7 +115,12 @@ WHERE id = @user_id;
 -- Counts of records that reference the user and block deletion (FK RESTRICT):
 -- managees, owned resources/projects/processes/tasks, comment authorship and
 -- auto-create template owners stored in the jsonb config (no FK, but a deleted
--- owner would break template-driven project creation).
+-- owner would break template-driven project creation). The jsonb walk is
+-- defensive: a malformed/legacy config (non-array shape, or an element with a
+-- missing/null/non-numeric owner_id) must not abort the deletion precheck with
+-- a cast or extraction error — elements are matched by strict jsonb equality
+-- with the numeric user id, so anything that is not the same JSON number
+-- simply does not match.
 SELECT
     (SELECT count(*)::bigint FROM users u WHERE u.manager_id = @user_id::bigint) AS managees,
     (SELECT count(*)::bigint FROM resources r WHERE r.owner_id = @user_id::bigint) AS resources,
@@ -123,8 +128,11 @@ SELECT
     (SELECT count(*)::bigint FROM processes pr WHERE pr.owner_id = @user_id::bigint) AS processes,
     (SELECT count(*)::bigint FROM tasks t WHERE t.owner_id = @user_id::bigint) AS tasks,
     (SELECT count(*)::bigint FROM task_comments c WHERE c.author_id = @user_id::bigint) AS comments,
-    (SELECT count(*)::bigint FROM project_auto_create pac, jsonb_array_elements(pac.config) e
-      WHERE (e->>'owner_id')::bigint = @user_id::bigint) AS auto_create_templates;
+    (SELECT count(*)::bigint
+     FROM project_auto_create pac, jsonb_array_elements(
+       CASE WHEN jsonb_typeof(pac.config) = 'array' THEN pac.config ELSE '[]'::jsonb END
+     ) e
+     WHERE e->'owner_id' = to_jsonb(@user_id::bigint)) AS auto_create_templates;
 
 -- name: OwnerChain :one
 -- Record owner: the manager, or the user himself when there is none

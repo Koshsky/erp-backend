@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Seed migrations no longer desync serial sequences (`V1017__sync_sequences.sql` re-syncs them); creating users/resources no longer fails with a primary-key 409.
+- User deletion no longer fails when a stored auto-create template has a malformed owner id.
 
 ### Changed
 
