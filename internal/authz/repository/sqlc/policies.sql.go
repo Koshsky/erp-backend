@@ -473,38 +473,6 @@ func (q *Queries) RenamePresetUsers(ctx context.Context, arg RenamePresetUsersPa
 	return err
 }
 
-const updatePresetContent = `-- name: UpdatePresetContent :one
-UPDATE rbac_presets
-SET name = $1::text, description = $2::text, updated_at = NOW()
-WHERE tag = $3::text
-RETURNING id, tag, name, description
-`
-
-type UpdatePresetContentParams struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Tag         string `json:"tag"`
-}
-
-type UpdatePresetContentRow struct {
-	ID          int64  `json:"id"`
-	Tag         string `json:"tag"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-func (q *Queries) UpdatePresetContent(ctx context.Context, arg UpdatePresetContentParams) (UpdatePresetContentRow, error) {
-	row := q.db.QueryRow(ctx, updatePresetContent, arg.Name, arg.Description, arg.Tag)
-	var i UpdatePresetContentRow
-	err := row.Scan(
-		&i.ID,
-		&i.Tag,
-		&i.Name,
-		&i.Description,
-	)
-	return i, err
-}
-
 const upsertPreset = `-- name: UpsertPreset :one
 INSERT INTO rbac_presets (tag, name, description)
 VALUES ($1::text, $2::text, $3::text)

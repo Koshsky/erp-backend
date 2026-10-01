@@ -55,12 +55,6 @@ SET name = EXCLUDED.name,
     updated_at = NOW()
 RETURNING id, tag, name, description;
 
--- name: UpdatePresetContent :one
-UPDATE rbac_presets
-SET name = @name::text, description = @description::text, updated_at = NOW()
-WHERE tag = @tag::text
-RETURNING id, tag, name, description;
-
 -- name: RenamePreset :one
 -- Renames a preset's tag (and refreshes its name/description); used both for
 -- pure content updates (new_tag = tag) and for tag renames.
