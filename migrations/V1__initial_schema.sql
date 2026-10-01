@@ -8,11 +8,15 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- =============================================
 -- Permission presets (renamed from the RBAC role catalog): a named set of
 -- permissions assigned as the base rights of a user.
--- Created before users: users.preset references rbac_presets(name).
+-- Created before users: users.preset references rbac_presets(tag).
 -- =============================================
 CREATE TABLE rbac_presets (
     id          BIGSERIAL PRIMARY KEY,
-    name        TEXT NOT NULL UNIQUE,
+    -- tag: system access code (admin/dp/rp/vp/worker/custom preset) — the
+    -- stable identity referenced by users.preset and rbac_preset_rules.preset.
+    tag         TEXT NOT NULL DEFAULT '',
+    -- name: human-readable display name.
+    name        TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -28,7 +32,8 @@ CREATE TABLE users (
 	middle_name TEXT DEFAULT NULL,
 	-- Base permission preset from the rbac_presets catalog (admin/dp/rp/vp/worker
 	-- + runtime presets); NULL — no base rights (only individual user_permissions).
-	preset TEXT REFERENCES rbac_presets(name),
+	-- Holds the preset TAG (system access code).
+	preset TEXT REFERENCES rbac_presets(tag),
 	username TEXT NOT NULL,
 	password_hash TEXT NOT NULL,
 	-- The worker's manager (a user with the vp role); NULL for other roles.
@@ -255,7 +260,7 @@ CREATE TABLE task_comments (
 -- while the engine (scope interpretation, kind registry) stays in code.
 CREATE TABLE rbac_preset_rules (
     id          BIGSERIAL PRIMARY KEY,
-    preset      TEXT NOT NULL REFERENCES rbac_presets(name),
+    preset      TEXT NOT NULL REFERENCES rbac_presets(tag),
     resource    TEXT NOT NULL, -- project|process|task|milestone|assignment|state|resource|worker|comment|user_catalog|rbac_config
     action      TEXT NOT NULL, -- view|create|update|delete
     scope       TEXT NOT NULL, -- all|own|parent|ancestor
@@ -307,6 +312,7 @@ CREATE TABLE rbac_route_policies (
 
 CREATE TABLE rbac_presets_deleted (
     id          BIGINT NOT NULL,
+    tag         TEXT NOT NULL DEFAULT '',
     name        TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -1,7 +1,7 @@
 -- name: ListActivePresets :many
-SELECT id, name, description
+SELECT id, tag, name, description
 FROM rbac_presets
-ORDER BY name;
+ORDER BY tag;
 
 -- name: ListActivePresetRules :many
 SELECT id, preset, resource, action, scope, updated_by, updated_at
@@ -47,40 +47,41 @@ WHERE name = @name::text;
 DELETE FROM rbac_route_policies;
 
 -- name: UpsertPreset :one
-INSERT INTO rbac_presets (name, description)
-VALUES (@name::text, @description::text)
-ON CONFLICT (name) DO UPDATE
-SET description = EXCLUDED.description,
+INSERT INTO rbac_presets (tag, name, description)
+VALUES (@tag::text, @name::text, @description::text)
+ON CONFLICT (tag) DO UPDATE
+SET name = EXCLUDED.name,
+    description = EXCLUDED.description,
     updated_at = NOW()
-RETURNING id, name, description;
+RETURNING id, tag, name, description;
 
--- name: UpdatePresetDescription :one
+-- name: UpdatePresetContent :one
 UPDATE rbac_presets
-SET description = @description::text, updated_at = NOW()
-WHERE name = @name::text
-RETURNING id, name, description;
+SET name = @name::text, description = @description::text, updated_at = NOW()
+WHERE tag = @tag::text
+RETURNING id, tag, name, description;
 
 -- name: RenamePreset :one
--- Renames a preset (and refreshes its description); used both for pure
--- description updates (new_name = name) and for renames.
+-- Renames a preset's tag (and refreshes its name/description); used both for
+-- pure content updates (new_tag = tag) and for tag renames.
 UPDATE rbac_presets
-SET name = @new_name::text, description = @description::text, updated_at = NOW()
-WHERE name = @name::text
-RETURNING id, name, description;
+SET tag = @new_tag::text, name = @name::text, description = @description::text, updated_at = NOW()
+WHERE tag = @tag::text
+RETURNING id, tag, name, description;
 
 -- name: RenamePresetRules :exec
 UPDATE rbac_preset_rules
-SET preset = @new_name::text, updated_at = NOW()
-WHERE preset = @name::text;
+SET preset = @new_tag::text, updated_at = NOW()
+WHERE preset = @tag::text;
 
 -- name: RenamePresetUsers :exec
 UPDATE users
-SET preset = @new_name::text, updated_at = NOW()
-WHERE preset = @name::text;
+SET preset = @new_tag::text, updated_at = NOW()
+WHERE preset = @tag::text;
 
 -- name: DeletePreset :exec
 DELETE FROM rbac_presets
-WHERE name = @name::text;
+WHERE tag = @tag::text;
 
 -- name: DeletePresetRulesByPreset :exec
 DELETE FROM rbac_preset_rules

@@ -57,11 +57,11 @@ func (q *Queries) DeleteAllUserPermissions(ctx context.Context, userID int64) er
 
 const deletePreset = `-- name: DeletePreset :exec
 DELETE FROM rbac_presets
-WHERE name = $1::text
+WHERE tag = $1::text
 `
 
-func (q *Queries) DeletePreset(ctx context.Context, name string) error {
-	_, err := q.db.Exec(ctx, deletePreset, name)
+func (q *Queries) DeletePreset(ctx context.Context, tag string) error {
+	_, err := q.db.Exec(ctx, deletePreset, tag)
 	return err
 }
 
@@ -201,13 +201,14 @@ func (q *Queries) ListActivePresetRules(ctx context.Context) ([]ListActivePreset
 }
 
 const listActivePresets = `-- name: ListActivePresets :many
-SELECT id, name, description
+SELECT id, tag, name, description
 FROM rbac_presets
-ORDER BY name
+ORDER BY tag
 `
 
 type ListActivePresetsRow struct {
 	ID          int64  `json:"id"`
+	Tag         string `json:"tag"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
@@ -221,7 +222,12 @@ func (q *Queries) ListActivePresets(ctx context.Context) ([]ListActivePresetsRow
 	items := []ListActivePresetsRow{}
 	for rows.Next() {
 		var i ListActivePresetsRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Tag,
+			&i.Name,
+			&i.Description,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -397,29 +403,41 @@ func (q *Queries) ListUserPrincipals(ctx context.Context) ([]ListUserPrincipalsR
 
 const renamePreset = `-- name: RenamePreset :one
 UPDATE rbac_presets
-SET name = $1::text, description = $2::text, updated_at = NOW()
-WHERE name = $3::text
-RETURNING id, name, description
+SET tag = $1::text, name = $2::text, description = $3::text, updated_at = NOW()
+WHERE tag = $4::text
+RETURNING id, tag, name, description
 `
 
 type RenamePresetParams struct {
-	NewName     string `json:"new_name"`
-	Description string `json:"description"`
+	NewTag      string `json:"new_tag"`
 	Name        string `json:"name"`
+	Description string `json:"description"`
+	Tag         string `json:"tag"`
 }
 
 type RenamePresetRow struct {
 	ID          int64  `json:"id"`
+	Tag         string `json:"tag"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-// Renames a preset (and refreshes its description); used both for pure
-// description updates (new_name = name) and for renames.
+// Renames a preset's tag (and refreshes its name/description); used both for
+// pure content updates (new_tag = tag) and for tag renames.
 func (q *Queries) RenamePreset(ctx context.Context, arg RenamePresetParams) (RenamePresetRow, error) {
-	row := q.db.QueryRow(ctx, renamePreset, arg.NewName, arg.Description, arg.Name)
+	row := q.db.QueryRow(ctx, renamePreset,
+		arg.NewTag,
+		arg.Name,
+		arg.Description,
+		arg.Tag,
+	)
 	var i RenamePresetRow
-	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	err := row.Scan(
+		&i.ID,
+		&i.Tag,
+		&i.Name,
+		&i.Description,
+	)
 	return i, err
 }
 
@@ -430,12 +448,12 @@ WHERE preset = $2::text
 `
 
 type RenamePresetRulesParams struct {
-	NewName string `json:"new_name"`
-	Name    string `json:"name"`
+	NewTag string `json:"new_tag"`
+	Tag    string `json:"tag"`
 }
 
 func (q *Queries) RenamePresetRules(ctx context.Context, arg RenamePresetRulesParams) error {
-	_, err := q.db.Exec(ctx, renamePresetRules, arg.NewName, arg.Name)
+	_, err := q.db.Exec(ctx, renamePresetRules, arg.NewTag, arg.Tag)
 	return err
 }
 
@@ -446,64 +464,79 @@ WHERE preset = $2::text
 `
 
 type RenamePresetUsersParams struct {
-	NewName string `json:"new_name"`
-	Name    string `json:"name"`
+	NewTag string `json:"new_tag"`
+	Tag    string `json:"tag"`
 }
 
 func (q *Queries) RenamePresetUsers(ctx context.Context, arg RenamePresetUsersParams) error {
-	_, err := q.db.Exec(ctx, renamePresetUsers, arg.NewName, arg.Name)
+	_, err := q.db.Exec(ctx, renamePresetUsers, arg.NewTag, arg.Tag)
 	return err
 }
 
-const updatePresetDescription = `-- name: UpdatePresetDescription :one
+const updatePresetContent = `-- name: UpdatePresetContent :one
 UPDATE rbac_presets
-SET description = $1::text, updated_at = NOW()
-WHERE name = $2::text
-RETURNING id, name, description
+SET name = $1::text, description = $2::text, updated_at = NOW()
+WHERE tag = $3::text
+RETURNING id, tag, name, description
 `
 
-type UpdatePresetDescriptionParams struct {
-	Description string `json:"description"`
+type UpdatePresetContentParams struct {
 	Name        string `json:"name"`
+	Description string `json:"description"`
+	Tag         string `json:"tag"`
 }
 
-type UpdatePresetDescriptionRow struct {
+type UpdatePresetContentRow struct {
 	ID          int64  `json:"id"`
+	Tag         string `json:"tag"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-func (q *Queries) UpdatePresetDescription(ctx context.Context, arg UpdatePresetDescriptionParams) (UpdatePresetDescriptionRow, error) {
-	row := q.db.QueryRow(ctx, updatePresetDescription, arg.Description, arg.Name)
-	var i UpdatePresetDescriptionRow
-	err := row.Scan(&i.ID, &i.Name, &i.Description)
+func (q *Queries) UpdatePresetContent(ctx context.Context, arg UpdatePresetContentParams) (UpdatePresetContentRow, error) {
+	row := q.db.QueryRow(ctx, updatePresetContent, arg.Name, arg.Description, arg.Tag)
+	var i UpdatePresetContentRow
+	err := row.Scan(
+		&i.ID,
+		&i.Tag,
+		&i.Name,
+		&i.Description,
+	)
 	return i, err
 }
 
 const upsertPreset = `-- name: UpsertPreset :one
-INSERT INTO rbac_presets (name, description)
-VALUES ($1::text, $2::text)
-ON CONFLICT (name) DO UPDATE
-SET description = EXCLUDED.description,
+INSERT INTO rbac_presets (tag, name, description)
+VALUES ($1::text, $2::text, $3::text)
+ON CONFLICT (tag) DO UPDATE
+SET name = EXCLUDED.name,
+    description = EXCLUDED.description,
     updated_at = NOW()
-RETURNING id, name, description
+RETURNING id, tag, name, description
 `
 
 type UpsertPresetParams struct {
+	Tag         string `json:"tag"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
 type UpsertPresetRow struct {
 	ID          int64  `json:"id"`
+	Tag         string `json:"tag"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
 func (q *Queries) UpsertPreset(ctx context.Context, arg UpsertPresetParams) (UpsertPresetRow, error) {
-	row := q.db.QueryRow(ctx, upsertPreset, arg.Name, arg.Description)
+	row := q.db.QueryRow(ctx, upsertPreset, arg.Tag, arg.Name, arg.Description)
 	var i UpsertPresetRow
-	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	err := row.Scan(
+		&i.ID,
+		&i.Tag,
+		&i.Name,
+		&i.Description,
+	)
 	return i, err
 }
 
