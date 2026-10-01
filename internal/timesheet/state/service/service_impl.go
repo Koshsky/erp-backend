@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	repo "github.com/Koshsky/erp-backend/internal/timesheet/state/repository"
 
 	"github.com/Koshsky/erp-backend/internal/timesheet/state/dto"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
+	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/errors"
 )
 
@@ -44,11 +46,11 @@ func (s *StateService) CreateState(ctx context.Context, req dto.CreateStateReque
 	ctx, end := s.tracer.Start(ctx, "state.CreateState")
 	defer end(nil)
 
-	if err := s.validator.ValidateState(req.Code, req.Name); err != nil {
+	if err := s.validator.ValidateState(req.Code, req.Name, req.Color); err != nil {
 		return nil, err
 	}
 
-	created, err := s.repository.CreateState(ctx, req.Code, req.Name, req.IsAvailable)
+	created, err := s.repository.CreateState(ctx, req.Code, req.Name, req.IsAvailable, req.Color)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +97,14 @@ func (s *StateService) UpdateState(
 	if req.IsAvailable != nil {
 		state.IsAvailable = *req.IsAvailable
 	}
-	if err = s.validator.ValidateState(state.Code, state.Name); err != nil {
+	if req.Color != nil {
+		if *req.Color == "" {
+			state.Color = sql.NullString{}
+		} else {
+			state.Color = sql.NullString{String: *req.Color, Valid: true}
+		}
+	}
+	if err = s.validator.ValidateState(state.Code, state.Name, nullable.StringPtr(state.Color)); err != nil {
 		return nil, err
 	}
 

@@ -145,6 +145,8 @@ CREATE TABLE states (
 	code TEXT NOT NULL UNIQUE,
 	name TEXT NOT NULL,
 	is_available BOOLEAN NOT NULL DEFAULT TRUE,
+	-- Optional state color (#RRGGBB, NULL — standard color on the frontend).
+	color TEXT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -398,6 +400,7 @@ CREATE TABLE states_deleted (
     code         TEXT NOT NULL,
     name         TEXT NOT NULL,
     is_available BOOLEAN NOT NULL DEFAULT TRUE,
+    color        TEXT,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()

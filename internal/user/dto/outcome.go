@@ -33,6 +33,12 @@ type CreateUserResult struct {
 	Password string       `json:"password,omitempty"`
 }
 
+// ResetPasswordResult — the freshly generated password after an admin
+// password reset; shown to the administrator exactly once.
+type ResetPasswordResult struct {
+	Password string `json:"password" example:"xK9#mP2vQ7"`
+}
+
 // AdminUserResponse — user for the admin page (including the password hash).
 type AdminUserResponse struct {
 	ID              int64      `json:"id"               example:"1"`

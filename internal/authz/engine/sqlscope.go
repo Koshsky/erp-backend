@@ -57,7 +57,7 @@ func CompileViewScopeUser(u userctx.UserContext, res rbac.Resource) rbac.ListSco
 // ---------------------------------------------------------------------------
 // Per-resource WHERE skeletons (spliced into the .sql list queries).
 // Placeholder parameters (@sc_all/@sc_self/@sc_parent/@sc_ancestor/@sc_sib/
-// @sc_down/@sc_none/@user_id) are boolean/bigint bind values filled from
+//	@sc_down/@sc_none/@user_id)	are boolean/bigint bind values filled from
 // rbac.ListScope + the caller id. Alias conventions match the query files:
 //   - tasks: t (task), p (process), pr (project)
 //   - processes: p, pr

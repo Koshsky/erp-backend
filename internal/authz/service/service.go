@@ -483,9 +483,9 @@ func (s *Service) DeletePreset(ctx context.Context, name string) error {
 }
 
 // validPresetName — allowed characters of a preset name (system access code):
-// lowercase latin letters, digits, "-" and "_".
+// letters of any script (latin, cyrillic), digits, "-" and "_".
 func validPresetName(name string) bool {
-	return regexp.MustCompile(`^[a-z0-9_-]+$`).MatchString(name)
+	return regexp.MustCompile(`^[\p{L}\p{N}_-]+$`).MatchString(name)
 }
 
 // validatePresetName validates a preset name: non-empty, no longer than 32, a code.
@@ -498,7 +498,7 @@ func validatePresetName(name string) error {
 		return errors.BadRequest("имя пресета не длиннее 32 символов")
 	}
 	if !validPresetName(name) {
-		return errors.BadRequest("имя пресета: только латиница в нижнем регистре, цифры, «-» и «_»")
+		return errors.BadRequest("имя пресета: буквы (латиница/кириллица), цифры, «-» и «_»")
 	}
 	return nil
 }

@@ -6994,7 +6994,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Generate a new random password for a user (admin only; the new password is never returned)",
+                "description": "Generate a new random password for a user (admin only) and return it once",
                 "produces": [
                     "application/json"
                 ],
@@ -7012,8 +7012,26 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ResetPasswordResult"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -7564,6 +7582,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "ОТП"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#ffd6a5"
                 },
                 "is_available": {
                     "type": "boolean",
@@ -8352,6 +8374,15 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ResetPasswordResult": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "xK9#mP2vQ7"
+                }
+            }
+        },
         "dto.Resource": {
             "type": "object",
             "properties": {
@@ -8587,6 +8618,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "ОТП"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#ffd6a5"
                 },
                 "id": {
                     "type": "integer",
@@ -8855,6 +8890,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "ОТП"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "#ffd6a5"
                 },
                 "is_available": {
                     "type": "boolean",
