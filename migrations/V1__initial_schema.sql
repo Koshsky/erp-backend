@@ -13,8 +13,10 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE TABLE rbac_presets (
     id          BIGSERIAL PRIMARY KEY,
     -- tag: system access code (admin/dp/rp/vp/worker/custom preset) — the
-    -- stable identity referenced by users.preset and rbac_preset_rules.preset.
-    tag         TEXT NOT NULL DEFAULT '',
+    -- unique identity of the preset, stored as a value in users.preset and
+    -- rbac_preset_rules.preset (no FK — integrity is enforced by the RBAC
+    -- service, catalog rows are mutable).
+    tag         TEXT NOT NULL UNIQUE,
     -- name: human-readable display name.
     name        TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
@@ -32,8 +34,8 @@ CREATE TABLE users (
 	middle_name TEXT DEFAULT NULL,
 	-- Base permission preset from the rbac_presets catalog (admin/dp/rp/vp/worker
 	-- + runtime presets); NULL — no base rights (only individual user_permissions).
-	-- Holds the preset TAG (system access code).
-	preset TEXT REFERENCES rbac_presets(tag),
+	-- Holds the preset TAG (system access code) as a value, no FK.
+	preset TEXT,
 	username TEXT NOT NULL,
 	password_hash TEXT NOT NULL,
 	-- The worker's manager (a user with the vp role); NULL for other roles.
@@ -260,7 +262,9 @@ CREATE TABLE task_comments (
 -- while the engine (scope interpretation, kind registry) stays in code.
 CREATE TABLE rbac_preset_rules (
     id          BIGSERIAL PRIMARY KEY,
-    preset      TEXT NOT NULL REFERENCES rbac_presets(tag),
+    -- preset: tag of the preset from the rbac_presets catalog (no FK —
+    -- integrity is enforced by the RBAC service).
+    preset      TEXT NOT NULL,
     resource    TEXT NOT NULL, -- project|process|task|milestone|assignment|state|resource|worker|comment|user_catalog|rbac_config
     action      TEXT NOT NULL, -- view|create|update|delete
     scope       TEXT NOT NULL, -- all|own|parent|ancestor

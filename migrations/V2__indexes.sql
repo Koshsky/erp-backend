@@ -5,9 +5,6 @@
 -- (no partial predicates, no deleted_at).
 -- =============================================
 CREATE UNIQUE INDEX idx_users_username ON users(username);
--- Preset tags are unique among non-empty values (rows with an empty tag exist
--- only transiently during the V21 backfill).
-CREATE UNIQUE INDEX idx_rbac_presets_tag ON rbac_presets(tag) WHERE tag <> '';
 CREATE UNIQUE INDEX idx_projects_code ON projects(code);
 CREATE UNIQUE INDEX idx_resources_title ON resources(title);
 CREATE UNIQUE INDEX idx_resources_code ON resources(code);
