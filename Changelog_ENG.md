@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-01
+
+### Changed
+
+- No backend code changes; version aligned with the frontend v1.1.0 wave (MAJOR/MINOR sync rule).
+
+## [1.0.2] - 2026-09-30
+
+### Added
+
+- Admin password reset now returns the generated password in the response (shown once).
+- States support a custom color (`#RRGGBB`) on create/update.
+
+### Fixed
+
+- Seed migrations re-sync their serial sequences in place, so fresh databases never collide on default inserts.
+- Preset names accept letters of any script (cyrillic included).
+
 ## [1.0.1] - 2026-09-30
 
 ### Fixed

@@ -5,14 +5,16 @@
 package sqlc
 
 import (
+	"database/sql"
 	"time"
 )
 
 type State struct {
-	ID          int64     `json:"id"`
-	Code        string    `json:"code"`
-	Name        string    `json:"name"`
-	IsAvailable bool      `json:"is_available"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          int64          `json:"id"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	IsAvailable bool           `json:"is_available"`
+	Color       sql.NullString `json:"color"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }

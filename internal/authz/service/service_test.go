@@ -66,3 +66,21 @@ func TestBuiltinPresetErr(t *testing.T) {
 		t.Fatal("сообщение об ошибке защиты встроенного пресета не должно быть пустым")
 	}
 }
+
+// Preset names accept letters of any script (latin/cyrillic), digits, «-» and
+// «_» — the admin UI must be able to create a preset named «Аудит».
+func TestValidPresetNameCharset(t *testing.T) {
+	t.Parallel()
+	allowed := []string{"auditor", "Аудит", "пресет_1", "СБЫТ-2026", "mixed123_"}
+	for _, name := range allowed {
+		if !validPresetName(name) {
+			t.Errorf("validPresetName(%q) = false, want true", name)
+		}
+	}
+	forbidden := []string{"", "a b", "a.b", "пресет,1", "a/b", "«квота»"}
+	for _, name := range forbidden {
+		if validPresetName(name) {
+			t.Errorf("validPresetName(%q) = true, want false", name)
+		}
+	}
+}

@@ -104,7 +104,7 @@ func TestResetPasswordRevokesSessions(t *testing.T) {
 	revoker := &stubSessionRevoker{}
 	svc := newRevokeTestService(repo, revoker)
 
-	if err := svc.ResetPassword(context.Background(), 7, admin(1)); err != nil {
+	if _, err := svc.ResetPassword(context.Background(), 7, admin(1)); err != nil {
 		t.Fatalf("ResetPassword() error = %v", err)
 	}
 	if !slices.Contains(revoker.revokedIDs(), 7) {
@@ -155,7 +155,7 @@ func TestNoSessionRevokerIsSafe(t *testing.T) {
 	if err := svc.ChangePassword(context.Background(), 7, "OldPass9!", "NewPass9!"); err != nil {
 		t.Fatalf("ChangePassword() error = %v", err)
 	}
-	if err := svc.ResetPassword(context.Background(), 7, admin(1)); err != nil {
+	if _, err := svc.ResetPassword(context.Background(), 7, admin(1)); err != nil {
 		t.Fatalf("ResetPassword() error = %v", err)
 	}
 	if err := svc.DeleteUser(context.Background(), 7); err != nil {
