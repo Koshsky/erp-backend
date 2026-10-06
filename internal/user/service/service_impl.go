@@ -21,6 +21,7 @@ import (
 	nullable "github.com/Koshsky/erp-backend/pkg/database"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 )
 
 // RBACReloader is an optional hook to refresh the in-memory RBAC snapshot
@@ -178,8 +179,8 @@ func (s *UserService) createUserInternal(
 		req.Username = username
 	}
 	if IsUsernameReserved(req.Username) {
-		return nil, errors.NewFieldError(
-			"username", "reserved", "Логин «"+req.Username+"» зарезервирован системой",
+		return nil, errors.NewFieldErrorM(
+			"username", "reserved", messages.M("user.login_reserved", req.Username),
 		)
 	}
 	if req.PasswordHash == "" {
@@ -434,8 +435,8 @@ func (s *UserService) UpdateUser(
 	if req.Username != nil {
 		newName := NormalizeUsername(*req.Username)
 		if newName != user.Username && IsUsernameReserved(newName) {
-			return nil, errors.NewFieldError(
-				"username", "reserved", "Логин «"+newName+"» зарезервирован системой",
+			return nil, errors.NewFieldErrorM(
+				"username", "reserved", messages.M("user.login_reserved", newName),
 			)
 		}
 	}

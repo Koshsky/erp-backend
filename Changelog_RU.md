@@ -5,6 +5,12 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Добавлено
+
+- Сообщения об ошибках API локализованы по заголовку `Accept-Language` (русский по умолчанию, доступен английский).
+
 ## [1.2.0] - 2026-10-06
 
 ### Изменено

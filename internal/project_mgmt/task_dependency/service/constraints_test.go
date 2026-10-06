@@ -2,11 +2,13 @@
 package service
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task_dependency/domain"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 )
 
 // dates is a small helper for the test table.
@@ -138,13 +140,21 @@ func TestConstraintMatrix(t *testing.T) {
 }
 
 // TestViolationMessageNamesTasks ensures the user-facing message carries both
-// task titles and the link type label.
+// task titles in either language.
 func TestViolationMessageNamesTasks(t *testing.T) {
 	t.Parallel()
 	for _, typ := range []string{domain.TypeFinishToStart, domain.TypeStartToStart, domain.TypeFinishToFinish, domain.TypeStartToFinish} {
-		msg := violationMessage(typ, "Монтаж", "Подготовка")
-		if msg == "" {
-			t.Fatalf("violationMessage(%s) пуст", typ)
+		m := violationTemplate(typ, "Монтаж", "Подготовка")
+		ru := m.Text(messages.LocaleRU)
+		if ru == "" {
+			t.Fatalf("violationTemplate(%s) RU пуст", typ)
+		}
+		if !strings.Contains(ru, "Монтаж") || !strings.Contains(ru, "Подготовка") {
+			t.Errorf("violationTemplate(%s) RU = %q; want both task titles", typ, ru)
+		}
+		en := m.Text(messages.LocaleEN)
+		if !strings.Contains(en, "Монтаж") || !strings.Contains(en, "Подготовка") {
+			t.Errorf("violationTemplate(%s) EN = %q; want both task titles", typ, en)
 		}
 	}
 }

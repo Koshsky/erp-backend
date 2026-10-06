@@ -1,11 +1,10 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task_dependency/domain"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 )
 
 // boundDate returns the date of the successor that the link constrains: its
@@ -26,31 +25,20 @@ func anchorDate(typ string, predStart, predEnd date.Date) date.Date {
 	return predEnd
 }
 
-// violationMessage builds the user-facing message for a violated link.
-func violationMessage(typ, taskTitle, predTitle string) string {
+// violationTemplate picks the user-facing message template for a violated
+// link, carrying both task titles as arguments.
+func violationTemplate(typ, taskTitle, predTitle string) messages.Message {
 	switch typ {
 	case domain.TypeFinishToStart:
-		return fmt.Sprintf(
-			"задача «%s» должна начинаться не раньше окончания задачи «%s» (связь «окончание → начало»)",
-			taskTitle, predTitle,
-		)
+		return messages.M("task_dependency.finish_to_start", taskTitle, predTitle)
 	case domain.TypeStartToStart:
-		return fmt.Sprintf(
-			"задача «%s» должна начинаться не раньше начала задачи «%s» (связь «начало → начало»)",
-			taskTitle, predTitle,
-		)
+		return messages.M("task_dependency.start_to_start", taskTitle, predTitle)
 	case domain.TypeFinishToFinish:
-		return fmt.Sprintf(
-			"задача «%s» должна заканчиваться не раньше окончания задачи «%s» (связь «окончание → окончание»)",
-			taskTitle, predTitle,
-		)
+		return messages.M("task_dependency.finish_to_finish", taskTitle, predTitle)
 	case domain.TypeStartToFinish:
-		return fmt.Sprintf(
-			"задача «%s» должна заканчиваться не раньше начала задачи «%s» (связь «начало → окончание»)",
-			taskTitle, predTitle,
-		)
+		return messages.M("task_dependency.start_to_finish", taskTitle, predTitle)
 	default:
-		return "недопустимый тип связи"
+		return messages.M("task_dependency.invalid_type")
 	}
 }
 
@@ -64,7 +52,7 @@ func checkConstraint(
 	predStart, predEnd date.Date,
 ) error {
 	if boundDate(typ, taskStart, taskEnd) < anchorDate(typ, predStart, predEnd) {
-		return errors.NewValidationError(violationMessage(typ, taskTitle, predTitle))
+		return errors.NewValidationErrorM(violationTemplate(typ, taskTitle, predTitle))
 	}
 	return nil
 }

@@ -16,21 +16,21 @@ func New() *Validator {
 
 func (v *Validator) ValidateDateRange(start, end date.Date, entity string) error {
 	if end.Time().Before(start.Time()) {
-		return errors.NewFieldError("end_date", codeDateRange, msgDateRange(entity))
+		return errors.NewFieldErrorM("end_date", codeDateRange, msgDateRange(entity))
 	}
 	return nil
 }
 
 func (v *Validator) ValidateRequiredText(value, field string) error {
 	if strings.TrimSpace(value) == "" {
-		return errors.NewFieldError(field, codeRequired, msgRequired(field))
+		return errors.NewFieldErrorM(field, codeRequired, msgRequired(field))
 	}
 	return nil
 }
 
 func (v *Validator) ValidatePositiveID(id int64, field string) error {
 	if id <= 0 {
-		return errors.NewFieldError(field, codeMinValue, msgGreaterThan(field, 0))
+		return errors.NewFieldErrorM(field, codeMinValue, msgGreaterThan(field, 0))
 	}
 	return nil
 }
@@ -46,7 +46,7 @@ func (v *Validator) ValidateOptionalPositiveID(id *int64, field string) error {
 
 func (v *Validator) ValidateRequiredDate(value date.Date, field string) error {
 	if value == "" {
-		return errors.NewFieldError(field, codeRequired, msgRequired(field))
+		return errors.NewFieldErrorM(field, codeRequired, msgRequired(field))
 	}
 	return nil
 }
@@ -63,7 +63,7 @@ func (v *Validator) ValidateOptionalColor(color *string, field string) error {
 	}
 	ok, err := regexp.MatchString(entityColorPattern, *color)
 	if err != nil || !ok {
-		return errors.NewFieldError(field, codeFormat, msgFormat(field))
+		return errors.NewFieldErrorM(field, codeFormat, msgFormat(field))
 	}
 	return nil
 }
