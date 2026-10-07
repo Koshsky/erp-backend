@@ -43,8 +43,10 @@ func violationTemplate(typ, taskTitle, predTitle string) messages.Message {
 }
 
 // checkConstraint validates one link: the successor's bound date must not
-// precede the predecessor's anchor date. A violation is returned as a
-// validation error (400) so the conflicting pair is visible to the user.
+// precede the predecessor's anchor date. The rule is INCLUSIVE (`>=`): a bound
+// landing exactly on the anchor date is valid — there is no minimum one-day
+// lag, so only a strictly earlier bound is a violation. A violation is returned
+// as a validation error (400) so the conflicting pair is visible to the user.
 func checkConstraint(
 	taskTitle string,
 	taskStart, taskEnd date.Date,
