@@ -99,22 +99,27 @@ type UserPermissionsInput struct {
 	Overrides []PermissionOverride `json:"overrides"`
 }
 
-// PresetView — a preset catalog entry (a named set of permissions).
+// PresetView — a preset catalog entry: tag (system access code, the identity
+// referenced by users/rules), name (human-readable display name) and
+// description.
 type PresetView struct {
 	ID          int64  `json:"id"`
+	Tag         string `json:"tag"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-// PresetUpsertInput — preset creation (name = system access code).
+// PresetUpsertInput — preset creation (tag = system access code).
 type PresetUpsertInput struct {
-	Name        string `json:"name"        example:"auditor"       binding:"required"`
-	Description string `json:"description" example:"Внешний аудит"`
+	Tag         string `json:"tag"         example:"auditor"                     binding:"required"`
+	Name        string `json:"name"        example:"Внешний аудит"               binding:"required"`
+	Description string `json:"description" example:"Проверка годовой отчётности"`
 }
 
-// PresetUpdateInput — preset update: optional rename (Name) plus a new
-// description (always sent by the client).
+// PresetUpdateInput — preset update: optional tag rename (Tag) plus the
+// display name and description (always sent by the client).
 type PresetUpdateInput struct {
-	Name        *string `json:"name,omitempty" example:"auditor"`
-	Description string  `json:"description"    example:"Внешний аудит"`
+	Tag         *string `json:"tag,omitempty" example:"auditor"`
+	Name        string  `json:"name"          example:"Внешний аудит"`
+	Description string  `json:"description"   example:"Проверка годовой отчётности"`
 }

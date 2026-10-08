@@ -13,6 +13,7 @@ import (
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 )
 
 // RouteSpec — configurable definition of a route policy (kind + parameters).
@@ -615,7 +616,7 @@ func ListCheck(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) error {
 		}
 		id, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || id < 0 {
-			return errors.BadRequest("invalid " + key)
+			return errors.BadRequestM(messages.M("errors.invalid_param", key))
 		}
 		if scope != ScopeAll && id != rc.User.ID {
 			return errors.ErrForbidden

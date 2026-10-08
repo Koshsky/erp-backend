@@ -41,9 +41,9 @@ type policyRepository interface {
 		rules []sqlc.UpsertPresetRuleParams,
 		policies []sqlc.UpsertRoutePolicyParams,
 	) error
-	UpsertPreset(ctx context.Context, name, description string) (sqlc.UpsertPresetRow, error)
-	UpdatePreset(ctx context.Context, name, newName, description string) (sqlc.RenamePresetRow, error)
-	DeletePreset(ctx context.Context, name string) error
+	UpsertPreset(ctx context.Context, tag, name, description string) (sqlc.UpsertPresetRow, error)
+	UpdatePreset(ctx context.Context, tag, newTag, name, description string) (sqlc.RenamePresetRow, error)
+	DeletePreset(ctx context.Context, tag string) error
 	ListUserPermissions(ctx context.Context, userID int64) ([]sqlc.ListUserPermissionsRow, error)
 	ReplaceUserPermissions(ctx context.Context, userID int64, perms []sqlc.InsertUserPermissionParams) error
 	FindUserPreset(ctx context.Context, userID int64) (string, bool, error)
@@ -269,9 +269,9 @@ func (s *Service) apply(ctx context.Context) error {
 	return nil
 }
 
-func presetExists(presets []sqlc.ListActivePresetsRow, name string) bool {
+func presetExists(presets []sqlc.ListActivePresetsRow, tag string) bool {
 	for _, p := range presets {
-		if p.Name == name {
+		if p.Tag == tag {
 			return true
 		}
 	}
@@ -422,19 +422,27 @@ func presetNameRef(p *string) string {
 }
 
 // maxPresetNameLen — maximum preset name length.
-const maxPresetNameLen = 32
+const (
+	maxPresetTagLen  = 32
+	maxPresetNameLen = 64
+)
 
 // CreatePreset creates a preset (or updates an existing one) and applies it.
 // The seeded built-in presets (V10 catalog) are immutable: the upsert must
 // not clobber them (in particular, never overwrite the admin entry).
 func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (sqlc.UpsertPresetRow, error) {
-	if err := validatePresetName(in.Name); err != nil {
+	tag := strings.TrimSpace(in.Tag)
+	name := strings.TrimSpace(in.Name)
+	if err := validatePresetTag(tag); err != nil {
 		return sqlc.UpsertPresetRow{}, err
 	}
-	if isBuiltinPreset(in.Name) {
-		return sqlc.UpsertPresetRow{}, builtinPresetErr(in.Name)
+	if err := validatePresetDisplayName(name); err != nil {
+		return sqlc.UpsertPresetRow{}, err
 	}
-	preset, err := s.repo.UpsertPreset(ctx, in.Name, in.Description)
+	if isBuiltinPreset(tag) {
+		return sqlc.UpsertPresetRow{}, builtinPresetErr(tag)
+	}
+	preset, err := s.repo.UpsertPreset(ctx, tag, name, strings.TrimSpace(in.Description))
 	if err != nil {
 		return sqlc.UpsertPresetRow{}, err
 	}
@@ -442,22 +450,26 @@ func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (s
 	return preset, nil
 }
 
-// UpdatePreset updates a preset: the description always, plus an optional
-// rename (Name in the input). The seeded built-in presets (V10 catalog) are
-// immutable via the admin API.
+// UpdatePreset updates a preset: the display name and description always, plus
+// an optional tag rename (Tag in the input). The seeded built-in presets
+// (V10 catalog) are immutable via the admin API.
 func (s *Service) UpdatePreset(
 	ctx context.Context,
-	name string,
+	tag string,
 	in dto.PresetUpdateInput,
 ) (sqlc.RenamePresetRow, error) {
-	if isBuiltinPreset(name) {
-		return sqlc.RenamePresetRow{}, builtinPresetErr(name)
+	if isBuiltinPreset(tag) {
+		return sqlc.RenamePresetRow{}, builtinPresetErr(tag)
 	}
-	newName, err := resolvePresetRename(ctx, s.repo, name, in.Name)
+	name := strings.TrimSpace(in.Name)
+	if err := validatePresetDisplayName(name); err != nil {
+		return sqlc.RenamePresetRow{}, err
+	}
+	newTag, err := resolvePresetRename(ctx, s.repo, tag, in.Tag)
 	if err != nil {
 		return sqlc.RenamePresetRow{}, err
 	}
-	preset, err := s.repo.UpdatePreset(ctx, name, newName, in.Description)
+	preset, err := s.repo.UpdatePreset(ctx, tag, newTag, name, strings.TrimSpace(in.Description))
 	if err != nil {
 		return sqlc.RenamePresetRow{}, err
 	}
@@ -472,33 +484,46 @@ func (s *Service) UpdatePreset(
 // individual overrides survive). The seeded built-in presets (V10: admin, dp,
 // rp, vp, worker) are protected: deleting admin would clear users.preset for
 // every administrator and permanently lock them out of /rbac/*.
-func (s *Service) DeletePreset(ctx context.Context, name string) error {
-	if isBuiltinPreset(name) {
-		return builtinPresetErr(name)
+func (s *Service) DeletePreset(ctx context.Context, tag string) error {
+	if isBuiltinPreset(tag) {
+		return builtinPresetErr(tag)
 	}
-	if err := s.repo.DeletePreset(ctx, name); err != nil {
+	if err := s.repo.DeletePreset(ctx, tag); err != nil {
 		return err
 	}
 	return s.apply(ctx)
 }
 
-// validPresetName — allowed characters of a preset name (system access code):
+// validPresetTag — allowed characters of a preset tag (system access code):
 // letters of any script (latin, cyrillic), digits, "-" and "_".
-func validPresetName(name string) bool {
-	return regexp.MustCompile(`^[\p{L}\p{N}_-]+$`).MatchString(name)
+func validPresetTag(tag string) bool {
+	return regexp.MustCompile(`^[\p{L}\p{N}_-]+$`).MatchString(tag)
 }
 
-// validatePresetName validates a preset name: non-empty, no longer than 32, a code.
-func validatePresetName(name string) error {
+// validatePresetTag validates a preset tag: non-empty, no longer than 32, a code.
+func validatePresetTag(tag string) error {
+	tag = strings.TrimSpace(tag)
+	if tag == "" {
+		return errors.BadRequest("тэг пресета не может быть пустым")
+	}
+	if len(tag) > maxPresetTagLen {
+		return errors.BadRequest("тэг пресета не длиннее 32 символов")
+	}
+	if !validPresetTag(tag) {
+		return errors.BadRequest("тэг пресета: буквы (латиница/кириллица), цифры, «-» и «_»")
+	}
+	return nil
+}
+
+// validatePresetDisplayName validates the human-readable preset name: non-empty,
+// no longer than 64 characters.
+func validatePresetDisplayName(name string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return errors.BadRequest("имя пресета не может быть пустым")
 	}
 	if len(name) > maxPresetNameLen {
-		return errors.BadRequest("имя пресета не длиннее 32 символов")
-	}
-	if !validPresetName(name) {
-		return errors.BadRequest("имя пресета: буквы (латиница/кириллица), цифры, «-» и «_»")
+		return errors.BadRequest("имя пресета не длиннее 64 символов")
 	}
 	return nil
 }
@@ -529,30 +554,30 @@ func findRulePreset(rules []sqlc.ListActivePresetRulesRow, id int64) (string, bo
 	return "", false
 }
 
-// resolvePresetRename validates an optional rename target of a preset
-// (pattern, built-in and catalog collisions); returns the effective name.
-func resolvePresetRename(ctx context.Context, repo policyRepository, name string, rename *string) (string, error) {
+// resolvePresetRename validates an optional tag rename target of a preset
+// (pattern, built-in and catalog collisions); returns the effective tag.
+func resolvePresetRename(ctx context.Context, repo policyRepository, tag string, rename *string) (string, error) {
 	if rename == nil {
-		return name, nil
+		return tag, nil
 	}
-	newName := strings.TrimSpace(*rename)
-	if err := validatePresetName(newName); err != nil {
+	newTag := strings.TrimSpace(*rename)
+	if err := validatePresetTag(newTag); err != nil {
 		return "", err
 	}
-	if isBuiltinPreset(newName) {
-		return "", errors.BadRequest("встроенный пресет " + newName + " нельзя занять этим именем")
+	if isBuiltinPreset(newTag) {
+		return "", errors.BadRequest("встроенный пресет " + newTag + " нельзя занять этим тэгом")
 	}
-	if newName == name {
-		return newName, nil
+	if newTag == tag {
+		return newTag, nil
 	}
 	presets, err := repo.ListActivePresets(ctx)
 	if err != nil {
 		return "", err
 	}
 	for _, p := range presets {
-		if p.Name == newName {
-			return "", errors.BadRequest("пресет с именем " + newName + " уже существует")
+		if p.Tag == newTag {
+			return "", errors.BadRequest("пресет с тэгом " + newTag + " уже существует")
 		}
 	}
-	return newName, nil
+	return newTag, nil
 }

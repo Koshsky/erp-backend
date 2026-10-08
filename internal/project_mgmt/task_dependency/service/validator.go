@@ -1,10 +1,9 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task_dependency/domain"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -15,7 +14,7 @@ type DependencyValidator struct {
 // ValidateType rejects a value outside the dependency type catalog.
 func (v *DependencyValidator) ValidateType(typ string) error {
 	if !domain.ValidType(typ) {
-		return errors.NewFieldError("type", "invalid_value", fmt.Sprintf("unknown dependency type %q", typ))
+		return errors.NewFieldErrorM("type", "invalid_value", messages.M("task_dependency.unknown_type", typ))
 	}
 	return nil
 }

@@ -1,9 +1,8 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -25,10 +24,10 @@ func (v *CommentValidator) ValidateComment(taskID, authorID int64, content strin
 		return err
 	}
 	if len([]rune(content)) > maxCommentContentLen {
-		return errors.NewFieldError(
+		return errors.NewFieldErrorM(
 			"content",
 			"max_length",
-			fmt.Sprintf("content must not exceed %d characters", maxCommentContentLen),
+			messages.M("validator.max_length", "content", maxCommentContentLen),
 		)
 	}
 	return nil

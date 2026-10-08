@@ -3191,7 +3191,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/rbac/presets/{name}": {
+        "/rbac/presets/{tag}": {
             "put": {
                 "security": [
                     {
@@ -3211,8 +3211,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Preset name",
-                        "name": "name",
+                        "description": "Preset tag",
+                        "name": "tag",
                         "in": "path",
                         "required": true
                     },
@@ -3281,8 +3281,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Preset name",
-                        "name": "name",
+                        "description": "Preset tag",
+                        "name": "tag",
                         "in": "path",
                         "required": true
                     }
@@ -8107,9 +8107,13 @@ const docTemplate = `{
             "properties": {
                 "description": {
                     "type": "string",
-                    "example": "Внешний аудит"
+                    "example": "Проверка годовой отчётности"
                 },
                 "name": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                },
+                "tag": {
                     "type": "string",
                     "example": "auditor"
                 }
@@ -8118,14 +8122,19 @@ const docTemplate = `{
         "dto.PresetUpsertInput": {
             "type": "object",
             "required": [
-                "name"
+                "name",
+                "tag"
             ],
             "properties": {
                 "description": {
                     "type": "string",
-                    "example": "Внешний аудит"
+                    "example": "Проверка годовой отчётности"
                 },
                 "name": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                },
+                "tag": {
                     "type": "string",
                     "example": "auditor"
                 }
@@ -8141,6 +8150,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "tag": {
                     "type": "string"
                 }
             }
@@ -9281,7 +9293,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "1.3.0",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http"},

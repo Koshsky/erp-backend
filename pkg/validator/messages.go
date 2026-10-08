@@ -1,6 +1,6 @@
 package validator
 
-import "fmt"
+import "github.com/Koshsky/erp-backend/pkg/messages"
 
 // Machine-readable codes for FieldError. Centralized here so message wording
 // and codes evolve in one place (e.g. for future localization or structured
@@ -13,18 +13,27 @@ const (
 	codeFormat    = "format"
 )
 
-func msgRequired(field string) string {
-	return fmt.Sprintf("%s is required", field)
+// The message template ids below live in the pkg/messages catalogs
+// (catalog_ru.json / catalog_en.json) — the coverage test enforces that every
+// id used here exists in both languages.
+
+// msgRequired is the "field is required" message template.
+func msgRequired(field string) messages.Message {
+	return messages.M("validator.required", field)
 }
 
-func msgGreaterThan(field string, minVal int) string {
-	return fmt.Sprintf("%s must be greater than %d", field, minVal)
+// msgGreaterThan is the "field must be greater than a value" message template.
+func msgGreaterThan(field string, minVal int) messages.Message {
+	return messages.M("validator.min_value", field, minVal)
 }
 
-func msgDateRange(entity string) string {
-	return fmt.Sprintf("%s end_date must be greater than or equal to start_date", entity)
+// msgDateRange is the "end date must not precede the start date" template for
+// an entity.
+func msgDateRange(entity string) messages.Message {
+	return messages.M("validator.date_range", entity)
 }
 
-func msgFormat(field string) string {
-	return fmt.Sprintf("%s must be a #RRGGBB hex color", field)
+// msgFormat is the "field must be a hex color" message template.
+func msgFormat(field string) messages.Message {
+	return messages.M("validator.color_format", field)
 }

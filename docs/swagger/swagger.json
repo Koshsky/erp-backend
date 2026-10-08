@@ -16,7 +16,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "1.0"
+        "version": "1.3.0"
     },
     "host": "localhost:8080",
     "basePath": "/api/v1",
@@ -3188,7 +3188,7 @@
                 }
             }
         },
-        "/rbac/presets/{name}": {
+        "/rbac/presets/{tag}": {
             "put": {
                 "security": [
                     {
@@ -3208,8 +3208,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Preset name",
-                        "name": "name",
+                        "description": "Preset tag",
+                        "name": "tag",
                         "in": "path",
                         "required": true
                     },
@@ -3278,8 +3278,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Preset name",
-                        "name": "name",
+                        "description": "Preset tag",
+                        "name": "tag",
                         "in": "path",
                         "required": true
                     }
@@ -8104,9 +8104,13 @@
             "properties": {
                 "description": {
                     "type": "string",
-                    "example": "Внешний аудит"
+                    "example": "Проверка годовой отчётности"
                 },
                 "name": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                },
+                "tag": {
                     "type": "string",
                     "example": "auditor"
                 }
@@ -8115,14 +8119,19 @@
         "dto.PresetUpsertInput": {
             "type": "object",
             "required": [
-                "name"
+                "name",
+                "tag"
             ],
             "properties": {
                 "description": {
                     "type": "string",
-                    "example": "Внешний аудит"
+                    "example": "Проверка годовой отчётности"
                 },
                 "name": {
+                    "type": "string",
+                    "example": "Внешний аудит"
+                },
+                "tag": {
                     "type": "string",
                     "example": "auditor"
                 }
@@ -8138,6 +8147,9 @@
                     "type": "integer"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "tag": {
                     "type": "string"
                 }
             }

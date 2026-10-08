@@ -134,23 +134,23 @@ func (s *stubPolicyRepo) applyReseed(
 	return nil
 }
 
-func (s *stubPolicyRepo) UpsertPreset(_ context.Context, name, _ string) (sqlc.UpsertPresetRow, error) {
+func (s *stubPolicyRepo) UpsertPreset(_ context.Context, tag, _, _ string) (sqlc.UpsertPresetRow, error) {
 	s.logCall("UpsertPreset")
-	s.upsertedPresets = append(s.upsertedPresets, name)
-	return sqlc.UpsertPresetRow{Name: name}, nil
+	s.upsertedPresets = append(s.upsertedPresets, tag)
+	return sqlc.UpsertPresetRow{Tag: tag}, nil
 }
 
 func (s *stubPolicyRepo) UpdatePreset(
 	_ context.Context,
-	_, newName, _ string,
+	_, newTag, _, _ string,
 ) (sqlc.RenamePresetRow, error) {
 	s.logCall("UpdatePreset")
-	return sqlc.RenamePresetRow{Name: newName}, nil
+	return sqlc.RenamePresetRow{Tag: newTag}, nil
 }
 
-func (s *stubPolicyRepo) DeletePreset(_ context.Context, name string) error {
+func (s *stubPolicyRepo) DeletePreset(_ context.Context, tag string) error {
 	s.logCall("DeletePreset")
-	s.deletedPresets = append(s.deletedPresets, name)
+	s.deletedPresets = append(s.deletedPresets, tag)
 	return nil
 }
 
@@ -349,7 +349,7 @@ func TestUpdatePresetRefusesBuiltins(t *testing.T) {
 	svc := newAuthzTestService(repo)
 
 	for _, name := range []string{userdomain.PresetAdmin} {
-		_, err := svc.UpdatePreset(context.Background(), name, dto.PresetUpdateInput{Description: "x"})
+		_, err := svc.UpdatePreset(context.Background(), name, dto.PresetUpdateInput{Name: "x", Description: "x"})
 		if err == nil {
 			t.Errorf("UpdatePreset(%q) succeeded on a built-in preset", name)
 			continue
@@ -371,12 +371,16 @@ func TestUpdatePresetRefusesBuiltins(t *testing.T) {
 // by another catalog entry is refused before any repository call.
 func TestUpdatePresetRename(t *testing.T) {
 	t.Parallel()
-	t.Run("rename to a valid name", func(t *testing.T) {
+	t.Run("rename to a valid tag", func(t *testing.T) {
 		t.Parallel()
 		repo := &stubPolicyRepo{}
 		svc := newAuthzTestService(repo)
-		newName := "auditor"
-		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Name: &newName, Description: "x"})
+		newTag := "auditor"
+		_, err := svc.UpdatePreset(
+			context.Background(),
+			"old",
+			dto.PresetUpdateInput{Tag: &newTag, Name: "x", Description: "x"},
+		)
 		if err != nil {
 			t.Fatalf("UpdatePreset(rename) error = %v", err)
 		}
@@ -384,12 +388,12 @@ func TestUpdatePresetRename(t *testing.T) {
 			t.Errorf("rename did not reach the repository: %v", repo.callLog)
 		}
 	})
-	t.Run("rename onto a built-in name is refused", func(t *testing.T) {
+	t.Run("rename onto a built-in tag is refused", func(t *testing.T) {
 		t.Parallel()
 		repo := &stubPolicyRepo{}
 		svc := newAuthzTestService(repo)
-		newName := "admin"
-		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Name: &newName})
+		newTag := "admin"
+		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Tag: &newTag, Name: "x"})
 		if err == nil {
 			t.Fatal("UpdatePreset(rename to admin) succeeded")
 		}
@@ -397,13 +401,13 @@ func TestUpdatePresetRename(t *testing.T) {
 			t.Errorf("refused rename touched the repository: %v", repo.callLog)
 		}
 	})
-	t.Run("rename onto an occupied name is refused", func(t *testing.T) {
+	t.Run("rename onto an occupied tag is refused", func(t *testing.T) {
 		t.Parallel()
 		repo := &stubPolicyRepo{}
-		repo.presetCatalog = []sqlc.ListActivePresetsRow{{Name: "taken"}}
+		repo.presetCatalog = []sqlc.ListActivePresetsRow{{Tag: "taken"}}
 		svc := newAuthzTestService(repo)
-		newName := "taken"
-		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Name: &newName})
+		newTag := "taken"
+		_, err := svc.UpdatePreset(context.Background(), "old", dto.PresetUpdateInput{Tag: &newTag, Name: "x"})
 		if err == nil {
 			t.Fatal("UpdatePreset(rename to taken) succeeded")
 		}
@@ -422,7 +426,7 @@ func TestCreatePresetRefusesBuiltins(t *testing.T) {
 	svc := newAuthzTestService(repo)
 
 	for _, name := range []string{userdomain.PresetAdmin} {
-		_, err := svc.CreatePreset(context.Background(), dto.PresetUpsertInput{Name: name})
+		_, err := svc.CreatePreset(context.Background(), dto.PresetUpsertInput{Tag: name, Name: "x"})
 		if err == nil {
 			t.Errorf("CreatePreset(%q) succeeded on a built-in preset", name)
 			continue
