@@ -29,6 +29,10 @@ services:
       - -password=${DATABASE_PASSWORD}
       - -locations=filesystem:/flyway/sql,filesystem:/flyway/sql/plugins,filesystem:/flyway/sql/seed
       - -outOfOrder=true
+      # Parity with the deploy stack: applied seed/migration files may disappear
+      # from disk when the sets are moved around, and a newer file may be added
+      # behind an already applied version.
+      - -ignoreMigrationPatterns=*:missing
       - migrate
     depends_on:
       db:

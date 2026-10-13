@@ -36,6 +36,12 @@ temp/
 # Enterprise plugin and personal seed (not tracked; dirs keep .gitkeep)
 migrations/plugins/*.sql
 migrations/seed/*.sql
+# The seed folder also carries the local login list and its readme — real
+# names and credentials, never committed either.
+migrations/seed/README.md
+migrations/seed/passwords.txt
+# Hand-made bundles of that folder (they ship the same credentials).
+*.zip
 
 # Local code review (not stored in the repo)
 CODE_REVIEW.md
