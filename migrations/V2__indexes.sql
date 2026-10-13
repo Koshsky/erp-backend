@@ -11,10 +11,14 @@ CREATE UNIQUE INDEX idx_resources_code ON resources(code);
 CREATE UNIQUE INDEX idx_assignments_unique
 ON assignments(task_id, resource_id);
 -- Order uniqueness within the parent group (freed when a row is deleted).
+-- Tasks: top-level tasks (parent_id IS NULL → COALESCE 0) stay unique within
+-- their process, subtasks within their parent task. A subtask's process_id
+-- always equals its parent's (enforced in the service), so one index covers
+-- both levels.
 CREATE UNIQUE INDEX idx_processes_project_sort_order
 ON processes(project_id, sort_order);
-CREATE UNIQUE INDEX idx_tasks_process_sort_order
-ON tasks(process_id, sort_order);
+CREATE UNIQUE INDEX idx_tasks_parent_sort_order
+ON tasks(process_id, COALESCE(parent_id, 0), sort_order);
 -- Per-user permission overrides: one (resource, action) pair per user;
 -- replacing the set deletes (archives) the previous rows first.
 CREATE UNIQUE INDEX idx_user_permissions_unique
@@ -25,6 +29,8 @@ ON user_permissions(user_id, resource, action);
 -- =============================================
 CREATE INDEX idx_processes_project_id ON processes(project_id);
 CREATE INDEX idx_tasks_process_id ON tasks(process_id);
+-- FK lookup for subtasks (top-level tasks have no parent).
+CREATE INDEX idx_tasks_parent_id ON tasks(parent_id) WHERE parent_id IS NOT NULL;
 CREATE INDEX idx_assignments_task_id ON assignments(task_id);
 CREATE INDEX idx_assignments_resource_id ON assignments(resource_id);
 CREATE INDEX idx_milestones_process_id ON milestones(process_id);

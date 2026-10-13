@@ -6,8 +6,8 @@ import (
 	"github.com/Koshsky/erp-backend/internal/authz/engine"
 )
 
-// DefaultRouteSpecs carry the task.dependency.* route policies (mirror seed
-// V18): nested under /task/:id/dependencies(/:dep_id), the entity kind
+// DefaultRouteSpecs carry the task.dependency.* route policies (mirror V9):
+// nested under /task/:id/dependencies(/:dep_id), the entity kind
 // resolves the affected task by the :id path param — view via task.view,
 // mutations via task.update.
 func TestTaskDependencyRouteSpecs(t *testing.T) {

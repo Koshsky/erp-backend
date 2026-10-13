@@ -31,7 +31,7 @@ func TestUserAdminRights(t *testing.T) {
 	}
 }
 
-// DefaultRouteSpecs carry the user_admin.* route policies (mirror seed V12)
+// DefaultRouteSpecs carry the user_admin.* route policies (mirror V9)
 // and they are valid (nullable owner — the virtual resource has no owner).
 func TestUserAdminRouteSpecs(t *testing.T) {
 	t.Parallel()

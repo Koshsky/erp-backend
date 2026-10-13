@@ -674,7 +674,7 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 }
 
 // =============================================
-// Default route specifications (mirror seed V15) and assembly
+// Default route specifications (mirror the seeded V9__rbac_policies.sql) and assembly
 // =============================================
 
 //nolint:gochecknoglobals // default route specs (mechanism; static)

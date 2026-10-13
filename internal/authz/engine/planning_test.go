@@ -9,7 +9,7 @@ import (
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
-// DefaultRouteSpecs carry the planning.* route policies (mirror seed V13):
+// DefaultRouteSpecs carry the planning.* route policies (mirror V9):
 // /planning/* is gated by the view matrix of the underlying domain via the
 // list kind (row scoping stays in the SQL).
 func TestPlanningRouteSpecs(t *testing.T) {

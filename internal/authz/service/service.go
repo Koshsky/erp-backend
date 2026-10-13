@@ -428,7 +428,7 @@ const (
 )
 
 // CreatePreset creates a preset (or updates an existing one) and applies it.
-// The seeded built-in presets (V10 catalog) are immutable: the upsert must
+// The seeded built-in presets (V9 catalog) are immutable: the upsert must
 // not clobber them (in particular, never overwrite the admin entry).
 func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (sqlc.UpsertPresetRow, error) {
 	tag := strings.TrimSpace(in.Tag)
@@ -452,7 +452,7 @@ func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (s
 
 // UpdatePreset updates a preset: the display name and description always, plus
 // an optional tag rename (Tag in the input). The seeded built-in presets
-// (V10 catalog) are immutable via the admin API.
+// (V9 catalog) are immutable via the admin API.
 func (s *Service) UpdatePreset(
 	ctx context.Context,
 	tag string,
@@ -481,7 +481,7 @@ func (s *Service) UpdatePreset(
 
 // DeletePreset deletes a preset, its rules and clears the preset ref on
 // assigned users (they keep the account but lose the preset's base rights;
-// individual overrides survive). The seeded built-in presets (V10: admin, dp,
+// individual overrides survive). The seeded built-in presets (V9: admin, dp,
 // rp, vp, worker) are protected: deleting admin would clear users.preset for
 // every administrator and permanently lock them out of /rbac/*.
 func (s *Service) DeletePreset(ctx context.Context, tag string) error {
@@ -534,7 +534,7 @@ func builtinPresetErr(name string) error {
 }
 
 // isBuiltinPreset reports whether the preset is one of the seeded built-ins
-// (the V10 catalog: admin, dp, rp, vp, worker) — immutable via the RBAC
+// (the V9 catalog: admin, dp, rp, vp, worker) — immutable via the RBAC
 // admin API, as removing them (in particular admin) would lock out admins.
 func isBuiltinPreset(name string) bool {
 	// The admin entry is a code invariant (deleting it would clear

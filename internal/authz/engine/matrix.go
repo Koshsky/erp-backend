@@ -34,7 +34,7 @@ const (
 	ScopeAncestor = "up"
 )
 
-// String resource codes (mirror V15 and the kind schemas).
+// String resource codes (the same codes the RBAC catalog in V9 stores).
 const (
 	resProject      = "project"
 	resProcess      = "process"
@@ -131,8 +131,8 @@ func (m Matrix) Rules() []MatrixRule {
 	return out
 }
 
-// DefaultMatrix — the built-in default matrix: serialization of the seed
-// V10__rbac_policies.sql. Used as a fallback, a reset source, and the golden
+// DefaultMatrix — the built-in default matrix: the serialization of the RBAC
+// catalog seeded by V9__rbac_policies.sql. Used as a fallback, a reset source, and the golden
 // equivalence test. admin and worker are not listed explicitly: admin — ScopeAll
 // (invariant), worker — ScopeNone (no rows).
 //
@@ -338,7 +338,7 @@ func (m Matrix) ScopeForUser(u userctx.UserContext, res rbac.Resource, act Actio
 	return m.ScopeFor(u.Preset, res, act)
 }
 
-//nolint:gochecknoglobals // resource codex (stable dictionary, mirrors V15)
+//nolint:gochecknoglobals // resource codex (stable dictionary, mirrors V9)
 var resourceNames = map[rbac.Resource]string{
 	rbac.ResourceProject:      resProject,
 	rbac.ResourceProcess:      resProcess,
