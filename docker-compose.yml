@@ -77,7 +77,9 @@ services:
     container_name: loki-dev
     command: -config.file=/etc/loki/loki.yaml
     volumes:
-      - ../../infra/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      # The retired infra/ repository used to hold this file; it now lives in
+      # the unversioned deploy/ ops folder (the only copy, see RELEASE.md).
+      - ../../deploy/loki/loki.yaml:/etc/loki/loki.yaml:ro
       - loki_data:/loki
     ports:
       - "3100:3100"
@@ -98,7 +100,6 @@ services:
       # Default admin password comes from the repo .env (dev stack).
       GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
     volumes:
-      - ../../infra/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
     depends_on:
       - loki
