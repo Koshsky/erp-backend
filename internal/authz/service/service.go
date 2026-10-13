@@ -203,7 +203,12 @@ func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 	return s.apply(ctx)
 }
 
-// EffectiveMatrix returns the effective matrix (with the admin bypass) for the API.
+// EffectiveMatrix returns the COMPLETE effective matrix for the API: every
+// catalog preset (plus admin) × every resource × every action, with the
+// resolved scope expression and engine.ScopeNoneCode where a preset holds no
+// right. The UI renders this payload as is, so a missing cell would silently
+// hide a right and a resource added to the engine must show up without a
+// frontend change.
 func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error) {
 	_ = ctx // matrix and presets are read from memory/DB without extra queries
 	presets, err := s.repo.ListActivePresets(ctx)
@@ -211,25 +216,54 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 		return nil, err
 	}
 	matrix := engine.CurrentMatrix()
-	names := make([]string, 0, len(presets)+1)
-	names = append(names, userdomain.PresetAdmin)
+	// Preset keys are TAGS (the codes stored in users.preset and
+	// rbac_preset_rules.preset) — never the display names from the catalog.
+	// The catalog carries the admin row too; its cells are added explicitly
+	// below, so it must not be appended twice.
+	tags := make([]string, 0, len(presets)+1)
+	tags = append(tags, userdomain.PresetAdmin)
 	for _, p := range presets {
-		names = append(names, p.Name)
+		if p.Tag == userdomain.PresetAdmin {
+			continue
+		}
+		tags = append(tags, p.Tag)
 	}
-	var cells []dto.MatrixCell
-	for _, preset := range names {
+	return buildMatrixCells(tags, matrix), nil
+}
+
+// buildMatrixCells renders the complete grid for the given preset tags.
+func buildMatrixCells(tags []string, matrix engine.Matrix) []dto.MatrixCell {
+	cells := make([]dto.MatrixCell, 0, len(tags)*resourceCount*actionCount)
+	for _, preset := range tags {
 		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
 			for act := engine.ActionView; act <= engine.ActionDelete; act++ {
-				if scope := matrix.ScopeFor(preset, res, act); scope != engine.ScopeNone {
-					cells = append(cells, dto.MatrixCell{
-						Preset: preset, Resource: engine.ResourceName(res), Action: engine.ActionName(act),
-						Scope: engine.ScopeName(scope),
-					})
-				}
+				cells = append(cells, dto.MatrixCell{
+					Preset:   preset,
+					Resource: engine.ResourceName(res),
+					Action:   engine.ActionName(act),
+					Scope:    scopeCode(matrix.ScopeFor(preset, res, act)),
+				})
 			}
 		}
 	}
-	return cells, nil
+	return cells
+}
+
+// resourceCount and actionCount size the matrix payload (the engine enums are
+// contiguous: rbac.ResourceProject..ResourceAudit, ActionView..ActionDelete).
+const (
+	resourceCount = int(rbac.ResourceAudit) + 1
+	actionCount   = int(engine.ActionDelete) + 1
+)
+
+// scopeCode renders a resolved scope for the API: the canonical expression, or
+// ScopeNoneCode for "no right" — an empty string would read as a granted cell
+// in the UI (it coalesces only null/undefined to "none").
+func scopeCode(scope string) string {
+	if scope == engine.ScopeNone {
+		return engine.ScopeNoneCode
+	}
+	return engine.ScopeName(scope)
 }
 
 // Kinds returns the catalog of route policy kinds.

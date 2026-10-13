@@ -32,6 +32,11 @@ const (
 	ScopeOwn      = "self"
 	ScopeParent   = "up1"
 	ScopeAncestor = "up"
+
+	// ScopeNoneCode is the wire code of "no right" in the API matrix payload.
+	// ScopeNone itself is the empty string, which the UI cannot distinguish
+	// from a granted cell — the served payload spells the denial out.
+	ScopeNoneCode = "none"
 )
 
 // String resource codes (the same codes the RBAC catalog in V9 stores).
