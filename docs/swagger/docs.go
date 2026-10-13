@@ -7925,15 +7925,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "action": {
+                    "description": "Action — view/create/update/delete.",
                     "type": "string"
                 },
                 "preset": {
+                    "description": "Preset — the preset TAG (dp/rp/vp/worker/custom), never its display name.",
                     "type": "string"
                 },
                 "resource": {
+                    "description": "Resource — the resource code from the engine dictionary.",
                     "type": "string"
                 },
                 "scope": {
+                    "description": "Scope — the canonical scope expression, or \"none\" when the preset holds\nno right for the cell (an empty string would read as a granted right).",
                     "type": "string"
                 }
             }
@@ -9293,7 +9297,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.3.0",
+	Version:          "1.3.1",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http"},
