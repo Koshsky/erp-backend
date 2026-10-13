@@ -44,6 +44,17 @@ type Config struct {
 	RBAC          RBACConfig      `yaml:"rbac"`
 	Audit         AuditConfig     `yaml:"audit"`
 	Security      SecurityConfig  `yaml:"security"`
+	// Admin holds the bootstrap administrator credentials. The login is a code
+	// invariant ("admin", see user service); the password comes only from the
+	// ADMIN_PASSWORD environment variable.
+	Admin AdminConfig `yaml:"-"`
+}
+
+// AdminConfig — the bootstrap administrator account (see EnsureAdmin).
+type AdminConfig struct {
+	// Password creates the admin account on the first launch. It is never
+	// stored in config.yaml, never logged and never rotated by the bootstrap.
+	Password string `yaml:"-"`
 }
 
 // SecurityConfig — password policy extras.
@@ -270,6 +281,12 @@ func applyEnv(cfg *Config) error {
 	// JWT_REFRESH_KEY is legacy (AD-06): refresh tokens are opaque and stored
 	// in the DB, the key is never used. It is read for compatibility but is no
 	// longer required on startup (L8).
+
+	// ADMIN_PASSWORD bootstraps the administrator account on the first launch
+	// (the login is the fixed code invariant "admin"). It is not validated
+	// here: the bootstrap knows whether the account already exists, and only a
+	// missing account with a missing password is an error.
+	cfg.Admin.Password = getEnv("ADMIN_PASSWORD", "")
 
 	// TRACING_ENDPOINT overrides the OTLP exporter endpoint (dev: host-run air
 	// reaches the in-docker Jaeger collector via its published port; kept empty

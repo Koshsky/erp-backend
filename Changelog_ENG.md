@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The administrator account is no longer seeded: it is created on the first launch with the password from `ADMIN_PASSWORD`.
+
 ### Fixed
 
 - `GET /rbac/matrix` returns the full matrix for every preset (previously admin only), with `none` marking a missing right.
