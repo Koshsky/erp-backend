@@ -46,6 +46,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task sqlc.Task) (*sqlc.
 		// id for subtasks. Both map to the same NULLIF branch in the INSERT.
 		ParentID:  nullable.PtrValueOr(nullable.Int64Ptr(task.ParentID), 0),
 		OwnerID:   task.OwnerID,
+		ResponsibleID: task.ResponsibleID,
 		Title:     task.Title,
 		Color:     task.Color,
 		Status:    task.Status,
@@ -70,13 +71,14 @@ func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*sqlc.Task, er
 
 func (r *TaskRepository) UpdateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
 	row, err := r.q(ctx).UpdateTask(ctx, sqlc.UpdateTaskParams{
-		TaskID:    task.ID,
-		OwnerID:   task.OwnerID,
-		Title:     task.Title,
-		Color:     task.Color,
-		Status:    task.Status,
-		StartDate: task.StartDate,
-		EndDate:   task.EndDate,
+		TaskID:        task.ID,
+		OwnerID:       task.OwnerID,
+		ResponsibleID: task.ResponsibleID,
+		Title:         task.Title,
+		Color:         task.Color,
+		Status:        task.Status,
+		StartDate:     task.StartDate,
+		EndDate:       task.EndDate,
 	})
 	if err != nil {
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))

@@ -1,11 +1,12 @@
 -- name: CreateProcess :one
-INSERT INTO processes (project_id, title, start_date, end_date, owner_id, color, sort_order)
+INSERT INTO processes (project_id, title, start_date, end_date, owner_id, responsible_id, color, sort_order)
 VALUES (
 	@project_id::bigint,
 	@title::text,
 	@start_date::date,
 	@end_date::date,
 	@owner_id,
+	@responsible_id,
 	@color,
 	-- New process goes to the end of its project group.
 	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM processes WHERE project_id = @project_id::bigint)
@@ -69,6 +70,7 @@ SET
 	end_date = @end_date,
 	project_id = COALESCE(@project_id, project_id),
 	owner_id = COALESCE(@owner_id, owner_id),
+	responsible_id = @responsible_id,
 	updated_at = NOW()
 WHERE id = @process_id::bigint
 RETURNING *;

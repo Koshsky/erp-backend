@@ -11,7 +11,7 @@ import (
 )
 
 //	@title			Enterprise Resource Planning
-//	@version		1.3.1
+//	@version		1.4.0
 //	@description	For managing the enterprise's universal resources
 //	@termsOfService	http://swagger.io/terms/
 

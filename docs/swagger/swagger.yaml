@@ -284,6 +284,9 @@ definitions:
       project_id:
         example: 1
         type: integer
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -310,6 +313,9 @@ definitions:
       priority:
         example: 2
         type: integer
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -330,6 +336,8 @@ definitions:
       owner_id:
         type: integer
       priority:
+        type: integer
+      responsible_id:
         type: integer
       start_date:
         type: string
@@ -385,6 +393,9 @@ definitions:
         type: integer
       process_id:
         example: 1
+        type: integer
+      responsible_id:
+        example: 2
         type: integer
       start_date:
         example: "2026-01-01"
@@ -500,6 +511,9 @@ definitions:
       project_id:
         example: 1
         type: integer
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -537,6 +551,9 @@ definitions:
       project_code:
         example: КО_001
         type: string
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -577,6 +594,9 @@ definitions:
         items:
           $ref: '#/definitions/dto.Resource'
         type: array
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -810,6 +830,9 @@ definitions:
       project_id:
         example: 1
         type: integer
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -846,6 +869,9 @@ definitions:
         type: integer
       project_id:
         example: 1
+        type: integer
+      responsible_id:
+        example: 2
         type: integer
       start_date:
         example: "2026-01-01"
@@ -892,6 +918,9 @@ definitions:
       project_code:
         example: КО_001
         type: string
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -917,6 +946,8 @@ definitions:
       owner_id:
         type: integer
       priority:
+        type: integer
+      responsible_id:
         type: integer
       start_date:
         type: string
@@ -1178,6 +1209,8 @@ definitions:
         type: integer
       process_id:
         type: integer
+      responsible_id:
+        type: integer
       start_date:
         type: string
       status:
@@ -1270,6 +1303,9 @@ definitions:
       project_id:
         example: 1
         type: integer
+      responsible_id:
+        example: 2
+        type: integer
       start_date:
         example: "2026-01-01"
         format: date
@@ -1294,6 +1330,9 @@ definitions:
         example: 1
         type: integer
       priority:
+        example: 2
+        type: integer
+      responsible_id:
         example: 2
         type: integer
       start_date:
@@ -1345,6 +1384,9 @@ definitions:
           ProcessID is intentionally absent: a task never changes its process.
           ParentID is absent too: the parent is fixed at creation.
         example: 1
+        type: integer
+      responsible_id:
+        example: 2
         type: integer
       start_date:
         example: "2026-01-01"
@@ -1606,7 +1648,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Enterprise Resource Planning
-  version: 1.3.1
+  version: 1.4.0
 paths:
   /assignment:
     get:

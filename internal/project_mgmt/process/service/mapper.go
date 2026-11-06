@@ -17,14 +17,15 @@ func (m *ProcessMapper) ToDTO(process *sqlc.Process) *dto.ProcessResponse {
 		return nil
 	}
 	return &dto.ProcessResponse{
-		ID:        process.ID,
-		OwnerID:   nullable.Int64Ptr(process.OwnerID),
-		ProjectID: process.ProjectID,
-		Title:     process.Title,
-		Color:     nullable.StringPtr(process.Color),
-		StartDate: process.StartDate,
-		EndDate:   process.EndDate,
-		Order:     int(process.SortOrder),
+		ID:            process.ID,
+		OwnerID:       nullable.Int64Ptr(process.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(process.ResponsibleID),
+		ProjectID:     process.ProjectID,
+		Title:         process.Title,
+		Color:         nullable.StringPtr(process.Color),
+		StartDate:     process.StartDate,
+		EndDate:       process.EndDate,
+		Order:         int(process.SortOrder),
 	}
 }
 

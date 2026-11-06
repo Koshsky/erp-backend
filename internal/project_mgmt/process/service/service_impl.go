@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/process/repository"
@@ -57,6 +59,7 @@ func (s *ProcessService) CreateProcess(
 		req.Title,
 		req.Color,
 		req.OwnerID,
+		req.ResponsibleID,
 		req.StartDate,
 		req.EndDate,
 	)
@@ -115,6 +118,14 @@ func (s *ProcessService) UpdateProcess(
 	}
 	if req.OwnerID != nil {
 		process.OwnerID = nullable.ToInt8(req.OwnerID)
+	}
+	if req.ResponsibleID != nil {
+		// 0 is the "clear" sentinel (never a valid user id) — reset to NULL.
+		if *req.ResponsibleID == 0 {
+			process.ResponsibleID = pgtype.Int8{}
+		} else {
+			process.ResponsibleID = nullable.ToInt8(req.ResponsibleID)
+		}
 	}
 	if req.ProjectID != nil {
 		process.ProjectID = *req.ProjectID

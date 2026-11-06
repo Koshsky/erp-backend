@@ -1,9 +1,10 @@
 -- name: CreateTask :one
-INSERT INTO tasks (process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order)
+INSERT INTO tasks (process_id, parent_id, owner_id, responsible_id, title, color, status, start_date, end_date, sort_order)
 SELECT
 	@process_id::bigint,
 	NULLIF(@parent_id::bigint, 0),
 	@owner_id,
+	@responsible_id,
 	@title,
 	@color,
 	@status,
@@ -78,6 +79,7 @@ WHERE id = @resource_id::bigint;
 UPDATE tasks
 SET
 	owner_id = @owner_id,
+	responsible_id = @responsible_id,
 	title = @title,
 	color = @color,
 	status = @status,

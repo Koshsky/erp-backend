@@ -82,27 +82,29 @@ func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (i
 }
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (code, start_date, end_date, priority, owner_id, color)
+INSERT INTO projects (code, start_date, end_date, priority, owner_id, responsible_id, color)
 VALUES (
   $1::text,
   $2::date,
   $3::date,
   $4::bigint,
   $5,
-  $6
+  $6,
+  $7
 )
 ON CONFLICT (code)
 DO NOTHING
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 `
 
 type CreateProjectParams struct {
-	Code      string         `json:"code"`
-	StartDate date.Date      `json:"start_date"`
-	EndDate   date.Date      `json:"end_date"`
-	Priority  int64          `json:"priority"`
-	OwnerID   pgtype.Int8    `json:"owner_id"`
-	Color     sql.NullString `json:"color"`
+	Code          string         `json:"code"`
+	StartDate     date.Date      `json:"start_date"`
+	EndDate       date.Date      `json:"end_date"`
+	Priority      int64          `json:"priority"`
+	OwnerID       pgtype.Int8    `json:"owner_id"`
+	ResponsibleID pgtype.Int8    `json:"responsible_id"`
+	Color         sql.NullString `json:"color"`
 }
 
 // Idempotent create by business key code: if an active code already exists
@@ -114,6 +116,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.EndDate,
 		arg.Priority,
 		arg.OwnerID,
+		arg.ResponsibleID,
 		arg.Color,
 	)
 	var i Project
@@ -127,6 +130,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }
@@ -142,7 +146,7 @@ func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
 }
 
 const findProject = `-- name: FindProject :one
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 FROM projects
 WHERE id = $1::bigint
 `
@@ -160,12 +164,13 @@ func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, er
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 FROM projects
 WHERE (
     $1::boolean OR
@@ -221,6 +226,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ResponsibleID,
 		); err != nil {
 			return nil, err
 		}
@@ -254,19 +260,21 @@ SET
 	start_date = $4,
 	end_date = $5,
   owner_id = $6,
+  responsible_id = $7,
 	updated_at = NOW()
-WHERE id = $7::bigint
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+WHERE id = $8::bigint
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 `
 
 type UpdateProjectParams struct {
-	Code      string         `json:"code"`
-	Color     sql.NullString `json:"color"`
-	Priority  int64          `json:"priority"`
-	StartDate date.Date      `json:"start_date"`
-	EndDate   date.Date      `json:"end_date"`
-	OwnerID   pgtype.Int8    `json:"owner_id"`
-	ProjectID int64          `json:"project_id"`
+	Code          string         `json:"code"`
+	Color         sql.NullString `json:"color"`
+	Priority      int64          `json:"priority"`
+	StartDate     date.Date      `json:"start_date"`
+	EndDate       date.Date      `json:"end_date"`
+	OwnerID       pgtype.Int8    `json:"owner_id"`
+	ResponsibleID pgtype.Int8    `json:"responsible_id"`
+	ProjectID     int64          `json:"project_id"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
@@ -277,6 +285,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		arg.StartDate,
 		arg.EndDate,
 		arg.OwnerID,
+		arg.ResponsibleID,
 		arg.ProjectID,
 	)
 	var i Project
@@ -290,6 +299,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }

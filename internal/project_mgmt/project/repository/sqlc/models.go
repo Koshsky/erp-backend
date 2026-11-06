@@ -13,13 +13,14 @@ import (
 )
 
 type Project struct {
-	ID        int64          `json:"id"`
-	OwnerID   pgtype.Int8    `json:"owner_id"`
-	Code      string         `json:"code"`
-	Color     sql.NullString `json:"color"`
-	StartDate date.Date      `json:"start_date"`
-	EndDate   date.Date      `json:"end_date"`
-	Priority  int32          `json:"priority"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	ID            int64          `json:"id"`
+	OwnerID       pgtype.Int8    `json:"owner_id"`
+	Code          string         `json:"code"`
+	Color         sql.NullString `json:"color"`
+	StartDate     date.Date      `json:"start_date"`
+	EndDate       date.Date      `json:"end_date"`
+	Priority      int32          `json:"priority"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	ResponsibleID pgtype.Int8    `json:"responsible_id"`
 }

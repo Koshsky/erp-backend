@@ -78,7 +78,7 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 }
 
 const listProcesses = `-- name: ListProcesses :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, pr.code AS project_code
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.responsible_id, pr.code AS project_code
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
@@ -142,6 +142,7 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 			&i.Process.SortOrder,
 			&i.Process.CreatedAt,
 			&i.Process.UpdatedAt,
+			&i.Process.ResponsibleID,
 			&i.ProjectCode,
 		); err != nil {
 			return nil, err
@@ -155,7 +156,7 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 }
 
 const listProcessesByProjectIDs = `-- name: ListProcessesByProjectIDs :many
-SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at FROM processes
+SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, responsible_id FROM processes
 WHERE project_id = ANY($1::bigint[])
 ORDER BY sort_order ASC, id ASC
 `
@@ -180,6 +181,7 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ResponsibleID,
 		); err != nil {
 			return nil, err
 		}
@@ -192,7 +194,7 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 }
 
 const listProcessesByTaskScope = `-- name: ListProcessesByTaskScope :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, pr.code AS project_code
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.responsible_id, pr.code AS project_code
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
@@ -264,6 +266,7 @@ func (q *Queries) ListProcessesByTaskScope(ctx context.Context, arg ListProcesse
 			&i.Process.SortOrder,
 			&i.Process.CreatedAt,
 			&i.Process.UpdatedAt,
+			&i.Process.ResponsibleID,
 			&i.ProjectCode,
 		); err != nil {
 			return nil, err
@@ -277,7 +280,7 @@ func (q *Queries) ListProcessesByTaskScope(ctx context.Context, arg ListProcesse
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at FROM projects
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id FROM projects
 WHERE (
     $1::boolean OR
     ($2::boolean AND owner_id = $3::bigint) OR
@@ -324,6 +327,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ResponsibleID,
 		); err != nil {
 			return nil, err
 		}
@@ -336,7 +340,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 }
 
 const listProjectsByIDs = `-- name: ListProjectsByIDs :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at FROM projects
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id FROM projects
 WHERE id = ANY($1::bigint[])
   AND (
     $2::boolean OR
@@ -391,6 +395,7 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, arg ListProjectsByIDsPa
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ResponsibleID,
 		); err != nil {
 			return nil, err
 		}
@@ -530,7 +535,7 @@ func (q *Queries) ListTaskDependenciesByProcessIDs(ctx context.Context, processI
 }
 
 const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
-SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at FROM tasks
+SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at, responsible_id FROM tasks
 WHERE process_id = ANY($1::bigint[])
 ORDER BY COALESCE(parent_id, 0), sort_order ASC, id ASC
 `
@@ -559,6 +564,7 @@ func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64)
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ResponsibleID,
 		); err != nil {
 			return nil, err
 		}

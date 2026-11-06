@@ -15,6 +15,7 @@ type ProcessRepository interface {
 		title string,
 		color *string,
 		ownerID *int64,
+		responsibleID *int64,
 		startDate, endDate date.Date,
 	) (*sqlc.Process, error)
 	FindProcess(ctx context.Context, id int64) (*sqlc.Process, error)

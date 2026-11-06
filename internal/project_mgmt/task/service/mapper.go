@@ -17,16 +17,17 @@ func (m *TaskMapper) ToDTO(task *sqlc.Task) *dto.TaskResponse {
 		return nil
 	}
 	return &dto.TaskResponse{
-		ID:        task.ID,
-		ProcessID: task.ProcessID,
-		ParentID:  nullable.Int64Ptr(task.ParentID),
-		OwnerID:   nullable.Int64Ptr(task.OwnerID),
-		Title:     task.Title,
-		Color:     nullable.StringPtr(task.Color),
-		Status:    task.Status,
-		StartDate: task.StartDate,
-		EndDate:   task.EndDate,
-		Order:     int(task.SortOrder),
+		ID:            task.ID,
+		ProcessID:     task.ProcessID,
+		ParentID:      nullable.Int64Ptr(task.ParentID),
+		OwnerID:       nullable.Int64Ptr(task.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(task.ResponsibleID),
+		Title:         task.Title,
+		Color:         nullable.StringPtr(task.Color),
+		Status:        task.Status,
+		StartDate:     task.StartDate,
+		EndDate:       task.EndDate,
+		Order:         int(task.SortOrder),
 	}
 }
 

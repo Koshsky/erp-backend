@@ -64,7 +64,7 @@ func (q *Queries) CountProcesses(ctx context.Context, arg CountProcessesParams) 
 }
 
 const createProcess = `-- name: CreateProcess :one
-INSERT INTO processes (project_id, title, start_date, end_date, owner_id, color, sort_order)
+INSERT INTO processes (project_id, title, start_date, end_date, owner_id, responsible_id, color, sort_order)
 VALUES (
 	$1::bigint,
 	$2::text,
@@ -72,19 +72,21 @@ VALUES (
 	$4::date,
 	$5,
 	$6,
+	$7,
 	-- New process goes to the end of its project group.
 	(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM processes WHERE project_id = $1::bigint)
 )
-RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at
+RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, responsible_id
 `
 
 type CreateProcessParams struct {
-	ProjectID int64          `json:"project_id"`
-	Title     string         `json:"title"`
-	StartDate date.Date      `json:"start_date"`
-	EndDate   date.Date      `json:"end_date"`
-	OwnerID   pgtype.Int8    `json:"owner_id"`
-	Color     sql.NullString `json:"color"`
+	ProjectID     int64          `json:"project_id"`
+	Title         string         `json:"title"`
+	StartDate     date.Date      `json:"start_date"`
+	EndDate       date.Date      `json:"end_date"`
+	OwnerID       pgtype.Int8    `json:"owner_id"`
+	ResponsibleID pgtype.Int8    `json:"responsible_id"`
+	Color         sql.NullString `json:"color"`
 }
 
 func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (Process, error) {
@@ -94,6 +96,7 @@ func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (P
 		arg.StartDate,
 		arg.EndDate,
 		arg.OwnerID,
+		arg.ResponsibleID,
 		arg.Color,
 	)
 	var i Process
@@ -108,6 +111,7 @@ func (q *Queries) CreateProcess(ctx context.Context, arg CreateProcessParams) (P
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }
@@ -123,7 +127,7 @@ func (q *Queries) DeleteProcess(ctx context.Context, processID int64) error {
 }
 
 const findProcess = `-- name: FindProcess :one
-SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at
+SELECT id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, responsible_id
 FROM processes
 WHERE id = $1::bigint
 `
@@ -142,6 +146,7 @@ func (q *Queries) FindProcess(ctx context.Context, id int64) (Process, error) {
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }
@@ -176,7 +181,7 @@ func (q *Queries) ListProcessIdsByProject(ctx context.Context, projectID int64) 
 }
 
 const listProcesss = `-- name: ListProcesss :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.responsible_id
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
@@ -244,6 +249,7 @@ func (q *Queries) ListProcesss(ctx context.Context, arg ListProcesssParams) ([]P
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ResponsibleID,
 		); err != nil {
 			return nil, err
 		}
@@ -315,19 +321,21 @@ SET
 	end_date = $4,
 	project_id = COALESCE($5, project_id),
 	owner_id = COALESCE($6, owner_id),
+	responsible_id = $7,
 	updated_at = NOW()
-WHERE id = $7::bigint
-RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at
+WHERE id = $8::bigint
+RETURNING id, project_id, owner_id, title, color, start_date, end_date, sort_order, created_at, updated_at, responsible_id
 `
 
 type UpdateProcessParams struct {
-	Title     string         `json:"title"`
-	Color     sql.NullString `json:"color"`
-	StartDate date.Date      `json:"start_date"`
-	EndDate   date.Date      `json:"end_date"`
-	ProjectID int64          `json:"project_id"`
-	OwnerID   pgtype.Int8    `json:"owner_id"`
-	ProcessID int64          `json:"process_id"`
+	Title         string         `json:"title"`
+	Color         sql.NullString `json:"color"`
+	StartDate     date.Date      `json:"start_date"`
+	EndDate       date.Date      `json:"end_date"`
+	ProjectID     int64          `json:"project_id"`
+	OwnerID       pgtype.Int8    `json:"owner_id"`
+	ResponsibleID pgtype.Int8    `json:"responsible_id"`
+	ProcessID     int64          `json:"process_id"`
 }
 
 func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (Process, error) {
@@ -338,6 +346,7 @@ func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (P
 		arg.EndDate,
 		arg.ProjectID,
 		arg.OwnerID,
+		arg.ResponsibleID,
 		arg.ProcessID,
 	)
 	var i Process
@@ -352,6 +361,7 @@ func (q *Queries) UpdateProcess(ctx context.Context, arg UpdateProcessParams) (P
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }

@@ -7484,6 +7484,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7519,6 +7523,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 2
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7548,6 +7556,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "priority": {
+                    "type": "integer"
+                },
+                "responsible_id": {
                     "type": "integer"
                 },
                 "start_date": {
@@ -7621,6 +7632,10 @@ const docTemplate = `{
                 "process_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -7772,6 +7787,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7823,6 +7842,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "КО_001"
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7873,6 +7896,10 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.Resource"
                     }
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -8194,6 +8221,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -8244,6 +8275,10 @@ const docTemplate = `{
                 "project_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -8307,6 +8342,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "КО_001"
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -8344,6 +8383,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "priority": {
+                    "type": "integer"
+                },
+                "responsible_id": {
                     "type": "integer"
                 },
                 "start_date": {
@@ -8712,6 +8754,9 @@ const docTemplate = `{
                 "process_id": {
                     "type": "integer"
                 },
+                "responsible_id": {
+                    "type": "integer"
+                },
                 "start_date": {
                     "type": "string"
                 },
@@ -8837,6 +8882,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -8869,6 +8918,10 @@ const docTemplate = `{
                     "example": 1
                 },
                 "priority": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "responsible_id": {
                     "type": "integer",
                     "example": 2
                 },
@@ -8937,6 +8990,10 @@ const docTemplate = `{
                     "description": "ProcessID is intentionally absent: a task never changes its process.\nParentID is absent too: the parent is fixed at creation.",
                     "type": "integer",
                     "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -9297,7 +9354,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.3.1",
+	Version:          "1.4.0",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http"},
