@@ -1675,7 +1675,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Enterprise Resource Planning
-  version: 1.4.0
+  version: 1.4.3
 paths:
   /assignment:
     get:
