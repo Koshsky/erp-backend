@@ -18,7 +18,25 @@ SELECT p.*
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
+    ((
+    ('all' = ANY(@project_view::text[])) OR
+    (('self' = ANY(@project_view::text[])) AND pr.owner_id = @user_id::bigint) OR
+    (('process_projects' = ANY(@project_view::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = @user_id::bigint
+    )) OR
+    (('down' = ANY(@project_view::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = @user_id::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = @user_id::bigint
+    ))) OR
+    false
+  )) OR
     @sc_all::boolean OR
+    (@sc_project_owner::boolean AND pr.owner_id = @user_id::bigint) OR
+    (@sc_process_owner::boolean AND p.owner_id = @user_id::bigint) OR
     (@sc_self::boolean AND p.owner_id = @user_id::bigint) OR
     (@sc_parent::boolean AND pr.owner_id = @user_id::bigint) OR
     (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR
@@ -40,7 +58,25 @@ SELECT COUNT(*)
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
+    ((
+    ('all' = ANY(@project_view::text[])) OR
+    (('self' = ANY(@project_view::text[])) AND pr.owner_id = @user_id::bigint) OR
+    (('process_projects' = ANY(@project_view::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = @user_id::bigint
+    )) OR
+    (('down' = ANY(@project_view::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = @user_id::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = @user_id::bigint
+    ))) OR
+    false
+  )) OR
     @sc_all::boolean OR
+    (@sc_project_owner::boolean AND pr.owner_id = @user_id::bigint) OR
+    (@sc_process_owner::boolean AND p.owner_id = @user_id::bigint) OR
     (@sc_self::boolean AND p.owner_id = @user_id::bigint) OR
     (@sc_parent::boolean AND pr.owner_id = @user_id::bigint) OR
     (@sc_ancestor::boolean AND (p.owner_id = @user_id::bigint OR pr.owner_id = @user_id::bigint)) OR

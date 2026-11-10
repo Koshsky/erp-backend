@@ -62,8 +62,8 @@ func TestScopeApplicableTable(t *testing.T) {
 	t.Parallel()
 	ownRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      true,
-		rbac.ResourceProcess:      true,
-		rbac.ResourceTask:         true,
+		rbac.ResourceProcess:      false,
+		rbac.ResourceTask:         false,
 		rbac.ResourceMilestone:    false,
 		rbac.ResourceAssignment:   false,
 		rbac.ResourceState:        false,

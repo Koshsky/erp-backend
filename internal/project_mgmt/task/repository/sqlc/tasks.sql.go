@@ -14,49 +14,125 @@ import (
 )
 
 const countTasks = `-- name: CountTasks :one
+WITH RECURSIVE task_view_ancestors(descendant_id, ancestor_id) AS (
+  SELECT id, parent_id FROM tasks WHERE parent_id IS NOT NULL
+  UNION
+  SELECT a.descendant_id, t.parent_id
+  FROM task_view_ancestors a JOIN tasks t ON t.id=a.ancestor_id
+  WHERE t.parent_id IS NOT NULL
+)
 SELECT COUNT(*)
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::boolean OR
-    ($2::boolean AND t.owner_id = $3::bigint) OR
-    ($4::boolean AND p.owner_id = $3::bigint) OR
-    ($5::boolean AND (t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
-    ($6::boolean AND EXISTS (
+    ((
+    ('all' = ANY($1::text[])) OR
+    (('self' = ANY($1::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_projects' = ANY($1::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($1::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = $2::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = $2::bigint
+    ))) OR
+    false
+  ) OR (
+    ('all' = ANY($3::text[])) OR
+    (('project_owner' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_owner' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('self' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('parent' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('ancestor' = ANY($3::text[])) AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    (('sib' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $2::bigint
+    )) OR
+    false
+  ) OR EXISTS (
+    SELECT 1 FROM task_view_ancestors va JOIN tasks at ON at.id=va.ancestor_id
+    WHERE va.descendant_id=t.id AND (
+    $4::boolean OR
+    ($5::boolean AND pr.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND at.owner_id = $2::bigint) OR
+    ($8::boolean AND p.owner_id = $2::bigint) OR
+    ($9::boolean AND (at.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($10::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = at.process_id
+          AND s.owner_id = $2::bigint
+    )) OR
+    ($11::boolean AND EXISTS (
+        SELECT 1 FROM tasks s JOIN processes sp ON sp.id = s.process_id
+        WHERE sp.project_id = p.project_id AND s.owner_id = $2::bigint
+    )) OR
+    ($12::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = at.id AND d.owner_id = $2::bigint
+    )) OR
+    $13::boolean
+  )
+  )) OR
+    $4::boolean OR
+    ($5::boolean AND pr.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND t.owner_id = $2::bigint) OR
+    ($8::boolean AND p.owner_id = $2::bigint) OR
+    ($9::boolean AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($10::boolean AND EXISTS (
         SELECT 1 FROM tasks s
         WHERE s.process_id = t.process_id
-          AND s.parent_id IS NOT DISTINCT FROM t.parent_id
-          AND s.owner_id = $3::bigint
+          AND s.owner_id = $2::bigint
     )) OR
-    ($7::boolean AND EXISTS (
-        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = $3::bigint
+    ($11::boolean AND EXISTS (
+        SELECT 1 FROM tasks s JOIN processes sp ON sp.id = s.process_id
+        WHERE sp.project_id = p.project_id AND s.owner_id = $2::bigint
     )) OR
-    $8::boolean
+    ($12::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = $2::bigint
+    )) OR
+    $13::boolean
   )
-  AND ($9::bigint = 0 OR t.owner_id = $9::bigint OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
+  AND ($14::bigint = 0 OR t.owner_id = $14::bigint OR p.owner_id = $14::bigint OR pr.owner_id = $14::bigint)
 `
 
 type CountTasksParams struct {
-	ScAll      bool  `json:"sc_all"`
-	ScSelf     bool  `json:"sc_self"`
-	UserID     int64 `json:"user_id"`
-	ScParent   bool  `json:"sc_parent"`
-	ScAncestor bool  `json:"sc_ancestor"`
-	ScSib      bool  `json:"sc_sib"`
-	ScDown     bool  `json:"sc_down"`
-	ScNone     bool  `json:"sc_none"`
-	OwnerID    int64 `json:"owner_id"`
+	ProjectView    []string `json:"project_view"`
+	UserID         int64    `json:"user_id"`
+	ProcessView    []string `json:"process_view"`
+	ScAll          bool     `json:"sc_all"`
+	ScProjectOwner bool     `json:"sc_project_owner"`
+	ScProcessOwner bool     `json:"sc_process_owner"`
+	ScSelf         bool     `json:"sc_self"`
+	ScParent       bool     `json:"sc_parent"`
+	ScAncestor     bool     `json:"sc_ancestor"`
+	ScSib          bool     `json:"sc_sib"`
+	ScProjectSib   bool     `json:"sc_project_sib"`
+	ScDown         bool     `json:"sc_down"`
+	ScNone         bool     `json:"sc_none"`
+	OwnerID        int64    `json:"owner_id"`
 }
 
 func (q *Queries) CountTasks(ctx context.Context, arg CountTasksParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countTasks,
-		arg.ScAll,
-		arg.ScSelf,
+		arg.ProjectView,
 		arg.UserID,
+		arg.ProcessView,
+		arg.ScAll,
+		arg.ScProjectOwner,
+		arg.ScProcessOwner,
+		arg.ScSelf,
 		arg.ScParent,
 		arg.ScAncestor,
 		arg.ScSib,
+		arg.ScProjectSib,
 		arg.ScDown,
 		arg.ScNone,
 		arg.OwnerID,
@@ -244,53 +320,129 @@ func (q *Queries) ListTaskIdsByProcess(ctx context.Context, processID int64) ([]
 }
 
 const listTasks = `-- name: ListTasks :many
+WITH RECURSIVE task_view_ancestors(descendant_id, ancestor_id) AS (
+  SELECT id, parent_id FROM tasks WHERE parent_id IS NOT NULL
+  UNION
+  SELECT a.descendant_id, t.parent_id
+  FROM task_view_ancestors a JOIN tasks t ON t.id=a.ancestor_id
+  WHERE t.parent_id IS NOT NULL
+)
 SELECT t.id, t.process_id, t.parent_id, t.owner_id, t.title, t.color, t.status, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at, t.responsible_id
 FROM tasks t
 JOIN processes p ON p.id = t.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::boolean OR
-    ($2::boolean AND t.owner_id = $3::bigint) OR
-    ($4::boolean AND p.owner_id = $3::bigint) OR
-    ($5::boolean AND (t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
-    ($6::boolean AND EXISTS (
+    ((
+    ('all' = ANY($1::text[])) OR
+    (('self' = ANY($1::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_projects' = ANY($1::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($1::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = $2::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = $2::bigint
+    ))) OR
+    false
+  ) OR (
+    ('all' = ANY($3::text[])) OR
+    (('project_owner' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_owner' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('self' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('parent' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('ancestor' = ANY($3::text[])) AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    (('sib' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $2::bigint
+    )) OR
+    false
+  ) OR EXISTS (
+    SELECT 1 FROM task_view_ancestors va JOIN tasks at ON at.id=va.ancestor_id
+    WHERE va.descendant_id=t.id AND (
+    $4::boolean OR
+    ($5::boolean AND pr.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND at.owner_id = $2::bigint) OR
+    ($8::boolean AND p.owner_id = $2::bigint) OR
+    ($9::boolean AND (at.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($10::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = at.process_id
+          AND s.owner_id = $2::bigint
+    )) OR
+    ($11::boolean AND EXISTS (
+        SELECT 1 FROM tasks s JOIN processes sp ON sp.id = s.process_id
+        WHERE sp.project_id = p.project_id AND s.owner_id = $2::bigint
+    )) OR
+    ($12::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = at.id AND d.owner_id = $2::bigint
+    )) OR
+    $13::boolean
+  )
+  )) OR
+    $4::boolean OR
+    ($5::boolean AND pr.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND t.owner_id = $2::bigint) OR
+    ($8::boolean AND p.owner_id = $2::bigint) OR
+    ($9::boolean AND (t.owner_id = $2::bigint OR p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($10::boolean AND EXISTS (
         SELECT 1 FROM tasks s
         WHERE s.process_id = t.process_id
-          AND s.parent_id IS NOT DISTINCT FROM t.parent_id
-          AND s.owner_id = $3::bigint
+          AND s.owner_id = $2::bigint
     )) OR
-    ($7::boolean AND EXISTS (
-        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = $3::bigint
+    ($11::boolean AND EXISTS (
+        SELECT 1 FROM tasks s JOIN processes sp ON sp.id = s.process_id
+        WHERE sp.project_id = p.project_id AND s.owner_id = $2::bigint
     )) OR
-    $8::boolean
+    ($12::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = $2::bigint
+    )) OR
+    $13::boolean
   )
-  AND ($9::bigint = 0 OR t.owner_id = $9::bigint OR p.owner_id = $9::bigint OR pr.owner_id = $9::bigint)
+  AND ($14::bigint = 0 OR t.owner_id = $14::bigint OR p.owner_id = $14::bigint OR pr.owner_id = $14::bigint)
 ORDER BY t.sort_order ASC, t.id ASC
-LIMIT $11::bigint OFFSET $10::bigint
+LIMIT $16::bigint OFFSET $15::bigint
 `
 
 type ListTasksParams struct {
-	ScAll      bool  `json:"sc_all"`
-	ScSelf     bool  `json:"sc_self"`
-	UserID     int64 `json:"user_id"`
-	ScParent   bool  `json:"sc_parent"`
-	ScAncestor bool  `json:"sc_ancestor"`
-	ScSib      bool  `json:"sc_sib"`
-	ScDown     bool  `json:"sc_down"`
-	ScNone     bool  `json:"sc_none"`
-	OwnerID    int64 `json:"owner_id"`
-	PageOffset int64 `json:"page_offset"`
-	PageLimit  int64 `json:"page_limit"`
+	ProjectView    []string `json:"project_view"`
+	UserID         int64    `json:"user_id"`
+	ProcessView    []string `json:"process_view"`
+	ScAll          bool     `json:"sc_all"`
+	ScProjectOwner bool     `json:"sc_project_owner"`
+	ScProcessOwner bool     `json:"sc_process_owner"`
+	ScSelf         bool     `json:"sc_self"`
+	ScParent       bool     `json:"sc_parent"`
+	ScAncestor     bool     `json:"sc_ancestor"`
+	ScSib          bool     `json:"sc_sib"`
+	ScProjectSib   bool     `json:"sc_project_sib"`
+	ScDown         bool     `json:"sc_down"`
+	ScNone         bool     `json:"sc_none"`
+	OwnerID        int64    `json:"owner_id"`
+	PageOffset     int64    `json:"page_offset"`
+	PageLimit      int64    `json:"page_limit"`
 }
 
 func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listTasks,
-		arg.ScAll,
-		arg.ScSelf,
+		arg.ProjectView,
 		arg.UserID,
+		arg.ProcessView,
+		arg.ScAll,
+		arg.ScProjectOwner,
+		arg.ScProcessOwner,
+		arg.ScSelf,
 		arg.ScParent,
 		arg.ScAncestor,
 		arg.ScSib,
+		arg.ScProjectSib,
 		arg.ScDown,
 		arg.ScNone,
 		arg.OwnerID,

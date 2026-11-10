@@ -65,17 +65,22 @@ SELECT id, title, code, owner_id
 FROM resources
 WHERE (
     $1::boolean OR
-    ($2::boolean AND owner_id = $3::bigint) OR
-    $4::boolean
+    ($2::boolean AND EXISTS (
+        SELECT 1 FROM processes rp JOIN projects rpr ON rpr.id = rp.project_id
+        WHERE rp.owner_id = resources.owner_id AND rpr.owner_id = $3::bigint
+    )) OR
+    ($4::boolean AND owner_id = $3::bigint) OR
+    $5::boolean
 )
 ORDER BY id ASC
 `
 
 type ListResourcesParams struct {
-	ScAll  bool  `json:"sc_all"`
-	ScSelf bool  `json:"sc_self"`
-	UserID int64 `json:"user_id"`
-	ScNone bool  `json:"sc_none"`
+	ScAll              bool  `json:"sc_all"`
+	ScProjectResources bool  `json:"sc_project_resources"`
+	UserID             int64 `json:"user_id"`
+	ScSelf             bool  `json:"sc_self"`
+	ScNone             bool  `json:"sc_none"`
 }
 
 type ListResourcesRow struct {
@@ -93,8 +98,9 @@ type ListResourcesRow struct {
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error) {
 	rows, err := q.db.Query(ctx, listResources,
 		arg.ScAll,
-		arg.ScSelf,
+		arg.ScProjectResources,
 		arg.UserID,
+		arg.ScSelf,
 		arg.ScNone,
 	)
 	if err != nil {

@@ -1,4 +1,7 @@
 {
+  "invalid project update": "Некорректные данные обновления проекта",
+  "subtask process must match parent task process": "процесс подзадачи должен совпадать с процессом родительской задачи",
+  "forbidden": "недостаточно прав",
   "authentication required": "требуется аутентификация",
   "authorization header required": "требуется заголовок авторизации",
   "date range is too wide": "слишком большой диапазон дат",

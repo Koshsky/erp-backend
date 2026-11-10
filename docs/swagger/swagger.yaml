@@ -511,6 +511,9 @@ definitions:
       project_id:
         example: 1
         type: integer
+      project_owner_id:
+        example: 1
+        type: integer
       responsible_id:
         example: 2
         type: integer
@@ -705,6 +708,8 @@ definitions:
       action:
         example: create
         type: string
+      inherited:
+        type: boolean
       resource:
         example: project
         type: string
@@ -828,6 +833,9 @@ definitions:
         example: КО_001
         type: string
       project_id:
+        example: 1
+        type: integer
+      project_owner_id:
         example: 1
         type: integer
       responsible_id:

@@ -21,17 +21,22 @@ const (
 	ActionCreate
 	ActionUpdate
 	ActionDelete
+	ActionPrioritize
 )
 
 // Scope — the ownership-scope expression required for an action. Legacy zone
 // codes map to expressions: own→"self", parent→"up1", ancestor→"up". Absence
 // of a rule = ScopeNone (no access).
 const (
-	ScopeNone     = ""    // no rule / explicit deny
-	ScopeAll      = "all" // unconditional access
-	ScopeOwn      = "self"
-	ScopeParent   = "up1"
-	ScopeAncestor = "up"
+	ScopeNone             = ""    // no rule / explicit deny
+	ScopeAll              = "all" // unconditional access
+	ScopeOwn              = "self"
+	ScopeParent           = "up1"
+	ScopeAncestor         = "up"
+	ScopeProjectOwner     = "project_owner"
+	ScopeProcessOwner     = "process_owner"
+	ScopeProcessProjects  = "process_projects"
+	ScopeProjectResources = "project_resources"
 
 	// ScopeNoneCode is the wire code of "no right" in the API matrix payload.
 	// ScopeNone itself is the empty string, which the UI cannot distinguish
@@ -60,10 +65,11 @@ const (
 
 // String action codes.
 const (
-	actView   = "view"
-	actCreate = "create"
-	actUpdate = "update"
-	actDelete = "delete"
+	actView       = "view"
+	actCreate     = "create"
+	actUpdate     = "update"
+	actDelete     = "delete"
+	actPrioritize = "prioritize"
 )
 
 // Rule binds a preset and the required access scope expression.
@@ -136,154 +142,52 @@ func (m Matrix) Rules() []MatrixRule {
 	return out
 }
 
-// DefaultMatrix — the built-in default matrix: the serialization of the RBAC
-// catalog seeded by V9__rbac_policies.sql. Used as a fallback, a reset source, and the golden
-// equivalence test. admin and worker are not listed explicitly: admin — ScopeAll
-// (invariant), worker — ScopeNone (no rows).
-//
-//nolint:gochecknoglobals // rule registry
-var defaultMatrix = Matrix{rules: map[rbac.Resource]map[Action][]Rule{
-	rbac.ResourceProject: {
-		ActionView: {
-			{userdomain.PresetProjectDirector, ScopeAll},
-			{userdomain.PresetProjectManager, ScopeOwn},
-		},
-		ActionCreate: {
-			// rp creates a project into own ownership (the owner defaults to themselves).
-			{userdomain.PresetProjectManager, ScopeOwn},
-		},
-		ActionUpdate: {
-			// dp and admin edit any project, rp — their own.
-			{userdomain.PresetProjectDirector, ScopeAll},
-			{userdomain.PresetProjectManager, ScopeOwn},
-		},
-		ActionDelete: {
-			{userdomain.PresetProjectManager, ScopeOwn},
-		},
-	},
-	rbac.ResourceProcess: {
-		ActionView: {
-			{userdomain.PresetProjectDirector, ScopeAll},
-			// rp — processes of own projects (parent), vp — all for reference.
-			{userdomain.PresetProjectManager, ScopeParent},
-			{userdomain.PresetProcessOwner, ScopeAll},
-		},
-		ActionCreate: {
-			{userdomain.PresetProjectManager, ScopeParent},
-		},
-		ActionUpdate: {
-			{userdomain.PresetProjectManager, ScopeParent},
-		},
-		ActionDelete: {
-			{userdomain.PresetProjectManager, ScopeParent},
-		},
-	},
-	rbac.ResourceTask: {
-		ActionView: {
-			{userdomain.PresetProjectDirector, ScopeAll},
-			{userdomain.PresetProjectManager, ScopeAncestor},
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionCreate: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionUpdate: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionDelete: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-	},
-	rbac.ResourceMilestone: {
-		ActionView: {
-			{userdomain.PresetProjectDirector, ScopeAll},
-			{userdomain.PresetProjectManager, ScopeAncestor},
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionCreate: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionUpdate: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionDelete: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-	},
-	rbac.ResourceAssignment: {
-		ActionView: {
-			{userdomain.PresetProjectDirector, ScopeAll},
-			{userdomain.PresetProjectManager, ScopeAncestor},
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionCreate: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionUpdate: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-		ActionDelete: {
-			{userdomain.PresetProcessOwner, ScopeParent},
-		},
-	},
-	// === Timesheet ===
-	// States: an ownerless reference; vp sees them (for the timesheet), only admin manages them.
-	rbac.ResourceState: {
-		ActionView: {
-			{userdomain.PresetProcessOwner, ScopeAll},
-		},
-		ActionCreate: {},
-		ActionUpdate: {},
-		ActionDelete: {},
-	},
-	// Resource categories: admin — all, vp — own (own); vp creates into own ownership.
-	rbac.ResourceResource: {
-		ActionView: {
-			{userdomain.PresetProcessOwner, ScopeOwn},
-		},
-		ActionCreate: {
-			{userdomain.PresetProcessOwner, ScopeOwn},
-		},
-		ActionUpdate: {
-			{userdomain.PresetProcessOwner, ScopeOwn},
-		},
-		ActionDelete: {
-			{userdomain.PresetProcessOwner, ScopeOwn},
-		},
-	},
-	// Workers: creating employees — admin only (bypass); vp — own
-	// subordinates (manager_id): view and edit.
-	rbac.ResourceWorker: {
-		ActionView: {
-			{userdomain.PresetProcessOwner, ScopeOwn},
-		},
-		ActionUpdate: {
-			{userdomain.PresetProcessOwner, ScopeOwn},
-		},
-		ActionDelete: {
-			{userdomain.PresetProcessOwner, ScopeOwn},
-		},
-	},
-	// Comments: no access in the common matrix — rights are derived from the parent
-	// task (see task.comment.* route checks: list/create by task.view,
-	// delete — the author or the task update right).
-	rbac.ResourceComment: {},
-	// Virtual resources: user_catalog — the user catalog for pickers
-	// (dp/rp/vp + admin); rbac_config — auto-create/RBAC administration (admin
-	// only, bypass) — no rows in the matrix.
-	rbac.ResourceUserCatalog: {
-		ActionView: {
-			{userdomain.PresetProjectDirector, ScopeAll},
-			{userdomain.PresetProjectManager, ScopeAll},
-			{userdomain.PresetProcessOwner, ScopeAll},
-		},
-	},
-	rbac.ResourceRBACConfig:   {},
-	rbac.ResourceUserAdmin:    {},
-	rbac.ResourceStateAdmin:   {},
-	rbac.ResourceOrgStructure: {},
-	rbac.ResourceAudit:        {},
-}}
+//nolint:gochecknoglobals // factory policies are the versioned reset source
+var defaultMatrix = newDefaultMatrix()
+
+func newDefaultMatrix() Matrix {
+	var rules []MatrixRule
+	grant := func(role string, res rbac.Resource, scope string, actions ...Action) {
+		for _, action := range actions {
+			rules = append(rules, MatrixRule{Role: role, Res: res, Act: action, Scope: scope})
+		}
+	}
+	for _, res := range []rbac.Resource{
+		rbac.ResourceProject, rbac.ResourceProcess, rbac.ResourceTask,
+		rbac.ResourceMilestone, rbac.ResourceAssignment,
+	} {
+		grant(userdomain.PresetProjectDirector, res, ScopeAll, ActionView)
+		scope := ScopeProjectOwner
+		if res == rbac.ResourceProject {
+			scope = ScopeOwn
+		}
+		grant(userdomain.PresetProjectManager, res, scope, ActionView, ActionCreate, ActionUpdate, ActionDelete)
+		if res != rbac.ResourceProject {
+			grant(userdomain.PresetProcessOwner, res, ScopeProcessOwner,
+				ActionView, ActionCreate, ActionUpdate, ActionDelete)
+		}
+	}
+	grant(userdomain.PresetProjectDirector, rbac.ResourceProject, ScopeAll, ActionPrioritize)
+	grant(userdomain.PresetProjectManager, rbac.ResourceProject, ScopeOwn, ActionPrioritize)
+	grant(userdomain.PresetProcessOwner, rbac.ResourceProject, ScopeProcessProjects, ActionView)
+	grant(userdomain.PresetProjectDirector, rbac.ResourceResource, ScopeAll, ActionView)
+	grant(userdomain.PresetProjectManager, rbac.ResourceResource, "self project_resources", ActionView)
+	grant(userdomain.PresetProcessOwner, rbac.ResourceResource, ScopeOwn,
+		ActionView, ActionCreate, ActionUpdate, ActionDelete)
+	grant(userdomain.PresetProcessOwner, rbac.ResourceState, ScopeAll, ActionView)
+	grant(userdomain.PresetProcessOwner, rbac.ResourceWorker, ScopeOwn, ActionView, ActionUpdate, ActionDelete)
+	for _, role := range []string{
+		userdomain.PresetProjectDirector, userdomain.PresetProjectManager, userdomain.PresetProcessOwner,
+	} {
+		grant(role, rbac.ResourceUserCatalog, ScopeAll, ActionView)
+	}
+	return NewMatrix(rules)
+}
+
+// ActionApplicable keeps the priority-only capability on projects.
+func ActionApplicable(res rbac.Resource, action Action) bool {
+	return action != ActionPrioritize || res == rbac.ResourceProject
+}
 
 // DefaultMatrix returns the built-in default matrix (a copy).
 func DefaultMatrix() Matrix {
@@ -364,10 +268,11 @@ var resourceNames = map[rbac.Resource]string{
 
 //nolint:gochecknoglobals // action codex
 var actionNames = map[Action]string{
-	ActionView:   actView,
-	ActionCreate: actCreate,
-	ActionUpdate: actUpdate,
-	ActionDelete: actDelete,
+	ActionView:       actView,
+	ActionCreate:     actCreate,
+	ActionUpdate:     actUpdate,
+	ActionDelete:     actDelete,
+	ActionPrioritize: actPrioritize,
 }
 
 // ResourceName returns the string resource code ("" — unknown).

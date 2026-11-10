@@ -116,6 +116,13 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 		return
 	}
 
+	if process.OwnerID == nil {
+		if user, err := userctx.GetUser(c); err == nil &&
+			engine.ScopeForUser(user, rbac.ResourceProcess, engine.ActionCreate) != engine.ScopeAll {
+			process.OwnerID = &user.ID
+		}
+	}
+
 	created, err := h.service.CreateProcess(c.Request.Context(), process)
 	if err != nil {
 		response.Error(c, h.logger, err)

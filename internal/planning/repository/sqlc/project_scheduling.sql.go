@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const listAssignmentsByTaskIDs = `-- name: ListAssignmentsByTaskIDs :many
@@ -78,46 +80,71 @@ func (q *Queries) ListMilestonesByProcessIDs(ctx context.Context, processIds []i
 }
 
 const listProcesses = `-- name: ListProcesses :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.responsible_id, pr.code AS project_code
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.responsible_id, pr.code AS project_code, pr.owner_id AS project_owner_id
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::boolean OR
-    ($2::boolean AND p.owner_id = $3::bigint) OR
-    ($4::boolean AND pr.owner_id = $3::bigint) OR
-    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
-    ($6::boolean AND EXISTS (
+    ((
+    ('all' = ANY($1::text[])) OR
+    (('self' = ANY($1::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_projects' = ANY($1::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($1::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = $2::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = $2::bigint
+    ))) OR
+    false
+  )) OR
+    $3::boolean OR
+    ($4::boolean AND pr.owner_id = $2::bigint) OR
+    ($5::boolean AND p.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND pr.owner_id = $2::bigint) OR
+    ($8::boolean AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($9::boolean AND EXISTS (
         SELECT 1 FROM processes s
-        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+        WHERE s.project_id = p.project_id AND s.owner_id = $2::bigint
     )) OR
-    ($7::boolean AND EXISTS (
-        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    ($10::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $2::bigint
     )) OR
-    $8::boolean
+    $11::boolean
 )
 `
 
 type ListProcessesParams struct {
-	ScAll      bool  `json:"sc_all"`
-	ScSelf     bool  `json:"sc_self"`
-	UserID     int64 `json:"user_id"`
-	ScParent   bool  `json:"sc_parent"`
-	ScAncestor bool  `json:"sc_ancestor"`
-	ScSib      bool  `json:"sc_sib"`
-	ScDown     bool  `json:"sc_down"`
-	ScNone     bool  `json:"sc_none"`
+	ProjectView    []string `json:"project_view"`
+	UserID         int64    `json:"user_id"`
+	ScAll          bool     `json:"sc_all"`
+	ScProjectOwner bool     `json:"sc_project_owner"`
+	ScProcessOwner bool     `json:"sc_process_owner"`
+	ScSelf         bool     `json:"sc_self"`
+	ScParent       bool     `json:"sc_parent"`
+	ScAncestor     bool     `json:"sc_ancestor"`
+	ScSib          bool     `json:"sc_sib"`
+	ScDown         bool     `json:"sc_down"`
+	ScNone         bool     `json:"sc_none"`
 }
 
 type ListProcessesRow struct {
-	Process     Process `json:"process"`
-	ProjectCode string  `json:"project_code"`
+	Process        Process     `json:"process"`
+	ProjectCode    string      `json:"project_code"`
+	ProjectOwnerID pgtype.Int8 `json:"project_owner_id"`
 }
 
 func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([]ListProcessesRow, error) {
 	rows, err := q.db.Query(ctx, listProcesses,
-		arg.ScAll,
-		arg.ScSelf,
+		arg.ProjectView,
 		arg.UserID,
+		arg.ScAll,
+		arg.ScProjectOwner,
+		arg.ScProcessOwner,
+		arg.ScSelf,
 		arg.ScParent,
 		arg.ScAncestor,
 		arg.ScSib,
@@ -144,6 +171,7 @@ func (q *Queries) ListProcesses(ctx context.Context, arg ListProcessesParams) ([
 			&i.Process.UpdatedAt,
 			&i.Process.ResponsibleID,
 			&i.ProjectCode,
+			&i.ProjectOwnerID,
 		); err != nil {
 			return nil, err
 		}
@@ -194,42 +222,85 @@ func (q *Queries) ListProcessesByProjectIDs(ctx context.Context, projectIds []in
 }
 
 const listProcessesByTaskScope = `-- name: ListProcessesByTaskScope :many
-SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.responsible_id, pr.code AS project_code
+SELECT p.id, p.project_id, p.owner_id, p.title, p.color, p.start_date, p.end_date, p.sort_order, p.created_at, p.updated_at, p.responsible_id, pr.code AS project_code, pr.owner_id AS project_owner_id
 FROM processes p
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::boolean OR
-    ($2::boolean AND EXISTS (
-        SELECT 1 FROM tasks t WHERE t.process_id = p.id AND t.owner_id = $3::bigint
+    ((
+    ('all' = ANY($1::text[])) OR
+    (('self' = ANY($1::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_projects' = ANY($1::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = $2::bigint
     )) OR
-    ($4::boolean AND p.owner_id = $3::bigint) OR
-    ($5::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
-    ($6::boolean AND EXISTS (
-        SELECT 1 FROM processes s
-        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
-    )) OR
-    ($7::boolean AND EXISTS (
+    (('down' = ANY($1::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = $2::bigint
+    ) OR EXISTS (
         SELECT 1 FROM tasks d
-        WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = $2::bigint
+    ))) OR
+    false
+  ) OR (
+    ('all' = ANY($3::text[])) OR
+    (('project_owner' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_owner' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('self' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('parent' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('ancestor' = ANY($3::text[])) AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    (('sib' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $2::bigint
     )) OR
-    $8::boolean
-)
+    (('down' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $2::bigint
+    )) OR
+    false
+  )) OR
+    $4::boolean OR
+    ($5::boolean AND pr.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND EXISTS (
+        SELECT 1 FROM tasks t WHERE t.process_id = p.id AND t.owner_id = $2::bigint
+    )) OR
+    ($8::boolean AND p.owner_id = $2::bigint) OR
+    ($9::boolean AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    ($10::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = p.id AND s.owner_id = $2::bigint
+    )) OR
+    ($11::boolean AND EXISTS (
+        SELECT 1 FROM tasks s JOIN processes sp ON sp.id = s.process_id
+        WHERE sp.project_id = p.project_id AND s.owner_id = $2::bigint
+    )) OR
+    ($12::boolean AND EXISTS (
+        SELECT 1 FROM tasks d
+        WHERE d.process_id = p.id AND d.owner_id = $2::bigint
+    )) OR
+    $13::boolean
+  )
 `
 
 type ListProcessesByTaskScopeParams struct {
-	ScAll      bool  `json:"sc_all"`
-	ScSelf     bool  `json:"sc_self"`
-	UserID     int64 `json:"user_id"`
-	ScParent   bool  `json:"sc_parent"`
-	ScAncestor bool  `json:"sc_ancestor"`
-	ScSib      bool  `json:"sc_sib"`
-	ScDown     bool  `json:"sc_down"`
-	ScNone     bool  `json:"sc_none"`
+	ProjectView    []string `json:"project_view"`
+	UserID         int64    `json:"user_id"`
+	ProcessView    []string `json:"process_view"`
+	ScAll          bool     `json:"sc_all"`
+	ScProjectOwner bool     `json:"sc_project_owner"`
+	ScProcessOwner bool     `json:"sc_process_owner"`
+	ScSelf         bool     `json:"sc_self"`
+	ScParent       bool     `json:"sc_parent"`
+	ScAncestor     bool     `json:"sc_ancestor"`
+	ScSib          bool     `json:"sc_sib"`
+	ScProjectSib   bool     `json:"sc_project_sib"`
+	ScDown         bool     `json:"sc_down"`
+	ScNone         bool     `json:"sc_none"`
 }
 
 type ListProcessesByTaskScopeRow struct {
-	Process     Process `json:"process"`
-	ProjectCode string  `json:"project_code"`
+	Process        Process     `json:"process"`
+	ProjectCode    string      `json:"project_code"`
+	ProjectOwnerID pgtype.Int8 `json:"project_owner_id"`
 }
 
 // Processes for the TASK planning aggregate: the scope comes from the task
@@ -239,12 +310,17 @@ type ListProcessesByTaskScopeRow struct {
 // process view lists their processes.
 func (q *Queries) ListProcessesByTaskScope(ctx context.Context, arg ListProcessesByTaskScopeParams) ([]ListProcessesByTaskScopeRow, error) {
 	rows, err := q.db.Query(ctx, listProcessesByTaskScope,
-		arg.ScAll,
-		arg.ScSelf,
+		arg.ProjectView,
 		arg.UserID,
+		arg.ProcessView,
+		arg.ScAll,
+		arg.ScProjectOwner,
+		arg.ScProcessOwner,
+		arg.ScSelf,
 		arg.ScParent,
 		arg.ScAncestor,
 		arg.ScSib,
+		arg.ScProjectSib,
 		arg.ScDown,
 		arg.ScNone,
 	)
@@ -268,6 +344,7 @@ func (q *Queries) ListProcessesByTaskScope(ctx context.Context, arg ListProcesse
 			&i.Process.UpdatedAt,
 			&i.Process.ResponsibleID,
 			&i.ProjectCode,
+			&i.ProjectOwnerID,
 		); err != nil {
 			return nil, err
 		}
@@ -283,30 +360,38 @@ const listProjects = `-- name: ListProjects :many
 SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id FROM projects
 WHERE (
     $1::boolean OR
-    ($2::boolean AND owner_id = $3::bigint) OR
-    ($4::boolean AND EXISTS (
+    ($2::boolean AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = projects.id AND vp.owner_id = $3::bigint
+    )) OR
+    ($4::boolean AND owner_id = $3::bigint) OR
+    ($5::boolean AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = projects.id AND dp.owner_id = $3::bigint
+    ) OR EXISTS (
         SELECT 1 FROM tasks d
         JOIN processes dp ON dp.id = d.process_id
         WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
-    )) OR
-    $5::boolean
+    ))) OR
+    $6::boolean
 )
 ORDER BY priority ASC
 `
 
 type ListProjectsParams struct {
-	ScAll  bool  `json:"sc_all"`
-	ScSelf bool  `json:"sc_self"`
-	UserID int64 `json:"user_id"`
-	ScDown bool  `json:"sc_down"`
-	ScNone bool  `json:"sc_none"`
+	ScAll             bool  `json:"sc_all"`
+	ScProcessProjects bool  `json:"sc_process_projects"`
+	UserID            int64 `json:"user_id"`
+	ScSelf            bool  `json:"sc_self"`
+	ScDown            bool  `json:"sc_down"`
+	ScNone            bool  `json:"sc_none"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listProjects,
 		arg.ScAll,
-		arg.ScSelf,
+		arg.ScProcessProjects,
 		arg.UserID,
+		arg.ScSelf,
 		arg.ScDown,
 		arg.ScNone,
 	)
@@ -344,23 +429,30 @@ SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, up
 WHERE id = ANY($1::bigint[])
   AND (
     $2::boolean OR
-    ($3::boolean AND owner_id = $4::bigint) OR
-    ($5::boolean AND EXISTS (
+    ($3::boolean AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = projects.id AND vp.owner_id = $4::bigint
+    )) OR
+    ($5::boolean AND owner_id = $4::bigint) OR
+    ($6::boolean AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = projects.id AND dp.owner_id = $4::bigint
+    ) OR EXISTS (
         SELECT 1 FROM tasks d
         JOIN processes dp ON dp.id = d.process_id
         WHERE dp.project_id = projects.id AND d.owner_id = $4::bigint
-    )) OR
-    $6::boolean
+    ))) OR
+    $7::boolean
   )
 `
 
 type ListProjectsByIDsParams struct {
-	Ids    []int64 `json:"ids"`
-	ScAll  bool    `json:"sc_all"`
-	ScSelf bool    `json:"sc_self"`
-	UserID int64   `json:"user_id"`
-	ScDown bool    `json:"sc_down"`
-	ScNone bool    `json:"sc_none"`
+	Ids               []int64 `json:"ids"`
+	ScAll             bool    `json:"sc_all"`
+	ScProcessProjects bool    `json:"sc_process_projects"`
+	UserID            int64   `json:"user_id"`
+	ScSelf            bool    `json:"sc_self"`
+	ScDown            bool    `json:"sc_down"`
+	ScNone            bool    `json:"sc_none"`
 }
 
 // Projects attached as parent context of the caller's visible processes,
@@ -373,8 +465,9 @@ func (q *Queries) ListProjectsByIDs(ctx context.Context, arg ListProjectsByIDsPa
 	rows, err := q.db.Query(ctx, listProjectsByIDs,
 		arg.Ids,
 		arg.ScAll,
-		arg.ScSelf,
+		arg.ScProcessProjects,
 		arg.UserID,
+		arg.ScSelf,
 		arg.ScDown,
 		arg.ScNone,
 	)
@@ -411,16 +504,21 @@ const listResources = `-- name: ListResources :many
 SELECT id, title, code, color, owner_id, created_at, updated_at FROM resources
 WHERE (
     $1::boolean OR
-    ($2::boolean AND owner_id = $3::bigint) OR
-    $4::boolean
+    ($2::boolean AND EXISTS (
+        SELECT 1 FROM processes rp JOIN projects rpr ON rpr.id = rp.project_id
+        WHERE rp.owner_id = resources.owner_id AND rpr.owner_id = $3::bigint
+    )) OR
+    ($4::boolean AND owner_id = $3::bigint) OR
+    $5::boolean
 )
 `
 
 type ListResourcesParams struct {
-	ScAll  bool  `json:"sc_all"`
-	ScSelf bool  `json:"sc_self"`
-	UserID int64 `json:"user_id"`
-	ScNone bool  `json:"sc_none"`
+	ScAll              bool  `json:"sc_all"`
+	ScProjectResources bool  `json:"sc_project_resources"`
+	UserID             int64 `json:"user_id"`
+	ScSelf             bool  `json:"sc_self"`
+	ScNone             bool  `json:"sc_none"`
 }
 
 // Resources embedded into task/reference data, scoped by the caller's
@@ -431,8 +529,9 @@ type ListResourcesParams struct {
 func (q *Queries) ListResources(ctx context.Context, arg ListResourcesParams) ([]Resource, error) {
 	rows, err := q.db.Query(ctx, listResources,
 		arg.ScAll,
-		arg.ScSelf,
+		arg.ScProjectResources,
 		arg.UserID,
+		arg.ScSelf,
 		arg.ScNone,
 	)
 	if err != nil {
@@ -535,15 +634,129 @@ func (q *Queries) ListTaskDependenciesByProcessIDs(ctx context.Context, processI
 }
 
 const listTasksByProcessIDs = `-- name: ListTasksByProcessIDs :many
-SELECT id, process_id, parent_id, owner_id, title, color, status, start_date, end_date, sort_order, created_at, updated_at, responsible_id FROM tasks
-WHERE process_id = ANY($1::bigint[])
-ORDER BY COALESCE(parent_id, 0), sort_order ASC, id ASC
+WITH RECURSIVE task_view_ancestors(descendant_id, ancestor_id) AS (
+  SELECT id, parent_id FROM tasks WHERE parent_id IS NOT NULL
+  UNION
+  SELECT a.descendant_id, t.parent_id
+  FROM task_view_ancestors a JOIN tasks t ON t.id=a.ancestor_id
+  WHERE t.parent_id IS NOT NULL
+)
+SELECT t.id, t.process_id, t.parent_id, t.owner_id, t.title, t.color, t.status, t.start_date, t.end_date, t.sort_order, t.created_at, t.updated_at, t.responsible_id FROM tasks t
+JOIN processes p ON p.id = t.process_id
+JOIN projects pr ON pr.id = p.project_id
+WHERE t.process_id = ANY($1::bigint[])
+AND (
+    ((
+    ('all' = ANY($2::text[])) OR
+    (('self' = ANY($2::text[])) AND pr.owner_id = $3::bigint) OR
+    (('process_projects' = ANY($2::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = $3::bigint
+    )) OR
+    (('down' = ANY($2::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = $3::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = $3::bigint
+    ))) OR
+    false
+  ) OR (
+    ('all' = ANY($4::text[])) OR
+    (('project_owner' = ANY($4::text[])) AND pr.owner_id = $3::bigint) OR
+    (('process_owner' = ANY($4::text[])) AND p.owner_id = $3::bigint) OR
+    (('self' = ANY($4::text[])) AND p.owner_id = $3::bigint) OR
+    (('parent' = ANY($4::text[])) AND pr.owner_id = $3::bigint) OR
+    (('ancestor' = ANY($4::text[])) AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    (('sib' = ANY($4::text[])) AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    (('down' = ANY($4::text[])) AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $3::bigint
+    )) OR
+    false
+  ) OR EXISTS (
+    SELECT 1 FROM task_view_ancestors va JOIN tasks at ON at.id=va.ancestor_id
+    WHERE va.descendant_id=t.id AND (
+    $5::boolean OR
+    ($6::boolean AND pr.owner_id = $3::bigint) OR
+    ($7::boolean AND p.owner_id = $3::bigint) OR
+    ($8::boolean AND at.owner_id = $3::bigint) OR
+    ($9::boolean AND p.owner_id = $3::bigint) OR
+    ($10::boolean AND (at.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($11::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = at.process_id
+          AND s.owner_id = $3::bigint
+    )) OR
+    ($12::boolean AND EXISTS (
+        SELECT 1 FROM tasks s JOIN processes sp ON sp.id = s.process_id
+        WHERE sp.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($13::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = at.id AND d.owner_id = $3::bigint
+    )) OR
+    $14::boolean
+  )
+  )) OR
+    $5::boolean OR
+    ($6::boolean AND pr.owner_id = $3::bigint) OR
+    ($7::boolean AND p.owner_id = $3::bigint) OR
+    ($8::boolean AND t.owner_id = $3::bigint) OR
+    ($9::boolean AND p.owner_id = $3::bigint) OR
+    ($10::boolean AND (t.owner_id = $3::bigint OR p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
+    ($11::boolean AND EXISTS (
+        SELECT 1 FROM tasks s
+        WHERE s.process_id = t.process_id
+          AND s.owner_id = $3::bigint
+    )) OR
+    ($12::boolean AND EXISTS (
+        SELECT 1 FROM tasks s JOIN processes sp ON sp.id = s.process_id
+        WHERE sp.project_id = p.project_id AND s.owner_id = $3::bigint
+    )) OR
+    ($13::boolean AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.parent_id = t.id AND d.owner_id = $3::bigint
+    )) OR
+    $14::boolean
+  )
+ORDER BY COALESCE(t.parent_id, 0), t.sort_order ASC, t.id ASC
 `
 
-// Top-level tasks (parent group 0) first in display order, then each
-// parent's subtasks in their own display order.
-func (q *Queries) ListTasksByProcessIDs(ctx context.Context, processIds []int64) ([]Task, error) {
-	rows, err := q.db.Query(ctx, listTasksByProcessIDs, processIds)
+type ListTasksByProcessIDsParams struct {
+	ProcessIds     []int64  `json:"process_ids"`
+	ProjectView    []string `json:"project_view"`
+	UserID         int64    `json:"user_id"`
+	ProcessView    []string `json:"process_view"`
+	ScAll          bool     `json:"sc_all"`
+	ScProjectOwner bool     `json:"sc_project_owner"`
+	ScProcessOwner bool     `json:"sc_process_owner"`
+	ScSelf         bool     `json:"sc_self"`
+	ScParent       bool     `json:"sc_parent"`
+	ScAncestor     bool     `json:"sc_ancestor"`
+	ScSib          bool     `json:"sc_sib"`
+	ScProjectSib   bool     `json:"sc_project_sib"`
+	ScDown         bool     `json:"sc_down"`
+	ScNone         bool     `json:"sc_none"`
+}
+
+func (q *Queries) ListTasksByProcessIDs(ctx context.Context, arg ListTasksByProcessIDsParams) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listTasksByProcessIDs,
+		arg.ProcessIds,
+		arg.ProjectView,
+		arg.UserID,
+		arg.ProcessView,
+		arg.ScAll,
+		arg.ScProjectOwner,
+		arg.ScProcessOwner,
+		arg.ScSelf,
+		arg.ScParent,
+		arg.ScAncestor,
+		arg.ScSib,
+		arg.ScProjectSib,
+		arg.ScDown,
+		arg.ScNone,
+	)
 	if err != nil {
 		return nil, err
 	}

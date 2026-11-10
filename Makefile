@@ -1,7 +1,7 @@
 include .env
 export
 
-# Dev stack: infra (db + flyway + jaeger + loki + grafana + redis) in docker,
+# Dev stack: infra (db + jaeger + loki + grafana + redis) in docker,
 # API served locally by air. TRACING_ENDPOINT / REDIS_ADDRESS / AUDIT_URL
 # point air at the in-docker Jaeger collector, Redis and Loki via their
 # published ports (the docker-service names "jaeger"/"redis"/"loki" are not
@@ -11,7 +11,7 @@ export
 .PHONY: dev infra reset stop lint
 
 dev:
-	docker compose up -d db flyway jaeger loki grafana redis
+	docker compose up -d db jaeger loki grafana redis
 	DATABASE_URL=postgres://$(DATABASE_USER):$(DATABASE_PASSWORD)@localhost:5432/$(DATABASE_NAME)?sslmode=disable \
 	TRACING_ENDPOINT=localhost:4317 \
 	REDIS_ADDRESS=localhost:6379 \
@@ -27,7 +27,7 @@ lint:
 
 reset:
 	docker compose down -v
-	docker compose up -d db flyway jaeger loki grafana redis
+	docker compose up -d db jaeger loki grafana redis
 
 stop:
 	docker compose down

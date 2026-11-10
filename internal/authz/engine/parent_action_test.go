@@ -71,7 +71,7 @@ func TestParentActionTaskOrder(t *testing.T) {
 		{"vp of own process reorders tasks", vp, uVP1, `{"process_id":5,"ids":[1,2]}`, http.StatusNoContent},
 		{"admin reorders any process tasks", admin, uAdmin, `{"process_id":5,"ids":[1,2]}`, http.StatusNoContent},
 		{"vp of another process cannot reorder", vp, uVP2, `{"process_id":5,"ids":[1,2]}`, http.StatusForbidden},
-		{"rp cannot reorder (no task update)", rp, uRP, `{"process_id":5,"ids":[1,2]}`, http.StatusForbidden},
+		{"rp reorders own project tasks", rp, uRP, `{"process_id":5,"ids":[1,2]}`, http.StatusNoContent},
 		{"dp cannot reorder (no task update)", dp, uDP, `{"process_id":5,"ids":[1,2]}`, http.StatusForbidden},
 		{"unknown process → 404", admin, uAdmin, `{"process_id":0,"ids":[1,2]}`, http.StatusNotFound},
 		{"malformed body → 400", admin, uAdmin, `{"process_id":`, http.StatusBadRequest},

@@ -45,7 +45,7 @@ func splitKey(key string) (rbac.Resource, Action, error) {
 		return 0, 0, errInvalidKey(key)
 	}
 	act, okAct := ParseAction(actName)
-	if !okAct {
+	if !okAct || !ActionApplicable(res, act) {
 		return 0, 0, errInvalidKey(key)
 	}
 	return res, act, nil
@@ -208,7 +208,7 @@ func Can(role string, res rbac.Resource, act Action) bool {
 
 // CanUser reports whether the caller can perform an action at all.
 func CanUser(u userctx.UserContext, res rbac.Resource, act Action) bool {
-	return scopeForUser(u, res, act) != ScopeNone
+	return scopeForUser(u, res, act) != ScopeNone || (act == ActionView && hasViewAncestor(u, res))
 }
 
 // ViewScopeCode returns the view scope expression of a preset for listing
@@ -339,6 +339,10 @@ type Target struct {
 	OwnerB rbac.Owners
 	// ID — the target entity id (for sib/down probes; 0 — not applicable).
 	ID int64
+	// ParentID authorizes creation and moves against the resolved destination.
+	ParentID      int64
+	ProposedOwner int64
+	ParentVisible bool
 	// Ctx — the request context (for the owner probes).
 	Ctx context.Context
 }
@@ -349,8 +353,23 @@ type Target struct {
 // zone pre-check for the author leg — the author is allowed regardless of the
 // parent's zone (the matcher enforces the disjunction).
 func EnforceTarget(u userctx.UserContext, t Target) bool {
+	if !ActionApplicable(t.Res, t.Act) {
+		return false
+	}
 	if u.Admin {
 		return true
+	}
+	if t.Act == ActionView && inheritedView(u, t) {
+		return true
+	}
+	return enforceDirectTarget(u, t)
+}
+
+func enforceDirectTarget(u userctx.UserContext, t Target) bool {
+	if t.Res == rbac.ResourceAssignment && t.Act == ActionView &&
+		scopeForUser(u, t.Res, t.Act) == ScopeParent &&
+		(t.Owners.Owner != u.ID || t.Owners.ResourceOwner != u.ID) {
+		return false
 	}
 	if t.Mode != ModeAuthorOr || t.AuthorID != u.ID {
 		scope := scopeForUser(u, t.Res, t.Act)
@@ -358,7 +377,7 @@ func EnforceTarget(u userctx.UserContext, t Target) bool {
 			return false
 		}
 		probe := currentProbe()
-		if !EvalScope(t.Ctx, scope, t.Res, t.Owners, u.ID, t.ID, probe) {
+		if !evalTargetScope(t, scope, u.ID, probe) {
 			return false
 		}
 	}
@@ -399,4 +418,70 @@ func itoa(id int64) string {
 		return ""
 	}
 	return strconv.FormatInt(id, 10)
+}
+
+// HasViewAncestor reports potential inherited visibility, independently from direct child denials.
+func HasViewAncestor(u userctx.UserContext, res rbac.Resource) bool {
+	return hasViewAncestor(u, res)
+}
+
+func hasViewAncestor(u userctx.UserContext, res rbac.Resource) bool {
+	for _, parent := range viewAncestors(res) {
+		if scopeForUser(u, parent, ActionView) != ScopeNone {
+			return true
+		}
+	}
+	return false
+}
+
+func viewAncestors(res rbac.Resource) []rbac.Resource {
+	switch res {
+	case rbac.ResourceProcess:
+		return []rbac.Resource{rbac.ResourceProject}
+	case rbac.ResourceTask, rbac.ResourceMilestone:
+		return []rbac.Resource{rbac.ResourceProject, rbac.ResourceProcess}
+	case rbac.ResourceAssignment:
+		return []rbac.Resource{rbac.ResourceProject, rbac.ResourceProcess, rbac.ResourceTask}
+	case rbac.ResourceProject,
+		rbac.ResourceState,
+		rbac.ResourceResource,
+		rbac.ResourceWorker,
+		rbac.ResourceComment,
+		rbac.ResourceUserCatalog,
+		rbac.ResourceRBACConfig,
+		rbac.ResourceUserAdmin,
+		rbac.ResourceStateAdmin,
+		rbac.ResourceOrgStructure,
+		rbac.ResourceAudit:
+		return nil
+	}
+	return nil
+}
+
+func inheritedView(u userctx.UserContext, target Target) bool {
+	probe := currentProbe()
+	if probe == nil || probe.Parents == nil || target.ID == 0 {
+		return false
+	}
+	parents, err := probe.Parents(target.Ctx, target.Res, target.ID)
+	if err != nil {
+		return false
+	}
+	for _, parent := range parents {
+		parent.Act = ActionView
+		parent.Ctx = target.Ctx
+		if enforceDirectTarget(u, parent) {
+			return true
+		}
+	}
+	return false
+}
+
+func unrestrictedViewAncestor(u userctx.UserContext, res rbac.Resource) bool {
+	for _, parent := range viewAncestors(res) {
+		if scopeForUser(u, parent, ActionView) == ScopeAll {
+			return true
+		}
+	}
+	return false
 }

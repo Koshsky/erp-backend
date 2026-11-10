@@ -47,6 +47,7 @@ func (s *PlanningService) loadAllData(
 	processes []dto.Process,
 	userID int64,
 	resourceScope rbac.ListScope,
+	taskScope rbac.ListScope,
 ) (map[int64][]dto.Milestone, map[int64][]dto.Task, map[int64][]dto.Assignment, map[int64]dto.Resource, map[int64]int64, map[int64][]dto.TaskDependency, error) {
 	processIDs := make([]int64, len(processes))
 	for i, p := range processes {
@@ -67,7 +68,7 @@ func (s *PlanningService) loadAllData(
 		milestoneDTOs[processID] = items
 	}
 
-	taskRows, err := s.repository.ListTasksByProcessIDs(ctx, processIDs)
+	taskRows, err := s.repository.ListTasksByProcessIDs(ctx, processIDs, userID, taskScope)
 	if err != nil {
 		return nil, nil, nil, nil, nil, nil, err
 	}

@@ -46,9 +46,10 @@ const (
 // project. For timesheet entities (resource/employee), the Owner field holds the
 // row owner.
 type Owners struct {
-	ProjectOwner int64
-	ProcessOwner int64
-	Owner        int64
+	ProjectOwner  int64
+	ProcessOwner  int64
+	Owner         int64
+	ResourceOwner int64
 }
 
 // SharesOwner reports whether the two entities share ownership for the

@@ -7787,6 +7787,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "project_owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "responsible_id": {
                     "type": "integer",
                     "example": 2
@@ -8045,6 +8049,9 @@ const docTemplate = `{
                     "type": "string",
                     "example": "create"
                 },
+                "inherited": {
+                    "type": "boolean"
+                },
                 "resource": {
                     "type": "string",
                     "example": "project"
@@ -8218,6 +8225,10 @@ const docTemplate = `{
                     "example": "КО_001"
                 },
                 "project_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "project_owner_id": {
                     "type": "integer",
                     "example": 1
                 },

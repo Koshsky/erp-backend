@@ -97,31 +97,40 @@ func (r *MilestoneRepository) ListMilestones(
 	limit, offset int,
 ) ([]sqlc.Milestone, error) {
 	return r.q(ctx).ListMilestones(ctx, sqlc.ListMilestonesParams{
-		ScAll:      scope.All,
-		UserID:     userID,
-		ScParent:   scope.Parent,
-		ScAncestor: scope.Ancestor,
-		ScNone:     scope.None,
-		OwnerID:    ownerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		ScAll:          scope.All,
+		UserID:         userID,
+		ScParent:       scope.Parent,
+		ScAncestor:     scope.Ancestor,
+		ScNone:         scope.None,
+		OwnerID:        ownerID,
+		PageLimit:      int64(limit),
+		PageOffset:     int64(offset),
+		ScProjectOwner: scope.ProjectOwner,
+		ScProcessOwner: scope.ProcessOwner,
+		ProjectView:    scope.ProjectView,
+		ProcessView:    scope.ProcessView,
 	})
 }
 
 func (r *MilestoneRepository) CountMilestones(
 	ctx context.Context,
-	_ int64,
+	userID int64,
 	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountMilestones(
 		ctx,
 		sqlc.CountMilestonesParams{
-			ScAll:      scope.All,
-			ScParent:   scope.Parent,
-			ScAncestor: scope.Ancestor,
-			ScNone:     scope.None,
-			OwnerID:    ownerID,
+			UserID:         userID,
+			ScAll:          scope.All,
+			ScParent:       scope.Parent,
+			ScAncestor:     scope.Ancestor,
+			ScNone:         scope.None,
+			OwnerID:        ownerID,
+			ScProjectOwner: scope.ProjectOwner,
+			ScProcessOwner: scope.ProcessOwner,
+			ProjectView:    scope.ProjectView,
+			ProcessView:    scope.ProcessView,
 		},
 	)
 }

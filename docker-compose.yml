@@ -18,28 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  flyway:
-    image: flyway/flyway:9.20.0
-    container_name: migrator-dev
-    volumes:
-      - ./migrations:/flyway/sql
-    command:
-      - -url=jdbc:postgresql://db:5432/${DATABASE_NAME}
-      - -user=${DATABASE_USER}
-      - -password=${DATABASE_PASSWORD}
-      - -locations=filesystem:/flyway/sql,filesystem:/flyway/sql/plugins,filesystem:/flyway/sql/seed
-      - -outOfOrder=true
-      # Parity with the deploy stack: applied seed/migration files may disappear
-      # from disk when the sets are moved around, and a newer file may be added
-      # behind an already applied version.
-      - -ignoreMigrationPatterns=*:missing
-      - migrate
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - app-network
-
   jaeger:
     image: jaegertracing/all-in-one:1.76.0
     container_name: jaeger

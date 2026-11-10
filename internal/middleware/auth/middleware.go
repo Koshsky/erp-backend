@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"log/slog"
+	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -82,6 +84,14 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		user.ID = claims.UserID
 		user.Email = claims.Email
 
+		subject, viewErr := m.viewUser(c, user)
+		if viewErr != nil {
+			response.Forbidden(c, errors.CodeForbidden, "forbidden")
+			c.Abort()
+			return
+		}
+		user = *subject
+
 		// 6. Store the user in the context (as a single object!)
 		c.Set("user", user)
 		tracingpkg.SetUserOnSpan(c, user.ID, user.Preset)
@@ -89,4 +99,27 @@ func (m *Middleware) RequireAuth() gin.HandlerFunc {
 		// 7. Pass the request through
 		c.Next()
 	}
+}
+
+func (m *Middleware) viewUser(c *gin.Context, actor userctx.UserContext) (*userctx.UserContext, error) {
+	target := c.GetHeader("X-View-User-ID")
+	if target == "" {
+		return &actor, nil
+	}
+	id, err := strconv.ParseInt(target, 10, 64)
+	if !actor.Admin || c.Request.Method != http.MethodGet || !viewPathAllowed(c.Request.URL.Path) || err != nil ||
+		id <= 0 {
+		return nil, errors.ErrForbidden
+	}
+	subject, err := m.resolver.EffectiveUser(c.Request.Context(), id)
+	if err != nil || subject.ID != id {
+		return nil, errors.ErrForbidden
+	}
+	c.Set("view_actor_id", actor.ID)
+	return &subject, nil
+}
+
+func viewPathAllowed(path string) bool {
+	return strings.HasPrefix(path, "/api/v1/planning/") || path == "/api/v1/resources" ||
+		path == "/api/v1/timesheet/calendar"
 }

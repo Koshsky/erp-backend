@@ -123,7 +123,9 @@ func (s *TaskService) applyParent(ctx context.Context, task *sqlc.Task, parentID
 	if parent.ParentID.Valid {
 		return errors.NewValidationError("подзадача не может иметь собственные подзадачи")
 	}
-	task.ProcessID = parent.ProcessID
+	if task.ProcessID != parent.ProcessID {
+		return errors.NewFieldError("process_id", "parent_mismatch", "subtask process must match parent task process")
+	}
 	task.StartDate = parent.StartDate
 	task.EndDate = parent.EndDate
 	return nil

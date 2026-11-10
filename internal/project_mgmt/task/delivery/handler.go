@@ -117,6 +117,13 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
+	if task.OwnerID == nil {
+		if user, err := userctx.GetUser(c); err == nil &&
+			engine.ScopeForUser(user, rbac.ResourceTask, engine.ActionCreate) != engine.ScopeAll {
+			task.OwnerID = &user.ID
+		}
+	}
+
 	created, err := h.service.CreateTask(c.Request.Context(), task)
 	if err != nil {
 		response.Error(c, h.logger, err)

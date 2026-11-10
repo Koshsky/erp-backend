@@ -1,4 +1,7 @@
 {
+  "invalid project update": "Invalid project update",
+  "subtask process must match parent task process": "The subtask process must match the parent task process",
+  "forbidden": "Access denied",
   "Логин: только латиница (a–z), цифры, точка и подчёркивание. Длина от 3 до 20 символов": "Login: Latin letters (a–z), digits, dot and underscore only. Length 3 to 20 characters",
   "в связях участвуют только основные задачи (не операции)": "only top-level tasks (not operations) can take part in links",
   "задача не может зависеть от самой себя": "a task cannot depend on itself",

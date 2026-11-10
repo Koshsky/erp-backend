@@ -112,31 +112,34 @@ func (r *ProjectRepository) ListProjects(
 	limit, offset int,
 ) ([]sqlc.Project, error) {
 	return r.q(ctx).ListProjects(ctx, sqlc.ListProjectsParams{
-		ScAll:      scope.All,
-		ScSelf:     scope.Self,
-		UserID:     userID,
-		ScDown:     scope.Down,
-		ScNone:     scope.None,
-		OwnerID:    ownerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		ScAll:             scope.All,
+		ScSelf:            scope.Self,
+		UserID:            userID,
+		ScDown:            scope.Down,
+		ScNone:            scope.None,
+		OwnerID:           ownerID,
+		PageLimit:         int64(limit),
+		PageOffset:        int64(offset),
+		ScProcessProjects: scope.ProcessProjects,
 	})
 }
 
 func (r *ProjectRepository) CountProjects(
 	ctx context.Context,
-	_ int64,
+	userID int64,
 	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountProjects(
 		ctx,
 		sqlc.CountProjectsParams{
-			ScAll:   scope.All,
-			ScSelf:  scope.Self,
-			ScDown:  scope.Down,
-			ScNone:  scope.None,
-			OwnerID: ownerID,
+			ScAll:             scope.All,
+			ScSelf:            scope.Self,
+			UserID:            userID,
+			ScDown:            scope.Down,
+			ScNone:            scope.None,
+			OwnerID:           ownerID,
+			ScProcessProjects: scope.ProcessProjects,
 		},
 	)
 }

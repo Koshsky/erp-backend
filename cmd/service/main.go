@@ -49,6 +49,13 @@ var version = "dev"
 //	@externalDocs.url			https://swagger.io/resources/open-api/
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		if err := migrationCommand(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	// build the application dependency graph
 	application, err := server.InitializeApp()
 	if err != nil {

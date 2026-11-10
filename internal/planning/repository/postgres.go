@@ -40,11 +40,12 @@ func (r *PlanningRepository) ListProjects(
 	scope rbac.ListScope,
 ) ([]sqlc.Project, error) {
 	return r.q(ctx).ListProjects(ctx, sqlc.ListProjectsParams{
-		UserID: userID,
-		ScAll:  scope.All,
-		ScSelf: scope.Self,
-		ScDown: scope.Down,
-		ScNone: scope.None,
+		UserID:            userID,
+		ScAll:             scope.All,
+		ScSelf:            scope.Self,
+		ScDown:            scope.Down,
+		ScNone:            scope.None,
+		ScProcessProjects: scope.ProcessProjects,
 	})
 }
 
@@ -59,12 +60,13 @@ func (r *PlanningRepository) ListProjectsByIDs(
 	scope rbac.ListScope,
 ) ([]sqlc.Project, error) {
 	return r.q(ctx).ListProjectsByIDs(ctx, sqlc.ListProjectsByIDsParams{
-		Ids:    ids,
-		UserID: userID,
-		ScAll:  scope.All,
-		ScSelf: scope.Self,
-		ScDown: scope.Down,
-		ScNone: scope.None,
+		Ids:               ids,
+		UserID:            userID,
+		ScAll:             scope.All,
+		ScSelf:            scope.Self,
+		ScDown:            scope.Down,
+		ScNone:            scope.None,
+		ScProcessProjects: scope.ProcessProjects,
 	})
 }
 
@@ -75,14 +77,17 @@ func (r *PlanningRepository) ListProcesses(
 	scope rbac.ListScope,
 ) ([]sqlc.ListProcessesRow, error) {
 	return r.q(ctx).ListProcesses(ctx, sqlc.ListProcessesParams{
-		UserID:     userID,
-		ScAll:      scope.All,
-		ScSelf:     scope.Self,
-		ScParent:   scope.Parent,
-		ScAncestor: scope.Ancestor,
-		ScSib:      scope.Sib,
-		ScDown:     scope.Down,
-		ScNone:     scope.None,
+		UserID:         userID,
+		ScAll:          scope.All,
+		ScSelf:         scope.Self,
+		ScParent:       scope.Parent,
+		ScAncestor:     scope.Ancestor,
+		ScSib:          scope.Sib,
+		ScDown:         scope.Down,
+		ScNone:         scope.None,
+		ScProjectOwner: scope.ProjectOwner,
+		ScProcessOwner: scope.ProcessOwner,
+		ProjectView:    scope.ProjectView,
 	})
 }
 
@@ -96,22 +101,44 @@ func (r *PlanningRepository) ListProcessesByTaskScope(
 	scope rbac.ListScope,
 ) ([]sqlc.ListProcessesByTaskScopeRow, error) {
 	return r.q(ctx).ListProcessesByTaskScope(ctx, sqlc.ListProcessesByTaskScopeParams{
-		UserID:     userID,
-		ScAll:      scope.All,
-		ScSelf:     scope.Self,
-		ScParent:   scope.Parent,
-		ScAncestor: scope.Ancestor,
-		ScSib:      scope.Sib,
-		ScDown:     scope.Down,
-		ScNone:     scope.None,
+		UserID:         userID,
+		ScAll:          scope.All,
+		ScSelf:         scope.Self,
+		ScParent:       scope.Parent,
+		ScAncestor:     scope.Ancestor,
+		ScSib:          scope.Sib,
+		ScProjectSib:   scope.ProjectSib,
+		ScDown:         scope.Down,
+		ScNone:         scope.None,
+		ScProjectOwner: scope.ProjectOwner,
+		ScProcessOwner: scope.ProcessOwner,
+		ProjectView:    scope.ProjectView,
+		ProcessView:    scope.ProcessView,
 	})
 }
 
 func (r *PlanningRepository) ListTasksByProcessIDs(
 	ctx context.Context,
 	processIDs []int64,
+	userID int64,
+	scope rbac.ListScope,
 ) ([]sqlc.Task, error) {
-	return r.q(ctx).ListTasksByProcessIDs(ctx, processIDs)
+	return r.q(ctx).ListTasksByProcessIDs(ctx, sqlc.ListTasksByProcessIDsParams{
+		ProcessIds:     processIDs,
+		UserID:         userID,
+		ScAll:          scope.All,
+		ScSelf:         scope.Self,
+		ScParent:       scope.Parent,
+		ScAncestor:     scope.Ancestor,
+		ScSib:          scope.Sib,
+		ScProjectSib:   scope.ProjectSib,
+		ScDown:         scope.Down,
+		ScNone:         scope.None,
+		ScProjectOwner: scope.ProjectOwner,
+		ScProcessOwner: scope.ProcessOwner,
+		ProjectView:    scope.ProjectView,
+		ProcessView:    scope.ProcessView,
+	})
 }
 
 func (r *PlanningRepository) ListMilestonesByProcessIDs(
@@ -161,9 +188,10 @@ func (r *PlanningRepository) ListResources(
 	scope rbac.ListScope,
 ) ([]sqlc.Resource, error) {
 	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
-		UserID: userID,
-		ScAll:  scope.All,
-		ScSelf: scope.Self,
-		ScNone: scope.None,
+		UserID:             userID,
+		ScAll:              scope.All,
+		ScSelf:             scope.Self,
+		ScNone:             scope.None,
+		ScProjectResources: scope.ProjectResources,
 	})
 }

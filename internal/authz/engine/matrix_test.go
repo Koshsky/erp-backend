@@ -54,7 +54,7 @@ func TestAuthorize_Project(t *testing.T) {
 		{"vp cannot create", vp, engine.ActionCreate, rbac.Owners{}, uVP1, false},
 		// Update (all fields including priority are one action)
 		{"admin updates any", admin, engine.ActionUpdate, projectOfRP, uAdmin, true},
-		{"dp updates any", dp, engine.ActionUpdate, projectOfRP, uDP, true},
+		{"dp cannot edit metadata", dp, engine.ActionUpdate, projectOfRP, uDP, false},
 		{"rp updates own", rp, engine.ActionUpdate, projectOfRP, uRP, true},
 		{"rp updates foreign", rp, engine.ActionUpdate, projectOfRP, uVP1, false},
 		{"vp cannot update", vp, engine.ActionUpdate, projectOfRP, uVP1, false},
@@ -97,20 +97,20 @@ func TestAuthorize_Process(t *testing.T) {
 		{"rp sees own project's process", rp, engine.ActionView, processOfVP1, uRP, true},
 		{"rp does not see foreign process", rp, engine.ActionView, processOfVP1, uVP1, false},
 		{"vp sees own process", vp, engine.ActionView, processOfVP1, uVP1, true},
-		{"vp sees all processes", vp, engine.ActionView, processOfVP1, uVP2, true},
+		{"vp cannot see foreign process", vp, engine.ActionView, processOfVP1, uVP2, false},
 		{"worker sees none", worker, engine.ActionView, processOfVP1, uVP1, false},
 		// Create (in own project)
 		{"admin creates", admin, engine.ActionCreate, processOfVP1, uAdmin, true},
 		{"rp creates in own project", rp, engine.ActionCreate, processOfVP1, uRP, true},
 		{"rp cannot create in foreign project", rp, engine.ActionCreate, processOfVP1, uVP1, false},
-		{"vp cannot create", vp, engine.ActionCreate, processOfVP1, uVP1, false},
+		{"vp process create scope", vp, engine.ActionCreate, processOfVP1, uVP1, true},
 		{"dp cannot create", dp, engine.ActionCreate, processOfVP1, uDP, false},
 		// Update/delete
 		{"rp updates own project's process", rp, engine.ActionUpdate, processOfVP1, uRP, true},
-		{"vp cannot update process", vp, engine.ActionUpdate, processOfVP1, uVP1, false},
+		{"vp updates own process", vp, engine.ActionUpdate, processOfVP1, uVP1, true},
 		{"dp cannot update process", dp, engine.ActionUpdate, processOfVP1, uDP, false},
 		{"rp deletes own project's process", rp, engine.ActionDelete, processOfVP1, uRP, true},
-		{"vp cannot delete process", vp, engine.ActionDelete, processOfVP1, uVP1, false},
+		{"vp deletes own process", vp, engine.ActionDelete, processOfVP1, uVP1, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -161,11 +161,11 @@ func TestAuthorize_TaskMilestoneAssignment(t *testing.T) {
 					engine.ActionView,
 					processOfVP1,
 					uVP1,
-					true,
+					false,
 				},
 				{"rp — не совпал ни с одним владельцем", rp, engine.ActionView, processOfVP1, uVP2, false},
 				// ancestor = the whole ownership chain, including the row owner (self).
-				{"ancestor: владелец строки (self)", rp, engine.ActionView, rbac.Owners{Owner: uVP1}, uVP1, true},
+				{"row ownership alone is insufficient", rp, engine.ActionView, rbac.Owners{Owner: uVP1}, uVP1, false},
 				{"vp sees own process's", vp, engine.ActionView, processOfVP1, uVP1, true},
 				{"vp does not see foreign process's", vp, engine.ActionView, processOfVP1, uVP2, false},
 				{"worker sees none", worker, engine.ActionView, processOfVP1, uVP1, false},
@@ -173,16 +173,16 @@ func TestAuthorize_TaskMilestoneAssignment(t *testing.T) {
 				{"admin creates", admin, engine.ActionCreate, processOfVP1, uAdmin, true},
 				{"vp creates in own process", vp, engine.ActionCreate, processOfVP1, uVP1, true},
 				{"vp cannot create in foreign process", vp, engine.ActionCreate, processOfVP1, uVP2, false},
-				{"rp cannot create", rp, engine.ActionCreate, processOfVP1, uRP, false},
+				{"rp creates in own project", rp, engine.ActionCreate, processOfVP1, uRP, true},
 				{"dp cannot create", dp, engine.ActionCreate, processOfVP1, uDP, false},
 				// Update/delete
 				{"admin updates", admin, engine.ActionUpdate, processOfVP1, uAdmin, true},
 				{"vp updates own process's", vp, engine.ActionUpdate, processOfVP1, uVP1, true},
-				{"rp cannot update (view only)", rp, engine.ActionUpdate, processOfVP1, uRP, false},
+				{"rp updates own project contents", rp, engine.ActionUpdate, processOfVP1, uRP, true},
 				{"dp cannot update", dp, engine.ActionUpdate, processOfVP1, uDP, false},
 				{"admin deletes", admin, engine.ActionDelete, processOfVP1, uAdmin, true},
 				{"vp deletes own process's", vp, engine.ActionDelete, processOfVP1, uVP1, true},
-				{"rp cannot delete (view only)", rp, engine.ActionDelete, processOfVP1, uRP, false},
+				{"rp deletes own project contents", rp, engine.ActionDelete, processOfVP1, uRP, true},
 			}
 			for _, tc := range cases {
 				t.Run(tc.name, func(t *testing.T) {
@@ -242,11 +242,11 @@ func TestCan(t *testing.T) {
 		act  engine.Action
 		want bool
 	}{
-		{rp, rbac.ResourceTask, engine.ActionUpdate, false},    // rp does not change tasks
+		{rp, rbac.ResourceTask, engine.ActionUpdate, true},     // RP manages project contents
 		{vp, rbac.ResourceTask, engine.ActionUpdate, true},     // vp changes tasks of own processes
 		{rp, rbac.ResourceProcess, engine.ActionCreate, true},  // rp creates processes
-		{vp, rbac.ResourceProcess, engine.ActionCreate, false}, // vp does not create processes
-		{dp, rbac.ResourceProject, engine.ActionUpdate, true},  // dp edits projects
+		{vp, rbac.ResourceProcess, engine.ActionCreate, true},  // VP creates own processes in visible projects
+		{dp, rbac.ResourceProject, engine.ActionUpdate, false}, // DP only changes priorities
 		{vp, rbac.ResourceProject, engine.ActionUpdate, false}, // vp does not edit projects
 		{worker, rbac.ResourceTask, engine.ActionView, false},  // worker sees nothing
 	}
@@ -301,7 +301,7 @@ func TestAuthorize_Timesheet(t *testing.T) {
 			false,
 		},
 		{"rp does not view resources", rbac.ResourceResource, engine.ActionView, rp, resourceOfVP, uRP, false},
-		{"dp does not view resources", rbac.ResourceResource, engine.ActionView, dp, resourceOfVP, uDP, false},
+		{"dp views resources", rbac.ResourceResource, engine.ActionView, dp, resourceOfVP, uDP, true},
 		{"vp creates own resource", rbac.ResourceResource, engine.ActionCreate, vp, resourceOfVP, uVP1, true},
 		{
 			"vp cannot create resource for another",
@@ -389,10 +389,10 @@ func TestViewScopeCode(t *testing.T) {
 	}{
 		{"rp project view = own (self)", rp, rbac.ResourceProject, "self"},
 		{"dp project view = all", dp, rbac.ResourceProject, "all"},
-		{"rp process view = parent (up1)", rp, rbac.ResourceProcess, "up1"},
-		{"vp process view = all", vp, rbac.ResourceProcess, "all"},
-		{"vp task view = parent (up1)", vp, rbac.ResourceTask, "up1"},
-		{"rp task view = ancestor (up)", rp, rbac.ResourceTask, "up"},
+		{"rp process view = parent (up1)", rp, rbac.ResourceProcess, "project_owner"},
+		{"vp process view = all", vp, rbac.ResourceProcess, "process_owner"},
+		{"vp task view = parent (up1)", vp, rbac.ResourceTask, "process_owner"},
+		{"rp task view = ancestor (up)", rp, rbac.ResourceTask, "project_owner"},
 		{"dp task view = all", dp, rbac.ResourceTask, "all"},
 		{"vp resource view = own (self)", vp, rbac.ResourceResource, "self"},
 		{"worker task view = none", worker, rbac.ResourceTask, ""},

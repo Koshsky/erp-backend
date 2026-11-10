@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
@@ -102,6 +103,13 @@ func (rc *CheckCtx) BodyID(key string) (int64, error) {
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal(rc.body, &obj); err != nil {
 		return 0, errors.BadRequest("invalid request body")
+	}
+	// The handler's JSON decoder matches tags case-insensitively; rejecting aliases
+	// keeps authorization from overlooking an owner or parent change.
+	for field := range obj {
+		if strings.EqualFold(field, key) && field != key {
+			return 0, errors.BadRequest("invalid request body")
+		}
 	}
 	raw, ok := obj[key]
 	if !ok || len(raw) == 0 || string(raw) == "null" {

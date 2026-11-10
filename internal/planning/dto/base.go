@@ -14,6 +14,8 @@ type Project struct {
 }
 
 type Process struct {
+	ProjectOwnerID *int64 `json:"project_owner_id" example:"1"`
+
 	ID            int64     `json:"id"              example:"1"`
 	Title         string    `json:"title"           example:"Инсталляция"`
 	Color         *string   `json:"color"           example:"#0f83c4"`

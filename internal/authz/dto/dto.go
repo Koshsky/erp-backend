@@ -75,9 +75,10 @@ type ExplainResult struct {
 // Permission — a caller's principal right: an action on a resource is allowed
 // (the scope from the matrix; the frontend derives the ownership zone from it).
 type Permission struct {
-	Resource string `json:"resource" example:"project"`
-	Action   string `json:"action"   example:"create"`
-	Scope    string `json:"scope"    example:"own"`
+	Inherited bool   `json:"inherited,omitempty"`
+	Resource  string `json:"resource"            example:"project"`
+	Action    string `json:"action"              example:"create"`
+	Scope     string `json:"scope"               example:"own"`
 }
 
 // PermissionOverride — a per-user permission cell of the editor: an explicit

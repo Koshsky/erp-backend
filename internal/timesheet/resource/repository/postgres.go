@@ -106,13 +106,14 @@ func (r *ResourceRepository) ListResources(
 	limit, offset int,
 ) ([]sqlc.ListResourcesRow, error) {
 	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
-		ScAll:      scope.All,
-		ScSelf:     scope.Self,
-		ScNone:     scope.None,
-		UserID:     userID,
-		OwnerID:    ownerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		ScAll:              scope.All,
+		ScSelf:             scope.Self,
+		ScNone:             scope.None,
+		UserID:             userID,
+		OwnerID:            ownerID,
+		PageLimit:          int64(limit),
+		PageOffset:         int64(offset),
+		ScProjectResources: scope.ProjectResources,
 	})
 }
 
@@ -125,11 +126,12 @@ func (r *ResourceRepository) CountResources(
 	return r.q(ctx).CountResources(
 		ctx,
 		sqlc.CountResourcesParams{
-			ScAll:   scope.All,
-			ScSelf:  scope.Self,
-			ScNone:  scope.None,
-			UserID:  userID,
-			OwnerID: ownerID,
+			ScAll:              scope.All,
+			ScSelf:             scope.Self,
+			ScNone:             scope.None,
+			UserID:             userID,
+			OwnerID:            ownerID,
+			ScProjectResources: scope.ProjectResources,
 		},
 	)
 }

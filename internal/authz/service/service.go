@@ -91,7 +91,7 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, update
 	if !ok {
 		return errors.BadRequest("неизвестный ресурс " + in.Resource)
 	}
-	if _, okAction := engine.ParseAction(in.Action); !okAction {
+	if action, okAction := engine.ParseAction(in.Action); !okAction || !engine.ActionApplicable(res, action) {
 		return errors.BadRequest("неизвестное действие " + in.Action)
 	}
 	scope, ok := engine.ParseScope(in.Scope)
@@ -236,7 +236,10 @@ func buildMatrixCells(tags []string, matrix engine.Matrix) []dto.MatrixCell {
 	cells := make([]dto.MatrixCell, 0, len(tags)*resourceCount*actionCount)
 	for _, preset := range tags {
 		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
-			for act := engine.ActionView; act <= engine.ActionDelete; act++ {
+			for act := engine.ActionView; act <= engine.ActionPrioritize; act++ {
+				if !engine.ActionApplicable(res, act) {
+					continue
+				}
 				cells = append(cells, dto.MatrixCell{
 					Preset:   preset,
 					Resource: engine.ResourceName(res),
@@ -321,12 +324,20 @@ func presetExists(presets []sqlc.ListActivePresetsRow, tag string) bool {
 func (s *Service) MyPermissions(_ context.Context, user userctx.UserContext) []dto.Permission {
 	out := []dto.Permission{}
 	for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
-		for act := engine.ActionView; act <= engine.ActionDelete; act++ {
+		for act := engine.ActionView; act <= engine.ActionPrioritize; act++ {
+			if !engine.ActionApplicable(res, act) {
+				continue
+			}
 			scope := engine.ScopeForUser(user, res, act)
+			inherited := act == engine.ActionView && engine.HasViewAncestor(user, res)
+			if scope == engine.ScopeNone && inherited {
+				scope = "inherited"
+			}
 			if scope == engine.ScopeNone {
 				continue
 			}
 			out = append(out, dto.Permission{
+				Inherited: inherited,
 				Resource: engine.ResourceName(res),
 				Action:   engine.ActionName(act),
 				Scope:    engine.ScopeName(scope),
@@ -399,7 +410,7 @@ func (s *Service) ReplaceUserPermissions(
 		if !ok {
 			return errors.BadRequest("неизвестный ресурс " + o.Resource)
 		}
-		if _, okAction := engine.ParseAction(o.Action); !okAction {
+		if action, okAction := engine.ParseAction(o.Action); !okAction || !engine.ActionApplicable(res, action) {
 			return errors.BadRequest("неизвестное действие " + o.Action)
 		}
 		key := o.Resource + "/" + o.Action

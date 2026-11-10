@@ -17,7 +17,7 @@ func TestBuildMatrixCells(t *testing.T) {
 	tags := []string{userdomain.PresetAdmin, "dp", "rp", "vp", "worker"}
 	cells := buildMatrixCells(tags, engine.DefaultMatrix())
 
-	if want := len(tags) * resourceCount * actionCount; len(cells) != want {
+	if want := len(tags) * (resourceCount*actionCount + 1); len(cells) != want {
 		t.Fatalf("ячеек %d, ожидалось %d", len(cells), want)
 	}
 	byKey := make(map[string]string, len(cells))
@@ -32,7 +32,7 @@ func TestBuildMatrixCells(t *testing.T) {
 		{userdomain.PresetAdmin, "audit", "delete", engine.ScopeAll},
 		{"dp", "project", "view", engine.ScopeAll},
 		{"rp", "project", "view", engine.ScopeOwn},
-		{"rp", "process", "view", engine.ScopeParent},
+		{"rp", "process", "view", engine.ScopeProjectOwner},
 		{"vp", "resource", "update", engine.ScopeOwn},
 		{"worker", "project", "view", engine.ScopeNoneCode},
 		{"worker", "audit", "delete", engine.ScopeNoneCode},
