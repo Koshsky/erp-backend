@@ -235,7 +235,7 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 func buildMatrixCells(tags []string, matrix engine.Matrix) []dto.MatrixCell {
 	cells := make([]dto.MatrixCell, 0, len(tags)*resourceCount*actionCount)
 	for _, preset := range tags {
-		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
+		for res := rbac.ResourceProject; res <= rbac.ResourceAutoCreate; res++ {
 			for act := engine.ActionView; act <= engine.ActionPrioritize; act++ {
 				if !engine.ActionApplicable(res, act) {
 					continue
@@ -253,9 +253,9 @@ func buildMatrixCells(tags []string, matrix engine.Matrix) []dto.MatrixCell {
 }
 
 // resourceCount and actionCount size the matrix payload (the engine enums are
-// contiguous: rbac.ResourceProject..ResourceAudit, ActionView..ActionDelete).
+// contiguous: rbac.ResourceProject..ResourceAutoCreate, ActionView..ActionPrioritize).
 const (
-	resourceCount = int(rbac.ResourceAudit) + 1
+	resourceCount = int(rbac.ResourceAutoCreate) + 1
 	actionCount   = int(engine.ActionDelete) + 1
 )
 
@@ -323,7 +323,7 @@ func presetExists(presets []sqlc.ListActivePresetsRow, tag string) bool {
 // data-level matrix (CurrentMatrix) is only for the admin editor views.
 func (s *Service) MyPermissions(_ context.Context, user userctx.UserContext) []dto.Permission {
 	out := []dto.Permission{}
-	for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
+	for res := rbac.ResourceProject; res <= rbac.ResourceAutoCreate; res++ {
 		for act := engine.ActionView; act <= engine.ActionPrioritize; act++ {
 			if !engine.ActionApplicable(res, act) {
 				continue

@@ -115,7 +115,7 @@ func ownerOf(res rbac.Resource, o rbac.Owners) int64 {
 	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
 		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return 0
 	}
 	return 0
@@ -130,7 +130,7 @@ func parentOf(res rbac.Resource, o rbac.Owners) int64 {
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment, rbac.ResourceUserCatalog,
 		rbac.ResourceRBACConfig, rbac.ResourceUserAdmin, rbac.ResourceStateAdmin,
-		rbac.ResourceOrgStructure, rbac.ResourceAudit:
+		rbac.ResourceOrgStructure, rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return 0
 	}
 	return 0

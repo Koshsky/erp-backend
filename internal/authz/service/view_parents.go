@@ -75,7 +75,7 @@ func viewParentSubject(res rbac.Resource) string {
 		rbac.ResourceUserAdmin,
 		rbac.ResourceStateAdmin,
 		rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return ""
 	}
 	return ""

@@ -279,7 +279,7 @@ func ownField(res rbac.Resource, owners rbac.Owners) int64 {
 	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
 		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return 0
 	}
 	return 0
@@ -297,7 +297,7 @@ func parentField(res rbac.Resource, owners rbac.Owners) int64 {
 		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return 0
 	}
 	return 0
@@ -319,7 +319,7 @@ func ancestorMatch(res rbac.Resource, owners rbac.Owners, userID int64) bool {
 		rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return false
 	}
 	return false
@@ -452,7 +452,7 @@ func viewAncestors(res rbac.Resource) []rbac.Resource {
 		rbac.ResourceUserAdmin,
 		rbac.ResourceStateAdmin,
 		rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return nil
 	}
 	return nil

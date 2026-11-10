@@ -10,6 +10,9 @@ func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup, changePasswordGuar
 	// - /user/{id}/days — employee timesheet.
 	r := router.Group("/user")
 	{
+		r.GET("/accounts", h.mw.Check("user.accounts"), h.ListAccounts)
+		r.GET("/accounts/:id", h.mw.Check("user.accounts"), h.FindAccount)
+		r.GET("/structure", h.mw.Check("user.structure"), h.ListStructure)
 		r.GET("/all", h.mw.Check("user.picker"), h.ListAllUsers)
 		// CRUD collection. An employee IS a system user (the users table), so
 		// profile mutations are gated by the user-admin rights (user_admin.*,

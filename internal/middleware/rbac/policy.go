@@ -24,8 +24,7 @@ const (
 	// ResourceUserCatalog is a virtual resource: the user catalog (pickers).
 	// No owner chain; access is decided by the matrix only.
 	ResourceUserCatalog
-	// ResourceRBACConfig is a virtual resource: auto-create and RBAC admin
-	// configuration (admin only, bypass).
+	// ResourceRBACConfig controls permission administration.
 	ResourceRBACConfig
 
 	// ResourceUserAdmin is a virtual resource: the users admin section
@@ -38,6 +37,8 @@ const (
 	// ResourceAudit is a virtual resource: the audit-log admin section
 	// (page guard), admin only (bypass).
 	ResourceAudit
+	// ResourceAutoCreate controls the new-project template independently of RBAC.
+	ResourceAutoCreate
 )
 
 // Owners is an entity's chain of owners: the project owner and the process owner.

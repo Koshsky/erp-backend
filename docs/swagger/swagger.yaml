@@ -1174,6 +1174,25 @@ definitions:
         example: Отпуск
         type: string
     type: object
+  dto.StructureUserResponse:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      manager_id:
+        type: integer
+      middle_name:
+        type: string
+      name:
+        type: string
+      position:
+        type: string
+      preset:
+        type: string
+    type: object
   dto.TaskDependency:
     properties:
       depends_on_task_id:
@@ -5437,6 +5456,86 @@ paths:
       summary: Reset user password
       tags:
       - Users
+  /user/accounts:
+    get:
+      parameters:
+      - description: Page size (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Role filter
+        in: query
+        name: preset
+        type: string
+      - description: Manager filter
+        in: query
+        name: manager_id
+        type: integer
+      - description: Include hashes (administrator only)
+        in: query
+        name: include_hash
+        type: boolean
+      - description: Name or login filter
+        in: query
+        name: search
+        type: string
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.Page'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/dto.AdminUserResponse'
+                        type: array
+                    type: object
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List account directory
+      tags:
+      - Users
+  /user/accounts/{id}:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get account profile
+      tags:
+      - Users
   /user/all:
     get:
       description: Returns all users in the system
@@ -5584,6 +5683,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Batch list worker days
+      tags:
+      - Users
+  /user/structure:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.StructureUserResponse'
+                  type: array
+                error:
+                  type: object
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List company structure
       tags:
       - Users
 schemes:

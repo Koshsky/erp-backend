@@ -85,7 +85,7 @@ func (p *OwnerProbe) descendant(ctx context.Context, res rbac.Resource, id, user
 	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
 		rbac.ResourceResource, rbac.ResourceWorker, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig, rbac.ResourceUserAdmin,
-		rbac.ResourceStateAdmin, rbac.ResourceOrgStructure, rbac.ResourceAudit:
+		rbac.ResourceStateAdmin, rbac.ResourceOrgStructure, rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return false, nil
 	}
 	return false, nil
@@ -118,7 +118,7 @@ func (p *OwnerProbe) peer(ctx context.Context, target engine.Target, userID int6
 		rbac.ResourceState, rbac.ResourceResource, rbac.ResourceWorker,
 		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return false, nil
 	}
 	return false, nil

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/authz/engine"
 	"github.com/Koshsky/erp-backend/internal/authz/repository/sqlc"
+	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	userdomain "github.com/Koshsky/erp-backend/internal/user/domain"
 )
 
@@ -17,7 +18,15 @@ func TestBuildMatrixCells(t *testing.T) {
 	tags := []string{userdomain.PresetAdmin, "dp", "rp", "vp", "worker"}
 	cells := buildMatrixCells(tags, engine.DefaultMatrix())
 
-	if want := len(tags) * (resourceCount*actionCount + 1); len(cells) != want {
+	applicable := 0
+	for res := rbac.ResourceProject; res <= rbac.ResourceAutoCreate; res++ {
+		for act := engine.ActionView; act <= engine.ActionPrioritize; act++ {
+			if engine.ActionApplicable(res, act) {
+				applicable++
+			}
+		}
+	}
+	if want := len(tags) * applicable; len(cells) != want {
 		t.Fatalf("ячеек %d, ожидалось %d", len(cells), want)
 	}
 	byKey := make(map[string]string, len(cells))
@@ -29,13 +38,13 @@ func TestBuildMatrixCells(t *testing.T) {
 	}
 	cases := []struct{ preset, resource, action, want string }{
 		{userdomain.PresetAdmin, "project", "view", engine.ScopeAll},
-		{userdomain.PresetAdmin, "audit", "delete", engine.ScopeAll},
+		{userdomain.PresetAdmin, "audit", "view", engine.ScopeAll},
 		{"dp", "project", "view", engine.ScopeAll},
 		{"rp", "project", "view", engine.ScopeOwn},
 		{"rp", "process", "view", engine.ScopeProjectOwner},
 		{"vp", "resource", "update", engine.ScopeOwn},
 		{"worker", "project", "view", engine.ScopeNoneCode},
-		{"worker", "audit", "delete", engine.ScopeNoneCode},
+		{"worker", "audit", "view", engine.ScopeNoneCode},
 	}
 	for _, tc := range cases {
 		key := tc.preset + "|" + tc.resource + "|" + tc.action

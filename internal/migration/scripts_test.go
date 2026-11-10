@@ -30,6 +30,7 @@ func TestCoreMatchesDeployedFlywayChecksums(t *testing.T) {
 		273017071,
 		-182932096,
 		-1070811757,
+		-1043891658,
 	}
 	if len(scripts) != len(want) {
 		t.Fatalf("got %d core scripts, want %d", len(scripts), len(want))

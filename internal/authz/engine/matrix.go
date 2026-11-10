@@ -61,6 +61,7 @@ const (
 	resStateAdmin   = "state_admin"
 	resOrgStructure = "org_structure"
 	resAudit        = "audit"
+	resAutoCreate   = "auto_create"
 )
 
 // String action codes.
@@ -186,7 +187,25 @@ func newDefaultMatrix() Matrix {
 
 // ActionApplicable keeps the priority-only capability on projects.
 func ActionApplicable(res rbac.Resource, action Action) bool {
-	return action != ActionPrioritize || res == rbac.ResourceProject
+	if action == ActionPrioritize {
+		return res == rbac.ResourceProject
+	}
+	switch res {
+	case rbac.ResourceStateAdmin:
+		return false
+	case rbac.ResourceRBACConfig:
+		return action == ActionUpdate
+	case rbac.ResourceAutoCreate:
+		return action == ActionView || action == ActionUpdate
+	case rbac.ResourceUserCatalog, rbac.ResourceOrgStructure, rbac.ResourceAudit:
+		return action == ActionView
+	case rbac.ResourceProject, rbac.ResourceProcess, rbac.ResourceTask, rbac.ResourceMilestone,
+		rbac.ResourceAssignment, rbac.ResourceState, rbac.ResourceResource, rbac.ResourceWorker,
+		rbac.ResourceComment, rbac.ResourceUserAdmin:
+		return true
+	default:
+		return false
+	}
 }
 
 // DefaultMatrix returns the built-in default matrix (a copy).
@@ -264,6 +283,7 @@ var resourceNames = map[rbac.Resource]string{
 	rbac.ResourceStateAdmin:   resStateAdmin,
 	rbac.ResourceOrgStructure: resOrgStructure,
 	rbac.ResourceAudit:        resAudit,
+	rbac.ResourceAutoCreate:   resAutoCreate,
 }
 
 //nolint:gochecknoglobals // action codex

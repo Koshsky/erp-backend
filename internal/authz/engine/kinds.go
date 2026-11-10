@@ -43,16 +43,18 @@ type KindInfo struct {
 
 // Route policy kind codes.
 const (
-	kindList         = "list"
-	kindEntity       = "entity"
-	kindCreate       = "create"
-	kindOwnerMatch   = "owner_match"
-	kindAuthorOr     = "author_or"
-	kindParentAction = "parent_action"
+	kindAnyCapability = "any_capability"
+	kindList          = "list"
+	kindEntity        = "entity"
+	kindCreate        = "create"
+	kindOwnerMatch    = "owner_match"
+	kindAuthorOr      = "author_or"
+	kindParentAction  = "parent_action"
 )
 
 // Kind parameter keys (JSONB).
 const (
+	paramPermissions     = "permissions"
 	paramResource        = "resource"
 	paramQueryKey        = "query_key"
 	paramAction          = "action"
@@ -98,16 +100,18 @@ const (
 
 //nolint:gochecknoglobals // kind registry (mechanisms; static)
 var kindRegistry = map[string]KindBuilder{
-	kindList:         buildList,
-	kindEntity:       buildEntity,
-	kindCreate:       buildCreate,
-	kindOwnerMatch:   buildOwnerMatch,
-	kindAuthorOr:     buildAuthorOr,
-	kindParentAction: buildParentAction,
+	kindAnyCapability: buildAnyCapability,
+	kindList:          buildList,
+	kindEntity:        buildEntity,
+	kindCreate:        buildCreate,
+	kindOwnerMatch:    buildOwnerMatch,
+	kindAuthorOr:      buildAuthorOr,
+	kindParentAction:  buildParentAction,
 }
 
 //nolint:gochecknoglobals // kind parameter schemas (mirror the builders)
 var kindParamSchemas = map[string][]ParamInfo{
+	kindAnyCapability: {{Key: paramPermissions, Type: paramTypeStringList, Required: true}},
 	kindList: {
 		{Key: paramResource, Type: paramTypeString, Required: true},
 		{Key: paramQueryKey, Type: paramTypeString, Required: true},
@@ -371,7 +375,7 @@ func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
 		rbac.ResourceAssignment, rbac.ResourceState, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return nil, false
 	}
 	return nil, false
@@ -739,7 +743,7 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 			rbac.ResourceState, rbac.ResourceResource, rbac.ResourceWorker,
 			rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 			rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-			rbac.ResourceAudit:
+			rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		}
 		if err != nil {
 			return err
@@ -1101,19 +1105,26 @@ var defaultRouteSpecs = []RouteSpec{
 		Params: map[string]any{paramResource: resTask, paramQueryKey: bodyKeyOwnerID},
 	},
 	{
-		Name:   "autocreate.list",
-		Kind:   kindEntity,
-		Params: map[string]any{paramResource: resRBACConfig, paramAction: actView, paramOwner: ownerModeNone},
+		Name: "autocreate.list", Kind: kindAnyCapability,
+		Params: map[string]any{paramPermissions: []string{"auto_create/view", "auto_create/update"}},
 	},
 	{
 		Name:   "autocreate.update",
 		Kind:   kindEntity,
-		Params: map[string]any{paramResource: resRBACConfig, paramAction: actUpdate, paramOwner: ownerModeNone},
+		Params: map[string]any{paramResource: resAutoCreate, paramAction: actUpdate, paramOwner: ownerModeNone},
 	},
 	{
 		Name:   "rbac.manage",
 		Kind:   kindEntity,
-		Params: map[string]any{paramResource: resRBACConfig, paramAction: actView, paramOwner: ownerModeNone},
+		Params: map[string]any{paramResource: resRBACConfig, paramAction: actUpdate, paramOwner: ownerModeNone},
+	},
+	{
+		Name: "user.accounts", Kind: kindAnyCapability,
+		Params: map[string]any{paramPermissions: []string{"user_admin/view", "rbac_config/update"}},
+	},
+	{
+		Name: "user.structure", Kind: kindEntity,
+		Params: map[string]any{paramResource: resOrgStructure, paramAction: actView, paramOwner: ownerModeNone},
 	},
 	// Audit-log admin section: virtual resource, admin only (bypass). No rows
 	// in the matrix — the page and the /audit/* routes are admin-only.
@@ -1133,7 +1144,7 @@ func DefaultRouteSpecs() []RouteSpec {
 // Kinds returns the catalog of kinds and their parameters.
 func Kinds() []KindInfo {
 	infos := make([]KindInfo, 0, len(kindRegistry))
-	for _, name := range []string{kindList, kindEntity, kindCreate, kindOwnerMatch, kindAuthorOr, kindParentAction} {
+	for _, name := range []string{kindList, kindEntity, kindCreate, kindOwnerMatch, kindAuthorOr, kindParentAction, kindAnyCapability} {
 		infos = append(infos, KindInfo{Name: name, Params: kindParamSchemas[name]})
 	}
 	return infos
