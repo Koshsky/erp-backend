@@ -12,6 +12,7 @@ type ProjectRepository interface {
 	CreateProject(
 		ctx context.Context,
 		ownerID *int64,
+		responsibleID *int64,
 		code string,
 		color *string,
 		startDate, endDate date.Date,

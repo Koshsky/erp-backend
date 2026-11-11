@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/order"
 	"github.com/Koshsky/erp-backend/internal/project_mgmt/task/domain"
@@ -54,14 +56,15 @@ func (s *TaskService) CreateTask(ctx context.Context, req dto.CreateTaskRequest)
 	}
 
 	task := sqlc.Task{
-		ProcessID: req.ProcessID,
-		ParentID:  nullable.ToInt8(req.ParentID),
-		OwnerID:   nullable.ToInt8(req.OwnerID),
-		Title:     req.Title,
-		Color:     nullable.ToString(req.Color),
-		Status:    status,
-		StartDate: dateFromPtr(req.StartDate),
-		EndDate:   dateFromPtr(req.EndDate),
+		ProcessID:     req.ProcessID,
+		ParentID:      nullable.ToInt8(req.ParentID),
+		OwnerID:       nullable.ToInt8(req.OwnerID),
+		ResponsibleID: nullable.ToInt8(req.ResponsibleID),
+		Title:         req.Title,
+		Color:         nullable.ToString(req.Color),
+		Status:        status,
+		StartDate:     dateFromPtr(req.StartDate),
+		EndDate:       dateFromPtr(req.EndDate),
 	}
 	if err := s.validator.ValidateTask(
 		task.ProcessID,
@@ -120,7 +123,9 @@ func (s *TaskService) applyParent(ctx context.Context, task *sqlc.Task, parentID
 	if parent.ParentID.Valid {
 		return errors.NewValidationError("подзадача не может иметь собственные подзадачи")
 	}
-	task.ProcessID = parent.ProcessID
+	if task.ProcessID != parent.ProcessID {
+		return errors.NewFieldError("process_id", "parent_mismatch", "subtask process must match parent task process")
+	}
 	task.StartDate = parent.StartDate
 	task.EndDate = parent.EndDate
 	return nil
@@ -154,6 +159,14 @@ func (s *TaskService) UpdateTask(ctx context.Context, id int64, req dto.UpdateTa
 
 	if req.OwnerID != nil {
 		task.OwnerID = nullable.ToInt8(req.OwnerID)
+	}
+	if req.ResponsibleID != nil {
+		// 0 is the "clear" sentinel (never a valid user id) — reset to NULL.
+		if *req.ResponsibleID == 0 {
+			task.ResponsibleID = pgtype.Int8{}
+		} else {
+			task.ResponsibleID = nullable.ToInt8(req.ResponsibleID)
+		}
 	}
 	if req.Title != nil {
 		task.Title = *req.Title

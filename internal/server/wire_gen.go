@@ -178,7 +178,7 @@ func InitializeApp() (*App, error) {
 	auditHandler := delivery16.NewAuditHandler(slogLogger, client, middleware)
 	auditModule := audit.ProvideModule(auditHandler, auditConfig)
 	v2 := ProvideModules(module, userModule, planningModule, projectmgmtModule, timesheetModule, autocreateModule, authzModule, auditModule)
-	app, err := New(configConfig, slogLogger, pool, authMiddleware, profilerProfiler, tracer, idempotencyMiddleware, auditMiddleware, policyStore, redisClient, provider, v2)
+	app, err := New(configConfig, slogLogger, pool, authMiddleware, profilerProfiler, tracer, idempotencyMiddleware, auditMiddleware, policyStore, userService, redisClient, provider, v2)
 	if err != nil {
 		return nil, err
 	}

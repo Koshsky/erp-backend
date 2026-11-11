@@ -46,15 +46,17 @@ func (r *ProcessRepository) CreateProcess(
 	title string,
 	color *string,
 	ownerID *int64,
+	responsibleID *int64,
 	startDate, endDate date.Date,
 ) (*sqlc.Process, error) {
 	row, err := r.q(ctx).CreateProcess(ctx, sqlc.CreateProcessParams{
-		ProjectID: projectID,
-		Title:     title,
-		Color:     nullable.ToString(color),
-		StartDate: startDate,
-		EndDate:   endDate,
-		OwnerID:   nullable.ToInt8(ownerID),
+		ProjectID:     projectID,
+		Title:         title,
+		Color:         nullable.ToString(color),
+		StartDate:     startDate,
+		EndDate:       endDate,
+		OwnerID:       nullable.ToInt8(ownerID),
+		ResponsibleID: nullable.ToInt8(responsibleID),
 	})
 	if err != nil {
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
@@ -74,13 +76,14 @@ func (r *ProcessRepository) FindProcess(ctx context.Context, id int64) (*sqlc.Pr
 
 func (r *ProcessRepository) UpdateProcess(ctx context.Context, process sqlc.Process) (*sqlc.Process, error) {
 	row, err := r.q(ctx).UpdateProcess(ctx, sqlc.UpdateProcessParams{
-		ProcessID: process.ID,
-		OwnerID:   process.OwnerID,
-		ProjectID: process.ProjectID,
-		Title:     process.Title,
-		Color:     process.Color,
-		StartDate: process.StartDate,
-		EndDate:   process.EndDate,
+		ProcessID:     process.ID,
+		OwnerID:       process.OwnerID,
+		ResponsibleID: process.ResponsibleID,
+		ProjectID:     process.ProjectID,
+		Title:         process.Title,
+		Color:         process.Color,
+		StartDate:     process.StartDate,
+		EndDate:       process.EndDate,
 	})
 	if err != nil {
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
@@ -101,37 +104,44 @@ func (r *ProcessRepository) ListProcesss(
 	limit, offset int,
 ) ([]sqlc.Process, error) {
 	return r.q(ctx).ListProcesss(ctx, sqlc.ListProcesssParams{
-		ScAll:      scope.All,
-		ScSelf:     scope.Self,
-		UserID:     userID,
-		ScParent:   scope.Parent,
-		ScAncestor: scope.Ancestor,
-		ScSib:      scope.Sib,
-		ScDown:     scope.Down,
-		ScNone:     scope.None,
-		OwnerID:    ownerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		ScAll:          scope.All,
+		ScSelf:         scope.Self,
+		UserID:         userID,
+		ScParent:       scope.Parent,
+		ScAncestor:     scope.Ancestor,
+		ScSib:          scope.Sib,
+		ScDown:         scope.Down,
+		ScNone:         scope.None,
+		OwnerID:        ownerID,
+		PageLimit:      int64(limit),
+		PageOffset:     int64(offset),
+		ScProjectOwner: scope.ProjectOwner,
+		ScProcessOwner: scope.ProcessOwner,
+		ProjectView:    scope.ProjectView,
 	})
 }
 
 func (r *ProcessRepository) CountProcesses(
 	ctx context.Context,
-	_ int64,
+	userID int64,
 	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountProcesses(
 		ctx,
 		sqlc.CountProcessesParams{
-			ScAll:      scope.All,
-			ScSelf:     scope.Self,
-			ScParent:   scope.Parent,
-			ScAncestor: scope.Ancestor,
-			ScSib:      scope.Sib,
-			ScDown:     scope.Down,
-			ScNone:     scope.None,
-			OwnerID:    ownerID,
+			UserID:         userID,
+			ScAll:          scope.All,
+			ScSelf:         scope.Self,
+			ScParent:       scope.Parent,
+			ScAncestor:     scope.Ancestor,
+			ScSib:          scope.Sib,
+			ScDown:         scope.Down,
+			ScNone:         scope.None,
+			OwnerID:        ownerID,
+			ScProjectOwner: scope.ProjectOwner,
+			ScProcessOwner: scope.ProcessOwner,
+			ProjectView:    scope.ProjectView,
 		},
 	)
 }

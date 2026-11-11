@@ -42,18 +42,20 @@ func (r *ProjectRepository) q(ctx context.Context) *sqlc.Queries {
 func (r *ProjectRepository) CreateProject(
 	ctx context.Context,
 	ownerID *int64,
+	responsibleID *int64,
 	code string,
 	color *string,
 	startDate, endDate date.Date,
 	priority int,
 ) (*sqlc.Project, error) {
 	created, err := r.q(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
-		Code:      code,
-		OwnerID:   nullable.ToInt8(ownerID),
-		Color:     nullable.ToString(color),
-		StartDate: startDate,
-		EndDate:   endDate,
-		Priority:  int64(priority),
+		Code:          code,
+		OwnerID:       nullable.ToInt8(ownerID),
+		ResponsibleID: nullable.ToInt8(responsibleID),
+		Color:         nullable.ToString(color),
+		StartDate:     startDate,
+		EndDate:       endDate,
+		Priority:      int64(priority),
 	})
 	if err != nil {
 		// Idempotent create: the active code already exists (ON CONFLICT inserted
@@ -82,13 +84,14 @@ func (r *ProjectRepository) UpdateProject(
 	priority int,
 ) (*sqlc.Project, error) {
 	updated, err := r.q(ctx).UpdateProject(ctx, sqlc.UpdateProjectParams{
-		ProjectID: project.ID,
-		OwnerID:   project.OwnerID,
-		Code:      project.Code,
-		Color:     project.Color,
-		Priority:  int64(priority),
-		StartDate: project.StartDate,
-		EndDate:   project.EndDate,
+		ProjectID:     project.ID,
+		OwnerID:       project.OwnerID,
+		ResponsibleID: project.ResponsibleID,
+		Code:          project.Code,
+		Color:         project.Color,
+		Priority:      int64(priority),
+		StartDate:     project.StartDate,
+		EndDate:       project.EndDate,
 	})
 	if err != nil {
 		return nil, err
@@ -109,31 +112,34 @@ func (r *ProjectRepository) ListProjects(
 	limit, offset int,
 ) ([]sqlc.Project, error) {
 	return r.q(ctx).ListProjects(ctx, sqlc.ListProjectsParams{
-		ScAll:      scope.All,
-		ScSelf:     scope.Self,
-		UserID:     userID,
-		ScDown:     scope.Down,
-		ScNone:     scope.None,
-		OwnerID:    ownerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		ScAll:             scope.All,
+		ScSelf:            scope.Self,
+		UserID:            userID,
+		ScDown:            scope.Down,
+		ScNone:            scope.None,
+		OwnerID:           ownerID,
+		PageLimit:         int64(limit),
+		PageOffset:        int64(offset),
+		ScProcessProjects: scope.ProcessProjects,
 	})
 }
 
 func (r *ProjectRepository) CountProjects(
 	ctx context.Context,
-	_ int64,
+	userID int64,
 	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountProjects(
 		ctx,
 		sqlc.CountProjectsParams{
-			ScAll:   scope.All,
-			ScSelf:  scope.Self,
-			ScDown:  scope.Down,
-			ScNone:  scope.None,
-			OwnerID: ownerID,
+			ScAll:             scope.All,
+			ScSelf:            scope.Self,
+			UserID:            userID,
+			ScDown:            scope.Down,
+			ScNone:            scope.None,
+			OwnerID:           ownerID,
+			ScProcessProjects: scope.ProcessProjects,
 		},
 	)
 }

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
 	repo "github.com/Koshsky/erp-backend/internal/project_mgmt/project/repository"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
@@ -64,6 +66,7 @@ func (s *ProjectService) CreateProject(
 	created, err := s.repository.CreateProject(
 		ctx,
 		req.OwnerID,
+		req.ResponsibleID,
 		req.Code,
 		req.Color,
 		req.StartDate,
@@ -114,6 +117,14 @@ func (s *ProjectService) UpdateProject(
 
 	if req.OwnerID != nil {
 		project.OwnerID = nullable.ToInt8(req.OwnerID)
+	}
+	if req.ResponsibleID != nil {
+		// 0 is the "clear" sentinel (never a valid user id) — reset to NULL.
+		if *req.ResponsibleID == 0 {
+			project.ResponsibleID = pgtype.Int8{}
+		} else {
+			project.ResponsibleID = nullable.ToInt8(req.ResponsibleID)
+		}
 	}
 	if req.Code != nil {
 		project.Code = *req.Code

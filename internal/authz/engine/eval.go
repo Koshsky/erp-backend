@@ -14,10 +14,12 @@ import (
 
 // OwnerProbe — the data-dependent questions of scope evaluation (need the DB):
 //   - descendant — does uid own a node below (res, id) in the tree?
-//   - sibling — does uid own a direct sibling node of (res, id) (same parent)?
+//   - peer — does uid own a process/task in the selected shared group?
 type OwnerProbe struct {
+	Parents    func(ctx context.Context, res rbac.Resource, id int64) ([]Target, error)
+	Related    func(ctx context.Context, target Target, userID int64, scope string) (bool, error)
 	Descendant func(ctx context.Context, res rbac.Resource, id, userID int64) (bool, error)
-	Sibling    func(ctx context.Context, res rbac.Resource, id, userID int64) (bool, error)
+	Peer       func(ctx context.Context, target Target, userID int64, project bool) (bool, error)
 }
 
 // evalOwnerChain — chain-based evaluation of one move (self/up1/up) against
@@ -51,6 +53,10 @@ func EvalScope(
 	id int64,
 	probe *OwnerProbe,
 ) bool {
+	return evalTargetScope(Target{Res: res, Owners: owners, ID: id, Ctx: ctx}, expr, uid, probe)
+}
+
+func evalTargetScope(target Target, expr string, uid int64, probe *OwnerProbe) bool {
 	p, ok := parseScope(expr)
 	if !ok || p.none {
 		return false
@@ -59,7 +65,7 @@ func EvalScope(
 		return true
 	}
 	for _, m := range p.moves {
-		if evalMove(ctx, m, res, owners, uid, id, probe) {
+		if evalMove(m, target, uid, probe) {
 			return true
 		}
 	}
@@ -67,28 +73,42 @@ func EvalScope(
 }
 
 // evalMove evaluates one move of an expression.
-func evalMove(
-	ctx context.Context,
-	m moveToken,
-	res rbac.Resource,
-	owners rbac.Owners,
-	uid int64,
-	id int64,
-	probe *OwnerProbe,
-) bool {
+func evalMove(m moveToken, target Target, uid int64, probe *OwnerProbe) bool {
+	if uid <= 0 {
+		return false
+	}
 	switch m.kind {
 	case moveSelf, moveUp:
-		return evalChainMove(m, res, owners, uid)
-	case moveDown:
-		if probe != nil && probe.Descendant != nil && id != 0 {
-			ok, err := probe.Descendant(ctx, res, id, uid)
+		return evalChainMove(m, target.Res, target.Owners, uid)
+	case ScopeProjectOwner:
+		return target.Owners.ProjectOwner == uid
+	case ScopeProcessOwner:
+		return processOwnerMatch(target, uid)
+	case ScopeProcessProjects, ScopeProjectResources:
+		if probe != nil && probe.Related != nil && target.ID != 0 {
+			ok, err := probe.Related(target.Ctx, target, uid, m.kind)
 			return err == nil && ok
 		}
-	case moveSib:
-		if probe != nil && probe.Sibling != nil && id != 0 {
-			ok, err := probe.Sibling(ctx, res, id, uid)
+	case moveDown:
+		if probe != nil && probe.Descendant != nil && target.ID != 0 {
+			ok, err := probe.Descendant(target.Ctx, target.Res, target.ID, uid)
+			return err == nil && ok
+		}
+	case moveSib, moveProjectSib:
+		if probe != nil && probe.Peer != nil && (target.ID != 0 || target.ParentID != 0) {
+			ok, err := probe.Peer(target.Ctx, target, uid, m.kind == moveProjectSib)
 			return err == nil && ok
 		}
 	}
 	return false
+}
+
+func processOwnerMatch(target Target, uid int64) bool {
+	if target.Res == rbac.ResourceProcess && target.Act == ActionCreate {
+		return target.ProposedOwner == uid && target.ParentVisible
+	}
+	if target.Res == rbac.ResourceProcess && target.ParentID != 0 && !target.ParentVisible {
+		return false
+	}
+	return target.Owners.ProcessOwner == uid
 }

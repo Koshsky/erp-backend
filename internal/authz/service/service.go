@@ -91,7 +91,7 @@ func (s *Service) UpsertRule(ctx context.Context, in dto.PresetRuleInput, update
 	if !ok {
 		return errors.BadRequest("неизвестный ресурс " + in.Resource)
 	}
-	if _, okAction := engine.ParseAction(in.Action); !okAction {
+	if action, okAction := engine.ParseAction(in.Action); !okAction || !engine.ActionApplicable(res, action) {
 		return errors.BadRequest("неизвестное действие " + in.Action)
 	}
 	scope, ok := engine.ParseScope(in.Scope)
@@ -203,7 +203,12 @@ func (s *Service) Reset(ctx context.Context, updatedBy int64) error {
 	return s.apply(ctx)
 }
 
-// EffectiveMatrix returns the effective matrix (with the admin bypass) for the API.
+// EffectiveMatrix returns the COMPLETE effective matrix for the API: every
+// catalog preset (plus admin) × every resource × every action, with the
+// resolved scope expression and engine.ScopeNoneCode where a preset holds no
+// right. The UI renders this payload as is, so a missing cell would silently
+// hide a right and a resource added to the engine must show up without a
+// frontend change.
 func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error) {
 	_ = ctx // matrix and presets are read from memory/DB without extra queries
 	presets, err := s.repo.ListActivePresets(ctx)
@@ -211,25 +216,57 @@ func (s *Service) EffectiveMatrix(ctx context.Context) ([]dto.MatrixCell, error)
 		return nil, err
 	}
 	matrix := engine.CurrentMatrix()
-	names := make([]string, 0, len(presets)+1)
-	names = append(names, userdomain.PresetAdmin)
+	// Preset keys are TAGS (the codes stored in users.preset and
+	// rbac_preset_rules.preset) — never the display names from the catalog.
+	// The catalog carries the admin row too; its cells are added explicitly
+	// below, so it must not be appended twice.
+	tags := make([]string, 0, len(presets)+1)
+	tags = append(tags, userdomain.PresetAdmin)
 	for _, p := range presets {
-		names = append(names, p.Name)
+		if p.Tag == userdomain.PresetAdmin {
+			continue
+		}
+		tags = append(tags, p.Tag)
 	}
-	var cells []dto.MatrixCell
-	for _, preset := range names {
-		for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
-			for act := engine.ActionView; act <= engine.ActionDelete; act++ {
-				if scope := matrix.ScopeFor(preset, res, act); scope != engine.ScopeNone {
-					cells = append(cells, dto.MatrixCell{
-						Preset: preset, Resource: engine.ResourceName(res), Action: engine.ActionName(act),
-						Scope: engine.ScopeName(scope),
-					})
+	return buildMatrixCells(tags, matrix), nil
+}
+
+// buildMatrixCells renders the complete grid for the given preset tags.
+func buildMatrixCells(tags []string, matrix engine.Matrix) []dto.MatrixCell {
+	cells := make([]dto.MatrixCell, 0, len(tags)*resourceCount*actionCount)
+	for _, preset := range tags {
+		for res := rbac.ResourceProject; res <= rbac.ResourceAutoCreate; res++ {
+			for act := engine.ActionView; act <= engine.ActionPrioritize; act++ {
+				if !engine.ActionApplicable(res, act) {
+					continue
 				}
+				cells = append(cells, dto.MatrixCell{
+					Preset:   preset,
+					Resource: engine.ResourceName(res),
+					Action:   engine.ActionName(act),
+					Scope:    scopeCode(matrix.ScopeFor(preset, res, act)),
+				})
 			}
 		}
 	}
-	return cells, nil
+	return cells
+}
+
+// resourceCount and actionCount size the matrix payload (the engine enums are
+// contiguous: rbac.ResourceProject..ResourceAutoCreate, ActionView..ActionPrioritize).
+const (
+	resourceCount = int(rbac.ResourceAutoCreate) + 1
+	actionCount   = int(engine.ActionDelete) + 1
+)
+
+// scopeCode renders a resolved scope for the API: the canonical expression, or
+// ScopeNoneCode for "no right" — an empty string would read as a granted cell
+// in the UI (it coalesces only null/undefined to "none").
+func scopeCode(scope string) string {
+	if scope == engine.ScopeNone {
+		return engine.ScopeNoneCode
+	}
+	return engine.ScopeName(scope)
 }
 
 // Kinds returns the catalog of route policy kinds.
@@ -286,13 +323,21 @@ func presetExists(presets []sqlc.ListActivePresetsRow, tag string) bool {
 // data-level matrix (CurrentMatrix) is only for the admin editor views.
 func (s *Service) MyPermissions(_ context.Context, user userctx.UserContext) []dto.Permission {
 	out := []dto.Permission{}
-	for res := rbac.ResourceProject; res <= rbac.ResourceAudit; res++ {
-		for act := engine.ActionView; act <= engine.ActionDelete; act++ {
+	for res := rbac.ResourceProject; res <= rbac.ResourceAutoCreate; res++ {
+		for act := engine.ActionView; act <= engine.ActionPrioritize; act++ {
+			if !engine.ActionApplicable(res, act) {
+				continue
+			}
 			scope := engine.ScopeForUser(user, res, act)
+			inherited := act == engine.ActionView && engine.HasViewAncestor(user, res)
+			if scope == engine.ScopeNone && inherited {
+				scope = "inherited"
+			}
 			if scope == engine.ScopeNone {
 				continue
 			}
 			out = append(out, dto.Permission{
+				Inherited: inherited,
 				Resource: engine.ResourceName(res),
 				Action:   engine.ActionName(act),
 				Scope:    engine.ScopeName(scope),
@@ -365,7 +410,7 @@ func (s *Service) ReplaceUserPermissions(
 		if !ok {
 			return errors.BadRequest("неизвестный ресурс " + o.Resource)
 		}
-		if _, okAction := engine.ParseAction(o.Action); !okAction {
+		if action, okAction := engine.ParseAction(o.Action); !okAction || !engine.ActionApplicable(res, action) {
 			return errors.BadRequest("неизвестное действие " + o.Action)
 		}
 		key := o.Resource + "/" + o.Action
@@ -428,7 +473,7 @@ const (
 )
 
 // CreatePreset creates a preset (or updates an existing one) and applies it.
-// The seeded built-in presets (V10 catalog) are immutable: the upsert must
+// The seeded built-in presets (V9 catalog) are immutable: the upsert must
 // not clobber them (in particular, never overwrite the admin entry).
 func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (sqlc.UpsertPresetRow, error) {
 	tag := strings.TrimSpace(in.Tag)
@@ -452,7 +497,7 @@ func (s *Service) CreatePreset(ctx context.Context, in dto.PresetUpsertInput) (s
 
 // UpdatePreset updates a preset: the display name and description always, plus
 // an optional tag rename (Tag in the input). The seeded built-in presets
-// (V10 catalog) are immutable via the admin API.
+// (V9 catalog) are immutable via the admin API.
 func (s *Service) UpdatePreset(
 	ctx context.Context,
 	tag string,
@@ -481,7 +526,7 @@ func (s *Service) UpdatePreset(
 
 // DeletePreset deletes a preset, its rules and clears the preset ref on
 // assigned users (they keep the account but lose the preset's base rights;
-// individual overrides survive). The seeded built-in presets (V10: admin, dp,
+// individual overrides survive). The seeded built-in presets (V9: admin, dp,
 // rp, vp, worker) are protected: deleting admin would clear users.preset for
 // every administrator and permanently lock them out of /rbac/*.
 func (s *Service) DeletePreset(ctx context.Context, tag string) error {
@@ -534,7 +579,7 @@ func builtinPresetErr(name string) error {
 }
 
 // isBuiltinPreset reports whether the preset is one of the seeded built-ins
-// (the V10 catalog: admin, dp, rp, vp, worker) — immutable via the RBAC
+// (the V9 catalog: admin, dp, rp, vp, worker) — immutable via the RBAC
 // admin API, as removing them (in particular admin) would lock out admins.
 func isBuiltinPreset(name string) bool {
 	// The admin entry is a code invariant (deleting it would clear

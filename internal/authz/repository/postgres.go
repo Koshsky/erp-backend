@@ -195,7 +195,42 @@ func (r *RuleRepository) UpsertPreset(
 	ctx context.Context,
 	tag, name, description string,
 ) (sqlc.UpsertPresetRow, error) {
-	return r.q(ctx).UpsertPreset(ctx, sqlc.UpsertPresetParams{Tag: tag, Name: name, Description: description})
+	tx, owned, err := database.BeginOrJoin(ctx, r.pool)
+	if err != nil {
+		return sqlc.UpsertPresetRow{}, err
+	}
+	if owned {
+		defer func() { _ = tx.Rollback(ctx) }()
+	}
+	q := sqlc.New(tx)
+	preset, err := q.UpsertPreset(ctx, sqlc.UpsertPresetParams{Tag: tag, Name: name, Description: description})
+	if err != nil {
+		return sqlc.UpsertPresetRow{}, err
+	}
+	for _, resource := range []string{"resource", "project", "process", "task", "milestone", "assignment"} {
+		scope := "self"
+		if resource == "process" || resource == "task" || resource == "milestone" || resource == "assignment" {
+			scope = "up1"
+		}
+		actions := []string{"view", "create", "update", "delete"}
+		if resource == "project" {
+			actions = append(actions, "prioritize")
+		}
+		for _, action := range actions {
+			if _, err = q.UpsertPresetRule(
+				ctx,
+				sqlc.UpsertPresetRuleParams{Preset: tag, Resource: resource, Action: action, Scope: scope},
+			); err != nil {
+				return sqlc.UpsertPresetRow{}, err
+			}
+		}
+	}
+	if owned {
+		if err = tx.Commit(ctx); err != nil {
+			return sqlc.UpsertPresetRow{}, err
+		}
+	}
+	return preset, nil
 }
 
 // UpdatePreset updates a preset: name and description always; a tag rename

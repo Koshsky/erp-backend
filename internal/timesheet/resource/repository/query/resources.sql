@@ -6,6 +6,10 @@ FROM resources r
 LEFT JOIN resource_members rm ON rm.resource_id = r.id
 WHERE (
     @sc_all::boolean OR
+    (@sc_project_resources::boolean AND EXISTS (
+        SELECT 1 FROM processes rp JOIN projects rpr ON rpr.id = rp.project_id
+        WHERE rp.owner_id = r.owner_id AND rpr.owner_id = @user_id::bigint
+    )) OR
     (@sc_self::boolean AND r.owner_id = @user_id::bigint) OR
     @sc_none::boolean
   )
@@ -19,6 +23,10 @@ SELECT COUNT(*)
 FROM resources
 WHERE (
     @sc_all::boolean OR
+    (@sc_project_resources::boolean AND EXISTS (
+        SELECT 1 FROM processes rp JOIN projects rpr ON rpr.id = rp.project_id
+        WHERE rp.owner_id = resources.owner_id AND rpr.owner_id = @user_id::bigint
+    )) OR
     (@sc_self::boolean AND owner_id = @user_id::bigint) OR
     @sc_none::boolean
   )

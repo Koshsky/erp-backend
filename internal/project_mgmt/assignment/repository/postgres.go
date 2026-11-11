@@ -113,31 +113,42 @@ func (r *AssignmentRepository) ListAssignments(
 	limit, offset int,
 ) ([]sqlc.Assignment, error) {
 	return r.q(ctx).ListAssigments(ctx, sqlc.ListAssigmentsParams{
-		ScAll:      scope.All,
-		UserID:     userID,
-		ScParent:   scope.Parent,
-		ScAncestor: scope.Ancestor,
-		ScNone:     scope.None,
-		OwnerID:    ownerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		ScAll:          scope.All,
+		UserID:         userID,
+		ScParent:       scope.Parent,
+		ScAncestor:     scope.Ancestor,
+		ScNone:         scope.None,
+		OwnerID:        ownerID,
+		PageLimit:      int64(limit),
+		PageOffset:     int64(offset),
+		ScProjectOwner: scope.ProjectOwner,
+		ScProcessOwner: scope.ProcessOwner,
+		ProjectView:    scope.ProjectView,
+		ProcessView:    scope.ProcessView,
+		TaskView:       scope.TaskView,
 	})
 }
 
 func (r *AssignmentRepository) CountAssignments(
 	ctx context.Context,
-	_ int64,
+	userID int64,
 	scope rbac.ListScope,
 	ownerID int64,
 ) (int64, error) {
 	return r.q(ctx).CountAssignments(
 		ctx,
 		sqlc.CountAssignmentsParams{
-			ScAll:      scope.All,
-			ScParent:   scope.Parent,
-			ScAncestor: scope.Ancestor,
-			ScNone:     scope.None,
-			OwnerID:    ownerID,
+			UserID:         userID,
+			ScAll:          scope.All,
+			ScParent:       scope.Parent,
+			ScAncestor:     scope.Ancestor,
+			ScNone:         scope.None,
+			OwnerID:        ownerID,
+			ScProjectOwner: scope.ProjectOwner,
+			ScProcessOwner: scope.ProcessOwner,
+			ProjectView:    scope.ProjectView,
+			ProcessView:    scope.ProcessView,
+			TaskView:       scope.TaskView,
 		},
 	)
 }
@@ -148,5 +159,8 @@ func (r *AssignmentRepository) OwnerChain(ctx context.Context, id int64) (rbac.O
 	if err != nil {
 		return rbac.Owners{}, err
 	}
-	return rbac.Owners{ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner, Owner: row.OwnerID}, nil
+	return rbac.Owners{
+		ProjectOwner: row.ProjectOwner, ProcessOwner: row.ProcessOwner,
+		Owner: row.OwnerID, ResourceOwner: row.ResourceOwner,
+	}, nil
 }

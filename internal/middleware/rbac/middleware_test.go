@@ -83,7 +83,7 @@ func TestCheckEntity(t *testing.T) {
 		{"not found → 404", testAdmin, "/10", "task.view", true, http.StatusNotFound},
 		// rp (id 2) — owner of the task's process (owners {Project:1, Process:2}):
 		// ancestor = any owner up the chain → access is granted.
-		{"rp — владелец процесса (ancestor) → 200", testRP, "/1", "task.view", true, http.StatusOK},
+		{"RP process ownership alone is insufficient", testRP, "/1", "task.view", true, http.StatusNotFound},
 		{"rp update → 403 (view-only)", testRP, "/1", "task.update", true, http.StatusForbidden},
 		{"vp views own process → 200", testVP, "/1", "task.view", true, http.StatusOK},
 		{"vp updates own → 200", testVP, "/1", "task.update", true, http.StatusOK},

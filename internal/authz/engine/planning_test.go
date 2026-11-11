@@ -9,7 +9,7 @@ import (
 	userctx "github.com/Koshsky/erp-backend/internal/userctx"
 )
 
-// DefaultRouteSpecs carry the planning.* route policies (mirror seed V13):
+// DefaultRouteSpecs carry the planning.* route policies (mirror V9):
 // /planning/* is gated by the view matrix of the underlying domain via the
 // list kind (row scoping stays in the SQL).
 func TestPlanningRouteSpecs(t *testing.T) {
@@ -45,10 +45,10 @@ func TestViewScopeCodeUserNoReferenceRule(t *testing.T) {
 	})
 
 	vp := userctx.UserContext{ID: 7, Preset: userdomain.PresetProcessOwner}
-	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceProject); got != "" {
+	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceProject); got != engine.ScopeProcessProjects {
 		t.Errorf("ViewScopeCodeUser(vp, project) = %q; want \"\" (no project.view rule)", got)
 	}
-	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceProcess); got != "all" {
+	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceProcess); got != engine.ScopeProcessOwner {
 		t.Errorf("ViewScopeCodeUser(vp, process) = %q; want all", got)
 	}
 	if got := engine.ViewScopeCodeUser(vp, rbac.ResourceResource); got != "self" {

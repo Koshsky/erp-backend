@@ -3,7 +3,9 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema:
+      # responsible_id is added by the V10 migration (V1 is frozen after deploy).
       - "../../../../migrations/V1__initial_schema.sql"
+      - "../../../../migrations/V10__entity_responsible.sql"
     queries:
       - "./query"
     gen:

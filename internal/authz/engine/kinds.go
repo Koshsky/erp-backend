@@ -43,16 +43,18 @@ type KindInfo struct {
 
 // Route policy kind codes.
 const (
-	kindList         = "list"
-	kindEntity       = "entity"
-	kindCreate       = "create"
-	kindOwnerMatch   = "owner_match"
-	kindAuthorOr     = "author_or"
-	kindParentAction = "parent_action"
+	kindAnyCapability = "any_capability"
+	kindList          = "list"
+	kindEntity        = "entity"
+	kindCreate        = "create"
+	kindOwnerMatch    = "owner_match"
+	kindAuthorOr      = "author_or"
+	kindParentAction  = "parent_action"
 )
 
 // Kind parameter keys (JSONB).
 const (
+	paramPermissions     = "permissions"
 	paramResource        = "resource"
 	paramQueryKey        = "query_key"
 	paramAction          = "action"
@@ -98,16 +100,18 @@ const (
 
 //nolint:gochecknoglobals // kind registry (mechanisms; static)
 var kindRegistry = map[string]KindBuilder{
-	kindList:         buildList,
-	kindEntity:       buildEntity,
-	kindCreate:       buildCreate,
-	kindOwnerMatch:   buildOwnerMatch,
-	kindAuthorOr:     buildAuthorOr,
-	kindParentAction: buildParentAction,
+	kindAnyCapability: buildAnyCapability,
+	kindList:          buildList,
+	kindEntity:        buildEntity,
+	kindCreate:        buildCreate,
+	kindOwnerMatch:    buildOwnerMatch,
+	kindAuthorOr:      buildAuthorOr,
+	kindParentAction:  buildParentAction,
 }
 
 //nolint:gochecknoglobals // kind parameter schemas (mirror the builders)
 var kindParamSchemas = map[string][]ParamInfo{
+	kindAnyCapability: {{Key: paramPermissions, Type: paramTypeStringList, Required: true}},
 	kindList: {
 		{Key: paramResource, Type: paramTypeString, Required: true},
 		{Key: paramQueryKey, Type: paramTypeString, Required: true},
@@ -317,7 +321,7 @@ func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 		if !okParent {
 			return nil, kindError(kindCreate, paramParentResource, fmt.Errorf("неизвестный ресурс %q", parentResource))
 		}
-		return CreateCheck(res, parentByID(parentRes, parentFrom)), nil
+		return createInParentCheck(res, parentRes, parentFrom), nil
 	}
 
 	if ownerKey == "" {
@@ -346,6 +350,19 @@ func buildCreate(params map[string]any) (func(*rbac.CheckCtx) error, error) {
 	}, nil
 }
 
+func createInParentCheck(res, parentRes rbac.Resource, parentFrom string) func(*rbac.CheckCtx) error {
+	base := CreateCheck(res, parentByID(parentRes, parentFrom))
+
+	return func(rc *rbac.CheckCtx) error {
+		if res == rbac.ResourceTask {
+			if err := checkTaskCreateParent(rc); err != nil {
+				return err
+			}
+		}
+		return base(rc)
+	}
+}
+
 // createOwners returns an owners constructor for creating "into one's own
 // ownership" (the field depends on the resource).
 func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
@@ -358,7 +375,7 @@ func createOwners(res rbac.Resource) (func(int64) rbac.Owners, bool) {
 		rbac.ResourceAssignment, rbac.ResourceState, rbac.ResourceComment,
 		rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return nil, false
 	}
 	return nil, false
@@ -452,6 +469,9 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 		if ownerErr != nil {
 			return ownerErr
 		}
+		if spec.res == rbac.ResourceAssignment {
+			return checkAssignmentTarget(rc, spec, primaryOwners, primaryID)
+		}
 		mode := ModeOwnerMatch
 		if slices.Contains(spec.exemptRoles, rc.User.Preset) {
 			mode = ""
@@ -477,6 +497,43 @@ func buildOwnerMatch(params map[string]any) (func(*rbac.CheckCtx) error, error) 
 		}
 		return nil
 	}, nil
+}
+
+func checkAssignmentTarget(rc *rbac.CheckCtx, spec ownerMatchSpec, primaryOwners rbac.Owners, primaryID int64) error {
+	resourceID, readErr := rc.BodyID(spec.compareFrom)
+	if readErr != nil {
+		return readErr
+	}
+	resourceOwners, resolveErr := rc.Owners(spec.compareRes, resourceID)
+	if resolveErr != nil {
+		return resolveErr
+	}
+	if primaryOwners.ProcessOwner == 0 || primaryOwners.ProcessOwner != resourceOwners.Owner {
+		return errors.ErrForbidden
+	}
+	if !EnforceTarget(
+		rc.User,
+		Target{
+			Res:    rbac.ResourceTask,
+			Act:    ActionView,
+			Owners: primaryOwners,
+			ID:     primaryID,
+			Ctx:    rc.C.Request.Context(),
+		},
+	) {
+		return errors.ErrForbidden
+	}
+	if scopeForUser(rc.User, spec.res, spec.act) == ScopeParent &&
+		(primaryOwners.Owner != rc.User.ID || resourceOwners.Owner != rc.User.ID) {
+		return errors.ErrForbidden
+	}
+	if !EnforceTarget(
+		rc.User,
+		Target{Res: spec.res, Act: spec.act, Owners: primaryOwners, Ctx: rc.C.Request.Context()},
+	) {
+		return errors.ErrForbidden
+	}
+	return nil
 }
 
 // buildAuthorOr — a disjunction: the entity author (via the author_resource
@@ -607,7 +664,7 @@ func CommentDeleteCheck() func(*rbac.CheckCtx) error {
 func ListCheck(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) error {
 	return func(rc *rbac.CheckCtx) error {
 		scope := scopeForUser(rc.User, rsrc, ActionView)
-		if scope == ScopeNone {
+		if !CanUser(rc.User, rsrc, ActionView) {
 			return errors.ErrForbidden
 		}
 		raw := rc.C.Query(key)
@@ -618,7 +675,7 @@ func ListCheck(rsrc rbac.Resource, key string) func(*rbac.CheckCtx) error {
 		if err != nil || id < 0 {
 			return errors.BadRequestM(messages.M("errors.invalid_param", key))
 		}
-		if scope != ScopeAll && id != rc.User.ID {
+		if scope != ScopeAll && !unrestrictedViewAncestor(rc.User, rsrc) && id != rc.User.ID {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -648,11 +705,23 @@ func EntityCheck(rsrc rbac.Resource, act Action) func(*rbac.CheckCtx) error {
 		if err != nil {
 			return err
 		}
+		if rsrc == rbac.ResourceProject && act == ActionUpdate {
+			return checkProjectUpdate(rc, owners, id)
+		}
+		if rsrc == rbac.ResourceAssignment && act != ActionView && scopeForUser(rc.User, rsrc, act) == ScopeParent &&
+			(owners.Owner != rc.User.ID || owners.ResourceOwner != rc.User.ID) {
+			return viewOrForbidden(act)
+		}
+
 		if !EnforceTarget(rc.User, Target{
 			Res: rsrc, Act: act, Owners: owners, ID: id, Ctx: rc.C.Request.Context(),
 		}) {
 			return viewOrForbidden(act)
 		}
+		if act == ActionUpdate && len(rc.Body()) > 0 {
+			return checkEntityUpdate(rc, rsrc, owners, id)
+		}
+
 		return nil
 	}
 }
@@ -664,9 +733,35 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 		if err != nil {
 			return err
 		}
-		if !EnforceTarget(rc.User, Target{
-			Res: rsrc, Act: ActionCreate, Owners: owners, Ctx: rc.C.Request.Context(),
-		}) {
+		var parentID int64
+		switch rsrc {
+		case rbac.ResourceTask:
+			parentID, err = rc.BodyID(bodyKeyProcessID)
+		case rbac.ResourceProcess:
+			parentID, err = rc.BodyID(bodyKeyProjectID)
+		case rbac.ResourceProject, rbac.ResourceMilestone, rbac.ResourceAssignment,
+			rbac.ResourceState, rbac.ResourceResource, rbac.ResourceWorker,
+			rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
+			rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
+			rbac.ResourceAudit, rbac.ResourceAutoCreate:
+		}
+		if err != nil {
+			return err
+		}
+		target := Target{Res: rsrc, Act: ActionCreate, Owners: owners, ParentID: parentID, Ctx: rc.C.Request.Context()}
+		if rsrc == rbac.ResourceProcess {
+			target.ProposedOwner, err = rc.BodyID(bodyKeyOwnerID)
+			if err != nil {
+				return err
+			}
+			if target.ProposedOwner == 0 {
+				target.ProposedOwner = rc.User.ID
+			}
+			target.ParentVisible = EnforceTarget(rc.User, Target{
+				Res: rbac.ResourceProject, Act: ActionView, Owners: owners, ID: parentID, Ctx: target.Ctx,
+			})
+		}
+		if !EnforceTarget(rc.User, target) {
 			return errors.ErrForbidden
 		}
 		return nil
@@ -674,7 +769,7 @@ func CreateCheck(rsrc rbac.Resource, parent func(*rbac.CheckCtx) (rbac.Owners, e
 }
 
 // =============================================
-// Default route specifications (mirror seed V15) and assembly
+// Default route specifications (mirror the seeded V9__rbac_policies.sql) and assembly
 // =============================================
 
 //nolint:gochecknoglobals // default route specs (mechanism; static)
@@ -1010,19 +1105,26 @@ var defaultRouteSpecs = []RouteSpec{
 		Params: map[string]any{paramResource: resTask, paramQueryKey: bodyKeyOwnerID},
 	},
 	{
-		Name:   "autocreate.list",
-		Kind:   kindEntity,
-		Params: map[string]any{paramResource: resRBACConfig, paramAction: actView, paramOwner: ownerModeNone},
+		Name: "autocreate.list", Kind: kindAnyCapability,
+		Params: map[string]any{paramPermissions: []string{"auto_create/view", "auto_create/update"}},
 	},
 	{
 		Name:   "autocreate.update",
 		Kind:   kindEntity,
-		Params: map[string]any{paramResource: resRBACConfig, paramAction: actUpdate, paramOwner: ownerModeNone},
+		Params: map[string]any{paramResource: resAutoCreate, paramAction: actUpdate, paramOwner: ownerModeNone},
 	},
 	{
 		Name:   "rbac.manage",
 		Kind:   kindEntity,
-		Params: map[string]any{paramResource: resRBACConfig, paramAction: actView, paramOwner: ownerModeNone},
+		Params: map[string]any{paramResource: resRBACConfig, paramAction: actUpdate, paramOwner: ownerModeNone},
+	},
+	{
+		Name: "user.accounts", Kind: kindAnyCapability,
+		Params: map[string]any{paramPermissions: []string{"user_admin/view", "rbac_config/update"}},
+	},
+	{
+		Name: "user.structure", Kind: kindEntity,
+		Params: map[string]any{paramResource: resOrgStructure, paramAction: actView, paramOwner: ownerModeNone},
 	},
 	// Audit-log admin section: virtual resource, admin only (bypass). No rows
 	// in the matrix — the page and the /audit/* routes are admin-only.
@@ -1042,7 +1144,7 @@ func DefaultRouteSpecs() []RouteSpec {
 // Kinds returns the catalog of kinds and their parameters.
 func Kinds() []KindInfo {
 	infos := make([]KindInfo, 0, len(kindRegistry))
-	for _, name := range []string{kindList, kindEntity, kindCreate, kindOwnerMatch, kindAuthorOr, kindParentAction} {
+	for _, name := range []string{kindList, kindEntity, kindCreate, kindOwnerMatch, kindAuthorOr, kindParentAction, kindAnyCapability} {
 		infos = append(infos, KindInfo{Name: name, Params: kindParamSchemas[name]})
 	}
 	return infos

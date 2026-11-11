@@ -40,12 +40,19 @@ type RoutePolicyView struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 }
 
-// MatrixCell — an effective matrix cell (with the admin bypass).
+// MatrixCell — one cell of the effective matrix (with the admin bypass). The
+// API serves the COMPLETE grid: every catalog preset (plus admin) × every
+// resource × every action, so the UI never has to guess what exists.
 type MatrixCell struct {
-	Preset   string `json:"preset"`
+	// Preset — the preset TAG (dp/rp/vp/worker/custom), never its display name.
+	Preset string `json:"preset"`
+	// Resource — the resource code from the engine dictionary.
 	Resource string `json:"resource"`
-	Action   string `json:"action"`
-	Scope    string `json:"scope"`
+	// Action — view/create/update/delete.
+	Action string `json:"action"`
+	// Scope — the canonical scope expression, or "none" when the preset holds
+	// no right for the cell (an empty string would read as a granted right).
+	Scope string `json:"scope"`
 }
 
 // ExplainInput — parameters of the "why allow/deny" check.
@@ -68,9 +75,10 @@ type ExplainResult struct {
 // Permission — a caller's principal right: an action on a resource is allowed
 // (the scope from the matrix; the frontend derives the ownership zone from it).
 type Permission struct {
-	Resource string `json:"resource" example:"project"`
-	Action   string `json:"action"   example:"create"`
-	Scope    string `json:"scope"    example:"own"`
+	Inherited bool   `json:"inherited,omitempty"`
+	Resource  string `json:"resource"            example:"project"`
+	Action    string `json:"action"              example:"create"`
+	Scope     string `json:"scope"               example:"own"`
 }
 
 // PermissionOverride — a per-user permission cell of the editor: an explicit

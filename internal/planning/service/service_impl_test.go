@@ -133,7 +133,21 @@ func (s *stubPlanningRepo) ListMilestonesByProcessIDs(_ context.Context, _ []int
 	return s.milestones, nil
 }
 
-func (s *stubPlanningRepo) ListTasksByProcessIDs(_ context.Context, _ []int64) ([]sqlc.Task, error) {
+func (s *stubPlanningRepo) ListTasksByProcessIDs(
+	_ context.Context,
+	_ []int64,
+	userID int64,
+	scope rbac.ListScope,
+) ([]sqlc.Task, error) {
+	if scope.Self && !scope.All {
+		rows := make([]sqlc.Task, 0, len(s.tasks))
+		for _, task := range s.tasks {
+			if task.OwnerID.Valid && task.OwnerID.Int64 == userID {
+				rows = append(rows, task)
+			}
+		}
+		return rows, nil
+	}
 	return s.tasks, nil
 }
 

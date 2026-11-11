@@ -6077,6 +6077,146 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/accounts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List account directory",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role filter",
+                        "name": "preset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Manager filter",
+                        "name": "manager_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include hashes (administrator only)",
+                        "name": "include_hash",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Name or login filter",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.Page"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.AdminUserResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/accounts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get account profile",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserResponse"
+                                        },
+                                        "error": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/user/all": {
             "get": {
                 "security": [
@@ -6335,6 +6475,48 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/structure": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List company structure",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.StructureUserResponse"
+                                            }
+                                        },
+                                        "error": {
                                             "type": "object"
                                         }
                                     }
@@ -7484,6 +7666,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7519,6 +7705,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 2
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7548,6 +7738,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "priority": {
+                    "type": "integer"
+                },
+                "responsible_id": {
                     "type": "integer"
                 },
                 "start_date": {
@@ -7621,6 +7814,10 @@ const docTemplate = `{
                 "process_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -7772,6 +7969,14 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "project_owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7822,6 +8027,10 @@ const docTemplate = `{
                 "project_code": {
                     "type": "string",
                     "example": "КО_001"
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -7874,6 +8083,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.Resource"
                     }
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -7925,15 +8138,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "action": {
+                    "description": "Action — view/create/update/delete.",
                     "type": "string"
                 },
                 "preset": {
+                    "description": "Preset — the preset TAG (dp/rp/vp/worker/custom), never its display name.",
                     "type": "string"
                 },
                 "resource": {
+                    "description": "Resource — the resource code from the engine dictionary.",
                     "type": "string"
                 },
                 "scope": {
+                    "description": "Scope — the canonical scope expression, or \"none\" when the preset holds\nno right for the cell (an empty string would read as a granted right).",
                     "type": "string"
                 }
             }
@@ -8013,6 +8230,9 @@ const docTemplate = `{
                 "action": {
                     "type": "string",
                     "example": "create"
+                },
+                "inherited": {
+                    "type": "boolean"
                 },
                 "resource": {
                     "type": "string",
@@ -8190,6 +8410,14 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "project_owner_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -8240,6 +8468,10 @@ const docTemplate = `{
                 "project_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -8303,6 +8535,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "КО_001"
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -8340,6 +8576,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "priority": {
+                    "type": "integer"
+                },
+                "responsible_id": {
                     "type": "integer"
                 },
                 "start_date": {
@@ -8649,6 +8888,35 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.StructureUserResponse": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "manager_id": {
+                    "type": "integer"
+                },
+                "middle_name": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "preset": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.TaskDependency": {
             "type": "object",
             "properties": {
@@ -8706,6 +8974,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "process_id": {
+                    "type": "integer"
+                },
+                "responsible_id": {
                     "type": "integer"
                 },
                 "start_date": {
@@ -8833,6 +9104,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
+                },
                 "start_date": {
                     "type": "string",
                     "format": "date",
@@ -8865,6 +9140,10 @@ const docTemplate = `{
                     "example": 1
                 },
                 "priority": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "responsible_id": {
                     "type": "integer",
                     "example": 2
                 },
@@ -8933,6 +9212,10 @@ const docTemplate = `{
                     "description": "ProcessID is intentionally absent: a task never changes its process.\nParentID is absent too: the parent is fixed at creation.",
                     "type": "integer",
                     "example": 1
+                },
+                "responsible_id": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "start_date": {
                     "type": "string",
@@ -9293,7 +9576,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.3.0",
+	Version:          "1.4.3",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http"},

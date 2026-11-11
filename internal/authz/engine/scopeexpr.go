@@ -16,10 +16,11 @@ import (
 
 // Tree-move codes of a scope expression.
 const (
-	moveSelf = "self"
-	moveUp   = "up"
-	moveDown = "down"
-	moveSib  = "sib"
+	moveSelf       = "self"
+	moveUp         = "up"
+	moveDown       = "down"
+	moveSib        = "sib"
+	moveProjectSib = "sib_project"
 )
 
 // moveToken — one parsed move of an expression.
@@ -36,7 +37,9 @@ type parsedScope struct {
 	canon string // canonical expression string
 }
 
-var moveRe = regexp.MustCompile(`^(self|up|down|sib)(\d*)$`)
+var moveRe = regexp.MustCompile(
+	`^(self|up|down|sib|sib_project|project_owner|process_owner|process_projects|project_resources)(\d*)$`,
+)
 
 // parseScope parses a scope expression (or a legacy zone code) into the
 // canonical form. Legacy aliases: own -> self, parent -> up1, ancestor -> up.
@@ -77,7 +80,8 @@ func parseScope(s string) (parsedScope, bool) {
 				}
 				mt.depth = n
 			}
-		case "self", "sib":
+		case moveSelf, moveSib, moveProjectSib, ScopeProjectOwner, ScopeProcessOwner,
+			ScopeProcessProjects, ScopeProjectResources:
 			if m[2] != "" {
 				return parsedScope{}, false
 			}
@@ -98,8 +102,8 @@ func canonicalOf(moves []moveToken) string {
 		switch m.kind {
 		case moveSelf:
 			parts = append(parts, "self")
-		case moveSib:
-			parts = append(parts, "sib")
+		case moveSib, moveProjectSib, ScopeProjectOwner, ScopeProcessOwner, ScopeProcessProjects, ScopeProjectResources:
+			parts = append(parts, m.kind)
 		case moveUp, moveDown:
 			if m.depth > 0 {
 				parts = append(parts, fmt.Sprintf("%s%d", m.kind, m.depth))
@@ -161,11 +165,20 @@ func moveName(m moveToken) string {
 func moveApplicable(m moveToken, res rbac.Resource) bool {
 	switch m.kind {
 	case moveSelf:
-		return nodeHasOwner[res]
+		return nodeHasOwner[res] && res != rbac.ResourceProcess && res != rbac.ResourceTask
 	case moveUp:
 		return nodeHasParent[res]
 	case moveSib:
 		return nodeHasParent[res] && nodeHasOwner[res]
+	case moveProjectSib:
+		return res == rbac.ResourceTask
+	case ScopeProjectOwner, ScopeProcessOwner:
+		return res == rbac.ResourceProcess || res == rbac.ResourceTask ||
+			res == rbac.ResourceMilestone || res == rbac.ResourceAssignment
+	case ScopeProcessProjects:
+		return res == rbac.ResourceProject
+	case ScopeProjectResources:
+		return res == rbac.ResourceResource
 	case moveDown:
 		return len(ownerDescendants[res]) > 0
 	}

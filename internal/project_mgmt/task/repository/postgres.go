@@ -46,6 +46,7 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task sqlc.Task) (*sqlc.
 		// id for subtasks. Both map to the same NULLIF branch in the INSERT.
 		ParentID:  nullable.PtrValueOr(nullable.Int64Ptr(task.ParentID), 0),
 		OwnerID:   task.OwnerID,
+		ResponsibleID: task.ResponsibleID,
 		Title:     task.Title,
 		Color:     task.Color,
 		Status:    task.Status,
@@ -70,13 +71,14 @@ func (r *TaskRepository) FindTask(ctx context.Context, id int64) (*sqlc.Task, er
 
 func (r *TaskRepository) UpdateTask(ctx context.Context, task sqlc.Task) (*sqlc.Task, error) {
 	row, err := r.q(ctx).UpdateTask(ctx, sqlc.UpdateTaskParams{
-		TaskID:    task.ID,
-		OwnerID:   task.OwnerID,
-		Title:     task.Title,
-		Color:     task.Color,
-		Status:    task.Status,
-		StartDate: task.StartDate,
-		EndDate:   task.EndDate,
+		TaskID:        task.ID,
+		OwnerID:       task.OwnerID,
+		ResponsibleID: task.ResponsibleID,
+		Title:         task.Title,
+		Color:         task.Color,
+		Status:        task.Status,
+		StartDate:     task.StartDate,
+		EndDate:       task.EndDate,
 	})
 	if err != nil {
 		return nil, errapi.MapPgConstraint(errapi.FromPgInvalidParam(err))
@@ -97,17 +99,22 @@ func (r *TaskRepository) ListTasks(
 	limit, offset int,
 ) ([]sqlc.Task, error) {
 	return r.q(ctx).ListTasks(ctx, sqlc.ListTasksParams{
-		ScAll:      scope.All,
-		ScSelf:     scope.Self,
-		UserID:     userID,
-		ScParent:   scope.Parent,
-		ScAncestor: scope.Ancestor,
-		ScSib:      scope.Sib,
-		ScDown:     scope.Down,
-		ScNone:     scope.None,
-		OwnerID:    ownerID,
-		PageLimit:  int64(limit),
-		PageOffset: int64(offset),
+		ScAll:          scope.All,
+		ScSelf:         scope.Self,
+		UserID:         userID,
+		ScParent:       scope.Parent,
+		ScAncestor:     scope.Ancestor,
+		ScSib:          scope.Sib,
+		ScProjectSib:   scope.ProjectSib,
+		ScDown:         scope.Down,
+		ScNone:         scope.None,
+		OwnerID:        ownerID,
+		PageLimit:      int64(limit),
+		PageOffset:     int64(offset),
+		ScProjectOwner: scope.ProjectOwner,
+		ScProcessOwner: scope.ProcessOwner,
+		ProjectView:    scope.ProjectView,
+		ProcessView:    scope.ProcessView,
 	})
 }
 
@@ -120,15 +127,20 @@ func (r *TaskRepository) CountTasks(
 	return r.q(ctx).CountTasks(
 		ctx,
 		sqlc.CountTasksParams{
-			ScAll:      scope.All,
-			ScSelf:     scope.Self,
-			UserID:     userID,
-			ScParent:   scope.Parent,
-			ScAncestor: scope.Ancestor,
-			ScSib:      scope.Sib,
-			ScDown:     scope.Down,
-			ScNone:     scope.None,
-			OwnerID:    ownerID,
+			ScAll:          scope.All,
+			ScSelf:         scope.Self,
+			UserID:         userID,
+			ScParent:       scope.Parent,
+			ScAncestor:     scope.Ancestor,
+			ScSib:          scope.Sib,
+			ScProjectSib:   scope.ProjectSib,
+			ScDown:         scope.Down,
+			ScNone:         scope.None,
+			OwnerID:        ownerID,
+			ScProjectOwner: scope.ProjectOwner,
+			ScProcessOwner: scope.ProcessOwner,
+			ProjectView:    scope.ProjectView,
+			ProcessView:    scope.ProcessView,
 		},
 	)
 }

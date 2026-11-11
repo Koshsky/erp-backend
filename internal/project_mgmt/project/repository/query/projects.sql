@@ -1,13 +1,14 @@
 -- name: CreateProject :one
 -- Idempotent create by business key code: if an active code already exists
 -- we insert nothing; the calling code (repository) turns the conflict into 409.
-INSERT INTO projects (code, start_date, end_date, priority, owner_id, color)
+INSERT INTO projects (code, start_date, end_date, priority, owner_id, responsible_id, color)
 VALUES (
   @code::text,
   @start_date::date,
   @end_date::date,
   @priority::bigint,
   @owner_id,
+  @responsible_id,
   @color
 )
 ON CONFLICT (code)
@@ -19,12 +20,18 @@ SELECT *
 FROM projects
 WHERE (
     @sc_all::boolean OR
+    (@sc_process_projects::boolean AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = projects.id AND vp.owner_id = @user_id::bigint
+    )) OR
     (@sc_self::boolean AND owner_id = @user_id::bigint) OR
-    (@sc_down::boolean AND EXISTS (
+    (@sc_down::boolean AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = projects.id AND dp.owner_id = @user_id::bigint
+    ) OR EXISTS (
         SELECT 1 FROM tasks d
         JOIN processes dp ON dp.id = d.process_id
         WHERE dp.project_id = projects.id AND d.owner_id = @user_id::bigint
-    )) OR
+    ))) OR
     @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint)
@@ -36,12 +43,18 @@ SELECT COUNT(*)
 FROM projects
 WHERE (
     @sc_all::boolean OR
+    (@sc_process_projects::boolean AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = projects.id AND vp.owner_id = @user_id::bigint
+    )) OR
     (@sc_self::boolean AND owner_id = @user_id::bigint) OR
-    (@sc_down::boolean AND EXISTS (
+    (@sc_down::boolean AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = projects.id AND dp.owner_id = @user_id::bigint
+    ) OR EXISTS (
         SELECT 1 FROM tasks d
         JOIN processes dp ON dp.id = d.process_id
         WHERE dp.project_id = projects.id AND d.owner_id = @user_id::bigint
-    )) OR
+    ))) OR
     @sc_none::boolean
   )
   AND (@owner_id::bigint = 0 OR owner_id = @owner_id::bigint);
@@ -60,6 +73,7 @@ SET
 	start_date = @start_date,
 	end_date = @end_date,
   owner_id = @owner_id,
+  responsible_id = @responsible_id,
 	updated_at = NOW()
 WHERE id = @project_id::bigint
 RETURNING *;

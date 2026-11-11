@@ -17,13 +17,14 @@ func (m *ProjectMapper) ToDTO(project *sqlc.Project) *dto.ProjectResponse {
 		return nil
 	}
 	return &dto.ProjectResponse{
-		ID:        project.ID,
-		OwnerID:   nullable.Int64Ptr(project.OwnerID),
-		Code:      project.Code,
-		Color:     nullable.StringPtr(project.Color),
-		StartDate: project.StartDate,
-		EndDate:   project.EndDate,
-		Priority:  int(project.Priority),
+		ID:            project.ID,
+		OwnerID:       nullable.Int64Ptr(project.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(project.ResponsibleID),
+		Code:          project.Code,
+		Color:         nullable.StringPtr(project.Color),
+		StartDate:     project.StartDate,
+		EndDate:       project.EndDate,
+		Priority:      int(project.Priority),
 	}
 }
 
@@ -49,13 +50,14 @@ func (m *ProjectMapper) ToCreateDTO(
 		return nil
 	}
 	return &dto.CreateProjectResponse{
-		ID:        project.ID,
-		OwnerID:   nullable.Int64Ptr(project.OwnerID),
-		Code:      project.Code,
-		Color:     nullable.StringPtr(project.Color),
-		StartDate: project.StartDate,
-		EndDate:   project.EndDate,
-		Priority:  int(project.Priority),
+		ID:            project.ID,
+		OwnerID:       nullable.Int64Ptr(project.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(project.ResponsibleID),
+		Code:          project.Code,
+		Color:         nullable.StringPtr(project.Color),
+		StartDate:     project.StartDate,
+		EndDate:       project.EndDate,
+		Priority:      int(project.Priority),
 		AutoCreated: dto.AutoCreatedCounts{
 			Processes:   counts.Processes,
 			Tasks:       counts.Tasks,

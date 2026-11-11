@@ -6,10 +6,11 @@ type TaskResponse struct {
 	ID        int64 `json:"id"`
 	ProcessID int64 `json:"process_id"`
 	// ParentID — subtask (operation) link; NULL for top-level tasks.
-	ParentID *int64  `json:"parent_id"`
-	OwnerID  *int64  `json:"owner_id"`
-	Title    string  `json:"title"`
-	Color    *string `json:"color"`
+	ParentID      *int64  `json:"parent_id"`
+	OwnerID       *int64  `json:"owner_id"`
+	ResponsibleID *int64  `json:"responsible_id"`
+	Title         string  `json:"title"`
+	Color         *string `json:"color"`
 	// Execution status: not_started | in_progress | done.
 	Status    string    `json:"status"`
 	StartDate date.Date `json:"start_date"`

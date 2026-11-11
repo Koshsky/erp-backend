@@ -241,7 +241,7 @@ func (s *UserService) validateCreatePermissions(
 		if !ok {
 			return nil, errors.BadRequest("неизвестный ресурс " + p.Resource)
 		}
-		if _, okAction := engine.ParseAction(p.Action); !okAction {
+		if action, okAction := engine.ParseAction(p.Action); !okAction || !engine.ActionApplicable(res, action) {
 			return nil, errors.BadRequest("неизвестное действие " + p.Action)
 		}
 		key := p.Resource + "/" + p.Action

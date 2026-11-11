@@ -8,6 +8,10 @@ SELECT id, title, code, owner_id
 FROM resources
 WHERE (
     @sc_all::boolean OR
+    (@sc_project_resources::boolean AND EXISTS (
+        SELECT 1 FROM processes rp JOIN projects rpr ON rpr.id = rp.project_id
+        WHERE rp.owner_id = resources.owner_id AND rpr.owner_id = @user_id::bigint
+    )) OR
     (@sc_self::boolean AND owner_id = @user_id::bigint) OR
     @sc_none::boolean
 )

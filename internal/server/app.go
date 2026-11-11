@@ -26,12 +26,16 @@ import (
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
+	userservice "github.com/Koshsky/erp-backend/internal/user/service"
 )
 
 const (
 	defaultServerStartTimeout = 5 * time.Second
 	defaultDialTimeout        = 1 * time.Second
 	defaultPollInterval       = 100 * time.Millisecond
+	// bootstrapTimeout bounds the first-launch administrator bootstrap (one
+	// lookup plus one insert): a hung database must not block startup forever.
+	bootstrapTimeout = 10 * time.Second
 )
 
 type App struct {
@@ -47,6 +51,7 @@ type App struct {
 	idemMw      *idempotencypkg.Middleware
 	auditMw     *audit.Middleware
 	policyStore *authzService.PolicyStore
+	userSvc     *userservice.UserService
 	modules     []Module
 }
 
@@ -61,6 +66,7 @@ func New(
 	idemMw *idempotencypkg.Middleware,
 	auditMw *audit.Middleware,
 	policyStore *authzService.PolicyStore,
+	userSvc *userservice.UserService,
 	redisClient *redis.Client,
 	rateLimiter *ratelimit.Provider,
 	modules []Module,
@@ -77,8 +83,24 @@ func New(
 		idemMw:      idemMw,
 		auditMw:     auditMw,
 		policyStore: policyStore,
+		userSvc:     userSvc,
 		modules:     modules,
 	}, nil
+}
+
+// ensureAdmin creates the administrator account on the first launch (the
+// password comes from ADMIN_PASSWORD); an existing account is left untouched.
+// A failure is fatal on purpose: without an administrator the deployment cannot
+// be administered at all, and coming up half-configured is worse than not
+// coming up.
+func (a *App) ensureAdmin() error {
+	if a.userSvc == nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), bootstrapTimeout)
+	defer cancel()
+	_, err := a.userSvc.EnsureAdmin(ctx, a.cfg.Admin.Password)
+	return err
 }
 
 // Logger returns the application logger.
@@ -87,6 +109,13 @@ func (a *App) Logger() *slog.Logger {
 }
 
 func (a *App) Start() error {
+	// First-launch bootstrap: the administrator account is created here (from
+	// ADMIN_PASSWORD) instead of shipping in the seeds. Runs before the RBAC
+	// store starts so the published snapshot already knows the new principal.
+	if err := a.ensureAdmin(); err != nil {
+		return fmt.Errorf("admin bootstrap: %w", err)
+	}
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 

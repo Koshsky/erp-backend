@@ -18,28 +18,69 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::boolean OR
-    ($2::boolean AND p.owner_id = $3::bigint) OR
-    ($4::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
-    $5::boolean
+    ((
+    ('all' = ANY($1::text[])) OR
+    (('self' = ANY($1::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_projects' = ANY($1::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($1::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = $2::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = $2::bigint
+    ))) OR
+    false
+  ) OR (
+    ('all' = ANY($3::text[])) OR
+    (('project_owner' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_owner' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('self' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('parent' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('ancestor' = ANY($3::text[])) AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    (('sib' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $2::bigint
+    )) OR
+    false
+  )) OR
+    $4::boolean OR
+    ($5::boolean AND pr.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND p.owner_id = $2::bigint) OR
+    ($8::boolean AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    $9::boolean
   )
-  AND ($6::bigint = 0 OR p.owner_id = $6::bigint OR pr.owner_id = $6::bigint)
+  AND ($10::bigint = 0 OR p.owner_id = $10::bigint OR pr.owner_id = $10::bigint)
 `
 
 type CountMilestonesParams struct {
-	ScAll      bool  `json:"sc_all"`
-	ScParent   bool  `json:"sc_parent"`
-	UserID     int64 `json:"user_id"`
-	ScAncestor bool  `json:"sc_ancestor"`
-	ScNone     bool  `json:"sc_none"`
-	OwnerID    int64 `json:"owner_id"`
+	ProjectView    []string `json:"project_view"`
+	UserID         int64    `json:"user_id"`
+	ProcessView    []string `json:"process_view"`
+	ScAll          bool     `json:"sc_all"`
+	ScProjectOwner bool     `json:"sc_project_owner"`
+	ScProcessOwner bool     `json:"sc_process_owner"`
+	ScParent       bool     `json:"sc_parent"`
+	ScAncestor     bool     `json:"sc_ancestor"`
+	ScNone         bool     `json:"sc_none"`
+	OwnerID        int64    `json:"owner_id"`
 }
 
 func (q *Queries) CountMilestones(ctx context.Context, arg CountMilestonesParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countMilestones,
-		arg.ScAll,
-		arg.ScParent,
+		arg.ProjectView,
 		arg.UserID,
+		arg.ProcessView,
+		arg.ScAll,
+		arg.ScProjectOwner,
+		arg.ScProcessOwner,
+		arg.ScParent,
 		arg.ScAncestor,
 		arg.ScNone,
 		arg.OwnerID,
@@ -123,32 +164,73 @@ FROM milestones m
 JOIN processes p ON p.id = m.process_id
 JOIN projects pr ON pr.id = p.project_id
 WHERE (
-    $1::boolean OR
-    ($2::boolean AND p.owner_id = $3::bigint) OR
-    ($4::boolean AND (p.owner_id = $3::bigint OR pr.owner_id = $3::bigint)) OR
-    $5::boolean
+    ((
+    ('all' = ANY($1::text[])) OR
+    (('self' = ANY($1::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_projects' = ANY($1::text[])) AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = pr.id AND vp.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($1::text[])) AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = pr.id AND dp.owner_id = $2::bigint
+    ) OR EXISTS (
+        SELECT 1 FROM tasks d
+        JOIN processes dp ON dp.id = d.process_id
+        WHERE dp.project_id = pr.id AND d.owner_id = $2::bigint
+    ))) OR
+    false
+  ) OR (
+    ('all' = ANY($3::text[])) OR
+    (('project_owner' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('process_owner' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('self' = ANY($3::text[])) AND p.owner_id = $2::bigint) OR
+    (('parent' = ANY($3::text[])) AND pr.owner_id = $2::bigint) OR
+    (('ancestor' = ANY($3::text[])) AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    (('sib' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM processes s
+        WHERE s.project_id = p.project_id AND s.owner_id = $2::bigint
+    )) OR
+    (('down' = ANY($3::text[])) AND EXISTS (
+        SELECT 1 FROM tasks d WHERE d.process_id = p.id AND d.owner_id = $2::bigint
+    )) OR
+    false
+  )) OR
+    $4::boolean OR
+    ($5::boolean AND pr.owner_id = $2::bigint) OR
+    ($6::boolean AND p.owner_id = $2::bigint) OR
+    ($7::boolean AND p.owner_id = $2::bigint) OR
+    ($8::boolean AND (p.owner_id = $2::bigint OR pr.owner_id = $2::bigint)) OR
+    $9::boolean
   )
-  AND ($6::bigint = 0 OR p.owner_id = $6::bigint OR pr.owner_id = $6::bigint)
+  AND ($10::bigint = 0 OR p.owner_id = $10::bigint OR pr.owner_id = $10::bigint)
 ORDER BY m.id ASC
-LIMIT $8::bigint OFFSET $7::bigint
+LIMIT $12::bigint OFFSET $11::bigint
 `
 
 type ListMilestonesParams struct {
-	ScAll      bool  `json:"sc_all"`
-	ScParent   bool  `json:"sc_parent"`
-	UserID     int64 `json:"user_id"`
-	ScAncestor bool  `json:"sc_ancestor"`
-	ScNone     bool  `json:"sc_none"`
-	OwnerID    int64 `json:"owner_id"`
-	PageOffset int64 `json:"page_offset"`
-	PageLimit  int64 `json:"page_limit"`
+	ProjectView    []string `json:"project_view"`
+	UserID         int64    `json:"user_id"`
+	ProcessView    []string `json:"process_view"`
+	ScAll          bool     `json:"sc_all"`
+	ScProjectOwner bool     `json:"sc_project_owner"`
+	ScProcessOwner bool     `json:"sc_process_owner"`
+	ScParent       bool     `json:"sc_parent"`
+	ScAncestor     bool     `json:"sc_ancestor"`
+	ScNone         bool     `json:"sc_none"`
+	OwnerID        int64    `json:"owner_id"`
+	PageOffset     int64    `json:"page_offset"`
+	PageLimit      int64    `json:"page_limit"`
 }
 
 func (q *Queries) ListMilestones(ctx context.Context, arg ListMilestonesParams) ([]Milestone, error) {
 	rows, err := q.db.Query(ctx, listMilestones,
-		arg.ScAll,
-		arg.ScParent,
+		arg.ProjectView,
 		arg.UserID,
+		arg.ProcessView,
+		arg.ScAll,
+		arg.ScProjectOwner,
+		arg.ScProcessOwner,
+		arg.ScParent,
 		arg.ScAncestor,
 		arg.ScNone,
 		arg.OwnerID,

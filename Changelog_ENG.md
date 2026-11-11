@@ -5,6 +5,52 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-11-11
+
+### Changed
+
+- Administrative capabilities are isolated; migration preserves legacy grants and individual revokes.
+
+## [1.4.2] - 2026-11-10
+
+### Changed
+
+- Viewing inherits from projects, processes and tasks despite child denials; management remains independent.
+- V13 updates predefined roles and separates project priority changes while preserving custom roles and personal overrides.
+
+- Tasks support shared-project access; shared-process access covers all tasks and subtasks, with consistent list, diagram and direct-ID scoping.
+
+### Fixed
+
+- Project subtree access includes owned processes and tasks; scoped project totals use the caller's user id.
+- Process/task permissions use parent ownership for all actions; V12 migrates existing own-scope rules without changing denials.
+- Resource ownership transfers are permission checked; administrator preview is read-only and assignments require matching process/resource owners.
+- Own-scope assignment access checks the resource owner even for historical assignments.
+- Updates validate resulting ownership to prevent own-scope transfers and assignment/milestone moves to foreign targets.
+- Subtask creation checks parent-task access and rejects a process that differs from the parent's process.
+
+## [1.4.1] - 2026-11-09
+
+### Changed
+
+- The backend embeds core SQL and uses golang-migrate with explicit Flyway adoption, preserving existing plugin history.
+
+## [1.4.0] - 2026-11-06
+
+### Added
+
+- Projects, processes and tasks carry a `responsible_id` — the accountable person alongside the owner (existing task owners are backfilled into it).
+
+## [1.3.1] - 2026-10-13
+
+### Changed
+
+- The administrator account is no longer seeded: it is created on the first launch with the password from `ADMIN_PASSWORD`.
+
+### Fixed
+
+- `GET /rbac/matrix` returns the full matrix for every preset (previously admin only), with `none` marking a missing right.
+
 ## [1.3.0] - 2026-10-07
 
 ### Added

@@ -85,6 +85,10 @@ func TestCasbinGoldenScope(t *testing.T) { //nolint:paralleltest // общий s
 // u.ID (the subject id must match the role assignment).
 func authorizeFromMatrix(m engine.Matrix, u userctx.UserContext, s ownerSample) bool {
 	switch m.ScopeForUser(u, s.res, s.act) {
+	case engine.ScopeProjectOwner:
+		return u.ID != 0 && s.own.ProjectOwner == u.ID
+	case engine.ScopeProcessOwner:
+		return u.ID != 0 && s.own.ProcessOwner == u.ID
 	case engine.ScopeNone:
 		return false
 	case engine.ScopeAll:
@@ -111,7 +115,7 @@ func ownerOf(res rbac.Resource, o rbac.Owners) int64 {
 	case rbac.ResourceMilestone, rbac.ResourceAssignment, rbac.ResourceState,
 		rbac.ResourceComment, rbac.ResourceUserCatalog, rbac.ResourceRBACConfig,
 		rbac.ResourceUserAdmin, rbac.ResourceStateAdmin, rbac.ResourceOrgStructure,
-		rbac.ResourceAudit:
+		rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return 0
 	}
 	return 0
@@ -126,7 +130,7 @@ func parentOf(res rbac.Resource, o rbac.Owners) int64 {
 	case rbac.ResourceProject, rbac.ResourceState, rbac.ResourceResource,
 		rbac.ResourceWorker, rbac.ResourceComment, rbac.ResourceUserCatalog,
 		rbac.ResourceRBACConfig, rbac.ResourceUserAdmin, rbac.ResourceStateAdmin,
-		rbac.ResourceOrgStructure, rbac.ResourceAudit:
+		rbac.ResourceOrgStructure, rbac.ResourceAudit, rbac.ResourceAutoCreate:
 		return 0
 	}
 	return 0
@@ -187,10 +191,10 @@ func TestCasbinConcurrentReads(t *testing.T) { //nolint:paralleltest // общи
 				rbac.ResourceTask,
 				engine.ActionView,
 				rbac.Owners{ProjectOwner: 1, ProcessOwner: id},
-				id,
+				u.ID,
 			)
-			if id == 5 && !ok {
-				t.Errorf("rp ancestor view must allow the process owner")
+			if ok {
+				t.Errorf("RP cannot gain project access through process ownership")
 			}
 			_ = engine.ViewScopeCodeUser(u, rbac.ResourceProject)
 		}(int64(1 + i%10))

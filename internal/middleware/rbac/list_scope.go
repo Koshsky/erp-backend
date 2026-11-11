@@ -7,6 +7,13 @@ package rbac
 // list queries consume it as boolean parameters. Repositories receive the
 // bundle instead of a raw scope string so the queries stay static (sqlc).
 type ListScope struct {
+	ProjectView      []string
+	ProcessView      []string
+	TaskView         []string
+	ProjectOwner     bool
+	ProcessOwner     bool
+	ProcessProjects  bool
+	ProjectResources bool
 	// All — unconditional access (expression "all").
 	All bool
 	// Self — the row owner (L0) is the caller.
@@ -15,8 +22,10 @@ type ListScope struct {
 	Parent bool
 	// Ancestor — any owner of the row's chain is the caller (up).
 	Ancestor bool
-	// Sib — the caller owns a sibling node (same parent) of the row.
+	// Sib — the caller owns a process in the same project, or a task in the same process.
 	Sib bool
+	// ProjectSib — a task belongs to a project containing a task of the caller.
+	ProjectSib bool
 	// Down — the caller owns a descendant node below the row.
 	Down bool
 	// None — the caller has no view rule (reference fallback: include all).

@@ -47,31 +47,39 @@ SELECT COUNT(*)
 FROM projects
 WHERE (
     $1::boolean OR
-    ($2::boolean AND owner_id = $3::bigint) OR
-    ($4::boolean AND EXISTS (
+    ($2::boolean AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = projects.id AND vp.owner_id = $3::bigint
+    )) OR
+    ($4::boolean AND owner_id = $3::bigint) OR
+    ($5::boolean AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = projects.id AND dp.owner_id = $3::bigint
+    ) OR EXISTS (
         SELECT 1 FROM tasks d
         JOIN processes dp ON dp.id = d.process_id
         WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
-    )) OR
-    $5::boolean
+    ))) OR
+    $6::boolean
   )
-  AND ($6::bigint = 0 OR owner_id = $6::bigint)
+  AND ($7::bigint = 0 OR owner_id = $7::bigint)
 `
 
 type CountProjectsParams struct {
-	ScAll   bool  `json:"sc_all"`
-	ScSelf  bool  `json:"sc_self"`
-	UserID  int64 `json:"user_id"`
-	ScDown  bool  `json:"sc_down"`
-	ScNone  bool  `json:"sc_none"`
-	OwnerID int64 `json:"owner_id"`
+	ScAll             bool  `json:"sc_all"`
+	ScProcessProjects bool  `json:"sc_process_projects"`
+	UserID            int64 `json:"user_id"`
+	ScSelf            bool  `json:"sc_self"`
+	ScDown            bool  `json:"sc_down"`
+	ScNone            bool  `json:"sc_none"`
+	OwnerID           int64 `json:"owner_id"`
 }
 
 func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countProjects,
 		arg.ScAll,
-		arg.ScSelf,
+		arg.ScProcessProjects,
 		arg.UserID,
+		arg.ScSelf,
 		arg.ScDown,
 		arg.ScNone,
 		arg.OwnerID,
@@ -82,27 +90,29 @@ func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (i
 }
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (code, start_date, end_date, priority, owner_id, color)
+INSERT INTO projects (code, start_date, end_date, priority, owner_id, responsible_id, color)
 VALUES (
   $1::text,
   $2::date,
   $3::date,
   $4::bigint,
   $5,
-  $6
+  $6,
+  $7
 )
 ON CONFLICT (code)
 DO NOTHING
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 `
 
 type CreateProjectParams struct {
-	Code      string         `json:"code"`
-	StartDate date.Date      `json:"start_date"`
-	EndDate   date.Date      `json:"end_date"`
-	Priority  int64          `json:"priority"`
-	OwnerID   pgtype.Int8    `json:"owner_id"`
-	Color     sql.NullString `json:"color"`
+	Code          string         `json:"code"`
+	StartDate     date.Date      `json:"start_date"`
+	EndDate       date.Date      `json:"end_date"`
+	Priority      int64          `json:"priority"`
+	OwnerID       pgtype.Int8    `json:"owner_id"`
+	ResponsibleID pgtype.Int8    `json:"responsible_id"`
+	Color         sql.NullString `json:"color"`
 }
 
 // Idempotent create by business key code: if an active code already exists
@@ -114,6 +124,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.EndDate,
 		arg.Priority,
 		arg.OwnerID,
+		arg.ResponsibleID,
 		arg.Color,
 	)
 	var i Project
@@ -127,6 +138,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }
@@ -142,7 +154,7 @@ func (q *Queries) DeleteProject(ctx context.Context, projectID int64) error {
 }
 
 const findProject = `-- name: FindProject :one
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 FROM projects
 WHERE id = $1::bigint
 `
@@ -160,44 +172,53 @@ func (q *Queries) FindProject(ctx context.Context, projectID int64) (Project, er
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+SELECT id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 FROM projects
 WHERE (
     $1::boolean OR
-    ($2::boolean AND owner_id = $3::bigint) OR
-    ($4::boolean AND EXISTS (
+    ($2::boolean AND EXISTS (
+        SELECT 1 FROM processes vp WHERE vp.project_id = projects.id AND vp.owner_id = $3::bigint
+    )) OR
+    ($4::boolean AND owner_id = $3::bigint) OR
+    ($5::boolean AND (EXISTS (
+        SELECT 1 FROM processes dp
+        WHERE dp.project_id = projects.id AND dp.owner_id = $3::bigint
+    ) OR EXISTS (
         SELECT 1 FROM tasks d
         JOIN processes dp ON dp.id = d.process_id
         WHERE dp.project_id = projects.id AND d.owner_id = $3::bigint
-    )) OR
-    $5::boolean
+    ))) OR
+    $6::boolean
   )
-  AND ($6::bigint = 0 OR owner_id = $6::bigint)
+  AND ($7::bigint = 0 OR owner_id = $7::bigint)
 ORDER BY id ASC
-LIMIT $8::bigint OFFSET $7::bigint
+LIMIT $9::bigint OFFSET $8::bigint
 `
 
 type ListProjectsParams struct {
-	ScAll      bool  `json:"sc_all"`
-	ScSelf     bool  `json:"sc_self"`
-	UserID     int64 `json:"user_id"`
-	ScDown     bool  `json:"sc_down"`
-	ScNone     bool  `json:"sc_none"`
-	OwnerID    int64 `json:"owner_id"`
-	PageOffset int64 `json:"page_offset"`
-	PageLimit  int64 `json:"page_limit"`
+	ScAll             bool  `json:"sc_all"`
+	ScProcessProjects bool  `json:"sc_process_projects"`
+	UserID            int64 `json:"user_id"`
+	ScSelf            bool  `json:"sc_self"`
+	ScDown            bool  `json:"sc_down"`
+	ScNone            bool  `json:"sc_none"`
+	OwnerID           int64 `json:"owner_id"`
+	PageOffset        int64 `json:"page_offset"`
+	PageLimit         int64 `json:"page_limit"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listProjects,
 		arg.ScAll,
-		arg.ScSelf,
+		arg.ScProcessProjects,
 		arg.UserID,
+		arg.ScSelf,
 		arg.ScDown,
 		arg.ScNone,
 		arg.OwnerID,
@@ -221,6 +242,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.Priority,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ResponsibleID,
 		); err != nil {
 			return nil, err
 		}
@@ -254,19 +276,21 @@ SET
 	start_date = $4,
 	end_date = $5,
   owner_id = $6,
+  responsible_id = $7,
 	updated_at = NOW()
-WHERE id = $7::bigint
-RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at
+WHERE id = $8::bigint
+RETURNING id, owner_id, code, color, start_date, end_date, priority, created_at, updated_at, responsible_id
 `
 
 type UpdateProjectParams struct {
-	Code      string         `json:"code"`
-	Color     sql.NullString `json:"color"`
-	Priority  int64          `json:"priority"`
-	StartDate date.Date      `json:"start_date"`
-	EndDate   date.Date      `json:"end_date"`
-	OwnerID   pgtype.Int8    `json:"owner_id"`
-	ProjectID int64          `json:"project_id"`
+	Code          string         `json:"code"`
+	Color         sql.NullString `json:"color"`
+	Priority      int64          `json:"priority"`
+	StartDate     date.Date      `json:"start_date"`
+	EndDate       date.Date      `json:"end_date"`
+	OwnerID       pgtype.Int8    `json:"owner_id"`
+	ResponsibleID pgtype.Int8    `json:"responsible_id"`
+	ProjectID     int64          `json:"project_id"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
@@ -277,6 +301,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		arg.StartDate,
 		arg.EndDate,
 		arg.OwnerID,
+		arg.ResponsibleID,
 		arg.ProjectID,
 	)
 	var i Project
@@ -290,6 +315,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		&i.Priority,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ResponsibleID,
 	)
 	return i, err
 }

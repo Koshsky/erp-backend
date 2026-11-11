@@ -2,6 +2,7 @@ package engine_test
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -61,10 +62,12 @@ func TestScopeApplicability(t *testing.T) {
 		{rbac.ResourceProject, "up", false},  // no parent
 		{rbac.ResourceProject, "sib", false}, // no parent
 		{rbac.ResourceProject, "down", true}, // owner-bearing descendants
-		{rbac.ResourceProcess, "self", true},
+		{rbac.ResourceProcess, "self", false},
 		{rbac.ResourceProcess, "up1", true},
 		{rbac.ResourceProcess, "sib", true},
 		{rbac.ResourceProcess, "down", true},
+		{rbac.ResourceTask, "self", false},
+		{rbac.ResourceTask, "up1", true},
 		{rbac.ResourceTask, "sib", true},
 		{rbac.ResourceTask, "down", true},
 		{rbac.ResourceMilestone, "self", false}, // no own owner
@@ -127,8 +130,8 @@ func TestEvalScopeProbes(t *testing.T) {
 		Descendant: func(_ context.Context, res rbac.Resource, id, userID int64) (bool, error) {
 			return res == rbac.ResourceProject && id == 1 && userID == 5, nil
 		},
-		Sibling: func(_ context.Context, res rbac.Resource, id, userID int64) (bool, error) {
-			return res == rbac.ResourceProcess && id == 7 && userID == 3, nil
+		Peer: func(_ context.Context, target engine.Target, userID int64, _ bool) (bool, error) {
+			return target.Res == rbac.ResourceProcess && target.ID == 7 && userID == 3, nil
 		},
 	}
 	owners := rbac.Owners{}
@@ -170,7 +173,7 @@ func TestCompileListScope(t *testing.T) {
 		{"self up1 sib down", rbac.ListScope{Self: true, Parent: true, Sib: true, Down: true}},
 	}
 	for _, tc := range cases {
-		if got := engine.CompileListScope(tc.expr, rbac.ResourceTask); got != tc.want {
+		if got := engine.CompileListScope(tc.expr, rbac.ResourceTask); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("engine.CompileListScope(%q) = %+v; want %+v", tc.expr, got, tc.want)
 		}
 	}

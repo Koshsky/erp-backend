@@ -72,6 +72,10 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 //	@Failure		500				{object}	response.ErrorResponse{data=nil}
 //	@Router			/user [get]
 func (h *UserHandler) ListUsers(c *gin.Context) {
+	h.listUsers(c, false)
+}
+
+func (h *UserHandler) listUsers(c *gin.Context, accounts bool) {
 	limit, offset, perr := response.ParsePagination(c)
 	if perr != nil {
 		response.Error(c, h.logger, perr)
@@ -95,10 +99,14 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		response.Error(c, h.logger, err)
 		return
 	}
+	scope := engine.CompileViewScopeUser(user, rbac.ResourceWorker)
+	if accounts {
+		scope = rbac.ListScope{All: true}
+	}
 	items, total, err := h.service.ListUsers(
 		c.Request.Context(),
 		user.ID,
-		engine.CompileViewScopeUser(user, rbac.ResourceWorker),
+		scope,
 		c.Query("preset"),
 		response.QueryID(c, "manager_id"),
 		search,

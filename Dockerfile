@@ -1,4 +1,4 @@
-FROM golang:1.27-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS builder
 
 WORKDIR /src
 
@@ -20,6 +20,7 @@ WORKDIR /app
 
 RUN adduser -D -u 10001 appuser
 
+# Core SQL is embedded in the service; deployment-specific seeds are excluded.
 COPY --from=builder /out/service /app/service
 COPY --from=builder /src/docs /app/docs
 

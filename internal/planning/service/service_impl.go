@@ -137,10 +137,30 @@ func (s *PlanningService) GetTaskPlanning(
 		processes,
 		userID,
 		resourceScope,
+		rbac.ListScope{All: true},
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	filterTaskDependencies(tasks, dependencies)
 	return s.buildPlanning(processes, milestones, tasks, assignments, resourcesMap, commentCounts, dependencies), nil
+}
+
+func filterTaskDependencies(tasks map[int64][]dto.Task, dependencies map[int64][]dto.TaskDependency) {
+	visible := make(map[int64]bool)
+	for _, rows := range tasks {
+		for _, task := range rows {
+			visible[task.ID] = true
+		}
+	}
+	for processID, edges := range dependencies {
+		kept := edges[:0]
+		for _, edge := range edges {
+			if visible[edge.TaskID] && visible[edge.DependsOnTaskID] {
+				kept = append(kept, edge)
+			}
+		}
+		dependencies[processID] = kept
+	}
 }

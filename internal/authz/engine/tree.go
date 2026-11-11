@@ -27,6 +27,7 @@ var nodeHasOwner = map[rbac.Resource]bool{
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
 	rbac.ResourceAudit:        false,
+	rbac.ResourceAutoCreate:   false,
 }
 
 //nolint:gochecknoglobals // derived applicability tables
@@ -46,6 +47,7 @@ var nodeHasParent = map[rbac.Resource]bool{
 	rbac.ResourceStateAdmin:   false,
 	rbac.ResourceOrgStructure: false,
 	rbac.ResourceAudit:        false,
+	rbac.ResourceAutoCreate:   false,
 }
 
 //nolint:gochecknoglobals // derived applicability tables
@@ -65,4 +67,5 @@ var ownerDescendants = map[rbac.Resource][]rbac.Resource{
 	rbac.ResourceStateAdmin:   nil,
 	rbac.ResourceOrgStructure: nil,
 	rbac.ResourceAudit:        nil,
+	rbac.ResourceAutoCreate:   nil,
 }

@@ -22,7 +22,7 @@ const defaultShutdownTimeout = 5 * time.Second
 var version = "dev"
 
 //	@title			Enterprise Resource Planning
-//	@version		1.3.0
+//	@version		1.4.3
 //	@description	For managing the enterprise's universal resources
 //	@termsOfService	http://swagger.io/terms/
 
@@ -49,6 +49,13 @@ var version = "dev"
 //	@externalDocs.url			https://swagger.io/resources/open-api/
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		if err := migrationCommand(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	// build the application dependency graph
 	application, err := server.InitializeApp()
 	if err != nil {

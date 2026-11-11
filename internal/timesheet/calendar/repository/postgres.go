@@ -43,10 +43,11 @@ func (r *CalendarRepository) ListResources(
 	scope rbac.ListScope,
 ) ([]sqlc.ListResourcesRow, error) {
 	return r.q(ctx).ListResources(ctx, sqlc.ListResourcesParams{
-		UserID: userID,
-		ScAll:  scope.All,
-		ScSelf: scope.Self,
-		ScNone: scope.None,
+		UserID:             userID,
+		ScAll:              scope.All,
+		ScSelf:             scope.Self,
+		ScNone:             scope.None,
+		ScProjectResources: scope.ProjectResources,
 	})
 }
 

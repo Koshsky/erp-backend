@@ -9,13 +9,14 @@ import (
 // toProject converts a project row (planning read model).
 func toProject(p sqlc.Project) dto.Project {
 	return dto.Project{
-		ID:        p.ID,
-		OwnerID:   nullable.Int64Ptr(p.OwnerID),
-		Code:      p.Code,
-		Color:     nullable.StringPtr(p.Color),
-		StartDate: p.StartDate,
-		EndDate:   p.EndDate,
-		Priority:  int(p.Priority),
+		ID:            p.ID,
+		OwnerID:       nullable.Int64Ptr(p.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(p.ResponsibleID),
+		Code:          p.Code,
+		Color:         nullable.StringPtr(p.Color),
+		StartDate:     p.StartDate,
+		EndDate:       p.EndDate,
+		Priority:      int(p.Priority),
 	}
 }
 
@@ -23,46 +24,51 @@ func toProject(p sqlc.Project) dto.Project {
 // embed query that also selects the project code).
 func toProcess(p sqlc.ListProcessesRow) dto.Process {
 	return dto.Process{
-		ID:          p.Process.ID,
-		Title:       p.Process.Title,
-		Color:       nullable.StringPtr(p.Process.Color),
-		OwnerID:     nullable.Int64Ptr(p.Process.OwnerID),
-		ProjectID:   p.Process.ProjectID,
-		ProjectCode: p.ProjectCode,
-		StartDate:   p.Process.StartDate,
-		EndDate:     p.Process.EndDate,
-		Order:       int(p.Process.SortOrder),
+		ID:            p.Process.ID,
+		Title:         p.Process.Title,
+		Color:         nullable.StringPtr(p.Process.Color),
+		OwnerID:       nullable.Int64Ptr(p.Process.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(p.Process.ResponsibleID),
+		ProjectID:     p.Process.ProjectID,
+		ProjectCode:   p.ProjectCode,
+		ProjectOwnerID: nullable.Int64Ptr(p.ProjectOwnerID),
+		StartDate:     p.Process.StartDate,
+		EndDate:       p.Process.EndDate,
+		Order:         int(p.Process.SortOrder),
 	}
 }
 
 // toTaskScopeProcess converts a process row from the TASK-scope embed query.
 func toTaskScopeProcess(p sqlc.ListProcessesByTaskScopeRow) dto.Process {
 	return dto.Process{
-		ID:          p.Process.ID,
-		Title:       p.Process.Title,
-		Color:       nullable.StringPtr(p.Process.Color),
-		OwnerID:     nullable.Int64Ptr(p.Process.OwnerID),
-		ProjectID:   p.Process.ProjectID,
-		ProjectCode: p.ProjectCode,
-		StartDate:   p.Process.StartDate,
-		EndDate:     p.Process.EndDate,
-		Order:       int(p.Process.SortOrder),
+		ID:            p.Process.ID,
+		Title:         p.Process.Title,
+		Color:         nullable.StringPtr(p.Process.Color),
+		OwnerID:       nullable.Int64Ptr(p.Process.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(p.Process.ResponsibleID),
+		ProjectID:     p.Process.ProjectID,
+		ProjectCode:   p.ProjectCode,
+		ProjectOwnerID: nullable.Int64Ptr(p.ProjectOwnerID),
+		StartDate:     p.Process.StartDate,
+		EndDate:       p.Process.EndDate,
+		Order:         int(p.Process.SortOrder),
 	}
 }
 
 // toTask converts a task row (planning read model).
 func toTask(t sqlc.Task) dto.Task {
 	return dto.Task{
-		ID:        t.ID,
-		ProcessID: t.ProcessID,
-		ParentID:  nullable.Int64Ptr(t.ParentID),
-		OwnerID:   nullable.Int64Ptr(t.OwnerID),
-		Title:     t.Title,
-		Color:     nullable.StringPtr(t.Color),
-		Status:    t.Status,
-		StartDate: t.StartDate,
-		EndDate:   t.EndDate,
-		Order:     int(t.SortOrder),
+		ID:            t.ID,
+		ProcessID:     t.ProcessID,
+		ParentID:      nullable.Int64Ptr(t.ParentID),
+		OwnerID:       nullable.Int64Ptr(t.OwnerID),
+		ResponsibleID: nullable.Int64Ptr(t.ResponsibleID),
+		Title:         t.Title,
+		Color:         nullable.StringPtr(t.Color),
+		Status:        t.Status,
+		StartDate:     t.StartDate,
+		EndDate:       t.EndDate,
+		Order:         int(t.SortOrder),
 	}
 }
 

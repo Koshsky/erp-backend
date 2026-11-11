@@ -9,12 +9,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Koshsky/erp-backend/internal/config"
+	"github.com/Koshsky/erp-backend/internal/migration"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 )
 
 func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger, tracer *tracingpkg.Tracer) (*pgxpool.Pool, error) {
 	const op = "initDBPool"
 
+	migrationLogger := logger
 	logger = logger.With("component", "database")
 
 	cfg, err := pgxpool.ParseConfig(pgCfg.URL)
@@ -46,6 +48,15 @@ func InitDBPool(pgCfg config.PostgresConfig, logger *slog.Logger, tracer *tracin
 	if err = pool.Ping(ctx); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("%s: ping: %w", op, err)
+	}
+
+	// Construct repositories only after the schema and its history are validated.
+	const migrationTimeout = 5 * time.Minute
+	migrationCtx, migrationCancel := context.WithTimeout(context.Background(), migrationTimeout)
+	defer migrationCancel()
+	if err = migration.Run(migrationCtx, pool, migrationLogger); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("%s: migrate: %w", op, err)
 	}
 
 	stats := pool.Stat()

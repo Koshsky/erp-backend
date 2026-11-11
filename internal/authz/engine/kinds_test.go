@@ -62,8 +62,8 @@ func TestScopeApplicableTable(t *testing.T) {
 	t.Parallel()
 	ownRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      true,
-		rbac.ResourceProcess:      true,
-		rbac.ResourceTask:         true,
+		rbac.ResourceProcess:      false,
+		rbac.ResourceTask:         false,
 		rbac.ResourceMilestone:    false,
 		rbac.ResourceAssignment:   false,
 		rbac.ResourceState:        false,
@@ -76,6 +76,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
 		rbac.ResourceAudit:        false,
+		rbac.ResourceAutoCreate:   false,
 	}
 	parentRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      false,
@@ -93,6 +94,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
 		rbac.ResourceAudit:        false,
+		rbac.ResourceAutoCreate:   false,
 	}
 	ancestorRes := map[rbac.Resource]bool{
 		rbac.ResourceProject:      false,
@@ -110,6 +112,7 @@ func TestScopeApplicableTable(t *testing.T) {
 		rbac.ResourceStateAdmin:   false,
 		rbac.ResourceOrgStructure: false,
 		rbac.ResourceAudit:        false,
+		rbac.ResourceAutoCreate:   false,
 	}
 	for i := rbac.ResourceProject; i <= rbac.ResourceRBACConfig; i++ {
 		if !engine.ScopeApplicable(i, engine.ScopeAll) {
@@ -327,8 +330,8 @@ func TestValidateSpec(t *testing.T) {
 func TestKinds(t *testing.T) {
 	t.Parallel()
 	infos := engine.Kinds()
-	if len(infos) != 6 {
-		t.Fatalf("Kinds() = %d; want 6", len(infos))
+	if len(infos) != 7 {
+		t.Fatalf("Kinds() = %d; want 7", len(infos))
 	}
 	seen := map[string]bool{}
 	for _, k := range infos {
@@ -337,7 +340,7 @@ func TestKinds(t *testing.T) {
 			t.Errorf("kind %s без схемы параметров", k.Name)
 		}
 	}
-	for _, name := range []string{"list", "entity", "create", "owner_match", "author_or", "parent_action"} {
+	for _, name := range []string{"list", "entity", "create", "owner_match", "author_or", "parent_action", "any_capability"} {
 		if !seen[name] {
 			t.Errorf("в Kinds() нет kind'а %s", name)
 		}
