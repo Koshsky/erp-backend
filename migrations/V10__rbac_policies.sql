@@ -17,12 +17,12 @@
 -- =============================================
 -- SEED: preset catalog
 -- =============================================
-INSERT INTO rbac_presets (name, description) VALUES
-    ('admin',  'system administrator — full access (bypass in code)'),
-    ('dp',     'project portfolio director'),
-    ('rp',     'project manager'),
-    ('vp',     'process owner'),
-    ('worker', 'worker (no rights yet)');
+INSERT INTO rbac_presets (tag, name, description) VALUES
+    ('admin',  'Администратор',        'Полный доступ (обход проверок в коде)'),
+    ('dp',     'Директор проектов',    'Управляет портфелем проектов'),
+    ('rp',     'Руководитель проекта', 'Ведёт свой проект'),
+    ('vp',     'Владелец процесса',    'Управляет процессами и сотрудниками'),
+    ('worker', 'Работник',             'Исполнитель, базовых прав нет');
 
 -- =============================================
 -- SEED: rights matrix (current behavior in the new scopes)

@@ -10,6 +10,8 @@ import (
 	"time"
 
 	stderrors "errors"
+
+	"github.com/Koshsky/erp-backend/pkg/messages"
 )
 
 // DomainError is an error that knows its HTTP status, machine-readable code
@@ -24,6 +26,13 @@ type DomainError struct {
 	Status  int    `json:"-"`
 	Cause   error  `json:"-"`
 	Details string `json:"-"`
+
+	// MsgKey and MsgArgs back parameterized messages (see the M constructors):
+	// when MsgKey is set, the response layer re-renders the message per request
+	// locale instead of sending the Russian text rendered at construction time.
+	// Both fields are never serialized.
+	MsgKey  string `json:"-"`
+	MsgArgs []any  `json:"-"`
 }
 
 func (e *DomainError) Error() string   { return e.Message }
@@ -46,6 +55,17 @@ func now() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
 
+// NewValidationErrorM builds a validation error for a parameterized message:
+// Message carries the Russian text rendered at construction time; MsgKey and
+// MsgArgs let the response layer re-render the message per request locale.
+func NewValidationErrorM(m messages.Message) error {
+	return &ValidationError{
+		Message: m.Text(messages.Default),
+		MsgKey:  m.Key,
+		MsgArgs: m.Args,
+	}
+}
+
 // NotFound returns a 404 error wrapping ErrNotFound.
 func NotFound(msg string) error {
 	return &DomainError{
@@ -54,6 +74,19 @@ func NotFound(msg string) error {
 		Cause:     ErrNotFound,
 		Code:      CodeNotFound,
 		Timestamp: now(),
+	}
+}
+
+// NotFoundM returns a 404 error for a parameterized message (see BadRequestM).
+func NotFoundM(m messages.Message) error {
+	return &DomainError{
+		Status:    http.StatusNotFound,
+		Message:   m.Text(messages.Default),
+		Cause:     ErrNotFound,
+		Code:      CodeNotFound,
+		Timestamp: now(),
+		MsgKey:    m.Key,
+		MsgArgs:   m.Args,
 	}
 }
 
@@ -68,6 +101,19 @@ func Forbidden(msg string) error {
 	}
 }
 
+// ForbiddenM returns a 403 error for a parameterized message (see BadRequestM).
+func ForbiddenM(m messages.Message) error {
+	return &DomainError{
+		Status:    http.StatusForbidden,
+		Message:   m.Text(messages.Default),
+		Cause:     ErrForbidden,
+		Code:      CodeForbidden,
+		Timestamp: now(),
+		MsgKey:    m.Key,
+		MsgArgs:   m.Args,
+	}
+}
+
 // BadRequest returns a 400 error wrapping ErrBadRequest.
 func BadRequest(msg string) error {
 	return &DomainError{
@@ -76,6 +122,22 @@ func BadRequest(msg string) error {
 		Cause:     ErrBadRequest,
 		Code:      CodeBadRequest,
 		Timestamp: now(),
+	}
+}
+
+// BadRequestM returns a 400 error for a parameterized message: Message is
+// rendered in Russian at construction time (so existing logs and tests keep
+// working), while MsgKey/MsgArgs let the response layer re-render the message
+// per request locale.
+func BadRequestM(m messages.Message) error {
+	return &DomainError{
+		Status:    http.StatusBadRequest,
+		Message:   m.Text(messages.Default),
+		Cause:     ErrBadRequest,
+		Code:      CodeBadRequest,
+		Timestamp: now(),
+		MsgKey:    m.Key,
+		MsgArgs:   m.Args,
 	}
 }
 
@@ -88,6 +150,19 @@ func Conflict(msg string) error {
 		Cause:     ErrConflict,
 		Code:      CodeConflict,
 		Timestamp: now(),
+	}
+}
+
+// ConflictM returns a 409 error for a parameterized message (see BadRequestM).
+func ConflictM(m messages.Message) error {
+	return &DomainError{
+		Status:    http.StatusConflict,
+		Message:   m.Text(messages.Default),
+		Cause:     ErrConflict,
+		Code:      CodeConflict,
+		Timestamp: now(),
+		MsgKey:    m.Key,
+		MsgArgs:   m.Args,
 	}
 }
 

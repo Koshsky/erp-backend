@@ -21,6 +21,7 @@ import (
 	idempotencypkg "github.com/Koshsky/erp-backend/internal/idempotency"
 	"github.com/Koshsky/erp-backend/internal/middleware/auth"
 	"github.com/Koshsky/erp-backend/internal/middleware/cors"
+	"github.com/Koshsky/erp-backend/internal/middleware/locale"
 	"github.com/Koshsky/erp-backend/internal/middleware/ratelimit"
 	"github.com/Koshsky/erp-backend/internal/server/profiler"
 	"github.com/Koshsky/erp-backend/internal/server/swagger"
@@ -115,10 +116,14 @@ func (a *App) Start() error {
 		swagger.Register(swag)
 	}
 
-	// Register middleware. The rate limiter is intentionally NOT mounted here
-	// globally: public routes are limited per-IP and protected routes per-user
-	// (see registerRoutes), so a heavy user behind a shared NAT does not drain
-	// a common IP bucket and block their neighbors.
+	// Register middleware. Locale resolution comes first so every later
+	// middleware (recovery, rate limits, auth) and every handler renders its
+	// user-facing messages in the client's language. The rate limiter is
+	// intentionally NOT mounted here globally: public routes are limited
+	// per-IP and protected routes per-user (see registerRoutes), so a heavy
+	// user behind a shared NAT does not drain a common IP bucket and block
+	// their neighbors.
+	router.Use(locale.Middleware())
 	router.Use(cors.FromConfig(a.cfg.CORS))
 	router.Use(gin.Recovery())
 	// L6: assign/carry a request id for log and trace correlation (first).

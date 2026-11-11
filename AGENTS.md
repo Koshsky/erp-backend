@@ -5,7 +5,15 @@ Go 1.27 / Gin backend for the MVS ERP monorepo (`module github.com/Koshsky/erp-b
 ## Language rule (mandatory)
 
 - Code comments, documentation, and commit messages are written in **English only**.
-- User-facing API error messages and runtime logs stay in Russian (the product language) — do not translate them.
+- The API is **bilingual (Russian + English)**: Russian is the source of truth
+  and the default. Every user-visible message is translated in the catalog
+  `pkg/messages` (`catalog_ru.json` / `catalog_en.json`) and rendered per
+  request from the `Accept-Language` header (middleware `internal/middleware/locale`,
+  resolution at the single choke point `internal/response`); an unknown or
+  missing entry falls back to the authored text.
+- Runtime logs are not user-facing: they stay as authored.
+- Server-stored data (user, project, process, task, comment, preset and state
+  names) is returned verbatim — never translated.
 - **Deliberate exception — changelogs are split per language**: `Changelog_ENG.md` (English) and `Changelog_RU.md` (Russian), see the Changelog bullet under Style/process.
 
 ## Commands

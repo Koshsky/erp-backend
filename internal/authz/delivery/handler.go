@@ -293,25 +293,26 @@ func (h *RBACHandler) CreatePreset(c *gin.Context) {
 	response.Created(c, preset)
 }
 
-// UpdatePreset handles updating a preset's description.
+// UpdatePreset handles updating a preset (display name and description always,
+// optional tag rename).
 //
 //	@Tags		RBAC
 //	@Summary	Update a preset
 //	@Security	ApiKeyAuth
 //	@Accept		json
 //	@Produce	json
-//	@Param		name	path		string					true	"Preset name"
+//	@Param		tag		path		string					true	"Preset tag"
 //	@Param		preset	body		dto.PresetUpdateInput	true	"Preset"
 //	@Success	200		{object}	response.SuccessResponse{data=dto.PresetView,error=nil}
 //	@Failure	400		{object}	response.ErrorResponse{data=nil}
-//	@Router		/rbac/presets/{name} [put]
+//	@Router		/rbac/presets/{tag} [put]
 func (h *RBACHandler) UpdatePreset(c *gin.Context) {
 	var in dto.PresetUpdateInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		response.BadRequest(c, errors.CodeBadRequest, err.Error())
 		return
 	}
-	preset, err := h.service.UpdatePreset(c.Request.Context(), c.Param("name"), in)
+	preset, err := h.service.UpdatePreset(c.Request.Context(), c.Param("tag"), in)
 	if err != nil {
 		response.Error(c, h.logger, err)
 		return
@@ -325,11 +326,11 @@ func (h *RBACHandler) UpdatePreset(c *gin.Context) {
 //	@Tags		RBAC
 //	@Summary	Delete a preset
 //	@Security	ApiKeyAuth
-//	@Param		name	path	string	true	"Preset name"
+//	@Param		tag	path	string	true	"Preset tag"
 //	@Success	204
-//	@Router		/rbac/presets/{name} [delete]
+//	@Router		/rbac/presets/{tag} [delete]
 func (h *RBACHandler) DeletePreset(c *gin.Context) {
-	if err := h.service.DeletePreset(c.Request.Context(), c.Param("name")); err != nil {
+	if err := h.service.DeletePreset(c.Request.Context(), c.Param("tag")); err != nil {
 		response.Error(c, h.logger, err)
 		return
 	}

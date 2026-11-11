@@ -743,22 +743,29 @@ definitions:
   dto.PresetUpdateInput:
     properties:
       description:
-        example: Внешний аудит
+        example: Проверка годовой отчётности
         type: string
       name:
+        example: Внешний аудит
+        type: string
+      tag:
         example: auditor
         type: string
     type: object
   dto.PresetUpsertInput:
     properties:
       description:
-        example: Внешний аудит
+        example: Проверка годовой отчётности
         type: string
       name:
+        example: Внешний аудит
+        type: string
+      tag:
         example: auditor
         type: string
     required:
     - name
+    - tag
     type: object
   dto.PresetView:
     properties:
@@ -767,6 +774,8 @@ definitions:
       id:
         type: integer
       name:
+        type: string
+      tag:
         type: string
     type: object
   dto.Process:
@@ -1590,7 +1599,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Enterprise Resource Planning
-  version: "1.0"
+  version: 1.3.0
 paths:
   /assignment:
     get:
@@ -3343,12 +3352,12 @@ paths:
       summary: Create a preset
       tags:
       - RBAC
-  /rbac/presets/{name}:
+  /rbac/presets/{tag}:
     delete:
       parameters:
-      - description: Preset name
+      - description: Preset tag
         in: path
-        name: name
+        name: tag
         required: true
         type: string
       responses:
@@ -3363,9 +3372,9 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Preset name
+      - description: Preset tag
         in: path
-        name: name
+        name: tag
         required: true
         type: string
       - description: Preset

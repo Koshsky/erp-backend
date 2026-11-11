@@ -11,6 +11,7 @@ import (
 
 	"github.com/Koshsky/erp-backend/internal/auto_create/dto"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -58,7 +59,7 @@ func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateC
 		}
 		for _, id := range resourceIDs {
 			if _, ok := existing[id]; !ok {
-				return errors.NewValidationError(fmt.Sprintf("ресурс %d не найден", id))
+				return errors.NewValidationErrorM(messages.M("auto_create.resource_not_found", id))
 			}
 		}
 	}
@@ -70,7 +71,7 @@ func (s *AutoCreateService) SaveConfig(ctx context.Context, cfg *dto.AutoCreateC
 		}
 		for _, id := range ownerIDs {
 			if _, ok := existing[id]; !ok {
-				return errors.NewValidationError(fmt.Sprintf("владелец процесса %d не найден", id))
+				return errors.NewValidationErrorM(messages.M("auto_create.process_owner_not_found", id))
 			}
 		}
 	}
@@ -93,16 +94,14 @@ const (
 
 func validateConfig(cfg *dto.AutoCreateConfig) error {
 	if len(cfg.Processes) > maxProcesses {
-		return errors.NewValidationError(fmt.Sprintf(
-			"слишком много процессов: максимум %d", maxProcesses,
-		))
+		return errors.NewValidationErrorM(messages.M("auto_create.too_many_processes", maxProcesses))
 	}
 	totalAssignments := 0
 	for pi, p := range cfg.Processes {
 		if len(p.Tasks) > maxTasksPerProcess {
-			return errors.NewValidationError(fmt.Sprintf(
-				"процесс %d: слишком много задач: максимум %d", pi+1, maxTasksPerProcess,
-			))
+			return errors.NewValidationErrorM(
+				messages.M("auto_create.process_too_many_tasks", pi+1, maxTasksPerProcess),
+			)
 		}
 		if err := validateProcess(p, pi); err != nil {
 			return err
@@ -112,16 +111,14 @@ func validateConfig(cfg *dto.AutoCreateConfig) error {
 		}
 	}
 	if totalAssignments > maxAssignmentsTotal {
-		return errors.NewValidationError(fmt.Sprintf(
-			"слишком много назначений ресурсов: максимум %d", maxAssignmentsTotal,
-		))
+		return errors.NewValidationErrorM(messages.M("auto_create.too_many_assignments", maxAssignmentsTotal))
 	}
 	return nil
 }
 
 func validateProcess(p dto.ProcessTemplate, pi int) error {
 	if strings.TrimSpace(p.Title) == "" {
-		return errors.NewValidationError(fmt.Sprintf("процесс %d: название не заполнено", pi+1))
+		return errors.NewValidationErrorM(messages.M("auto_create.process_title_missing", pi+1))
 	}
 	if err := validateTemplateColor(p.Color, fmt.Sprintf("процесс %d", pi+1)); err != nil {
 		return err
@@ -146,17 +143,16 @@ func validateTemplateColor(color *string, prefix string) error {
 
 func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 	if strings.TrimSpace(t.Title) == "" {
-		return errors.NewValidationError(
-			fmt.Sprintf("процесс «%s», задача %d: название не заполнено", processTitle, ti+1),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.process_task_title_missing", processTitle, ti+1),
 		)
 	}
 	if err := validateTemplateColor(t.Color, fmt.Sprintf("процесс «%s», задача %d", processTitle, ti+1)); err != nil {
 		return err
 	}
 	if len(t.Operations) > maxOperationsPerTask {
-		return errors.NewValidationError(
-			fmt.Sprintf("процесс «%s», задача %d: слишком много операций: максимум %d",
-				processTitle, ti+1, maxOperationsPerTask),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.process_task_too_many_operations", processTitle, ti+1, maxOperationsPerTask),
 		)
 	}
 	for oi, op := range t.Operations {
@@ -165,9 +161,8 @@ func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 		}
 	}
 	if len(t.Resources) > maxResourcesPerTask {
-		return errors.NewValidationError(
-			fmt.Sprintf("процесс «%s», задача %d: слишком много ресурсов: максимум %d",
-				processTitle, ti+1, maxResourcesPerTask),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.process_task_too_many_resources", processTitle, ti+1, maxResourcesPerTask),
 		)
 	}
 	seen := make(map[int64]struct{}, len(t.Resources))
@@ -181,9 +176,8 @@ func validateTask(processTitle string, t dto.TaskTemplate, ti int) error {
 
 func validateOperation(processTitle, taskTitle string, op dto.OperationTemplate, oi int) error {
 	if strings.TrimSpace(op.Title) == "" {
-		return errors.NewValidationError(
-			fmt.Sprintf("процесс «%s», задача «%s», операция %d: название не заполнено",
-				processTitle, taskTitle, oi+1),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.task_operation_title_missing", processTitle, taskTitle, oi+1),
 		)
 	}
 	return nil
@@ -191,26 +185,23 @@ func validateOperation(processTitle, taskTitle string, op dto.OperationTemplate,
 
 func validateResource(taskTitle string, res dto.ResourceBinding, ri int, seen map[int64]struct{}) error {
 	if res.ResourceID <= 0 {
-		return errors.NewValidationError(
-			fmt.Sprintf("задача «%s», ресурс %d: некорректный resource_id", taskTitle, ri+1),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.task_resource_invalid_id", taskTitle, ri+1),
 		)
 	}
 	if res.Quantity <= 0 {
-		return errors.NewValidationError(
-			fmt.Sprintf("задача «%s», ресурс %d: количество должно быть больше 0", taskTitle, ri+1),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.task_resource_quantity_positive", taskTitle, ri+1),
 		)
 	}
 	if res.Quantity > maxQuantityPerAssignment {
-		return errors.NewValidationError(
-			fmt.Sprintf(
-				"задача «%s», ресурс %d: количество не должно превышать %d",
-				taskTitle, ri+1, maxQuantityPerAssignment,
-			),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.task_resource_quantity_max", taskTitle, ri+1, maxQuantityPerAssignment),
 		)
 	}
 	if _, dup := seen[res.ResourceID]; dup {
-		return errors.NewValidationError(
-			fmt.Sprintf("задача «%s»: ресурс %d указан дважды", taskTitle, res.ResourceID),
+		return errors.NewValidationErrorM(
+			messages.M("auto_create.task_resource_duplicate", taskTitle, res.ResourceID),
 		)
 	}
 	seen[res.ResourceID] = struct{}{}

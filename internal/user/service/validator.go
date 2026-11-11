@@ -1,13 +1,13 @@
 package service
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/Koshsky/erp-backend/internal/user/repository/sqlc"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 	"github.com/Koshsky/erp-backend/pkg/validator"
 )
 
@@ -139,10 +139,10 @@ func normalizeSearch(search string) string {
 // and means "no search filter".
 func (v *UserValidator) ValidateSearch(search string) (string, error) {
 	if len(strings.TrimSpace(search)) > maxSearchLen {
-		return "", errors.NewFieldError(
+		return "", errors.NewFieldErrorM(
 			"search",
 			"too_long",
-			fmt.Sprintf("search must not exceed %d characters", maxSearchLen),
+			messages.M("validator.max_length", "search", maxSearchLen),
 		)
 	}
 	return normalizeSearch(search), nil
@@ -152,12 +152,10 @@ func (v *UserValidator) ValidateSearch(search string) (string, error) {
 // must not exceed maxBatchIDs entries, and every entry must be a positive id.
 func (v *UserValidator) ValidatePositiveIDs(ids []int64, field string) error {
 	if len(ids) == 0 {
-		return errors.NewFieldError(field, "required", field+" is required")
+		return errors.NewFieldErrorM(field, "required", messages.M("validator.required", field))
 	}
 	if len(ids) > maxBatchIDs {
-		return errors.NewValidationError(
-			fmt.Sprintf("%s must not contain more than %d values", field, maxBatchIDs),
-		)
+		return errors.NewValidationErrorM(messages.M("validator.max_values", field, maxBatchIDs))
 	}
 	for _, id := range ids {
 		if err := v.ValidatePositiveID(id, field); err != nil {
@@ -184,9 +182,7 @@ func (v *UserValidator) ValidateDayRange(start, end date.Date) error {
 		)
 	}
 	if int(e.Sub(s).Hours()/hoursPerDay) > maxDayRange-1 {
-		return errors.NewValidationError(
-			fmt.Sprintf("date range must not exceed %d days", maxDayRange),
-		)
+		return errors.NewValidationErrorM(messages.M("validator.max_days", maxDayRange))
 	}
 	return nil
 }

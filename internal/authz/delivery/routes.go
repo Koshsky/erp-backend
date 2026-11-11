@@ -10,8 +10,8 @@ func (h *RBACHandler) RegisterRoutes(router *gin.RouterGroup) {
 	{
 		r.GET("/presets", h.ListPresets)
 		r.POST("/presets", h.CreatePreset)
-		r.PUT("/presets/:name", h.UpdatePreset)
-		r.DELETE("/presets/:name", h.DeletePreset)
+		r.PUT("/presets/:tag", h.UpdatePreset)
+		r.DELETE("/presets/:tag", h.DeletePreset)
 		r.GET("/preset-rules", h.ListRules)
 		r.PUT("/preset-rules", h.UpsertRule)
 		r.DELETE("/preset-rules/:id", h.DeleteRule)

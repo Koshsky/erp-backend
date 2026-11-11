@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"slices"
 	"time"
@@ -10,13 +9,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/Koshsky/erp-backend/internal/middleware/rbac"
-	repo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
-
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/dto"
+	repo "github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository"
 	"github.com/Koshsky/erp-backend/internal/timesheet/calendar/repository/sqlc"
 	tracingpkg "github.com/Koshsky/erp-backend/internal/tracing"
 	"github.com/Koshsky/erp-backend/pkg/date"
 	"github.com/Koshsky/erp-backend/pkg/errors"
+	"github.com/Koshsky/erp-backend/pkg/messages"
 )
 
 // maxCalendarRange is the maximum calendar range width per request (in days).
@@ -59,7 +58,7 @@ func (s *CalendarService) GetCalendar(
 		return nil, errors.BadRequest("end_date must be greater than or equal to start_date")
 	}
 	if int(endT.Sub(startT).Hours()/hoursPerDay) > maxCalendarRange-1 {
-		return nil, errors.BadRequest(fmt.Sprintf("date range must not exceed %d days", maxCalendarRange))
+		return nil, errors.BadRequestM(messages.M("validator.max_days", maxCalendarRange))
 	}
 
 	resourceRows, err := s.repository.ListResources(ctx, userID, scope)

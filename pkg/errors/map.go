@@ -6,6 +6,8 @@ import (
 	stderrors "errors"
 
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/Koshsky/erp-backend/pkg/messages"
 )
 
 // MapPgConstraint maps a Postgres integrity violation into a domain error:
@@ -23,7 +25,7 @@ func MapPgConstraint(err error) error {
 	}
 	switch pgErr.Code {
 	case "23505":
-		return withDetail(Conflict(uniqueMessage(pgErr.ConstraintName)), pgErr.ConstraintName)
+		return withDetail(ConflictM(uniqueMessage(pgErr.ConstraintName)), pgErr.ConstraintName)
 	case "23P01":
 		return withDetail(Conflict("значение пересекается с существующим диапазоном"), pgErr.ConstraintName)
 	case "23503":
@@ -38,11 +40,11 @@ func MapPgConstraint(err error) error {
 	}
 }
 
-// uniqueMessage builds the human-readable message for 23505 from the
-// constraint name (e.g. the partial unique index on the user login).
-func uniqueMessage(constraint string) string {
+// uniqueMessage picks the parameterized message for 23505 from the constraint
+// name (e.g. the partial unique index on the user login).
+func uniqueMessage(constraint string) messages.Message {
 	if strings.Contains(constraint, "username") {
-		return "пользователь с таким логином уже существует"
+		return messages.M("errors.unique_username")
 	}
-	return "запись с таким значением уже существует"
+	return messages.M("errors.unique_generic")
 }
