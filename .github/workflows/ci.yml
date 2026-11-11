@@ -1,23 +1,16 @@
-# CI for erp-backend.
-# Checks: branch policy, build + vet + unit tests, golangci-lint.
-# The "CI / Branch policy" check is the required status check for
-# main/staging/dev (see scripts/branch-protection/ in the workspace); the rest
-# are gating checks that should be added to the required set in the
-# repository settings.
+# CI for erp-backend. Main is the only permanent branch.
 name: CI
 
 on:
   pull_request:
+    branches: [main]
   push:
-    branches: [main, staging, dev]
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  # Branch policy: main accepts pull requests only from staging,
-  # staging accepts pull requests only from dev, dev accepts pull requests
-  # only from feature/* and hotfix/*.
   policy:
     name: Branch policy
     runs-on: ubuntu-latest
@@ -26,26 +19,15 @@ jobs:
         env:
           BASE: ${{ github.base_ref }}
           HEAD: ${{ github.head_ref }}
-        # On push (no PR) base_ref/head_ref are empty — the `*` branch is
-        # matched and the check passes.
         run: |
-          case "$BASE" in
-            main)
-              [ "$HEAD" = "staging" ] && echo "PASS: source branch 'staging' is permitted for target branch 'main'" \
-                || { echo "FAIL: target branch 'main' requires source branch 'staging'; received '$HEAD'"; exit 1; }
-              ;;
-            staging)
-              [ "$HEAD" = "dev" ] && echo "PASS: source branch 'dev' is permitted for target branch 'staging'" \
-                || { echo "FAIL: target branch 'staging' requires source branch 'dev'; received '$HEAD'"; exit 1; }
-              ;;
-            dev)
-              case "$HEAD" in
-                feature/*|hotfix/*) echo "PASS: source branch '$HEAD' is permitted for target branch 'dev'" ;;
-                *) echo "FAIL: target branch 'dev' requires a source branch matching 'feature/*' or 'hotfix/*'; received '$HEAD'"; exit 1 ;;
-              esac
+          [ -n "$BASE" ] || exit 0
+          case "$HEAD" in
+            main|dev|staging)
+              echo "FAIL: use a short-lived topic branch targeting main"
+              exit 1
               ;;
             *)
-              exit 0
+              echo "PASS: topic branch targets main"
               ;;
           esac
 
